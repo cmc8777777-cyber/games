@@ -346,7 +346,10 @@ function signV4(g,x,y,text,dir,size){
 }
 T.land.hannibal = function(g, env){
   const {W,H,PADS,segDist} = env, X0 = -4, Y0 = -4, X1 = W+4, Y1 = H+4, R = rng(11);
-  let gr = g.createLinearGradient(0,30,0,H);
+  let gr;
+  // фон из картинки, если движок её дал; иначе — земля кодом, как в v4
+  if (!(env.paintGround && env.paintGround(g))) {
+  gr = g.createLinearGradient(0,30,0,H);
   gr.addColorStop(0,'#b7c66e'); gr.addColorStop(.18,'#aec468'); gr.addColorStop(.4,'#a6bd62'); gr.addColorStop(.62,'#adbd63');
   gr.addColorStop(.8,'#a8b45e'); gr.addColorStop(.92,'#b3a964'); gr.addColorStop(1,'#bf9a62');
   g.fillStyle = gr; g.fillRect(X0,0,X1-X0,Y1);
@@ -363,6 +366,7 @@ T.land.hannibal = function(g, env){
     h.addColorStop(0,'rgba(214,222,140,.65)'); h.addColorStop(.6,'rgba(160,184,92,.35)'); h.addColorStop(1,'rgba(110,140,60,.35)');
     E(g,x,y,rx,ry,h);
     E(g,x+rx*.18,y+ry*.45,rx*.75,ry*.4,'rgba(90,120,50,.14)');
+  }
   }
   gr = g.createLinearGradient(0,Y0,0,42); gr.addColorStop(0,'#bcd8ec'); gr.addColorStop(1,'#e7efe2');
   g.fillStyle = gr; g.fillRect(X0,Y0,X1-X0,46-Y0);

@@ -232,13 +232,19 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
 .pausebox .cta,.pausebox .cta2{display:block;width:100%;margin:8px 0 0}
 /* карта мира */
 #scrMap{position:absolute;inset:0;z-index:25;background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
-.maphd{flex:none;padding:10px 12px 14px;text-align:center}
+.maphd{flex:none;padding:0 0 12px;text-align:center}
+.maphd .banner{display:block;width:100%;aspect-ratio:3/1;object-fit:cover}
+.maphd .mapt{padding:4px 12px 0}
 .maphd.meander::after{bottom:2px}
 .maphd h1{font-family:var(--f-cyr);font-weight:400;font-size:32px;line-height:1;margin:2px 0 2px;color:var(--accent)}
 .maphd .sub{font-family:var(--f-cyr);font-size:15px;color:var(--muted);letter-spacing:.04em}
 .mapbody{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:10px 10px 18px}
 .mapcv{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--gold);box-shadow:inset 0 0 0 2px var(--panel),var(--shadow)}
-#mapc{display:block;width:100%;aspect-ratio:5/4;touch-action:pan-y}
+#mapc{display:block;width:100%;aspect-ratio:4/5;touch-action:pan-y}
+.bcard .mk{flex:none;position:relative;width:46px;height:46px}
+.bcard .mk img{width:46px;height:46px;border-radius:0;display:block}
+.bcard .mk b{position:absolute;right:-4px;bottom:-3px;min-width:20px;height:20px;border-radius:10px;background:var(--panel);border:1px solid var(--gold);font-family:var(--f-display);font-size:12px;line-height:18px;text-align:center;color:var(--ink)}
+.scard .por.big{width:220px;height:auto;aspect-ratio:4/5;border-radius:8px}
 .blist{display:flex;flex-direction:column;gap:7px;margin-top:10px}
 .bcard{display:flex;align-items:center;gap:10px;width:100%;min-height:62px;padding:6px 10px 6px 6px;border-radius:12px;border:1px solid var(--line);background:var(--panel);text-align:left;
   box-shadow:inset 0 0 0 2px var(--panel),inset 0 0 0 3px rgba(180,133,43,.32)}
@@ -302,7 +308,7 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
   </div>
   <div class="screen" id="scrArt" hidden style="z-index:22"><div class="scroll" id="artBox" role="dialog" aria-label="Статья"></div></div>
   <div id="scrMap">
-    <div class="maphd marble meander"><div class="sub">Кампания · 10 битв</div><h1>Крепость</h1><div class="sub" id="mapProg"></div></div>
+    <div class="maphd marble meander"><img class="banner" src="art/web/banner.jpg" alt="Защитники разных эпох у крепости"><div class="mapt"><h1>Крепость</h1><div class="sub" id="mapProg">Кампания · 10 битв</div></div></div>
     <div class="mapbody">
       <div class="mapcv"><canvas id="mapc" aria-label="Карта битв"></canvas></div>
       <div class="blist" id="blist"></div>
@@ -835,9 +841,23 @@ function roadCrossings(fy){
   }
   return out;
 }
+// фон поля из картинки (art/web/fields/<id>.webp, бесшовный по вертикали); пока не загрузился — земля рисуется кодом
+const FIELD = {};
+function fieldImg(id){
+  if (FIELD[id] || SIM) return FIELD[id];
+  const im = new Image(); im.onload = () => { if (B && B.id === id && !SIM) { BG = null; buildBg(); } };
+  im.src = 'art/web/fields/' + id + '.webp'; FIELD[id] = im; return im;
+}
+function paintFieldArt(g){
+  const im = !SIM && FIELD[B.id];
+  if (!im || !im.complete || !im.naturalWidth) return false;
+  const th = W * im.naturalHeight / im.naturalWidth;
+  for (let y = 0; y < H + 8; y += th) g.drawImage(im, -2, y - 1, W + 4, th + 1);
+  return true;
+}
 function paintLandGeneric(g){
-  const th = B.theme || {}, pal = th.palette || {}, R = rng(seedOf(B.id));
-  (TH.ground[th.ground] || TH.ground.grass)(g, W, H, pal, R);
+  const th = B.theme || {}, pal = th.palette || {}, R = rng(seedOf(B.id)), art = paintFieldArt(g);
+  if (!art) (TH.ground[th.ground] || TH.ground.grass)(g, W, H, pal, R);
   (TH.skyline[th.skyline] || TH.skyline.mountains)(g, W, H, B);
   // вода
   const ws = waters(), rivers = [], lakes = [];
@@ -895,17 +915,17 @@ function paintLandGeneric(g){
   const props = [], PR = rng(seedOf(B.id) ^ 41);
   const place = (n,kind,pad,minGap) => { let tries=0; while (n>0 && tries++<6000){ const x=-2+PR()*(W+4), y=80+PR()*1446; if (!free(x,y,pad)) continue; if (props.some(p=>Math.hypot(p.x-x,p.y-y)<minGap)) continue; props.push({x,y,kind}); n--; } };
   const area = kinds.filter(k => k === 'vineyard' || k === 'field'), houses = kinds.filter(k => /House$|^hut$|^tent$/.test(k)), plants = kinds.filter(k => area.indexOf(k) < 0 && houses.indexOf(k) < 0);
-  for (const k of area) place(3,k,30,90);
+  if (!art) for (const k of area) place(3,k,30,90);
   // деревни: по 3–4 дома рядом
   for (let v=0; v<(houses.length ? 3 : 0); v++){
     let tries = 0, cx = 0, cy = 0; while (tries++ < 400) { cx = 30+PR()*(W-60); cy = 160+PR()*1300; if (free(cx,cy,16)) break; }
     for (let i=0;i<4;i++){ const x = cx + (i-1.5)*24 + (PR()-.5)*6, y = cy + (PR()-.5)*10; if (free(x,y,8) && !props.some(p=>Math.hypot(p.x-x,p.y-y)<20)) props.push({x,y,kind:houses[(v+i)%houses.length]}); }
   }
-  const per = plants.length ? Math.round(150 / plants.length) : 0;
+  const per = plants.length ? Math.round((art ? 60 : 150) / plants.length) : 0;
   for (const k of plants) place(k === 'ruin' ? 4 : k === 'reed' ? Math.min(per, 20) : k === 'rock' ? Math.min(per, 26) : per, k, k === 'rock' ? 0 : 2, k === 'rock' ? 10 : 13);
   props.sort((a,b)=>a.y-b.y);
   for (const p of props) TH.decor[p.kind](g,p.x,p.y,PR);
-  if (th.ground === 'grass' || th.ground === 'steppe') for (let i=0;i<260;i++){ const x=-2+PR()*(W+4), y=80+PR()*1440; if (!free(x,y,-6)) continue; E(g,x,y,.9,.9,['#d8452f','#f4efe0','#e9c54a','#c95a8a'][(PR()*4)|0]); }
+  if (!art && (th.ground === 'grass' || th.ground === 'steppe')) for (let i=0;i<260;i++){ const x=-2+PR()*(W+4), y=80+PR()*1440; if (!free(x,y,-6)) continue; E(g,x,y,.9,.9,['#d8452f','#f4efe0','#e9c54a','#c95a8a'][(PR()*4)|0]); }
   // надписи поверх
   for (const L of lakes) if (L.sign) signpost(g, +L.x+4, +L.y - (+L.ry||32) - 22, L.sign, -1, 9.4);
   // указатель не должен лежать на дороге: сдвигаем вбок, пока не найдём свободное место
@@ -924,7 +944,7 @@ function buildBg(){
   g.fillStyle = (B.theme && B.theme.palette && B.theme.palette.ground) || '#a7ba64'; g.fillRect(0,0,BG.width,BG.height);
   g.setTransform(k,0,0,k,0,0); g.lineJoin='round';
   const land = TH.land && TH.land[B.id];
-  if (land) land(g, {W, H, PATH, PADS, segDist, paintRoad, paintPlates}); else paintLandGeneric(g);
+  if (land) land(g, {W, H, PATH, PADS, segDist, paintRoad, paintPlates, paintGround: paintFieldArt}); else paintLandGeneric(g);
   const w = WALL.getContext('2d'); w.setTransform(1,0,0,1,0,0); w.clearRect(0,0,WALL.width,WALL.height);
   w.setTransform(k,0,0,k,0,-WALL_TOP*k); w.lineJoin='round';
   const fz = (B.fortress && TH.fortress[B.fortress.style]) || TH.fortress.roman;
@@ -1392,8 +1412,9 @@ function renderStart(){
 }
 function nextBattleId(){ const i = CAMPAIGN.findIndex(c => c.id === B.id); for (let j=i+1;j<CAMPAIGN.length;j++) if (validBattle(BATTLES[CAMPAIGN[j].id])) return CAMPAIGN[j].id; return null; }
 function renderWin(best){
-  const nx = nextBattleId();
-  $('winBox').innerHTML = '<div class="sub">'+esc(UI.winSub || B.year || '')+'</div><img class="por" src="'+IC.pLaurel+'" alt="Лавровый венок">'
+  const nx = nextBattleId(), fin = !nx && artOk(ART.complete);
+  $('winBox').innerHTML = '<div class="sub">'+esc(UI.winSub || B.year || '')+'</div>'
+    + (fin ? '<img class="por big" src="'+ART.complete.src+'" alt="Кампания пройдена: защитники всех эпох у крепости">' : '<img class="por" src="'+IC.pLaurel+'" alt="Лавровый венок">')
     + '<h2>'+esc(UI.winTitle || 'Победа!')+'</h2><p>'+esc(B.victoryText || '')+'</p>'
     + '<div class="score"><span>'+img(IC.walls)+'<span>'+G.lives+'</span></span><span>'+img(IC.coin)+'<span>'+G.coins+'</span></span></div>'
     + '<p style="font-family:var(--f-cyr);font-size:17px;margin:4px 0">Пройдено '+WAVES.length+' волн, стены: '+G.lives+', лучший результат: '+best+'</p>'
@@ -1462,20 +1483,47 @@ function mapLand(g,w,h){
   g.fillStyle='rgba(40,70,90,.55)'; g.font='italic '+Math.round(w*.03)+'px '+FONT_C; g.textAlign='center'; g.textBaseline='middle';
   g.fillText('Средиземное море', X(.22), Y(.76)); g.fillText('Чёрное море', X(.71), Y(.58)); g.fillText('Балтийское море', X(.55), Y(.12));
 }
+// картинки карты (art/web): сгенерированы владельцем в другой нейросети по art/ПРОМПТЫ.md, сжаты; если не загрузились — рисуем карту кодом
+const ART = {};
+for (const [k,f] of [['mapLight','map-light.jpg'],['mapDark','map-dark.jpg'],['open','marker-open.png'],['done','marker-done.png'],['lock','marker-lock.png'],['compass','compass.png'],['serpent','serpent.png'],['galley','galley.png'],['complete','campaign-complete.jpg']]) {
+  const im = new Image(); im.onload = () => { if (!$('scrMap').hidden) { drawMap(); if (k === 'open' || k === 'done' || k === 'lock') renderMapList(); } }; im.src = 'art/web/' + f; ART[k] = im;
+}
+const artOk = im => im && im.complete && im.naturalWidth > 0;
+const darkTheme = () => document.documentElement.dataset.theme === 'dark' || (document.documentElement.dataset.theme !== 'light' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+if (window.matchMedia) { const mq = matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', () => { if (!$('scrMap').hidden) drawMap(); }); }
+// точки битв на нарисованной карте (доли ширины/высоты картинки 4:5)
+const ART_POS = {thermopylae:[.545,.531], gaugamela:[.869,.571], hannibal:[.405,.442], spartacus:[.468,.512], alesia:[.223,.360], constantinople:[.615,.494],
+  poitiers:[.147,.392], ice:[.646,.153], kulikovo:[.778,.258], moscow1612:[.728,.196]};
+const markerOf = (done, open) => done ? ART.done : open ? ART.open : ART.lock;
 function drawMap(){
   const r = mapc.getBoundingClientRect(); if (r.width < 10) return;
-  const d = Math.min(2, window.devicePixelRatio || 1), w = r.width, h = r.width*0.8;
+  const d = Math.min(2, window.devicePixelRatio || 1), w = r.width, h = r.width*1.25;
   mapc.width = Math.round(w*d); mapc.height = Math.round(h*d);
   const g = mapc.getContext('2d'); g.setTransform(d,0,0,d,0,0);
-  mapLand(g,w,h);
+  const bg = darkTheme() ? ART.mapDark : ART.mapLight, useArt = artOk(bg);
+  if (useArt) {
+    g.imageSmoothingQuality = 'high'; g.drawImage(bg, 0, 0, w, h);
+    const deco = (im, x, y, ww) => { if (artOk(im)) { const hh = ww*im.naturalHeight/im.naturalWidth; g.drawImage(im, x*w - ww*w/2, y*h - hh*w/2, ww*w, hh*w); } };
+    deco(ART.compass, .13, .085, .15); deco(ART.galley, .1, .29, .14); deco(ART.serpent, .56, .655, .2);
+  } else mapLand(g,w,h);
   const prog = readProg(), pts = [];
-  CAMPAIGN.forEach((c,i) => { const b = BATTLES[c.id]; const mp = (b && b.mapPoint) || null; if (mp) pts.push({i, c, b, x:mp.x*w, y:mp.y*h}); });
-  g.setLineDash([4,4]); g.strokeStyle='rgba(124,31,22,.55)'; g.lineWidth=1.6; g.beginPath(); pts.forEach((p,k) => k ? g.lineTo(p.x,p.y) : g.moveTo(p.x,p.y)); g.stroke(); g.setLineDash([]);
+  CAMPAIGN.forEach((c,i) => { const b = BATTLES[c.id], ap = useArt && ART_POS[c.id], mp = ap ? {x:ap[0], y:ap[1]} : (b && b.mapPoint) || null; if (mp) pts.push({i, c, b, x:mp.x*w, y:mp.y*h}); });
+  g.setLineDash([5,4]); g.strokeStyle = useArt ? 'rgba(157,43,31,.85)' : 'rgba(124,31,22,.55)'; g.lineWidth = useArt ? 2.2 : 1.6; g.lineCap = 'round';
+  g.beginPath(); pts.forEach((p,k) => k ? g.lineTo(p.x,p.y) : g.moveTo(p.x,p.y)); g.stroke(); g.setLineDash([]);
+  const rr = Math.max(12, w*.036);
   for (const p of pts) {
-    const done = !!prog.done[p.c.id], open = isOpen(p.c.id) && validBattle(p.b), rr = Math.max(9, w*.03);
-    E(g,p.x+1,p.y+1.6,rr,rr,'rgba(40,24,10,.3)');
-    E(g,p.x,p.y,rr,rr,done ? '#4f7a34' : open ? '#9d2b1f' : '#a39a8b','#fff6e6',1.6);
-    g.fillStyle='#fff6e6'; g.font='700 '+Math.round(rr*1.05)+'px '+FONT_D; g.textAlign='center'; g.textBaseline='middle'; g.fillText(String(p.i+1),p.x,p.y+.5);
+    const done = !!prog.done[p.c.id], open = isOpen(p.c.id) && validBattle(p.b), mk = markerOf(done, open);
+    if (useArt && artOk(mk)) {
+      E(g,p.x+1.5,p.y+2.5,rr*.95,rr*.95,'rgba(30,18,6,.35)');
+      g.drawImage(mk, p.x-rr*1.05, p.y-rr*1.05, rr*2.1, rr*2.1);
+      const bx = p.x + rr*.8, by = p.y + rr*.75, br = Math.max(7, rr*.45);
+      E(g,bx,by,br,br,'#fff6e6','#3a2616',1.2);
+      g.fillStyle='#3a2616'; g.font='700 '+Math.round(br*1.25)+'px '+FONT_D; g.textAlign='center'; g.textBaseline='middle'; g.fillText(String(p.i+1),bx,by+.5);
+    } else {
+      E(g,p.x+1,p.y+1.6,rr*.75,rr*.75,'rgba(40,24,10,.3)');
+      E(g,p.x,p.y,rr*.75,rr*.75,done ? '#4f7a34' : open ? '#9d2b1f' : '#a39a8b','#fff6e6',1.6);
+      g.fillStyle='#fff6e6'; g.font='700 '+Math.round(rr*.8)+'px '+FONT_D; g.textAlign='center'; g.textBaseline='middle'; g.fillText(String(p.i+1),p.x,p.y+.5);
+    }
   }
   mapc._pts = pts;
 }
@@ -1486,10 +1534,11 @@ function renderMapList(){
     if (done) n++;
     const cls = 'bcard' + (done ? ' done' : '') + (!open ? ' lock' : '') + (!ok ? ' soon' : '');
     const st = done ? '★ '+prog.done[c.id].best+'<br><small>стен</small>' : !ok ? 'скоро' : !open ? '🔒' : 'в бой';
-    h += '<button class="'+cls+'" data-b="'+c.id+'"'+(open ? '' : ' aria-disabled="true"')+'><span class="num">'+(i+1)+'</span><span class="bt"><b>'+esc(ok ? b.title : c.title)+'</b><span>'+esc(ok ? b.year : c.year)+(ok ? ' · '+esc(b.side) : '')+'</span></span><span class="st">'+st+'</span></button>';
+    const mk = markerOf(done, open), mkHtml = artOk(mk) ? '<span class="mk"><img src="'+mk.src+'" alt=""><b>'+(i+1)+'</b></span>' : '<span class="num">'+(i+1)+'</span>';
+    h += '<button class="'+cls+'" data-b="'+c.id+'"'+(open ? '' : ' aria-disabled="true"')+'>'+mkHtml+'<span class="bt"><b>'+esc(ok ? b.title : c.title)+'</b><span>'+esc(ok ? b.year : c.year)+(ok ? ' · '+esc(b.side) : '')+'</span></span><span class="st">'+st+'</span></button>';
   });
   $('blist').innerHTML = h;
-  $('mapProg').textContent = 'Пройдено ' + n + ' из ' + CAMPAIGN.length;
+  $('mapProg').textContent = 'Кампания · пройдено ' + n + ' из ' + CAMPAIGN.length;
 }
 function showMap(){
   saveNow();
@@ -1516,6 +1565,7 @@ function prepareBattle(id){
   const b = BATTLES[id]; if (!validBattle(b)) return false;
   if (B && B.id === id && TS[TOWER_ORDER[0]]) return true;
   loadBattle(b); reset();
+  fieldImg(id);
   buildSprites();
   BG = null; WALL = null;
   TRACK.clear(); PARTS.length = 0;
@@ -1697,7 +1747,7 @@ function boot(){
 
 // ---------- Отладка и автобалансировка (в публикуемой сборке убрать) ----------
 const sim = {
-  get G(){ return G; }, get B(){ return B; }, get PADS(){ return PADS; }, get PATH(){ return PATH; }, get TOWERS(){ return DEFS; }, get ENEMIES(){ return ENEMIES; }, get WAVES(){ return WAVES; }, get BAL(){ return BAL; }, get CHAPTERS(){ return CHAPTERS; }, get CONTENT(){ return CONTENT; }, get ENC(){ return ENC; },
+  get G(){ return G; }, get B(){ return B; }, get PADS(){ return PADS; }, get PATH(){ return PATH; }, get TOWERS(){ return DEFS; }, get ENEMIES(){ return ENEMIES; }, get WAVES(){ return WAVES; }, get BAL(){ return BAL; }, get CHAPTERS(){ return CHAPTERS; }, get CONTENT(){ return CONTENT; }, get ENC(){ return ENC; }, get BG(){ return BG; }, get WALL(){ return WALL; },
   BATTLES, CAMPAIGN, manual:v=>{ MANUAL = !!v; }, setCamera:y=>{ CAM.tgt=null; CAM.vel=0; return setCamera(y); }, camera:()=>({y:CAM.y,max:CAM.max,viewH:VIEW_H}),
   update, startGame, startWave, build, upgrade, sell, useAbility, upgradeCost, towerStats, quizFor, eventAfter, answerQuiz, skipQuiz, chooseEvent, closeEvent, quizOpen, eventOpen, quizCorrect,
   openEnc, closeEnc, showArticle, closeArticle, unlock, encCount, snapshot, readSave, saveNow, clearSave, continueGame, draw, refreshUI, drawMini, refreshCamUI,
