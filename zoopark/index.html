@@ -58,6 +58,12 @@ canvas#map{display:block;width:100%;height:auto}
 .sum tr.sub td{font-weight:800;border-bottom:2px solid var(--ink)}
 .stars{font-size:36px;text-align:center;letter-spacing:6px;color:#e5a600;text-shadow:0 2px 0 var(--ink)}
 .fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 3px;font-weight:800}.fr i{font-style:normal;border-bottom:2px solid currentColor;padding:0 4px 1px}.fr b{padding-top:1px}
+.ic{width:22px;height:22px;object-fit:contain;vertical-align:middle}
+.tic{width:26px;height:26px;object-fit:contain}.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;line-height:1.1;padding:3px 0}
+.evi{width:56px;height:56px;object-fit:contain;flex:none}.evrow{display:flex;gap:8px;align-items:center}
+.pic{width:42px;height:42px;object-fit:contain;flex:none}
+.hero{position:relative}.hero h2{position:absolute;top:5%;left:0;right:0;text-align:center;color:#fff;margin:0;line-height:1.05;-webkit-text-stroke:2px var(--ink);paint-order:stroke fill;text-shadow:0 3px 0 var(--ink)}
+.cover{width:100%;max-height:52dvh;object-fit:cover;object-position:center top;border-radius:12px;border:3px solid var(--ink);display:block}
 #toast{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:20px;padding:7px 14px;font-weight:700;font-size:13.5px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:20;max-width:92%;text-align:center}
 #toast.on{opacity:1}
 </style>
@@ -119,6 +125,13 @@ const INK='#3b2a1a';
 
 /* заглушка платформы (Яндекс Игры SDK подключается здесь) */
 const PF={rewarded(cb){toast('Ролик (заглушка SDK)…');setTimeout(cb,900);}};
+
+/* картинки (WebP в img/, нарезаны tools/make_art.py). Нет файла — рисуется кодом */
+const IMGN=/*IMGN*/['an_giraf','an_goat','an_lion','an_monk','an_peng','an_rab','an_slon','an_zebra','bg_grass','bg_path','cafe','coin_know','cover_start','ev_epi','ev_exc','ev_heat','ev_insp','fence_h','fence_post','final_win','food_bag','ic_bank','ic_enc','ic_price','ic_staff','ic_stock','kassa','vet','vis_boy','vis_girl','vis_man','vis_woman','worker']/*END*/;
+const IMG={},PAT={};
+IMGN.forEach(n=>{const i=new Image();i.onload=()=>{IMG[n]=i;delete PAT[n];if(typeof S!=='undefined'&&S&&typeof renderHud==='function'){renderHud();if(mode!=='sim')renderPanel();}};i.src='img/'+n+'.webp';});
+const imgTag=(n,cls,fb)=>!IMGN.includes(n)?(fb||''):`<img class="${cls||'ic'}" src="img/${n}.webp" alt="" onerror="this.outerHTML='${fb||''}'">`;
+const SPR={rab:.85,goat:1,peng:1,monk:1,zebra:1.02,lion:1.05,giraf:1.3,slon:1.2};
 
 /* ================= СОСТОЯНИЕ ================= */
 let S=null,mode='over',tab='enc',selId=0,sim=null;
@@ -374,7 +387,10 @@ const DRAW={
  giraf(c){c.scale(.78,.78);c.translate(0,8);[-14,-8,8,14].forEach(x=>rect(c,x-2,8,4.5,17,'#f2c14e',2.5));line(c,[[-20,0],[-26,8]],INK,3);oval(c,-2,4,19,10,'#f2c14e');poly(c,[[9,0],[15,-30],[22,-30],[19,0]],'#f2c14e');oval(c,23,-32,8,5,'#f2c14e');line(c,[[20,-37],[19,-43]],INK,3);line(c,[[25,-37],[26,-43]],INK,3);dot(c,19,-43,2);dot(c,26,-43,2);[[-8,2],[0,6],[6,0],[-14,6]].forEach(p=>dot(c,p[0],p[1],3,'#b9742a'));dot(c,15,-14,2.5,'#b9742a');dot(c,17,-24,2.5,'#b9742a');dot(c,26,-33,1.6);dot(c,30,-31,1.2);},
  slon(c){c.scale(.82,.82);c.translate(-2,4);[-16,-6,10,20].forEach(x=>rect(c,x-4,8,8,16,'#9aa7b5',2.5));oval(c,-4,2,28,17,'#9aa7b5');line(c,[[-30,0],[-34,12]],INK,3);oval(c,22,-5,13,13,'#9aa7b5');oval(c,12,-6,9,13,'#8895a4');line(c,[[32,-2],[38,10],[34,22]],INK,10);line(c,[[32,-2],[38,10],[34,22]],'#9aa7b5',6);poly(c,[[28,6],[40,10],[30,10]],'#fff7e0',2);dot(c,26,-8,2);}
 };
-function drawAnimal(c,k,x,y,s){c.save();c.translate(x,y);c.scale(s,s);c.lineJoin='round';DRAW[k](c);c.restore();}
+function drawAnimal(c,k,x,y,s){
+  const im=IMG['an_'+k];
+  if(im){const h=60*s*SPR[k],w=Math.min(h*im.width/im.height,74*s*SPR[k]),hh=w*im.height/im.width;c.drawImage(im,x-w/2,y-hh*.55,w,hh);return;}
+  c.save();c.translate(x,y);c.scale(s,s);c.lineJoin='round';DRAW[k](c);c.restore();}
 function drawCafe(c,x,y){
   rect(c,x+14,y+34,52,34,'#f7e1b5');rect(c,x+30,y+46,20,22,'#9a6232',2.5);
   for(let i=0;i<6;i++)poly(c,[[x+10+i*10,y+22],[x+20+i*10,y+22],[x+20+i*10,y+36],[x+10+i*10,y+36]],i%2?'#fff':'#e8604c',2.5);
@@ -383,6 +399,13 @@ function drawCafe(c,x,y){
 }
 function iconCanvas(k){const c=document.createElement('canvas');c.width=c.height=80;const g=c.getContext('2d');g.fillStyle=k==='cafe'?'#bfe3a0':ANI[k].gr;g.fillRect(0,0,80,80);if(k==='cafe')drawCafe(g,0,0);else drawAnimal(g,k,40,44,k==='slon'||k==='giraf'?.9:.95);return c;}
 
+function fenceLine(c,x1,y1,x2,y2,th){
+  const im=IMG.fence_h,L=Math.hypot(x2-x1,y2-y1),n=Math.max(1,Math.round(L/(th*im.width/im.height))),sl=L/n;
+  c.save();c.translate(x1,y1);c.rotate(Math.atan2(y2-y1,x2-x1));
+  for(let i=0;i<n;i++)c.drawImage(im,i*sl,-th*.6,sl+.5,th);
+  c.restore();
+}
+function hero(name,title,size){return IMGN.includes(name)?`<div class="hero">${imgTag(name,'cover','')}<h2 style="font-size:${size}px">${title}</h2></div>`:`<h2 style="text-align:center;font-size:${size}px">${title}</h2>`;}
 function drawEnc(c,e,time){
   const x=e.x*CP,y=e.y*CP,w=e.w*CP,h=e.h*CP,A=ANI[e.k];
   c.fillStyle=A.gr;c.fillRect(x,y,w,h);
@@ -399,29 +422,47 @@ function drawEnc(c,e,time){
     if(i<e.sick){c.fillStyle='#e8604c';c.fillRect(cx-1.5,cy-14*sc-6,3,8);c.fillRect(cx-4,cy-14*sc-3.5,8,3);}
   }
   // забор
-  c.lineWidth=5;c.strokeStyle=INK;c.strokeRect(x,y,w,h);c.lineWidth=2.6;c.strokeStyle='#d9a066';c.strokeRect(x,y,w,h);
+  if(IMG.fence_h){fenceLine(c,x,y,x+w,y,13);fenceLine(c,x+w,y,x+w,y+h,10);fenceLine(c,x+w,y+h,x,y+h,13);fenceLine(c,x,y+h,x,y,10);}
+  else{c.lineWidth=5;c.strokeStyle=INK;c.strokeRect(x,y,w,h);c.lineWidth=2.6;c.strokeStyle='#d9a066';c.strokeRect(x,y,w,h);}
   [[0,0],[w,0],[0,h],[w,h]].forEach(p=>rect(c,x+p[0]-3,y+p[1]-3,6,6,'#b9783a',2));
   if(e.id===selId){c.lineWidth=3;c.strokeStyle='#ffcf4a';c.strokeRect(x-4,y-4,w+8,h+8);}
   if(tutor()&&crowded(e)){oval(c,x+w-6,y+6,7,7,'#e8604c',2);c.fillStyle='#fff';c.font='bold 10px sans-serif';c.textAlign='center';c.fillText('!',x+w-6,y+10);}
 }
-function drawPerson(c,x,y,col,t){oval(c,x,y+4,5,2,'rgba(0,0,0,.2)',0);rect(c,x-3,y-5,6,7,col,1.6);oval(c,x,y-8,3.3,3.3,'#f7d2a8',1.6);}
+function drawPerson(c,x,y,col,t,a){
+  const im=a&&IMG[a.spr];
+  if(im){const h=a.spr==='vis_boy'||a.spr==='vis_girl'?24:30,w=h*im.width/im.height,bob=Math.abs(Math.sin(t*9+x*.1))*1.2;
+    oval(c,x,y+4,5,2,'rgba(0,0,0,.18)',0);c.save();c.translate(x,y+4-bob);if(a.dir<0)c.scale(-1,1);c.drawImage(im,-w/2,-h,w,h);c.restore();return;}
+  oval(c,x,y+4,5,2,'rgba(0,0,0,.2)',0);rect(c,x-3,y-5,6,7,col,1.6);oval(c,x,y-8,3.3,3.3,'#f7d2a8',1.6);
+}
+function pat(name,size){
+  if(!IMG[name])return null;
+  if(!PAT[name]){const p=ctx.createPattern(IMG[name],'repeat');if(p&&p.setTransform)p.setTransform(new DOMMatrix().scale(size/IMG[name].width));PAT[name]=p;}
+  return PAT[name];
+}
 function render(time){
   if(!S)return;
   const H=S.rows*CP,sc=cv.width/(COLS*CP);
   ctx.setTransform(sc,0,0,sc,0,0);
-  ctx.fillStyle='#a6d874';ctx.fillRect(0,0,COLS*CP,H);
-  for(let y=0;y<S.rows;y++)for(let x=0;x<COLS;x++)if((x+y)%2)ctx.fillStyle='rgba(255,255,255,.06)',ctx.fillRect(x*CP,y*CP,CP,CP);
+  const pg=pat('bg_grass',120),pp=pat('bg_path',90);
+  ctx.fillStyle=pg||'#a6d874';ctx.fillRect(0,0,COLS*CP,H);
+  if(!pg)for(let y=0;y<S.rows;y++)for(let x=0;x<COLS;x++)if((x+y)%2)ctx.fillStyle='rgba(255,255,255,.06)',ctx.fillRect(x*CP,y*CP,CP,CP);
   // дорожка слева и площадь у ворот
-  ctx.fillStyle='#ecd7a4';ctx.fillRect(0,0,CP,H);ctx.fillRect(0,(S.rows-2)*CP,COLS*CP,2*CP);
-  ctx.fillStyle='#d9c48a';for(let x=2;x<COLS*CP;x+=24)ctx.fillRect(x,(S.rows-1)*CP+6,12,3);
+  ctx.fillStyle=pp||'#ecd7a4';ctx.fillRect(0,0,CP,H);ctx.fillRect(0,(S.rows-2)*CP,COLS*CP,2*CP);
+  if(pp){ctx.strokeStyle='rgba(59,42,26,.35)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(CP,0);ctx.lineTo(CP,(S.rows-2)*CP);ctx.lineTo(COLS*CP,(S.rows-2)*CP);ctx.stroke();}
+  else{ctx.fillStyle='#d9c48a';for(let x=2;x<COLS*CP;x+=24)ctx.fillRect(x,(S.rows-1)*CP+6,12,3);}
   // ворота
   const gx=10*CP;
   rect(ctx,gx-30,(S.rows-2)*CP+2,10,30,'#c97d3c',2.5);rect(ctx,gx+20,(S.rows-2)*CP+2,10,30,'#c97d3c',2.5);rect(ctx,gx-34,(S.rows-2)*CP-4,68,16,'#4aa8d8',2.5);
   ctx.fillStyle='#fff';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.fillText('ЗООПАРК',gx,(S.rows-2)*CP+8);
   S.enc.forEach(e=>drawEnc(ctx,e,time));
-  if(S.cafe){ctx.save();ctx.translate(S.cafe.x*CP,S.cafe.y*CP);ctx.scale(4*CP/80,3*CP/60);ctx.translate(0,-10);drawCafe(ctx,0,0);ctx.restore();}
+  if(S.cafe){
+    if(IMG.cafe){const im=IMG.cafe,w=4*CP*1.25,h=w*im.height/im.width;ctx.drawImage(im,S.cafe.x*CP+2*CP-w/2,(S.cafe.y+3)*CP-h+4,w,h);}
+    else{ctx.save();ctx.translate(S.cafe.x*CP,S.cafe.y*CP);ctx.scale(4*CP/80,3*CP/60);ctx.translate(0,-10);drawCafe(ctx,0,0);ctx.restore();}
+  }
+  if(IMG.kassa){const k=Math.min(S.duty.kassa,4),w=34,h=w*IMG.kassa.height/IMG.kassa.width;for(let i=0;i<k;i++)ctx.drawImage(IMG.kassa,gx+44+i*(w-4),(S.rows-1)*CP+CP-h,w,h);}
+  if(IMG.fence_post)S.enc.forEach(e=>{[[0,0],[e.w,0],[0,e.h],[e.w,e.h]].forEach(p=>{const im=IMG.fence_post,h=15,w=h*.3*im.width/im.height;ctx.drawImage(im,0,0,im.width*.3,im.height,(e.x+p[0])*CP-w/2,(e.y+p[1])*CP-h+4,w,h);});});
   if(sim){
-    sim.agents.forEach(a=>drawPerson(ctx,a.x,a.y,a.col,time));
+    sim.agents.forEach(a=>drawPerson(ctx,a.x,a.y,a.col,time,a));
     sim.pops.forEach(p=>{ctx.globalAlpha=Math.max(0,1-p.age/1.2);ctx.fillStyle='#1e6b2c';ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.strokeText(p.txt,p.x,p.y-p.age*22);ctx.fillText(p.txt,p.x,p.y-p.age*22);ctx.globalAlpha=1;});
   }
 }
@@ -441,7 +482,7 @@ function mkAgent(g,targets){
     if(!p)continue;p.forEach((c,k)=>wp.push({x:(c.x+.5)*CP,y:(c.y+.5)*CP,wait:k===p.length-1?ri(8,14)/10:0}));cur=t;
   }
   const back=bfs(g,cur,gate);if(back)back.forEach(c=>wp.push({x:(c.x+.5)*CP,y:(c.y+.5)*CP,wait:0}));
-  return{x:(gate.x+.5)*CP,y:(gate.y+.5)*CP,col:pick(PCOL),wp,i:0,wait:0};
+  return{x:(gate.x+.5)*CP,y:(gate.y+.5)*CP,col:pick(PCOL),spr:pick(['vis_man','vis_woman','vis_boy','vis_girl']),dir:1,wp,i:0,wait:0};
 }
 function targetsList(g){
   const out=[];
@@ -475,6 +516,7 @@ function updateSim(dt){
       const p=a.wp[a.i],dx=p.x-a.x,dy=p.y-a.y,dist=Math.hypot(dx,dy);
       if(dist<=left){a.x=p.x;a.y=p.y;left-=dist;a.wait=p.wait||0;if(!a.wait)a.i++;}
       else{a.x+=dx/dist*left;a.y+=dy/dist*left;left=0;}
+      if(Math.abs(dx)>.5)a.dir=dx>0?1:-1;
     }
   });
   s.agents=s.agents.filter(a=>a.i<a.wp.length);
@@ -524,7 +566,7 @@ function renderHud(){
   $('#hDay').textContent=`День ${Math.min(S.day,DAYS)}/${DAYS}`;
   $('#hMoney').textContent=money(S.money);
   $('#hRep').textContent='★ '+num((S.rep/20).toFixed(1));
-  $('#hCoin').textContent='◎ '+S.coins;
+  $('#hCoin').innerHTML=imgTag('coin_know','ic','◎')+' '+S.coins;
 }
 function renderInfo(){
   if(!S)return;const el=$('#info');
@@ -544,7 +586,7 @@ function freeArea(){return Math.max(0,(S.rows-2)*(COLS-1)-areaTot()-(S.cafe?12:0
 const kv=(a,b)=>`<div class="kv"><span>${a}</span><b>${b}</b></div>`;
 const TABS=[['enc','Вольеры'],['staff','Люди'],['price','Цены'],['stock','Склад'],['bank','Банк']];
 function renderTabs(){
-  $('#tabs').innerHTML=TABS.map(t=>`<button class="tab ${t[0]===tab?'on':''}" data-act="tab" data-t="${t[0]}">${t[1]}</button>`).join('');
+  $('#tabs').innerHTML=TABS.map(t=>`<button class="tab ${t[0]===tab?'on':''}" data-act="tab" data-t="${t[0]}">${imgTag('ic_'+t[0],'tic','')}<span>${t[1]}</span></button>`).join('');
 }
 function renderFoot(){
   const f=$('#pfoot');
@@ -575,8 +617,8 @@ function renderPanel(){
   }
   else if(tab==='staff'){
     const d=S.duty,used=d.feed+d.clean+d.kassa+d.cafe,free=S.staff.w-used;
-    h+=`<div class="row"><div class="grow"><b>Работники: ${S.staff.w}</b><br><span class="hint">${money(SAL_W)} в день каждому</span></div><div class="step"><button class="btn" data-act="fire" data-t="w">−</button><button class="btn" data-act="hire" data-t="w">+</button></div></div>`;
-    h+=`<div class="row"><div class="grow"><b>Ветеринары: ${S.staff.v}</b><br><span class="hint">${money(SAL_V)} в день каждому</span></div><div class="step"><button class="btn" data-act="fire" data-t="v">−</button><button class="btn" data-act="hire" data-t="v">+</button></div></div>`;
+    h+=`<div class="row">${imgTag('worker','pic','')}<div class="grow"><b>Работники: ${S.staff.w}</b><br><span class="hint">${money(SAL_W)} в день каждому</span></div><div class="step"><button class="btn" data-act="fire" data-t="w">−</button><button class="btn" data-act="hire" data-t="w">+</button></div></div>`;
+    h+=`<div class="row">${imgTag('vet','pic','')}<div class="grow"><b>Ветеринары: ${S.staff.v}</b><br><span class="hint">${money(SAL_V)} в день каждому</span></div><div class="step"><button class="btn" data-act="fire" data-t="v">−</button><button class="btn" data-act="hire" data-t="v">+</button></div></div>`;
     h+=`<div class="head"><span>Поручения на сегодня</span><span class="${free<0?'warn':''}">свободно: ${free}</span></div>`;
     const duties=[['feed','Кормление',`1 раб. = ${N_FEED} животных`],['clean','Уборка',`1 раб. = ${N_CLEAN} м² вольеров`],['kassa','Касса',`1 раб. = ${N_KASSA} гостей`],['cafe','Кафе',`1 раб. = ${N_CAFE} гостей`]];
     duties.forEach(x=>{h+=`<div class="row"><div class="grow"><b>${x[1]}</b><br><span class="hint">${x[2]}</span></div><div class="step"><button class="btn" data-act="dm" data-d="${x[0]}">−</button><b>${d[x[0]]}</b><button class="btn" data-act="dp" data-d="${x[0]}">+</button></div></div>`;});
@@ -590,6 +632,7 @@ function renderPanel(){
     h+=`<div class="hint"><b>Правило:</b> +10 % к цене — минус 8 % гостей, −10 % — плюс 8 %. База гостей посчитана при базовых ценах. Касса пропускает ${N_KASSA} гостей на кассира: если не хватает — подними цену. Выходные и школа меняют спрос.</div>`;
   }
   else if(tab==='stock'){
+    h+=`<div class="row">${imgTag('food_bag','pic','')}<div class="grow hint">Запас корма и забора. Закупай заранее: корм списывается каждый день.</div></div>`;
     h+=kv('Корм на складе',`${Math.round(S.stock.food)} кг`)+kv('Цена корма (средняя)',`${num(foodAvg().toFixed(1))} ₽/кг`)+kv('Забор на складе',`${S.stock.fence} м`);
     h+=`<div class="hint"><b>Норма корма в день:</b><br>${S.enc.map(e=>`${ANI[e.k].name} × ${e.n} — по ${ANI[e.k].kg} кг`).join('<br>')||'—'}</div>`;
     h+=`<div class="row"><button class="btn sm grow" data-act="buyfood">Корм, кг · ${P_FOOD} ₽</button><button class="btn sm grow" data-act="buybag">Мешки ${BAG} кг · ${P_BAG}</button></div><button class="btn sm alt" data-act="buyfence">Забор, м · ${P_FENCE} ₽/м</button>`;
@@ -743,14 +786,14 @@ function startDay(){
 function showMorning(){
   mode='over';
   const ev=[];
-  if(S.day===1)ev.push('<b>Добро пожаловать, директор!</b> У тебя ' + money(START_MONEY) + ', участок 20×20 м и маленький зоопарк: кролики, козы и пингвины. Купи животных, найми людей, поставь цены и открой день. Цели: 30 гостей к дню 10, 15 животных к дню 30, прибыль 100 000 ₽ к дню 60. Задачи — это счёт зоопарка: верный ответ приносит деньги и монеты знаний.');
-  if(S.epi)ev.push('<b>Эпидемия!</b> Заболеют до 40 % животных. Ветеринар лечит 15 больных в день.');
-  if(S.heat>0)ev.push('<b>Жара.</b> Воды нужно вдвое больше, гостей на 10 % меньше.');
-  if(S.insp===S.day)ev.push('<b>Сегодня проверка инспектора!</b> За каждый тесный вольер — штраф 5 000 ₽ и −5 репутации.');
-  else if(S.insp===S.day+1)ev.push('<b>Завтра придёт инспектор.</b> Проверь, хватает ли каждому зверю места по норме!');
-  if(isWeekend(S.day))ev.push('<b>Выходной:</b> гостей на 40 % больше. Хватит ли касс?');
-  if(S.exc)ev.push(`<b>Школьная экскурсия:</b> придут ${S.exc.n} детей со скидкой ${S.exc.p} % на детский билет.`);
-  card(`<h2>Утро, день ${S.day}</h2>${ev.map(x=>`<div class="q" style="font-size:14px">${x}</div>`).join('')||'<p>Всё спокойно. Время работать!</p>'}<button class="btn go" data-act="${S.exc?'excask':'taskgo'}">Дальше ▶</button>`);
+  if(S.day===1)ev.push(['','<b>Добро пожаловать, директор!</b> У тебя ' + money(START_MONEY) + ', участок 20×20 м и маленький зоопарк: кролики, козы и пингвины. Купи животных, найми людей, поставь цены и открой день. Цели: 30 гостей к дню 10, 15 животных к дню 30, прибыль 100 000 ₽ к дню 60. Задачи — это счёт зоопарка: верный ответ приносит деньги и монеты знаний.']);
+  if(S.epi)ev.push(['ev_epi','<b>Эпидемия!</b> Заболеют до 40 % животных. Ветеринар лечит 15 больных в день.']);
+  if(S.heat>0)ev.push(['ev_heat','<b>Жара.</b> Воды нужно вдвое больше, гостей на 10 % меньше.']);
+  if(S.insp===S.day)ev.push(['ev_insp','<b>Сегодня проверка инспектора!</b> За каждый тесный вольер — штраф 5 000 ₽ и −5 репутации.']);
+  else if(S.insp===S.day+1)ev.push(['ev_insp','<b>Завтра придёт инспектор.</b> Проверь, хватает ли каждому зверю места по норме!']);
+  if(isWeekend(S.day))ev.push(['','<b>Выходной:</b> гостей на 40 % больше. Хватит ли касс?']);
+  if(S.exc)ev.push(['ev_exc',`<b>Школьная экскурсия:</b> придут ${S.exc.n} детей со скидкой ${S.exc.p} % на детский билет.`]);
+  card(`<h2>Утро, день ${S.day}</h2>${ev.map(x=>`<div class="q evrow" style="font-size:14px">${x[0]?imgTag(x[0],'evi',''):''}<div>${x[1]}</div></div>`).join('')||'<p>Всё спокойно. Время работать!</p>'}<button class="btn go" data-act="${S.exc?'excask':'taskgo'}">Дальше ▶</button>`);
 }
 function excAsk(){
   const e=S.exc,pr=Math.round(S.price.c*(1-e.p/100));
@@ -823,7 +866,7 @@ function showFinal(){
   if(isBest)lsSet(BEST_KEY,{capital:cap,stars:st});
   lsDel(SAVE_KEY);mode='over';
   const goal=S.stats.profit>=100000;
-  card(`<h2>Зоопарк работает ${DAYS} дней!</h2><div class="stars">${'★'.repeat(st)}${'☆'.repeat(3-st)}</div>
+  card(`${hero('final_win','Зоопарк работает<br>'+DAYS+' дней!',26)}<div class="stars">${'★'.repeat(st)}${'☆'.repeat(3-st)}</div>
     <table class="sum"><tr><td>Капитал</td><td>${money(cap)}</td></tr><tr><td>Прибыль за всё время</td><td>${money(S.stats.profit)} ${goal?'✓ цель 100 000':'✗ цель 100 000'}</td></tr>
     <tr><td>Гостей всего</td><td>${S.stats.vis}</td></tr><tr><td>Животных</td><td>${animalsN()}</td></tr><tr><td>Репутация</td><td>★ ${num((S.rep/20).toFixed(1))}</td></tr>
     <tr><td>Верных ответов (задачи / отчёты)</td><td>${S.stats.right} / ${S.stats.repQ}</td></tr><tr><td>Рекорд</td><td>${money(isBest?cap:best.capital)}</td></tr></table>
@@ -831,7 +874,7 @@ function showFinal(){
 }
 function showStart(){
   const sv=lsGet(SAVE_KEY),best=lsGet(BEST_KEY);mode='over';
-  card(`<h2 style="font-size:28px;text-align:center">Зоопарк</h2><p style="text-align:center">Управляй зоопарком 60 дней: бюджет, земля, работники, цены. Считай — и зоопарк процветёт.</p>
+  card(`${hero('cover_start','Зоопарк',44)}<p style="text-align:center">Управляй зоопарком 60 дней: бюджет, земля, работники, цены. Считай — и зоопарк процветёт.</p>
     ${best?`<p style="text-align:center">Рекорд: <b>${money(best.capital)}</b> ${'★'.repeat(best.stars)}</p>`:''}
     ${sv&&sv.v===2?`<button class="btn go" data-act="continue">Продолжить (день ${sv.day})</button><button class="btn alt" data-act="new">Новая игра</button>`:`<button class="btn go" data-act="new">Играть</button>`}`);
 }
