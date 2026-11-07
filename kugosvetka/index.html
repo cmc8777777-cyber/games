@@ -62,6 +62,7 @@ html,body{height:100%;margin:0;overflow:hidden}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);-webkit-text-size-adjust:100%;overscroll-behavior:none;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 input{-webkit-user-select:text;user-select:text}
+.credits{font-size:13px;color:var(--muted);font-style:italic;line-height:1.4}
 .qreward{margin-top:10px}
 .qreward .btn{width:100%}
 *,*::before,*::after{box-sizing:border-box}
@@ -1127,7 +1128,8 @@ function landFerryDays(W, from, to) {
   return { days: dist.get(to), path };
 }
 /* Детерминированный маршрут на дату "YYYY-MM-DD": S и T с сухопутными соседями, столицы в 3 000–9 000 км,
-   есть путь по суше/паромам; лимит дней = round(быстрейший путь × 1,6) + 3. geo — window.GEO или готовый мир. */
+   есть путь по суше/паромам; лимит дней = max(15, round(быстрейший путь × 1,6) + 3). geo — window.GEO или готовый мир. */
+const DAILY_MIN_DAYS = 15;
 function dailyRoute(dateStr, geo) {
   const W = geo && geo.byId && geo.nb ? geo : buildWorld(geo);
   const rng = mulberry32(parseInt(String(dateStr).replace(/\D/g, ""), 10) || 1);
@@ -1139,7 +1141,7 @@ function dailyRoute(dateStr, geo) {
     if (km < 3000 || km > 9000) continue;
     const p = landFerryDays(W, S.id, T.id);
     if (!p) continue;
-    return { date: dateStr, from: S.id, to: T.id, km: Math.round(km), pathDays: p.days, path: p.path, days: Math.round(p.days * 1.6) + 3 };
+    return { date: dateStr, from: S.id, to: T.id, km: Math.round(km), pathDays: p.days, path: p.path, days: Math.max(DAILY_MIN_DAYS, Math.round(p.days * 1.6) + 3) };
   }
   return null;
 }
@@ -1756,11 +1758,14 @@ function drawMarkers(k0, k1) {
     const sy = toScreen(0, my)[1]; if (sy < -20 || sy > VH + 20) continue;
     const st = countryState(c.id);
     eachCopy(mx, k0 - 1, k1 + 1, sx => {
-      ctx.beginPath(); ctx.arc(sx, sy, 5, 0, Math.PI * 2);
+      // заметный маркер: светлое кольцо (читается на тёмном океане), тёмный ободок, цвет страны, при досягаемости — подсветка
+      ctx.beginPath(); ctx.arc(sx, sy, 8.5, 0, Math.PI * 2);
+      ctx.lineWidth = 2; ctx.strokeStyle = st === "reach" ? T.glow : T.halo; ctx.globalAlpha = st === "reach" ? .95 : .8; ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.beginPath(); ctx.arc(sx, sy, 6.5, 0, Math.PI * 2);
       ctx.fillStyle = landColor(c.id); ctx.fill();
       if (st === "visited" || st === "cur") { ctx.globalAlpha = .5; ctx.fillStyle = T.route; ctx.fill(); ctx.globalAlpha = 1; }
       if (st === "closed") { ctx.globalAlpha = .6; ctx.fillStyle = T.halo; ctx.fill(); ctx.globalAlpha = 1; }
-      ctx.lineWidth = st === "cur" ? 2.5 : 1.2; ctx.strokeStyle = st === "cur" ? T.glow : T.border; ctx.stroke();
+      ctx.lineWidth = st === "cur" ? 2.8 : 1.8; ctx.strokeStyle = st === "cur" ? T.glow : T.border; ctx.stroke();
     });
   }
   if (!run) return;
@@ -1796,6 +1801,24 @@ function drawStar(x, y, r) {
   ctx.closePath();
   ctx.lineWidth = 2; ctx.strokeStyle = T.halo; ctx.stroke(); ctx.fillStyle = T.ink; ctx.fill();
 }
+const getHitCtx = () => hitCtx || (hitCtx = document.createElement("canvas").getContext("2d"));
+/* Точка для подписи внутри видимой части контура: сетка кандидатов в области, свободной от панелей, ближайшие к её центру — первыми.
+   Подпись целиком (центр и оба края) должна лежать внутри контура. */
+function anchorInView(s, off, w, fs) {
+  const ui = screen === "game", hh = fs * 0.62;
+  const L = 6 + w / 2, R = VW - 6 - w / 2, Tp = (ui ? 112 : 6) + hh, Bt = VH - (ui ? 100 : 6) - hh;
+  const [ax0, ay0] = toScreen(s.lbbox[0] + off, s.lbbox[1]), [ax1, ay1] = toScreen(s.lbbox[2] + off, s.lbbox[3]);
+  const x0 = Math.max(L, ax0 + w / 2), x1 = Math.min(R, ax1 - w / 2), y0 = Math.max(Tp, ay0 + hh), y1 = Math.min(Bt, ay1 - hh);
+  if (x0 > x1 || y0 > y1) return null;
+  const N = 4, pts = [], cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) pts.push([x0 + (x1 - x0) * i / N, y0 + (y1 - y0) * j / N]);
+  pts.sort((p, q) => Math.hypot(p[0] - cx, p[1] - cy) - Math.hypot(q[0] - cx, q[1] - cy));
+  const hc = getHitCtx();
+  for (const [x, y] of pts) {
+    if ([-0.45, 0, 0.45].every(d => { const [mx, my] = toMap(x + d * w, y); return hc.isPointInPath(s.p2d, mx - off, my); })) return [x, y];
+  }
+  return null;
+}
 /* Подписи стран (капителью, размер — по ширине страны на экране) и столиц (звезда + имя). */
 function drawLabels(k0, k1) {
   const z = cam.z, boxes = [];
@@ -1816,14 +1839,24 @@ function drawLabels(k0, k1) {
     ctx.font = "700 " + fs.toFixed(1) + "px " + T.fMap;
     try { ctx.letterSpacing = (fs * spacing).toFixed(1) + "px"; } catch (e) {}
     const w = ctx.measureText(name).width;
-    const [mx, my] = s.ctr, sy = toScreen(0, my)[1];
-    eachCopy(mx, k0, k1, sx => {
-      const box = [sx - w / 2 - 2, sy - fs * 0.62, sx + w / 2 + 2, sy + fs * 0.62];
-      if (box[0] < 4 || box[2] > VW - 4 || box[1] < 0 || box[3] > VH || hit(box)) return;
+    const [mx, my] = s.ctr, sy0 = toScreen(0, my)[1];
+    const mkBox = (x, y) => [x - w / 2 - 2, y - fs * 0.62, x + w / 2 + 2, y + fs * 0.62];
+    const inB = b => !(b[0] < 4 || b[2] > VW - 4 || b[1] < 0 || b[3] > VH);
+    for (let k = k0; k <= k1; k++) {
+      const off = k * MAP.MW, nx = toScreen(mx + off, 0)[0];
+      let px = nx, py = sy0, box = mkBox(px, py);
+      if (!inB(box)) {
+        // центр страны за краем экрана (например, Россия при стартовом зуме) — ищем место подписи внутри видимой части контура
+        if (z >= 8 || nx < -2000 || nx > VW + 2000) continue;
+        const a = anchorInView(s, off, w, fs);
+        if (!a) continue;
+        px = a[0]; py = a[1]; box = mkBox(px, py);
+      }
+      if (!inB(box) || hit(box)) continue;
       boxes.push(box); placed.add(id);
-      ctx.lineWidth = Math.max(2.5, fs * 0.22); ctx.strokeStyle = T.halo; ctx.strokeText(name, sx, sy);
-      ctx.fillStyle = T.ink; ctx.fillText(name, sx, sy);
-    });
+      ctx.lineWidth = Math.max(2.5, fs * 0.22); ctx.strokeStyle = T.halo; ctx.strokeText(name, px, py);
+      ctx.fillStyle = T.ink; ctx.fillText(name, px, py);
+    }
   }
   try { ctx.letterSpacing = "0px"; } catch (e) {}
   // 2) столицы: звезда на средних масштабах, имя — если есть место
@@ -1834,10 +1867,24 @@ function drawLabels(k0, k1) {
     const c = W.byId[id], s = hasShape(id) ? MAP.shapes[id] : null;
     const shown = placed.has(id);
     if (s && !shown && z < 5) continue;                   // у мелких стран звезда — только вблизи
-    if (!s && z < 4 && id !== cur) continue;
     const [mx, my] = MAP.pos[id], sy = toScreen(0, my)[1];
     const label = s ? c.capital : c.name;                 // для микрогосударств — имя страны
     const w = ctx.measureText(label).width;
+    if (!s) {
+      // микрогосударство: маркер — сам кружок, рядом имя страны (с z ≥ 2,6, у текущей — всегда)
+      if (z < 2.6 && id !== cur) continue;
+      eachCopy(mx, k0, k1, sx => {
+        let box = [sx + 10, sy - 7, sx + 12 + w, sy + 7], tx = sx + 11;
+        if (hit(box)) { box = [sx - 12 - w, sy - 7, sx - 10, sy + 7]; tx = sx - 11 - w; if (hit(box)) return; }
+        if (box[0] < 2 || box[2] > VW - 2 || box[3] < 0 || box[1] > VH) return;
+        boxes.push(box);
+        ctx.textAlign = "left";
+        ctx.lineWidth = 2.5; ctx.strokeStyle = T.halo; ctx.strokeText(label, tx, sy);
+        ctx.fillStyle = T.ink; ctx.fillText(label, tx, sy);
+        ctx.textAlign = "center";
+      });
+      continue;
+    }
     eachCopy(mx, k0, k1, sx => {
       const star = [sx - 4, sy - 4, sx + 4, sy + 4];
       if (!inView(star) || hit(star)) return;           // звезда не налезает на подписи
@@ -2552,6 +2599,7 @@ function renderRules() {
     "<tr><td>Подсказка</td><td>" + (D.hints ? "−" + fmtMoney(D.hint) : "нет") + "</td></tr></tbody></table>" +
     "<h2>Уровни</h2><table class=\"prices\"><tbody>" + DIFF_ORDER.map(k => { const x = DIFF[k]; return "<tr><td>" + esc(x.name) + "</td><td>" + fmtMoney(x.money) + " · " + x.days + " дн. · " + x.questions + " вопр. · ошибка −" + fmtMoney(x.wrong) + "</td></tr>"; }).join("") + "</tbody></table>" +
     "<h2>Звания</h2><p>Звание даётся при возвращении домой и навсегда остаётся в паспорте. Почти все требуют не меньше 20 стран; одно — секретное. " + (D.ach ? "" : "На уровне «Турист» звания не присуждаются — они начинаются с «Путешественника».") + "</p>" +
+    '<h2>О программе</h2><p class="credits">Карта мира: jsvectormap 1.7.0, © Mustafa Omar, лицензия MIT. Шрифты Oswald, Playfair Display и Lora — Google Fonts, лицензия SIL Open Font License 1.1.</p>' +
     '<div class="row-btns"><button class="btn" data-act="pageBack">Назад</button></div></div>';
   $("scrRules").innerHTML = html;
 }
