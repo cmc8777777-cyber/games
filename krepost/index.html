@@ -212,6 +212,16 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
 .cta small{display:block;font-size:14px;letter-spacing:.02em;opacity:.9;margin-top:1px}
 .cta.two{padding:6px 22px 7px;line-height:1.1}
 .cta2{min-height:46px;padding:0 22px;border-radius:12px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font-family:var(--f-cyr);font-size:18px;margin-top:10px}
+.scard .lead1{margin:4px 0 10px}
+.modes{display:flex;gap:8px;margin:0 0 12px}
+.mode{flex:1;min-width:0;min-height:58px;padding:6px 6px 7px;border-radius:12px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);
+  font-family:var(--f-cyr);font-size:19px;line-height:1.1;cursor:pointer}
+.mode small{display:block;font-family:var(--f-body);font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.25}
+.mode[aria-checked="true"]{border-color:var(--gold-hi);box-shadow:inset 0 0 0 2px var(--gold);background:var(--panel)}
+.mode[aria-checked="true"]::before{content:"✓ ";color:var(--good)}
+.intro{margin-top:10px;text-align:left;border-top:1px solid var(--line);padding-top:6px}
+.intro summary{cursor:pointer;color:var(--muted);font-family:var(--f-cyr);font-size:16px;text-align:center;min-height:32px;line-height:32px}
+.intro p{margin:6px 0;font-size:14.5px}
 .confirm{margin-top:10px;border:1px solid var(--accent);border-radius:10px;padding:8px}
 .confirm p{margin:0 0 6px;font-size:15px}
 .act.danger{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:var(--accent-ink);border-color:var(--gold-hi)}
@@ -301,10 +311,17 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
       <div class="sub">Вторая Пуническая война</div>
       <img class="por" data-ic="pHannibal" alt="Ганнибал">
       <h1>Ганнибал у ворот</h1>
-      <p>218 г. до н. э. Карфагенский полководец Ганнибал перешёл Альпы с армией и 37 боевыми слонами.</p>
-      <p>Расставь римских воинов вдоль дороги и не пусти врага к стенам Рима. Выстой 30 волн — шесть битв великой войны!</p>
+      <p class="lead1">Расставь римских воинов вдоль дороги и не пусти Ганнибала к стенам Рима.</p>
+      <div class="modes" id="modes" role="radiogroup" aria-label="Длина партии">
+        <button class="mode" data-mode="lesson" role="radio" aria-checked="false">Урок<small>15 волн · 3 битвы<br>20–25&nbsp;мин</small></button>
+        <button class="mode" data-mode="full" role="radio" aria-checked="false">Полная война<small>30 волн · 6 битв<br>50–60&nbsp;мин</small></button>
+      </div>
       <div id="startBtns"><button class="cta" id="btnStart">Защищать Рим</button></div>
       <div class="best" id="best"></div>
+      <details class="intro"><summary>Об игре</summary>
+        <p>218 г. до н. э. Карфагенский полководец Ганнибал перешёл Альпы с армией и 37 боевыми слонами.</p>
+        <p><span id="modeGoal">Выстой 30 волн — шесть битв великой войны!</span> Перед каждой волной — вопрос по истории: верный ответ даёт денарии. Между битвами — развилки, где ты решаешь за римских полководцев.</p>
+      </details>
     </div>
   </div>
   <div class="screen" id="scrWin" hidden>
@@ -316,7 +333,7 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
       <div class="score"><span><img class="ii" data-ic="walls" alt="Стены"><span id="winLives">0</span></span><span><img class="ii" data-ic="coin" alt="Денарии"><span id="winCoins">0</span></span></div>
       <p id="winSum" style="font-family:var(--f-cyr);font-size:17px;margin:4px 0"></p>
       <p id="winQuiz" style="font-family:var(--f-cyr);font-size:19px;margin:4px 0;color:var(--good)"></p>
-      <button class="cta" id="btnAgain1">Ещё раз</button>
+      <button class="cta" id="btnAgain1">Ещё раз</button><br><button class="cta2" data-menu>Выбрать режим</button>
       <div class="best" id="best2"></div>
     </div>
   </div>
@@ -326,7 +343,7 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
       <img class="por" data-ic="pGate" alt="Разбитые ворота">
       <h2>Ганнибал у ворот! Рим пал</h2>
       <p>Ты продержался до волны <b id="loseWave">1</b>. Попробуй слонов встретить трубачами и велитами, а конницу — триариями.</p>
-      <button class="cta" id="btnAgain2">Ещё раз</button>
+      <button class="cta" id="btnAgain2">Ещё раз</button><br><button class="cta2" data-menu>Выбрать режим</button>
     </div>
   </div>
   <div class="screen" id="scrEvent" hidden><div class="scroll" id="evBox" role="dialog" aria-label="Развилка истории"></div></div>
@@ -456,7 +473,7 @@ const ABIL = {
 };
 // group: [type, count, gap seconds, start offset]
 // six chapters of the war, five waves each; the card before the first wave of a chapter tells the battle
-const CHAPTERS = [
+const CHAPTERS_ALL = [
   {name:'Треббия', year:'218 г. до н. э.', lead:'gaul',
    fact:'При Треббии Ганнибал заманил римлян в ледяную реку, а потом ударил из засады.'},
   {name:'Тразименское озеро', year:'217 г. до н. э.', lead:'numid',
@@ -471,7 +488,7 @@ const CHAPTERS = [
    fact:'Война закончилась битвой при Заме в 202 г. до н. э.: Публий Корнелий Сципион разбил Ганнибала, и Карфаген запросил мира.'}
 ];
 // group: [type, count, gap seconds, start offset]
-const WAVES = [
+const WAVES_ALL = [
   // 1. Треббия
   {title:'Галлы-союзники', lead:'gaul', g:[['gaul',10,1.2,0]]},
   {title:'Галлы-союзники', lead:'gaul', g:[['gaul',16,0.85,0]], fact:'Галлы шли в бой без доспехов и надеялись на силу и ярость.'},
@@ -519,8 +536,12 @@ const WAVES = [
     fact:'Сципион выстроил легионы так, чтобы между отрядами остались проходы для слонов.'},
   {title:'Ганнибал и его охрана', lead:'hannibal', boss:'hannibal', g:[['libyan',12,1,0],['sacred',10,1.2,3],['elephant',6,4.5,6],['hannibal',1,1,14],['gcav',12,0.7,18],['numid',14,0.6,22]]}
 ];
-const chapterOf = n => Math.min(5, Math.floor((Math.max(1,n)-1)/5));
-const BEST_KEY = 'hannibal-td-best-walls-30';
+// WAVES, CHAPTERS, CH_BATTLE — списки текущего режима партии (заполняет setMode ниже)
+const WAVES = [], CHAPTERS = [];
+const chapterOf = n => Math.max(0, Math.min(CHAPTERS.length - 1, Math.floor((Math.max(1,n)-1)/5)));
+// номер волны полной войны, из которой взяты враги, вопрос, факт и развилка
+const srcOf = n => (WAVES[n-1] && WAVES[n-1].src) || n;
+let BEST_KEY = 'hannibal-td-best-walls-30';
 
 // ---------- History content: wave facts, quiz, forks of history, encyclopedia ----------
 // CONTENT_BEGIN (embedded from content.json)
@@ -537,15 +558,15 @@ const E2ENC = {gaul:'gaul', iber:'iber', libyan:'libyan', slinger:'slinger', num
 const ENC2T = {}, ENC2E = {};
 for (const k in T2ENC) ENC2T[T2ENC[k]] = k;
 for (const k in E2ENC) ENC2E[E2ENC[k]] = k;
-const CH_BATTLE = ['trebbia','trasimene','cannae','attrition','metaurus','zama'];
+const CH_BATTLE_ALL = ['trebbia','trasimene','cannae','attrition','metaurus','zama'], CH_BATTLE = [];
 // generals and "how it works" articles are earned one per success, in this order
 const REWARD_ORDER = ['punic1','fabius','alps','varro','legion_structure','marcellus','consuls','nero','carthage','masinissa','scipio','aftermath'];
 const QUIZ_REWARD = 25, EVENT_REWARD = 60;
 const ENC = (CONTENT.encyclopedia || []).filter(a => a && a.id && a.title);
 const ENC_BY = {}; for (const a of ENC) ENC_BY[a.id] = a;
-const quizFor = n => (CONTENT.quiz || []).find(q => q && q.wave === n && Array.isArray(q.options)) || null;
-const eventAfter = n => (CONTENT.events || []).find(e => e && e.afterWave === n && Array.isArray(e.options)) || null;
-const waveFact = n => (CONTENT.waveFacts || [])[n-1] || '';
+const quizFor = n => { const s = srcOf(n); return (CONTENT.quiz || []).find(q => q && q.wave === s && Array.isArray(q.options)) || null; };
+const eventAfter = n => { if (n < 1) return null; const s = srcOf(n); return (CONTENT.events || []).find(e => e && e.afterWave === s && Array.isArray(e.options)) || null; };
+const waveFact = n => (CONTENT.waveFacts || [])[srcOf(n)-1] || '';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const paras = s => String(s || '').split(/\n+/).filter(x => x.trim()).map(x => '<p>'+esc(x)+'</p>').join('');
 
@@ -577,11 +598,11 @@ function unlockReward(){
 
 // ---------- Save / restore ----------
 // one snapshot at the start of every pause between waves and at the start of every wave
-const SAVE_KEY = 'hannibal-td-save', SAVE_V = 1;
+let SAVE_KEY = 'hannibal-td-save'; const SAVE_V = 1;
 let lastSnap = null;
 function readBest(){ try { return +localStorage.getItem(BEST_KEY) || 0; } catch(e){ return 0; } }
 function snapshot(){
-  return {v:SAVE_V, wave:G.wave, coins:G.coins, lives:G.lives,
+  return {v:SAVE_V, mode:MODE.id, wave:G.wave, coins:G.coins, lives:G.lives,
     towers:G.towers.map((t,i) => t ? {pad:i, type:t.type, lvl:t.lvl, spent:t.spent} : null).filter(Boolean),
     abil:{fab:+G.abil.fab.cd.toFixed(2), sci:+G.abil.sci.cd.toFixed(2)},
     quiz:Object.assign({}, G.quiz), events:Object.assign({}, G.events), enc:ENC.filter(a => G.enc[a.id]).map(a => a.id),
@@ -591,7 +612,7 @@ function writeSave(s){ if (!s) return false; try { localStorage.setItem(SAVE_KEY
 function readSave(){
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
-    if (!s || s.v !== SAVE_V || typeof s.wave !== 'number' || s.wave < 0 || s.wave >= WAVES.length || !(s.lives > 0)) return null;
+    if (!s || s.v !== SAVE_V || (s.mode || 'full') !== MODE.id || typeof s.wave !== 'number' || s.wave < 0 || s.wave >= WAVES.length || !(s.lives > 0)) return null;
     return s;
   } catch(e){ return null; }
 }
@@ -632,7 +653,41 @@ function continueGame(){
   return true;
 }
 // balance knobs (tuned by simulation through window.__game)
-const BAL = {hpK:0.7, hpG:0.09, hpG2:0.0, hpCh:[1,1,1,1.05,1.15,1.25], spd:1.25, rew:[0.5,0.36,0.34,0.44,0.48,0.5], waveBonus:[12,2], early:10};
+const BAL_FULL = {hpK:0.7, hpG:0.09, hpG2:0.0, hpCh:[1,1,1,1.05,1.15,1.25], spd:1.25, rew:[0.5,0.36,0.34,0.44,0.48,0.5], waveBonus:[12,2], early:10, cnt:[1,1,1,1,1,1]};
+const BAL = Object.assign({}, BAL_FULL);
+
+// ---------- Режимы партии ----------
+// «Урок» — три главы полной войны целиком: Треббия (волны 1–5), Канны (11–15, босс Магарбал), Зама (26–30, босс Ганнибал).
+// Волна урока берёт врагов, вопрос, факт и развилку из своей волны полной войны (src). cnt — множитель числа рядовых врагов по главам.
+const MODES = {
+  lesson:{id:'lesson', name:'Урок', src:[1,2,3,4,5, 11,12,13,14,15, 26,27,28,29,30], ch:[0,2,5],
+    goal:'Выстой 15 волн — три битвы великой войны: Треббию, Канны и Заму!',
+    // автоигрок (7.11): сильная W20 ~19,5 мин боя; неверные ответы L15; только дальние L13; только легионеры L15; 2 башни L7
+    bal:{hpK:0.7, hpG:0.09, hpCh:[0.95,1,1.02], spd:1.4, rew:[0.5,0.5,0.5], waveBonus:[12,2], cnt:[1,1,1]}},
+  full:{id:'full', name:'Полная война', src:WAVES_ALL.map((w,i) => i+1), ch:[0,1,2,3,4,5],
+    goal:'Выстой 30 волн — шесть битв великой войны!', bal:{}}
+};
+let MODE = MODES.full;
+const MODE_KEY = 'hannibal-td-mode';
+function setMode(id){
+  MODE = MODES[id] || MODES.full;
+  Object.assign(BAL, BAL_FULL, MODE.bal);
+  CHAPTERS.length = 0; CH_BATTLE.length = 0;
+  for (const i of MODE.ch) { CHAPTERS.push(CHAPTERS_ALL[i]); CH_BATTLE.push(CH_BATTLE_ALL[i]); }
+  WAVES.length = 0;
+  MODE.src.forEach((s, i) => {
+    const w = WAVES_ALL[s-1], k = BAL.cnt[Math.min(BAL.cnt.length-1, Math.floor(i/5))] || 1;
+    WAVES.push(Object.assign({}, w, {src:s, g:w.g.map(([t,c,gap,off]) => [t, ENEMIES[t].boss || k === 1 ? c : Math.max(1, Math.round(c*k)), gap, off])}));
+  });
+  SAVE_KEY = MODE.id === 'full' ? 'hannibal-td-save' : 'hannibal-td-save-' + MODE.id;
+  BEST_KEY = MODE.id === 'full' ? 'hannibal-td-best-walls-30' : 'hannibal-td-best-walls-' + MODE.id;
+  return MODE.id;
+}
+// по умолчанию — «Урок»; но если есть начатая полная война, а выбора ещё не было, открываем её
+(function(){
+  let m = null; try { m = localStorage.getItem(MODE_KEY); if (!m && localStorage.getItem('hannibal-td-save')) m = 'full'; } catch(e){}
+  setMode(MODES[m] ? m : 'lesson');
+})();
 function waveHpMul(n){ return BAL.hpK * BAL.hpCh[chapterOf(n)] * (1 + BAL.hpG*(n-1) + BAL.hpG2*(n-1)*(n-1)); }
 function startWave(){
   if (G.state !== 'intermission') return;
@@ -660,7 +715,7 @@ function endWave(){
   G.state = 'intermission'; G.timer = 15; G.fastWave = false;
   showWaveCard(); persist(); maybeEvent(); refreshUI();
 }
-function quizCorrect(){ let n = 0; for (const q of (CONTENT.quiz || [])) if (q && G.quiz[q.wave] === q.answer) n++; return n; }
+function quizCorrect(){ let n = 0; for (let w = 1; w <= WAVES.length; w++) { const q = quizFor(w); if (q && G.quiz[w] === q.answer) n++; } return n; }
 function finish(win){
   G.state = win ? 'won' : 'lost';
   closeSheet(); hideCard(); closeModals(); clearSave();
@@ -673,7 +728,7 @@ function finish(win){
     $('winLives').textContent = G.lives; $('winCoins').textContent = G.coins;
     $('winSum').textContent = 'Пройдено ' + WAVES.length + ' волн, стены: ' + G.lives + ', лучший результат: ' + best;
     $('best2').textContent = G.lives >= best ? 'Это твой лучший результат!' : '';
-    $('best').textContent = 'Лучший результат: ' + best + ' стен';
+    renderBest();
     $('scrWin').hidden = false;
   } else {
     $('loseWave').textContent = G.wave; $('scrLose').hidden = false;
@@ -1902,8 +1957,8 @@ function maybeEvent(){
   if (G.state === 'intermission' && e && G.events[e.afterWave] === undefined) { renderEvent(e, null); scrEvent.hidden = false; G.paused = false; }
 }
 function renderEvent(e, res){
-  const ch = CHAPTERS[chapterOf(e.afterWave + 1)], chosen = G.events[e.afterWave];
-  let h = '<div class="sin"><div class="ch">Развилка истории · после волны '+e.afterWave+'</div><h2>'+esc(e.title)+'</h2>'+paras(e.text);
+  const chosen = G.events[e.afterWave];
+  let h = '<div class="sin"><div class="ch">Развилка истории · после волны '+G.wave+'</div><h2>'+esc(e.title)+'</h2>'+paras(e.text);
   h += '<div class="eask">'+(chosen === undefined ? 'Как поступить?' : 'Твой выбор')+'</div>';
   e.options.forEach((o,i) => {
     let c = 'qo';
@@ -1985,7 +2040,14 @@ scrEnc.addEventListener('click', ev => { if (ev.target === scrEnc) { closeEnc();
 scrArt.addEventListener('click', ev => { if (ev.target === scrArt || ev.target.closest('[data-close]')) closeArticle(); });
 
 // ---- start screen: continue or new game ----
+function renderBest(){
+  let b = 0; try { b = +localStorage.getItem(BEST_KEY) || 0; } catch(e){}
+  $('best').textContent = b ? 'Лучший результат («' + MODE.name + '»): ' + b + ' стен' : '';
+}
 function renderStart(){
+  for (const b of document.querySelectorAll('#modes .mode')) b.setAttribute('aria-checked', String(b.dataset.mode === MODE.id));
+  $('modeGoal').textContent = MODE.goal; renderBest();
+  if (G.state === 'menu') ui.wave.textContent = G.wave + '/' + WAVES.length;
   const s = readSave(), box = $('startBtns');
   if (s) {
     const n = s.wave + 1, c = CHAPTERS[chapterOf(n)];
@@ -2001,6 +2063,11 @@ $('startBtns').addEventListener('click', ev => {
   else if (b.id === 'btnNew') { $('confirmNew').hidden = false; b.hidden = true; }
   else if (b.hasAttribute('data-cancel')) { $('confirmNew').hidden = true; $('btnNew').hidden = false; }
   else if (b.hasAttribute('data-really')) { clearSave(); startGame(); }
+});
+$('modes').addEventListener('click', ev => {
+  const b = ev.target.closest('.mode'); if (!b || b.dataset.mode === MODE.id || G.state !== 'menu') return;
+  setMode(b.dataset.mode); try { localStorage.setItem(MODE_KEY, MODE.id); } catch(e){}
+  reset(); refreshUI(); refreshEncBtn(); renderStart();
 });
 renderStart();
 
@@ -2020,7 +2087,7 @@ ui.speed.addEventListener('click', () => { G.speed = G.speed === 1 ? 2 : 1; refr
 ui.pause.addEventListener('click', () => { if (isPlaying()) { G.paused = !G.paused; refreshUI(); } });
 $('btnAgain1').addEventListener('click', startGame);
 $('btnAgain2').addEventListener('click', startGame);
-try { const b = +localStorage.getItem(BEST_KEY); if (b) $('best').textContent = 'Лучший результат: ' + b + ' стен'; } catch(e){}
+for (const b of document.querySelectorAll('[data-menu]')) b.addEventListener('click', () => { hideScreens(); reset(); refreshUI(); refreshEncBtn(); renderStart(); $('scrStart').hidden = false; });
 
 function tapAt(cx, cy){
   if (!isPlaying()) return;
@@ -2162,6 +2229,7 @@ requestAnimationFrame(frame);
 window.__game = {BAL, manual:v=>{MANUAL=!!v;}, setCamera:y=>{CAM.tgt=null;CAM.vel=0;return setCamera(y);}, camera:()=>({y:CAM.y,max:CAM.max,viewH:VIEW_H}), drawMini, refreshCamUI, CHAPTERS, G, update, startGame, startWave, build, upgrade, sell, useAbility, upgradeCost, TOWERS, ENEMIES, WAVES, PADS, PATH, SEG, PATH_LEN, draw, refreshUI,
   CONTENT, ENC, quizFor, eventAfter, answerQuiz, skipQuiz, chooseEvent, closeEvent, quizOpen, eventOpen, quizCorrect,
   openEnc, closeEnc, showArticle, closeArticle, unlock, encCount, T2ENC, E2ENC,
-  snapshot, readSave, saveNow, clearSave, continueGame, renderStart, SAVE_KEY};
+  snapshot, readSave, saveNow, clearSave, continueGame, renderStart, get SAVE_KEY(){ return SAVE_KEY; }, get BEST_KEY(){ return BEST_KEY; },
+  MODES, setMode, get MODE(){ return MODE.id; }, WAVES_ALL};
 })();
 </script>
