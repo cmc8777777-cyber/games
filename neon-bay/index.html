@@ -6,9 +6,7 @@
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Неон-Бэй</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 /* Layout: full-bleed 3D canvas; HUD is a 3x3 grid inside safe gutters; menus are side panels (desktop) or bottom sheets (phone). Single committed night-neon look. */
 :root{
@@ -346,6 +344,7 @@ kbd{font-family:var(--f-mono);font-size:12px;background:rgba(255,255,255,.1);bor
       <div class="places" id="rList"></div>
       <div class="rw" id="rReward"></div>
       <p id="rNote"></p>
+      <div class="row" id="rX2Row" hidden><button class="btn" id="rX2">▶ Удвоить награду за рекламу</button></div>
       <div class="row"><button class="btn primary" id="rOk">Продолжить</button></div>
     </div>
   </div>
@@ -5397,6 +5396,94 @@ window.NBFlora={make:make,kinds:['palm','birch','linden','plane','pine','sakura'
 /*@FLORA-END@*/
 </script>
 <script>
+/*@PLATFORM-BEGIN@*/
+/* =====================================================================
+   Неон-Бэй · src/platform.js — слой площадки (Яндекс Игры SDK)
+   ---------------------------------------------------------------------
+   Если страница запущена на Яндекс Играх (есть window.YaGames из /sdk.js):
+     * LoadingAPI.ready() — когда игра готова к вводу;
+     * GameplayAPI.start/stop — только пока игрок едет по городу и игра не на паузе;
+     * полноэкранная реклама в логической паузе (въезд в гараж), не чаще AD_GAP_MS;
+     * ролики за награду (×2 за гонку, «спасти REP» при аресте);
+     * пауза игры и звука на время рекламы и по событию game_api_pause;
+     * облачное сохранение: player.getData/setData, ключ "save", побеждает более новый save.ts.
+   Без SDK (сайт, GitHub Pages, claude.ai, локально) все вызовы — заглушки, игра работает как раньше.
+   Образец — kugosvetka/src/data/platform.js.
+   ===================================================================== */
+window.NBPlat=(function(){
+'use strict';
+var ysdk=null,player=null,sdkOk=false,cloudOk=false,gaveUp=false;
+var wantReady=false,readyDone=false,adBusy=false,tabHidden=false,apiPaused=false,gpOn=false,wantGp=false;
+var bornAt=Date.now(),lastAdAt=0;
+var AD_FIRST_MS=180000,AD_GAP_MS=210000;      // первая полноэкранная не раньше 3 мин после загрузки, дальше не чаще раза в 3,5 мин
+var INIT_TIMEOUT_MS=4000,SYNC_DELAY_MS=2500;
+var pendingSave=null,syncTimer=0;
+var self={onPause:function(){}};
+
+/* ---- пауза и GameplayAPI ---- */
+self.paused=function(){return adBusy||tabHidden||apiPaused;};
+function applyGp(){if(!sdkOk||!readyDone)return;var should=wantGp&&!self.paused();if(should===gpOn)return;gpOn=should;
+  try{var g=ysdk.features&&ysdk.features.GameplayAPI;if(g){if(should)g.start();else g.stop();}}catch(e){}}
+function changed(){applyGp();try{self.onPause(self.paused());}catch(e){}}
+self.setPlaying=function(on){on=!!on;if(on===wantGp)return;wantGp=on;applyGp();};
+
+/* ---- облако ---- */
+function flush(now){clearTimeout(syncTimer);syncTimer=0;if(!pendingSave||!player||!cloudOk)return;var d=pendingSave;pendingSave=null;
+  try{var p=player.setData({save:d},!!now);if(p&&p.catch)p.catch(function(){if(!pendingSave)pendingSave=d;});}catch(e){if(!pendingSave)pendingSave=d;}}
+/* копия сохранения уходит в облако с задержкой (частые persist() склеиваются) */
+self.put=function(save){if(!player||!cloudOk)return;try{pendingSave=JSON.parse(JSON.stringify(save));}catch(e){return;}if(!syncTimer)syncTimer=setTimeout(function(){flush(false);},SYNC_DELAY_MS);};
+self.hasCloud=function(){return !!(player&&cloudOk);};
+function onVis(){tabHidden=!!document.hidden;if(tabHidden)flush(true);changed();}
+
+/* ---- загрузка ---- */
+function tryReady(){if(readyDone||!wantReady||!sdkOk)return;readyDone=true;try{var l=ysdk.features&&ysdk.features.LoadingAPI;if(l)l.ready();}catch(e){}applyGp();}
+self.ready=function(){wantReady=true;tryReady();};
+/* init() -> Promise<облачное сохранение или null>, не дольше INIT_TIMEOUT_MS */
+self.init=function(){
+  try{document.addEventListener('visibilitychange',onVis);addEventListener('pagehide',function(){flush(true);});}catch(e){}
+  if(!window.YaGames||!window.YaGames.init)return Promise.resolve(null);
+  return new Promise(function(resolve){
+    var done=false,timer=setTimeout(function(){gaveUp=true;fin(null);},INIT_TIMEOUT_MS);
+    function fin(v){if(done)return;done=true;clearTimeout(timer);resolve(v);}
+    window.YaGames.init().then(function(sdk){
+      ysdk=sdk;sdkOk=true;
+      try{sdk.on('game_api_pause',function(){apiPaused=true;changed();});sdk.on('game_api_resume',function(){apiPaused=false;changed();});}catch(e){}
+      tryReady();
+      return sdk.getPlayer({scopes:false}).then(function(p){player=p;return p.getData(['save']);})
+        .then(function(data){if(gaveUp)return;/* облако опоздало: игра уже идёт с локальным сохранением, не перезаписываем облако */
+              cloudOk=true;fin(data&&data.save&&typeof data.save==='object'?data.save:null);},
+              function(){fin(null);});
+    }).then(function(){fin(null);},function(){fin(null);});
+  });
+};
+self.hasSdk=function(){return sdkOk;};
+self.lang=function(){try{return(ysdk&&ysdk.environment&&ysdk.environment.i18n&&ysdk.environment.i18n.lang)||'ru';}catch(e){return'ru';}};
+
+/* ---- реклама ---- */
+function adBegin(){adBusy=true;changed();}
+function adEnd(){adBusy=false;changed();}
+/* полноэкранная в логической паузе; done() вызывается ровно один раз (сразу, если рекламы не будет) */
+self.interstitial=function(done){done=done||function(){};
+  if(adBusy){done();return;}
+  var now=Date.now(),allowedAt=lastAdAt?lastAdAt+AD_GAP_MS:bornAt+AD_FIRST_MS;
+  if(!sdkOk||!ysdk.adv||!ysdk.adv.showFullscreenAdv||now<allowedAt){done();return;}
+  var fin=false;function end(shown){if(fin)return;fin=true;if(shown)lastAdAt=Date.now();adEnd();done();}
+  adBegin();
+  try{ysdk.adv.showFullscreenAdv({callbacks:{onClose:function(w){end(w!==false);},onError:function(){end(false);},onOffline:function(){end(false);}}});}catch(e){end(false);}
+};
+self.canReward=function(){return !!(sdkOk&&!adBusy&&ysdk.adv&&ysdk.adv.showRewardedVideo);};
+/* ролик за награду; done(got): got === true, только если ролик досмотрен */
+self.rewarded=function(done){
+  if(!self.canReward()){done(false);return;}
+  var fin=false,got=false;function end(){if(fin)return;fin=true;if(got)lastAdAt=Date.now();adEnd();done(got);}
+  adBegin();
+  try{ysdk.adv.showRewardedVideo({callbacks:{onRewarded:function(){got=true;},onClose:end,onError:end}});}catch(e){end();}
+};
+return self;
+})();
+/*@PLATFORM-END@*/
+</script>
+<script>
 (function(){
 'use strict';
 const $=s=>document.querySelector(s);
@@ -5692,7 +5779,9 @@ function migrateSave(d,raw){if(!raw||typeof raw!=='object')return d;if(!(raw.v>=
   return d;}
 function loadSave(){let s=null;try{s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');}catch(e){}const d=JSON.parse(JSON.stringify(DEF));if(s&&typeof s==='object'&&s.owned&&s.owned.corsa){Object.assign(d,s);migrateSave(d,s);}if(!d.style)d.style={};if(!d.colors)d.colors={};if(!CARS.find(c=>c.id===d.car))d.car='corsa';return d;}
 let save=loadSave();
-function persist(){save.ts=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}cloudQueue();}
+/* площадка (src/platform.js): Яндекс Игры SDK или заглушки; если модуль не загрузился — свои заглушки */
+const PLAT=window.NBPlat&&typeof window.NBPlat.init==='function'?window.NBPlat:{init:()=>Promise.resolve(null),ready(){},setPlaying(){},paused:()=>false,put(){},hasCloud:()=>false,hasSdk:()=>false,interstitial(d){if(d)d();},canReward:()=>false,rewarded(d){d(false);},onPause(){}};
+function persist(){save.ts=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}cloudQueue();PLAT.put(save);}
 /* account save: per-viewer document in the artifact's store; localStorage stays as a fast local copy */
 const cloud={ref:null,busy:false,pending:false,timer:0,state:'local'};
 function cloudQueue(){if(!cloud.ref)return;cloud.pending=true;clearTimeout(cloud.timer);cloud.timer=setTimeout(cloudFlush,1200);}
@@ -7045,8 +7134,8 @@ function finishRace(){
   const rest=r.ais.filter(a=>!a.done).sort((a,b)=>b.prog-a.prog);
   const order=[...r.finished.map(a=>({n:a.name,t:a.time})),{n:'Ты',t:r.t,me:true},...rest.map(a=>({n:a.name,t:null}))];
   let reward='',note='';
-  if(ev.time==='day'){const bx=boostOn()?2:1,cash=Math.round(ev.reward*mult*bx/50)*50;save.money+=cash;persist();reward='+$'+fmt(cash)+(bx>1?' (×2 бонус)':'');note='Деньги уже на счету. Потрать их в гараже.';qProg('money',cash);}
-  else{const rep=Math.round(ev.rep*mult/10)*10;state.nightRep+=rep;const before=state.heat;state.heat=Math.min(5,state.heat+1);saveNight();reward='+'+fmt(rep)+' REP за ночь';
+  if(ev.time==='day'){const bx=boostOn()?2:1,cash=Math.round(ev.reward*mult*bx/50)*50;save.money+=cash;persist();reward='+$'+fmt(cash)+(bx>1?' (×2 бонус)':'');note='Деньги уже на счету. Потрать их в гараже.';qProg('money',cash);state.prize={day:true,amt:cash,used:false};}
+  else{const rep=Math.round(ev.rep*mult/10)*10;state.nightRep+=rep;state.prize={day:false,amt:rep,used:false};const before=state.heat;state.heat=Math.min(5,state.heat+1);saveNight();reward='+'+fmt(rep)+' REP за ночь';
     note='Жар '+before+' → '+state.heat+(HEAT_NOTE[state.heat]&&state.heat>=3?' ('+HEAT_NOTE[state.heat]+')':'')+'. REP не сохранён, пока ты не доедешь до гаража.'+(state.heat>=3?' Полиция уже едет.':'');}
   if(ev===TUT_EV){save.tut=1;persist();state.tutDone=true;note='Деньги уже на счету. Дальше — гараж: там машины и тюнинг. Голубая линия покажет дорогу.';}
   qProg('race',1);if(place<=3)qProg('podium',1);if(place===1)qProg(ev.time==='day'?'winDay':'winNight',1);if(ev.time==='night')qProg('heat',state.heat);
@@ -7055,12 +7144,14 @@ function finishRace(){
   $('#rName').textContent=ev.name;$('#rPlace').textContent=place+' место из 4';
   $('#rList').innerHTML=order.map((o,i)=>`<div class="pl${o.me?' me':''}"><span>${i+1}</span><span>${o.n}</span><span>${o.t!=null?ft(o.t):'—'}</span></div>`).join('');
   $('#rReward').textContent=reward;$('#rReward').style.color=ev.time==='day'?'var(--sun)':'var(--pink)';$('#rNote').textContent=note;
+  $('#rX2Row').hidden=!(PLAT.canReward()&&state.prize&&state.prize.amt>0);$('#rX2').disabled=false;
   state.mode='result';showOnly('result');
 }
 function endRace(){const r=state.race;if(!r)return;for(const a of r.ais)removeCar(a.car);state.race=null;updateGates();}
 
 /* ---------- garage ---------- */
 function openGarage(info){
+  const fromMode=state.mode;
   if(state.race)endRace();
   const hadNight=!!save.night;save.night=null;
   const b=player.body,g=nodePos(...GARAGE);
@@ -7074,6 +7165,7 @@ function openGarage(info){
   state.ginfo=info||null;state.mode='garage';if(info&&info.up)state.gTab='levels';else if(!state.qShown&&qClaimable()>0){state.qShown=true;state.gTab='tasks';}
   {const want=bestCity(levelOf(save.rep)),wi=CITIES.indexOf(want);if(wi>(save.cityMax||0)){save.cityMax=wi;persist();switchCity(want.id);state.ginfo=Object.assign({},state.ginfo||{},{newCity:want.name});state.gTab='cities';}}
   showOnly('garage');renderGarage();refreshMarkers();
+  if(fromMode==='drive'||fromMode==='pause')PLAT.interstitial();   // полноэкранная реклама только при въезде в гараж с улицы (логическая пауза)
 }
 const plural=(n,a,b,c)=>{const m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c;};
 function sumUn(un){const cars=un.filter(u=>u.t==='car').map(u=>u.s.replace('Машина: ',''));const races=un.filter(u=>u.t==='races').reduce((a,u)=>a+u.n,0);
@@ -7086,7 +7178,13 @@ function renderGarage(){
   $('#gLvlBar').style.width=(next?clamp((save.rep-prev)/(next-prev),0,1)*100:100)+'%';
   const gi=state.ginfo,nt=$('#gNotice');
   if(gi&&gi.kind==='bank'){nt.hidden=false;nt.className='notice';nt.style.setProperty('--c','var(--ok)');nt.innerHTML='Ночь сохранена: '+fmt(gi.raw)+' REP × '+gi.mult+' = '+fmt(gi.gained)+' REP.'+(gi.up?'<br>Новый уровень '+gi.up+'! Открыто: '+esc(sumUn(gi.un))+'. Подробно во вкладке «Уровни».':'');}
-  else if(gi&&gi.kind==='busted'){nt.hidden=false;nt.className='notice';nt.style.setProperty('--c','var(--danger)');nt.innerHTML='Арест. Штраф $'+fmt(gi.fine)+'.'+(gi.kept>0?' Засчитана половина REP за ночь: +'+fmt(gi.kept)+', потеряно '+fmt(gi.lost)+'.':'')+(gi.up?'<br>Новый уровень '+gi.up+'! Открыто: '+esc(sumUn(gi.un))+'.':'');}
+  else if(gi&&gi.kind==='busted'){nt.hidden=false;nt.className='notice';nt.style.setProperty('--c','var(--danger)');
+    nt.innerHTML='Арест. Штраф $'+fmt(gi.fine)+'.'+(gi.rescued?' REP за ночь спасён рекламой: засчитано +'+fmt(gi.kept)+'.':gi.kept>0?' Засчитана половина REP за ночь: +'+fmt(gi.kept)+', потеряно '+fmt(gi.lost)+'.':'')+(gi.up?'<br>Новый уровень '+gi.up+'! Открыто: '+esc(sumUn(gi.un))+'.':'')
+      +(!gi.rescued&&gi.lost>0&&PLAT.canReward()?'<br><button class="btn small primary" id="gRescue" style="margin-top:8px">▶ Вернуть '+fmt(gi.lost)+' REP за рекламу</button>':'');
+    const rb=$('#gRescue');if(rb)rb.onclick=()=>{rb.disabled=true;PLAT.rewarded(got=>{rb.disabled=false;if(!got||gi.rescued)return;
+      const before=levelOf(save.rep);save.rep+=gi.lost;const after=levelOf(save.rep);grantLevels(before,after);persist();
+      gi.rescued=true;gi.kept+=gi.lost;gi.lost=0;if(after>before){gi.up=after;gi.un=[];for(let L=before+1;L<=after;L++)gi.un.push(...unlocksAt(L));}
+      sfx('beep',1040);renderGarage();refreshMarkers();});};}
   else nt.hidden=true;
   if(gi&&gi.newCity){if(nt.hidden){nt.hidden=false;nt.className='notice';nt.style.setProperty('--c','var(--cyan)');nt.innerHTML='';}nt.innerHTML+=(nt.innerHTML?'<br>':'')+'Новый город: <b>'+esc(gi.newCity)+'</b>! Гонки твоего уровня теперь здесь. Старые города можно выбрать во вкладке «Города».';}
   document.querySelectorAll('#garage .tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===state.gTab));
@@ -7210,7 +7308,13 @@ $('#pMap').onclick=()=>openMap();
 $('#pWipe').onclick=()=>{$('#pWipeRow').hidden=true;$('#pWipeAsk').hidden=false;};
 $('#pWipeNo').onclick=()=>{$('#pWipeRow').hidden=false;$('#pWipeAsk').hidden=true;};
 $('#pWipeYes').onclick=()=>{const g=save.gfx;save=JSON.parse(JSON.stringify(DEF));save.gfx=g;persist();buildPlayer();state.nightRep=0;openGarage(null);};
-$('#rOk').onclick=()=>{state.mode='drive';showOnly('hud');
+/* ролик за награду «×2 за гонку» (только на Яндекс Играх; без SDK кнопки нет) */
+$('#rX2').onclick=()=>{const p=state.prize;if(!p||p.used||!PLAT.canReward())return;$('#rX2').disabled=true;
+  PLAT.rewarded(got=>{$('#rX2').disabled=false;if(!got||p.used)return;p.used=true;
+    if(p.day){save.money+=p.amt;persist();qProg('money',p.amt);$('#rReward').textContent='+$'+fmt(p.amt*2)+' (×2 за рекламу)';}
+    else{state.nightRep+=p.amt;saveNight();$('#rReward').textContent='+'+fmt(p.amt*2)+' REP за ночь (×2 за рекламу)';}
+    $('#rX2Row').hidden=true;sfx('beep',1040);});};
+$('#rOk').onclick=()=>{state.mode='drive';showOnly('hud');$('#rX2Row').hidden=true;state.prize=null;
   if(state.tutDone){state.tutDone=false;state.tut=false;state.gps={node:GARAGE};state.hintT=0;banner('ТЕПЕРЬ В ГАРАЖ','голубая линия ведёт к гаражу · въедь в голубой круг','#29e3ff',3200);updateSaveLine();}
   if(state.time==='night'&&state.heat>=3){spawnCop(true);spawnCop(true);startPursuit();}};
 $('#pKeys').innerHTML=isTouch?'Кнопки на экране: руль слева, педали справа. Газ и тормоз вместе дают управляемый занос. «Прыжок» перелетает через машины, раз в 3 секунды.':'<kbd>W A S D</kbd> или стрелки · <kbd>Пробел</kbd> дрифт · <kbd>Shift</kbd> нитро · <kbd>F</kbd> прыжок · <kbd>E</kbd> старт · <kbd>M</kbd> карта · <kbd>C</kbd> камера · <kbd>R</kbd> на дорогу';
@@ -7364,7 +7468,8 @@ function audioUpdate(inp){
   let sg=0;if(drv&&pursuit.active&&cops.length){let d=1e9;for(const c of cops)d=Math.min(d,dist2(c.body,b));sg=.045*clamp(1-d/320,0,1);}
   AU.so.frequency.setTargetAtTime(Math.floor(state.t/.45)%2?700:950,t,.02);AU.sg.gain.setTargetAtTime(sg,t,.1);
 }
-document.addEventListener('visibilitychange',()=>{if(!AU.ctx)return;if(document.hidden)AU.ctx.suspend();else AU.ctx.resume();});
+document.addEventListener('visibilitychange',()=>{if(!AU.ctx)return;if(document.hidden)AU.ctx.suspend();else if(!PLAT.paused())AU.ctx.resume();});
+PLAT.onPause=p=>{if(!AU.ctx)return;if(p)AU.ctx.suspend();else if(!document.hidden)AU.ctx.resume();};
 
 /* ---------- body collisions ---------- */
 function collideBodies(){
@@ -7493,6 +7598,9 @@ function update(dt){
 let last=performance.now()/1000,miniT=0;
 function frame(){
   requestAnimationFrame(frame);
+  // реклама или пауза площадки: игра стоит, последний кадр остаётся на экране
+  if(PLAT.paused()){last=performance.now()/1000;return;}
+  PLAT.setPlaying(state.mode==='drive');
   const now=performance.now()/1000,raw=now-last,dt=Math.min(.05,raw);last=now;state.t+=dt;perfWatch(raw);
   if(state.mode==='drive')update(dt);
   else if(state.mode==='title'||state.mode==='garage'){if(state.mode==='title')updateTraffic(dt);if(state.inShow){player.body.h+=dt*.32;showDisc.rotation.z=-player.body.h;}syncCar(player.car,player.body.x,player.body.z,player.body.h,0,0,0,dt);if(preview)syncCar(preview,player.body.x,player.body.z,player.body.h,0,0,0,dt);if(showMirror){const src=preview||player.car;showMirror.position.copy(src.root.position);showMirror.rotation.copy(src.root.rotation);}orbitCam(dt);audioUpdate(NOINP);}
@@ -7564,6 +7672,24 @@ function boot(data){
   const fr=document.fonts&&document.fonts.ready?Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1800))]):Promise.resolve();
   fr.then(()=>{buildSigns();setTimeout(()=>{signsReady=true;},600);});
   requestAnimationFrame(frame);
+  platInit();
+}
+/* площадка: облачное сохранение Яндекса (побеждает более новый save.ts), затем LoadingAPI.ready.
+   Кнопка на заставке ждёт ответа (без SDK — мгновенно, с SDK — не дольше 4 с), чтобы игрок не начал со старым сохранением. */
+function platInit(){
+  const btn=$('#btnStart');btn.disabled=true;
+  PLAT.init().then(c=>{
+    try{
+      if(c&&c.owned&&c.owned.corsa){
+        const fresh=save.rep===0&&Object.keys(save.owned).length===1&&!save.night&&!save.tut;
+        const rich=(c.rep||0)>0||Object.keys(c.owned).length>1||!!c.night||!!c.tut;
+        if((c.ts||0)>(save.ts||0)||(fresh&&rich)){adoptSave(c);
+          if(state.mode==='title'||state.mode==='garage'){const L=levelOf(save.rep);let w=save.city&&CITIES.find(x=>x.id===save.city);if(!w||w.lvl>L||!cityReady(w))w=bestCity(L);if(w!==CUR_CITY)switchCity(w.id);}}
+      }
+      if(PLAT.hasCloud()&&(!c||(save.ts||0)>(c.ts||0)))PLAT.put(save);
+    }catch(e){console.warn('platform save',e);}
+    btn.disabled=false;updateSaveLine();PLAT.ready();
+  },()=>{btn.disabled=false;PLAT.ready();});
 }
 const HOT=window.claude&&window.claude.hot;
 try{if(HOT&&HOT.snapshot)HOT.snapshot(()=>({save}));}catch(e){}
