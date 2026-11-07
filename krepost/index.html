@@ -1,0 +1,2167 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<title>Ганнибал у ворот</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Forum&display=swap">
+<style>
+/* Layout: one-screen app — marble HUD with meander band, daylight battlefield canvas, medallion ability bar, scrolling roster of drawn defenders.
+   Look: a children's picture book about Rome — travertine marble panels, gilt hairlines, Pompeian red, laurel green. Cinzel for Latin/digits, Forum for Cyrillic display. */
+:root{
+  --bg:#e6dfd0;            /* travertine */
+  --panel:#f7f3ea;         /* polished marble */
+  --panel-2:#ebe3d2;
+  --vein:rgba(118,98,74,.11);
+  --ink:#2f2218;
+  --muted:#73604b;
+  --line:#d3c39f;
+  --gold:#b4852b;
+  --gold-hi:#e7c46c;
+  --accent:#9d2b1f;        /* Pompeian red */
+  --accent-2:#7c1f16;
+  --accent-ink:#fff6e6;
+  --good:#4f7a34;          /* laurel */
+  --locked:#a39a8b;
+  --ring-empty:rgba(47,34,24,.16);
+  --overlay:rgba(40,24,10,.58);
+  --shadow:0 1px 0 rgba(58,36,18,.16),0 6px 16px rgba(58,36,18,.16);
+  --f-display:"Cinzel","Forum","Trajan Pro","Palatino Linotype",Palatino,Georgia,serif;
+  --f-cyr:"Forum","Cinzel","Palatino Linotype",Palatino,Georgia,serif;
+  --f-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --f-emoji:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+  --meander:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='8' viewBox='0 0 16 8'%3E%3Cpath d='M0 7.2H16M12.5 7.2V1H4.5V4.6H9' fill='none' stroke='%23000' stroke-width='1.3'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#17120e;--panel:#2a221b;--panel-2:#211a14;--vein:rgba(255,232,190,.05);--ink:#f2e7d2;--muted:#bba78a;--line:#4f3f2c;
+    --gold:#d3a64a;--gold-hi:#f0d080;--accent:#b63b2d;--accent-2:#8e2a1f;--accent-ink:#fff6e6;--good:#6f9e4f;--locked:#5d5447;
+    --ring-empty:rgba(255,240,210,.14);--overlay:rgba(8,5,2,.7);--shadow:0 1px 0 rgba(0,0,0,.4),0 8px 18px rgba(0,0,0,.4);color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#17120e;--panel:#2a221b;--panel-2:#211a14;--vein:rgba(255,232,190,.05);--ink:#f2e7d2;--muted:#bba78a;--line:#4f3f2c;
+  --gold:#d3a64a;--gold-hi:#f0d080;--accent:#b63b2d;--accent-2:#8e2a1f;--accent-ink:#fff6e6;--good:#6f9e4f;--locked:#5d5447;
+  --ring-empty:rgba(255,240,210,.14);--overlay:rgba(8,5,2,.7);--shadow:0 1px 0 rgba(0,0,0,.4),0 8px 18px rgba(0,0,0,.4);color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+#app{height:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;position:relative;overflow:hidden;
+  padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+img.ii{display:inline-block;vertical-align:middle;object-fit:contain}
+
+/* marble surface shared by panels */
+.marble{background-color:var(--panel);
+  background-image:linear-gradient(118deg,transparent 30%,var(--vein) 33%,transparent 37%,transparent 62%,var(--vein) 64%,transparent 66%),
+    linear-gradient(168deg,transparent 55%,var(--vein) 57%,transparent 61%),
+    linear-gradient(180deg,var(--panel),var(--panel-2))}
+.meander{position:relative}
+.meander::after{content:"";position:absolute;left:0;right:0;height:8px;background:var(--gold);opacity:.85;pointer-events:none;
+  -webkit-mask:var(--meander) repeat-x 0 0/16px 8px;mask:var(--meander) repeat-x 0 0/16px 8px}
+
+.hud{display:flex;align-items:center;gap:7px;padding:6px 8px 12px;flex:none;z-index:2}
+.hud.meander::after{bottom:2px}
+.stat{display:flex;align-items:center;gap:5px;font-family:var(--f-display);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums lining-nums;min-width:0;white-space:nowrap;line-height:1}
+.stat img{width:24px;height:24px}
+.stat.wave{font-family:var(--f-cyr);font-size:12px;color:var(--muted);gap:1px;flex-direction:column;align-items:flex-start;font-weight:400;letter-spacing:.04em}
+.stat.wave b{font-family:var(--f-display);font-size:19px;color:var(--ink);font-weight:700;letter-spacing:0}
+.spacer{flex:1}
+.hbtn{min-width:44px;height:44px;border-radius:50%;border:1px solid var(--gold);background:var(--panel-2);
+  box-shadow:inset 0 0 0 2px var(--panel),inset 0 0 0 3px rgba(180,133,43,.45);font-family:var(--f-display);font-weight:700;font-size:16px;display:grid;place-items:center;padding:0 6px}
+.hbtn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--gold-hi)}
+
+.field{flex:1;min-height:0;position:relative;background:#a7ba64;overflow:hidden}
+.field::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 42%,transparent 58%,rgba(70,38,8,.30) 100%),
+    linear-gradient(160deg,rgba(255,226,150,.16),transparent 45%)}
+canvas#cv{display:block;width:100%;height:100%;touch-action:none}
+
+.bar{display:flex;gap:6px;padding:12px 8px 6px;flex:none;align-items:center}
+.bar.meander::after{top:2px}
+.abil{flex:1;min-width:0;height:52px;border-radius:26px;border:1px solid var(--line);background:var(--panel-2);position:relative;overflow:hidden;
+  display:flex;align-items:center;gap:4px;font-family:var(--f-cyr);font-size:12.5px;line-height:1.05;padding:0 4px 0 3px;text-align:left}
+.med{--p:100%;flex:none;width:44px;height:44px;border-radius:50%;padding:3px;display:grid;place-items:center;
+  background:conic-gradient(var(--gold) var(--p),var(--ring-empty) 0)}
+.med img{width:38px;height:38px;border-radius:50%;display:block;background:var(--panel)}
+.abil.cooling .med img{filter:saturate(.35) brightness(.9)}
+.abil.active{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-hi),0 0 14px rgba(231,196,108,.6)}
+.abil .lbl{min-width:0}
+.next{flex:.95;min-width:0;height:52px;border-radius:12px;border:1px solid var(--gold-hi);background:linear-gradient(180deg,var(--accent),var(--accent-2));color:var(--accent-ink);
+  box-shadow:inset 0 0 0 2px rgba(255,236,190,.25),var(--shadow);font-family:var(--f-cyr);font-size:16px;line-height:1.05;padding:0 6px;font-variant-numeric:tabular-nums}
+.next:disabled{background:var(--panel-2);color:var(--muted);border-color:var(--line);box-shadow:none}
+
+.roster{display:flex;gap:6px;padding:4px 8px 8px;overflow-x:auto;overflow-y:hidden;flex:none;scrollbar-width:thin;touch-action:pan-x}
+.unit{flex:none;width:66px;height:80px;border-radius:10px;border:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px;padding:2px 2px 4px;position:relative;
+  box-shadow:inset 0 0 0 2px var(--panel),inset 0 0 0 3px rgba(180,133,43,.32)}
+.unit img{width:50px;height:50px;margin:-6px 0 -3px}
+.unit .nm{font-family:var(--f-cyr);font-size:13px;line-height:1.05;text-align:center}
+.unit .pr{display:flex;align-items:center;gap:2px;font-family:var(--f-display);font-size:13px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
+.unit .pr img{width:13px;height:13px;margin:0}
+.unit.locked{background:var(--panel-2);border-style:dashed;box-shadow:none}
+.unit.locked img{filter:grayscale(1) contrast(.85);opacity:.75}
+.unit.locked .nm{color:var(--muted)}
+.unit.cant .pr{color:var(--accent)}
+
+.sheet{position:absolute;left:8px;right:8px;border:1px solid var(--gold);border-radius:14px;padding:8px;z-index:5;
+  box-shadow:inset 0 0 0 3px var(--panel),inset 0 0 0 4px rgba(180,133,43,.5),0 10px 24px rgba(30,16,4,.35)}
+.sheet.bottom{bottom:8px}.sheet.top{top:8px}
+.sheet h3{margin:0 0 6px;font-family:var(--f-cyr);font-weight:400;font-size:20px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.sheet h3 span{display:flex;align-items:center;gap:6px;min-width:0}
+.sheet h3 img{width:32px;height:32px}
+.sheet h3 button{border:0;background:transparent;font-size:24px;width:44px;height:44px;color:var(--muted)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pick{min-height:72px;border-radius:10px;border:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px;padding:2px 2px 4px}
+.pick img{width:52px;height:52px;margin:-8px 0 -4px}
+.pick .nm{font-family:var(--f-cyr);font-size:14px}
+.pick .pr{display:flex;align-items:center;gap:3px;font-family:var(--f-display);font-size:13px;font-weight:700;color:var(--gold)}
+.pick .pr img{width:13px;height:13px;margin:0}
+.pick:disabled{opacity:.5}
+.pick:disabled .pr{color:var(--accent)}
+.fact{font-size:13px;line-height:1.4;color:var(--muted);margin:6px 0 0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.act{min-height:48px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;gap:4px}
+.act img{width:15px;height:15px}
+.act.up{background:linear-gradient(180deg,#5f8a3e,#46692c);border-color:var(--gold-hi);color:#fffbea}
+.act:disabled{opacity:.5}
+.toast{position:absolute;left:8px;right:8px;bottom:8px;z-index:6;color:var(--ink);border:1px solid var(--gold);border-radius:12px;padding:8px 10px;font-size:14px;line-height:1.4;
+  box-shadow:inset 0 0 0 2px var(--panel),inset 0 0 0 3px rgba(180,133,43,.45),0 6px 16px rgba(30,16,4,.3);pointer-events:none}
+.toast b{font-family:var(--f-cyr);font-weight:400;font-size:16px}
+.toast img{width:32px;height:32px;margin:-8px 2px -4px -2px}
+
+/* wave card: a small papyrus scroll with rolled ends */
+.card{position:absolute;left:12px;right:12px;top:8px;z-index:4;color:#33230f;border-radius:4px;padding:7px 8px;display:flex;flex-direction:column;max-height:calc(100% - 24px);
+  background:radial-gradient(130% 120% at 50% 50%,#f6ebcc 55%,#e3cf9d 100%);box-shadow:0 8px 20px rgba(30,16,4,.35)}
+.card::before,.card::after{content:"";position:absolute;left:-6px;right:-6px;height:9px;border-radius:5px;background:linear-gradient(180deg,#c99b55,#8a5c27 60%,#6b4419);box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.card::before{top:-5px}.card::after{bottom:-5px}
+.card .cin{position:relative;overflow-y:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y}
+.card .ctop{display:flex;gap:8px;align-items:center;padding-right:28px}
+.card img.por{flex:none;width:46px;height:46px;border-radius:50%;background:radial-gradient(#fff3d6,#e2c98e);box-shadow:inset 0 0 0 2px #b4852b}
+.card .t{font-family:var(--f-cyr);font-size:18px;line-height:1.1;margin:0 0 2px;text-wrap:balance;color:#7c1f16}
+.card .t b{font-family:"Cinzel",var(--f-cyr);font-weight:700}
+.card p{margin:0;font-size:13px;line-height:1.3}
+.card p.warn{margin-top:4px;color:#9d2b1f;font-weight:700}
+.card .x{position:absolute;top:0;right:0;z-index:1;border:0;background:transparent;font-size:22px;width:44px;height:44px;color:#73604b}
+
+/* quiz inside the wave card */
+.quiz{margin-top:8px;border-top:1px dashed rgba(124,31,22,.4);padding-top:7px}
+.quiz .qq{font-family:var(--f-cyr);font-size:17px;line-height:1.2;margin:0 0 6px;text-wrap:pretty}
+.quiz .qm{display:inline-block;font-family:var(--f-display);font-weight:700;font-size:11px;letter-spacing:.08em;color:#fff6e6;background:#7c1f16;border-radius:4px;padding:2px 5px 1px;margin-right:6px;vertical-align:2px}
+.qo{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin:0 0 5px;padding:5px 9px;border-radius:9px;border:1px solid #c49a4c;background:rgba(255,251,238,.8);
+  color:#33230f;font-size:14px;line-height:1.25;text-align:left;box-shadow:inset 0 0 0 2px rgba(255,255,255,.45)}
+.qo .k{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#7c1f16;color:#fff6e6;font-family:var(--f-cyr);font-size:14px}
+.qo:disabled{color:#33230f;opacity:1;cursor:default}
+.qo.dim{opacity:.6}
+.qo.ok{background:#dbe8c4;border-color:#4f7a34;box-shadow:inset 0 0 0 2px rgba(79,122,52,.25)}.qo.ok .k{background:#4f7a34}
+.qo.bad{background:#f2d2c7;border-color:#9d2b1f}
+.qfoot{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.qrew{font-size:12.5px;color:#73604b;display:flex;align-items:center;gap:3px}
+.qrew img{width:13px;height:13px}
+.qskip{min-height:44px;padding:0 6px 0 12px;border:0;background:transparent;color:#73604b;font-size:14px;text-decoration:underline;text-underline-offset:3px}
+.qex{margin:4px 0 2px!important;font-size:13.5px!important;line-height:1.4!important}
+.qex b{font-family:var(--f-cyr);font-weight:400;font-size:17px}
+.qex.good b{color:#3f6a26}.qex.bad b{color:#9d2b1f}
+.qnew{display:block;margin-top:4px;font-family:var(--f-cyr);font-size:14.5px;color:#7c1f16}
+
+/* big papyrus scroll: history forks and article cards */
+.scroll{position:relative;width:100%;max-width:380px;max-height:100%;display:flex;flex-direction:column;color:#33230f;border-radius:4px;padding:16px 14px 14px;text-align:left;
+  background:radial-gradient(130% 120% at 50% 40%,#f8eed2 50%,#e3cf9d 100%);box-shadow:0 14px 34px rgba(0,0,0,.45)}
+.scroll::before,.scroll::after{content:"";position:absolute;left:-8px;right:-8px;height:13px;border-radius:7px;background:linear-gradient(180deg,#d1a45e,#8a5c27 60%,#6b4419);box-shadow:0 2px 3px rgba(0,0,0,.35)}
+.scroll::before{top:-7px}.scroll::after{bottom:-7px}
+.scroll .sin{overflow-y:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;padding:0 2px}
+.scroll .ch{font-family:var(--f-cyr);font-size:14px;letter-spacing:.05em;color:#73604b;margin:0}
+.scroll h2{font-family:var(--f-cyr);font-weight:400;font-size:28px;line-height:1.05;color:#7c1f16;margin:3px 0 8px;text-wrap:balance}
+.scroll p{font-size:15px;line-height:1.45;margin:0 0 8px;text-wrap:pretty}
+.scroll .eask{font-family:var(--f-cyr);font-size:17px;color:#7c1f16;margin:4px 0 6px}
+.scroll .qo{font-size:15px;min-height:48px;padding:7px 10px}
+.eres{border-radius:10px;padding:9px 10px;margin:6px 0 4px;font-size:14.5px;line-height:1.45}
+.eres.good{background:rgba(79,122,52,.14);border:1px solid rgba(79,122,52,.55)}
+.eres.bad{background:rgba(157,43,31,.10);border:1px solid rgba(157,43,31,.5)}
+.eres b{font-family:var(--f-cyr);font-weight:400;font-size:18px;display:block;margin-bottom:2px}
+.eres.good b{color:#3f6a26}.eres.bad b{color:#9d2b1f}
+.eres .eff{display:block;margin-top:5px;font-weight:700}
+.scroll .cta{display:block;margin:10px auto 2px;flex:none}
+.ahead{display:flex;gap:10px;align-items:center;margin-bottom:6px}
+.ahead img{flex:none;width:58px;height:58px;border-radius:50%;background:radial-gradient(#fff3d6,#e2c98e);box-shadow:inset 0 0 0 2px #b4852b}
+.ahead h2{margin:2px 0 0;font-size:25px}
+
+/* encyclopedia */
+.hbtn.encb{border-radius:22px;padding:0 9px 0 6px;gap:3px;display:flex;align-items:center;font-size:13px;flex:none}
+.hbtn.encb .em{font-family:var(--f-emoji);font-size:18px;line-height:1;font-weight:400}
+.hbtn.encb small{font-family:var(--f-display);font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums lining-nums}
+.hbtn.encb.fresh{box-shadow:inset 0 0 0 2px var(--panel),inset 0 0 0 3px rgba(180,133,43,.45),0 0 0 2px var(--gold-hi)}
+.scard.encw{max-width:440px;display:flex;flex-direction:column;overflow:hidden;text-align:left;padding:12px 10px 10px}
+.enc-h{display:flex;align-items:center;gap:8px;padding:0 2px 6px;border-bottom:1px solid var(--line);flex:none}
+.scard .enc-h h2{flex:1;font-size:25px;margin:0;color:var(--accent);white-space:nowrap;min-width:0}
+.enc-h .cnt{font-family:var(--f-display);font-weight:700;font-size:14px;white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
+.enc-h .xx{flex:none;width:44px;height:44px;border:0;background:transparent;font-size:26px;color:var(--muted)}
+.enc-b{overflow-y:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;padding:0 2px 4px}
+.enc-b h3{font-family:var(--f-cyr);font-weight:400;font-size:19px;margin:12px 2px 6px;color:var(--ink);display:flex;justify-content:space-between;align-items:baseline}
+.enc-b h3 span{font-family:var(--f-display);font-size:13px;font-weight:700;color:var(--muted)}
+.etiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.et{min-height:92px;border-radius:10px;border:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px 3px;text-align:center;
+  box-shadow:inset 0 0 0 2px var(--panel),inset 0 0 0 3px rgba(180,133,43,.32)}
+.et img{width:52px;height:52px;margin:-2px 0 -1px}
+.et span{font-family:var(--f-cyr);font-size:13.5px;line-height:1.1;overflow-wrap:anywhere}
+.et.lock{background:var(--panel-2);border-style:dashed;box-shadow:none}
+.et.lock img{filter:grayscale(1) brightness(.55) contrast(.7);opacity:.35}
+.et.lock span{font-family:var(--f-display);font-size:18px;font-weight:700;color:var(--muted)}
+.cta small{display:block;font-size:14px;letter-spacing:.02em;opacity:.9;margin-top:1px}
+.cta.two{padding:6px 22px 7px;line-height:1.1}
+.cta2{min-height:46px;padding:0 22px;border-radius:12px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font-family:var(--f-cyr);font-size:18px;margin-top:10px}
+.confirm{margin-top:10px;border:1px solid var(--accent);border-radius:10px;padding:8px}
+.confirm p{margin:0 0 6px;font-size:15px}
+.act.danger{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:var(--accent-ink);border-color:var(--gold-hi)}
+.tnew{display:block;margin-top:3px;font-family:var(--f-cyr);font-size:14.5px;color:var(--accent)}
+.row3{display:grid;grid-template-columns:1fr 1fr 48px;gap:6px;margin-top:6px}
+.act .em{font-family:var(--f-emoji);font-size:19px}
+
+.card.chap{padding:12px 10px}
+.card.chap .ctop{gap:10px}
+.card.chap img.por{width:58px;height:58px}
+.card .ch{font-family:var(--f-cyr);font-size:13px;letter-spacing:.05em;color:#73604b;margin:0 0 1px}
+.card.chap .t{font-size:25px;line-height:1.02;margin:0 0 4px}
+.card.chap p{font-size:13.5px;line-height:1.35}
+.card.chap p.nx{margin-top:4px;font-family:var(--f-cyr);font-size:15px;color:#7c1f16}
+
+/* camera aids: minimap column, off-screen arrows, boss bar */
+.mm{position:absolute;right:3px;bottom:12px;z-index:3;display:flex;flex-direction:column;align-items:center;gap:4px;width:36px}
+.mm canvas{width:28px;height:200px;display:block;border-radius:6px;touch-action:none;cursor:pointer;box-shadow:0 1px 4px rgba(40,24,10,.35)}
+.mmb{width:36px;height:32px;border-radius:9px;border:1px solid #b4852b;background:rgba(247,243,234,.86);color:#2f2218;font-family:var(--f-cyr);font-size:10px;line-height:1;padding:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-shadow:0 1px 4px rgba(40,24,10,.3)}
+.mmb b{font-size:12px;font-family:var(--f-body);line-height:1}
+.offind{position:absolute;left:50%;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:5px;height:30px;padding:0 12px 0 10px;border-radius:15px;
+  background:rgba(157,43,31,.92);color:#fff6e6;border:1px solid #e7c46c;font-family:var(--f-display);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums;
+  box-shadow:0 2px 8px rgba(40,10,4,.4)}
+.offind svg{width:14px;height:14px;fill:currentColor}
+.offind.top{top:6px}.offind.bot{bottom:6px}
+.field.hasboss .offind.top{top:50px}
+.bossbar{position:absolute;left:44px;right:44px;top:5px;z-index:3;pointer-events:none;text-align:center}
+.bossbar .nm{font-family:var(--f-cyr);font-size:15px;line-height:1.1;color:#fff6e6;text-shadow:0 1px 3px rgba(0,0,0,.8),0 0 2px rgba(0,0,0,.9)}
+.bossbar .tr{height:10px;margin-top:2px;border-radius:5px;background:rgba(30,18,6,.7);border:1px solid #e7c46c;overflow:hidden}
+.bossbar .fi{height:100%;width:100%;background:linear-gradient(180deg,#ef5a44,#9d2b1f);transform-origin:left center}
+
+.screen{position:absolute;inset:0;z-index:20;background:var(--overlay);display:flex;align-items:center;justify-content:center;padding-block:16px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));backdrop-filter:blur(1.5px)}
+.scard{border:1px solid var(--gold);border-radius:6px;padding:18px 18px 20px;max-width:380px;width:100%;text-align:center;position:relative;
+  box-shadow:inset 0 0 0 4px var(--panel),inset 0 0 0 5px var(--gold),0 14px 34px rgba(0,0,0,.45);max-height:100%;overflow:auto}
+.scard .por{display:block;width:132px;height:132px;margin:2px auto 2px}
+.scard h1,.scard h2{font-family:var(--f-cyr);font-weight:400;margin:4px 0 4px;text-wrap:balance;letter-spacing:.01em;line-height:1.05}
+.scard h1{font-size:38px;color:var(--accent)}
+.scard h2{font-size:30px}
+.scard .sub{font-family:var(--f-cyr);font-size:16px;letter-spacing:.06em;color:var(--muted)}
+.scard p{font-size:15px;line-height:1.45;margin:8px 0;text-wrap:pretty}
+.scard .score{display:flex;justify-content:center;gap:18px;font-family:var(--f-display);font-weight:700;font-size:22px;font-variant-numeric:tabular-nums;margin:10px 0}
+.scard .score span{display:inline-flex;align-items:center;gap:5px}
+.scard .score img{width:24px;height:24px}
+.cta{min-height:52px;padding:0 26px;border-radius:12px;border:1px solid var(--gold-hi);background:linear-gradient(180deg,var(--accent),var(--accent-2));color:var(--accent-ink);
+  font-family:var(--f-cyr);font-size:22px;margin-top:8px;box-shadow:inset 0 0 0 2px rgba(255,236,190,.25),var(--shadow)}
+.best{font-size:13px;color:var(--muted);margin-top:8px}
+.pausemark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:3;pointer-events:none;font-family:var(--f-cyr);font-size:36px;color:#fff8e6;text-shadow:0 2px 6px rgba(0,0,0,.6);background:rgba(20,12,4,.28)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div id="app">
+  <div class="hud marble meander">
+    <div class="stat" title="Денарии"><img class="ii" data-ic="coin" alt=""><span id="coins">150</span></div>
+    <div class="stat" title="Стены Рима"><img class="ii" data-ic="walls" alt=""><span id="lives">20</span></div>
+    <div class="stat wave"><span>волна</span><b id="wave">0/30</b></div>
+    <div class="spacer"></div>
+    <button class="hbtn encb" id="btnEnc" aria-label="Свиток знаний"><span class="em">📜</span><small id="encN">0/37</small></button>
+    <button class="hbtn" id="btnSpeed" aria-pressed="false" aria-label="Скорость игры">×1</button>
+    <button class="hbtn" id="btnPause" aria-pressed="false" aria-label="Пауза">❚❚</button>
+  </div>
+  <div class="field" id="field">
+    <canvas id="cv" aria-label="Поле боя: дорога от Альп к воротам Рима"></canvas>
+    <div class="bossbar" id="bossbar" hidden><div class="nm" id="bossName"></div><div class="tr"><div class="fi" id="bossFill"></div></div></div>
+    <button class="offind top" id="indTop" hidden aria-label="Враги выше"><svg viewBox="0 0 14 14"><path d="M7 1 13 10H1z"/></svg><span></span></button>
+    <button class="offind bot" id="indBot" hidden aria-label="Враги ниже"><svg viewBox="0 0 14 14"><path d="M7 13 13 4H1z"/></svg><span></span></button>
+    <div class="mm" id="mm">
+      <button class="mmb" id="btnAlps" aria-label="К Альпам"><b>⬆</b>Альпы</button>
+      <canvas id="mmc" aria-label="Мини-карта"></canvas>
+      <button class="mmb" id="btnRome" aria-label="К Риму"><b>⬇</b>Рим</button>
+    </div>
+    <div class="card" id="card" hidden></div>
+    <div class="sheet bottom marble" id="sheet" hidden></div>
+    <div class="toast marble" id="toast" hidden></div>
+    <div class="pausemark" id="pausemark" hidden>Пауза</div>
+  </div>
+  <div class="bar marble meander">
+    <button class="abil" id="abFab" aria-label="Тактика Фабия"><span class="med"><img data-ic="fab" alt=""></span><span class="lbl">Тактика<br>Фабия</span></button>
+    <button class="abil" id="abSci" aria-label="Легионы Сципиона"><span class="med"><img data-ic="sci" alt=""></span><span class="lbl">Легионы<br>Сципиона</span></button>
+    <button class="next" id="btnNext">Следующая волна</button>
+  </div>
+  <div class="roster marble" id="roster"></div>
+
+  <div class="screen" id="scrStart">
+    <div class="scard marble">
+      <div class="sub">Вторая Пуническая война</div>
+      <img class="por" data-ic="pHannibal" alt="Ганнибал">
+      <h1>Ганнибал у ворот</h1>
+      <p>218 г. до н. э. Карфагенский полководец Ганнибал перешёл Альпы с армией и 37 боевыми слонами.</p>
+      <p>Расставь римских воинов вдоль дороги и не пусти врага к стенам Рима. Выстой 30 волн — шесть битв великой войны!</p>
+      <div id="startBtns"><button class="cta" id="btnStart">Защищать Рим</button></div>
+      <div class="best" id="best"></div>
+    </div>
+  </div>
+  <div class="screen" id="scrWin" hidden>
+    <div class="scard marble">
+      <div class="sub">202 г. до н. э.</div>
+      <img class="por" data-ic="pLaurel" alt="Лавровый венок">
+      <h2>Рим устоял!</h2>
+      <p>Война закончилась битвой при Заме в 202 г. до н. э.: Публий Корнелий Сципион разбил Ганнибала, и Карфаген запросил мира.</p>
+      <div class="score"><span><img class="ii" data-ic="walls" alt="Стены"><span id="winLives">0</span></span><span><img class="ii" data-ic="coin" alt="Денарии"><span id="winCoins">0</span></span></div>
+      <p id="winSum" style="font-family:var(--f-cyr);font-size:17px;margin:4px 0"></p>
+      <p id="winQuiz" style="font-family:var(--f-cyr);font-size:19px;margin:4px 0;color:var(--good)"></p>
+      <button class="cta" id="btnAgain1">Ещё раз</button>
+      <div class="best" id="best2"></div>
+    </div>
+  </div>
+  <div class="screen" id="scrLose" hidden>
+    <div class="scard marble">
+      <div class="sub">Стены пробиты</div>
+      <img class="por" data-ic="pGate" alt="Разбитые ворота">
+      <h2>Ганнибал у ворот! Рим пал</h2>
+      <p>Ты продержался до волны <b id="loseWave">1</b>. Попробуй слонов встретить трубачами и велитами, а конницу — триариями.</p>
+      <button class="cta" id="btnAgain2">Ещё раз</button>
+    </div>
+  </div>
+  <div class="screen" id="scrEvent" hidden><div class="scroll" id="evBox" role="dialog" aria-label="Развилка истории"></div></div>
+  <div class="screen" id="scrEnc" hidden>
+    <div class="scard marble encw" role="dialog" aria-label="Свиток знаний">
+      <div class="enc-h"><h2>Свиток знаний</h2><span class="cnt" id="encCnt">0/37</span><button class="xx" id="encClose" aria-label="Закрыть">×</button></div>
+      <div class="enc-b" id="encBody"></div>
+    </div>
+  </div>
+  <div class="screen" id="scrArt" hidden style="z-index:22"><div class="scroll" id="artBox" role="dialog" aria-label="Статья"></div></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+// ---------- World ----------
+// Tall scrolling battlefield: Alps at the top, Rome at the bottom, eight serpentine runs in between.
+const W = 390, H = 1700, WALL_Y = 1592, GATE_X = 195;
+const RAW_PATH = [[70,-20],[70,100],[320,100],[320,270],[70,270],[70,440],[320,440],[320,610],[70,610],[70,780],[320,780],[320,950],[70,950],[70,1120],[320,1120],[320,1290],[70,1290],[70,1450],[195,1450],[195,1640]];
+// corners rounded into the polyline itself, so marching enemies follow the drawn road exactly
+const PATH = (function(raw, r){
+  const out = [raw[0]];
+  for (let i=1;i<raw.length-1;i++){
+    const [ax,ay]=raw[i-1], [bx,by]=raw[i], [cx,cy]=raw[i+1];
+    const l1=Math.hypot(bx-ax,by-ay), l2=Math.hypot(cx-bx,cy-by), rr=Math.min(r,l1/2,l2/2);
+    const px=bx-(bx-ax)/l1*rr, py=by-(by-ay)/l1*rr, qx=bx+(cx-bx)/l2*rr, qy=by+(cy-by)/l2*rr;
+    for (let k=0;k<=8;k++){ const t=k/8, a=(1-t)*(1-t), b=2*(1-t)*t, c=t*t; out.push([a*px+b*bx+c*qx, a*py+b*by+c*qy]); }
+  }
+  out.push(raw[raw.length-1]); return out;
+})(RAW_PATH, 36);
+// 24 plates: turn-insides of every loop, road-side spots, three at the gate
+const PADS = [
+  [272,185],[150,148],[100,222],          // loop 1
+  [118,355],[240,318],[300,392],          // loop 2
+  [272,525],[225,486],                    // loop 3 (Trasimene lake)
+  [118,655],[250,655],[200,734],          // loop 4 (river bridge)
+  [272,865],[150,828],[100,902],          // loop 5
+  [118,1035],[290,1072],                  // loop 6 (village)
+  [272,1205],[150,1168],[100,1242],       // loop 7
+  [118,1335],[260,1335],                  // loop 8 (ford)
+  [130,1525],[260,1525],[265,1468]        // gates of Rome
+];
+const SEG = []; let PATH_LEN = 0;
+for (let i = 0; i < PATH.length - 1; i++) {
+  const [x1,y1] = PATH[i], [x2,y2] = PATH[i+1];
+  const len = Math.hypot(x2-x1, y2-y1); if (len < 1e-6) continue;
+  SEG.push({x1,y1,x2,y2,len,start:PATH_LEN});
+  PATH_LEN += len;
+}
+function posAt(d){
+  d = Math.max(0, Math.min(PATH_LEN, d));
+  let lo = 0, hi = SEG.length-1;
+  while (lo < hi) { const m = (lo+hi+1)>>1; if (SEG[m].start <= d) lo = m; else hi = m-1; }
+  const s = SEG[lo], t = Math.min(1, (d - s.start) / s.len);
+  return [s.x1 + (s.x2-s.x1)*t, s.y1 + (s.y2-s.y1)*t];
+}
+// distance along the road of the point nearest to y (used for "which enemy is above/below")
+const riverY = x => 700 + 2.2*Math.sin(x/38) + 1.2*Math.sin(x/13+1);
+const fordY = x => 1372 + 1.6*Math.sin(x/31+.6) + .9*Math.sin(x/11);
+const LAKE = {x:122, y:531, rx:60, ry:27};
+const VILLAGES = [
+  [[178,1010,22],[206,1000,18],[234,1014,24],[262,998,18]],
+  [[236,1414,18],[262,1403,16],[292,1416,20]]
+];
+const FOREST = {x0:166, y0:858, x1:236, y1:930};
+
+// ---------- Data ----------
+const ENEMIES = {
+  gaul:    {name:'Галлы-союзники',      icon:'🪓', hp:32,   spd:56, rew:4,  lives:1,  r:11, col:'#5b8fd6', inf:true,
+            fact:'Галльские племена Северной Италии перешли на сторону Ганнибала.'},
+  iber:    {name:'Иберийские мечники',  icon:'⚔️', hp:75,   spd:40, rew:7,  lives:1,  r:12, col:'#d9783a', inf:true,
+            fact:'Иберийцы из Испании бились коротким острым мечом — потом римляне сами взяли такой меч себе.'},
+  libyan:  {name:'Ливийская пехота',    icon:'🛡️', hp:150,  spd:27, rew:10, lives:1,  r:13, col:'#8a6d3b', inf:true, armor:true,
+            fact:'Ливийские пехотинцы Ганнибала надевали доспехи, снятые с побеждённых римлян.'},
+  slinger: {name:'Балеарские пращники', icon:'🪨', hp:34,   spd:62, rew:5,  lives:1,  r:11, col:'#9a9aa8', inf:true,
+            fact:'Пращники с Балеарских островов попадали в цель со 100 шагов.'},
+  numid:   {name:'Нумидийская конница', icon:'🐎', hp:48,   spd:88, rew:7,  lives:1,  r:12, col:'#c9a227', cav:true,
+            fact:'Нумидийцы — лучшие всадники древности, ездили без сёдел и уздечек.'},
+  elephant:{name:'Боевые слоны',        icon:'🐘', hp:950,  spd:19, rew:35, lives:3,  r:18, col:'#7d7f86', ele:true,
+            fact:'Из 37 слонов после перехода через Альпы выжил почти только один.'},
+  celtib:  {name:'Кельтиберы',          icon:'⚔️', hp:130,  spd:36, rew:9,  lives:1,  r:12, col:'#4a4440', inf:true, dartArmor:true,
+            fact:'Кельтиберы из глубин Испании носили чёрные плащи, а дротики застревали в их крепких щитах.'},
+  gcav:    {name:'Галльская конница',   icon:'🐎', hp:85,   spd:80, rew:9,  lives:1,  r:12, col:'#b8b2a6', cav:true,
+            fact:'При Каннах галльские и иберийские всадники разбили римскую конницу у реки.'},
+  sacred:  {name:'Священный отряд',     icon:'🛡️', hp:300,  spd:22, rew:16, lives:1,  r:13, col:'#f1ede4', inf:true, armor:true,
+            fact:'Священный отряд — отборная пехота из знатных граждан Карфагена в белых одеждах.'},
+  maharbal:{name:'Магарбал',            icon:'🐎', hp:700,  spd:46, rew:120,lives:10, r:18, col:'#b8281e', boss:true, cav:true, mount:true,
+            fact:'Магарбал командовал нумидийской конницей — самыми быстрыми всадниками Ганнибала.'},
+  hasdrubal:{name:'Гасдрубал',          icon:'🛡️', hp:2400, spd:15, rew:150,lives:10, r:18, col:'#8a5a1e', boss:true, inf:true, armor:true, guard:true,
+            fact:'Гасдрубал — брат Ганнибала; рядом с ним враги стоят крепче: урон по ним меньше.'},
+  mago:    {name:'Магон',               icon:'🌫️', hp:1100, spd:24, rew:150,lives:10, r:16, col:'#3d3550', boss:true, inf:true, stealth:true,
+            fact:'Магон — младший брат Ганнибала; время от времени он исчезает из виду, и башни его не видят.'},
+  hannibal:{name:'Ганнибал',            icon:'👁️', hp:3400, spd:17, rew:250,lives:20, r:20, col:'#6b1d7a', boss:true, mount:true, rally:true,
+            fact:'Ганнибал потерял глаз в болотах Этрурии в 217 г. до н. э., но продолжал вести армию.'}
+};
+const BOSS_ORDER = ['maharbal','hasdrubal','mago','hannibal'];
+const TOWERS = {
+  velite:  {name:'Велиты',     icon:'🗡️', cost:50,  range:72,  dmg:9,  cd:0.5, col:'#c0392b', proj:'dart',
+            note:'Быстрые дротики, ×2 урон слонам',
+            fact:'Велиты — молодые бедные воины с дротиками и волчьей шкурой на шлеме.'},
+  legion:  {name:'Легионеры',  icon:'🛡️', cost:80,  range:95,  dmg:22, cd:1.0, col:'#a8261b', proj:'pilum',
+            note:'Пилумы, сильны против пехоты',
+            fact:'Пилум — метательное копьё, которое гнулось при ударе, чтобы враг не бросил его обратно.'},
+  triarii: {name:'Триарии',    icon:'🔱', cost:100, range:78,  dmg:32, cd:1.4, col:'#6d2a8a', proj:'spear',
+            note:'Медленные копья, ×2 урон коннице',
+            fact:'Триарии — ветераны, стояли последними; «дело дошло до триариев» значит «совсем плохо».'},
+  archer:  {name:'Лучники',    icon:'🏹', cost:70,  range:135, dmg:5,  cd:0.4, col:'#2f7d32', proj:'arrow',
+            note:'Далеко и быстро, хороши против быстрых',
+            fact:'Римляне нанимали лучников с Крита — своих стрелков у них почти не было.'},
+  ballista:{name:'Баллиста',   icon:'🏯', cost:150, range:190, dmg:58, cd:2.2, col:'#5a3a1a', proj:'stone', splash:40,
+            note:'Очень далеко, большой урон по площади',
+            fact:'Баллиста метала камни и стрелы на 400 шагов.'},
+  trumpet: {name:'Трубачи',    icon:'🎺', cost:60,  range:88,  dmg:0,  cd:0,   col:'#c98b12', proj:null,
+            note:'Урона нет; слоны рядом паникуют',
+            fact:'В битве при Заме Сципион приказал трубить, и слоны испугались и побежали назад.'}
+};
+const TOWER_ORDER = ['velite','legion','triarii','archer','ballista','trumpet'];
+const LOCKED = [
+  {name:'Пушка',   icon:'💣', line:'Порох привезут в Европу через 1500 лет.'},
+  {name:'Рыцарь',  icon:'🐴', line:'Стремена и латы — это Средневековье, а не Рим.'},
+  {name:'Арбалет', icon:'🎯', line:'Появится в Европе только через тысячу лет.'},
+  {name:'Пулемёт', icon:'🔫', line:'Это вообще другая эпоха.'}
+];
+const ABIL = {
+  fab:{name:'Тактика Фабия', icon:'⏳', cd:45, dur:6, fact:'Фабий Максим Кунктатор избегал битвы и изматывал Ганнибала. Все враги замедлены на 6 с.'},
+  sci:{name:'Легионы Сципиона', icon:'⚡', cd:60, dur:6, fact:'Сципион обучил легионы новой тактике и победил Карфаген. Защитники +50% урона на 6 с.'}
+};
+// group: [type, count, gap seconds, start offset]
+// six chapters of the war, five waves each; the card before the first wave of a chapter tells the battle
+const CHAPTERS = [
+  {name:'Треббия', year:'218 г. до н. э.', lead:'gaul',
+   fact:'При Треббии Ганнибал заманил римлян в ледяную реку, а потом ударил из засады.'},
+  {name:'Тразименское озеро', year:'217 г. до н. э.', lead:'numid',
+   fact:'У Тразименского озера Ганнибал спрятал армию в тумане на холмах и ударил сверху.'},
+  {name:'Канны', year:'216 г. до н. э.', lead:'celtib',
+   fact:'При Каннах Ганнибал окружил 80 тысяч римлян; говорят, после битвы Магарбал сказал ему: «Побеждать ты умеешь, а пользоваться победой — нет».'},
+  {name:'Война на истощение', year:'215–208 гг. до н. э.', lead:'gcav',
+   fact:'Гасдрубал повёл второе войско через Альпы, но римляне перехватили его письмо брату.'},
+  {name:'Метавр', year:'207 г. до н. э.', lead:'sacred',
+   fact:'При Метавре римляне разбили Гасдрубала и бросили его голову в лагерь Ганнибала.'},
+  {name:'Зама', year:'202 г. до н. э.', lead:'elephant',
+   fact:'Война закончилась битвой при Заме в 202 г. до н. э.: Публий Корнелий Сципион разбил Ганнибала, и Карфаген запросил мира.'}
+];
+// group: [type, count, gap seconds, start offset]
+const WAVES = [
+  // 1. Треббия
+  {title:'Галлы-союзники', lead:'gaul', g:[['gaul',10,1.2,0]]},
+  {title:'Галлы-союзники', lead:'gaul', g:[['gaul',16,0.85,0]], fact:'Галлы шли в бой без доспехов и надеялись на силу и ярость.'},
+  {title:'Иберийские мечники', lead:'iber', g:[['iber',10,1.4,0],['gaul',8,1.1,3]]},
+  {title:'Пращники и галлы', lead:'slinger', g:[['slinger',12,0.9,0],['gaul',12,0.9,4]]},
+  {title:'Засада у реки', lead:'iber', g:[['iber',12,1.1,0],['slinger',10,0.8,3],['gaul',12,0.8,8]],
+    fact:'Иберийцы из Испании бились коротким острым мечом — потом римляне сами взяли такой меч себе.'},
+  // 2. Тразименское озеро
+  {title:'Ливийская пехота', lead:'libyan', g:[['libyan',8,1.9,0],['gaul',12,1,6]]},
+  {title:'Нумидийская конница', lead:'numid', g:[['numid',16,0.75,0]]},
+  {title:'Туман над холмами', lead:'slinger', g:[['gaul',14,0.8,0],['iber',10,1.1,3],['slinger',10,0.9,8],['libyan',6,1.8,12]],
+    fact:'Балеарские пращники с детства учились метать камни: еду им давали, только если они попадут.'},
+  {title:'Конница и пращники', lead:'numid', g:[['numid',16,0.7,0],['slinger',14,0.8,3]],
+    fact:'Нумидийская конница налетала, метала дротики и мгновенно уносилась прочь.'},
+  {title:'Первый слон', lead:'elephant', g:[['elephant',1,1,4],['libyan',10,1.4,0],['iber',14,0.9,2]],
+    fact:'Погонщик сидел у слона на шее и управлял им ударами палки и голосом.'},
+  // 3. Канны
+  {title:'Кельтиберы', lead:'celtib', g:[['celtib',10,1.4,0],['gaul',16,0.7,3]]},
+  {title:'Полумесяц Ганнибала', lead:'libyan', g:[['iber',14,0.8,0],['libyan',10,1.3,4],['numid',12,0.7,10],['celtib',8,1.2,14]],
+    fact:'При Каннах в центре стояли галлы и иберы, а ливийцы ждали по краям, чтобы сомкнуть кольцо.'},
+  {title:'Слоны и пращники', lead:'elephant', g:[['elephant',2,8,0],['celtib',12,1.1,2],['slinger',14,0.7,6]]},
+  {title:'Конная лавина', lead:'numid', g:[['numid',22,0.55,0],['celtib',12,1.1,6]]},
+  {title:'Магарбал', lead:'maharbal', boss:'maharbal', g:[['numid',18,0.6,0],['libyan',10,1.3,3],['elephant',2,7,6],['maharbal',1,1,12]],
+    fact:'Магарбал, начальник нумидийской конницы, после Канн звал Ганнибала сразу скакать на Рим.'},
+  // 4. Война на истощение
+  {title:'Толпы галлов', lead:'gaul', g:[['gaul',34,0.42,0],['iber',18,0.7,4]]},
+  {title:'Галльская конница', lead:'gcav', g:[['gcav',14,0.9,0],['numid',16,0.7,4]]},
+  {title:'Иберы и кельтиберы', lead:'celtib', g:[['gaul',26,0.5,0],['iber',20,0.7,3],['celtib',12,1.1,8]]},
+  {title:'Набег всадников', lead:'gcav', g:[['gcav',18,0.7,0],['numid',18,0.6,3],['slinger',18,0.6,6]]},
+  {title:'Гасдрубал', lead:'hasdrubal', boss:'hasdrubal', g:[['iber',18,0.7,0],['celtib',14,1,3],['hasdrubal',1,1,10],['libyan',12,1.1,12],['elephant',1,1,16]],
+    fact:'Гасдрубал, брат Ганнибала, пришёл из Испании с подкреплением, и рядом с ним враги держатся крепче.'},
+  // 5. Метавр
+  {title:'Священный отряд', lead:'sacred', g:[['elephant',3,7,0],['libyan',14,1,2],['sacred',6,1.6,8]]},
+  {title:'Белые щиты', lead:'sacred', g:[['sacred',12,1.2,0],['celtib',14,0.9,3],['gcav',12,0.8,10]]},
+  {title:'Четыре слона', lead:'elephant', g:[['elephant',4,6,0],['libyan',16,0.9,2],['numid',18,0.6,8]]},
+  {title:'Пять слонов', lead:'elephant', g:[['elephant',5,5.5,0],['sacred',12,1.1,3],['gaul',32,0.45,6]]},
+  {title:'Магон', lead:'mago', boss:'mago', g:[['elephant',3,6,0],['sacred',10,1.2,2],['libyan',12,1,6],['mago',1,1,12],['gcav',14,0.7,16]],
+    fact:'Магон, младший брат Ганнибала, устроил засаду при Треббии: спрятал воинов в зарослях у реки.'},
+  // 6. Зама
+  {title:'Всё войско Карфагена', lead:'iber', g:[['gaul',32,0.45,0],['iber',22,0.6,3],['celtib',16,0.9,8],['slinger',18,0.6,12]]},
+  {title:'Конница с двух сторон', lead:'gcav', g:[['gcav',20,0.6,0],['numid',22,0.5,3],['sacred',10,1.3,8]]},
+  {title:'Восемь слонов', lead:'elephant', g:[['elephant',8,4.5,0],['libyan',16,0.9,2],['sacred',12,1.1,8]],
+    fact:'При Заме у Ганнибала было 80 слонов — больше, чем в любой другой его битве.'},
+  {title:'Последний натиск', lead:'sacred', g:[['celtib',18,0.8,0],['sacred',14,1,4],['gcav',16,0.7,8],['elephant',4,6,10],['libyan',14,0.9,14]],
+    fact:'Сципион выстроил легионы так, чтобы между отрядами остались проходы для слонов.'},
+  {title:'Ганнибал и его охрана', lead:'hannibal', boss:'hannibal', g:[['libyan',12,1,0],['sacred',10,1.2,3],['elephant',6,4.5,6],['hannibal',1,1,14],['gcav',12,0.7,18],['numid',14,0.6,22]]}
+];
+const chapterOf = n => Math.min(5, Math.floor((Math.max(1,n)-1)/5));
+const BEST_KEY = 'hannibal-td-best-walls-30';
+
+// ---------- History content: wave facts, quiz, forks of history, encyclopedia ----------
+// CONTENT_BEGIN (embedded from content.json)
+const CONTENT = {"waveFacts":["Осенью 218 г. до н. э. Ганнибал привёл войско в Италию через Альпы — римляне ждали его совсем не оттуда.","Многие галлы с севера Италии были недовольны Римом, и после первых боёв они пошли воевать на стороне Ганнибала.","Нумидийские всадники налетали на римлян и делали вид, что бегут, — так Ганнибал заманивал врага к реке Треббии.","Ганнибал привёл через Альпы около 37 слонов (так пишет Полибий), но зимой в Италии почти все они погибли от холода.","У балеарских пращников камни и свинцовые шарики летели так далеко и так метко, что их нанимали во многие армии.","Весной 217 г. до н. э. войско Ганнибала четыре дня шло по топям у реки Арно; там Ганнибал тяжело заболел и потерял зрение на один глаз.","Консул Гай Фламиний был горячим и упрямым: он пошёл за Ганнибалом по пятам, не разведав дорогу.","Иберийские мечники сражались короткими мечами, которыми удобно и колоть, и рубить в тесной схватке.","На рассвете над Тразименским озером стоял густой туман, и римляне не видели врагов на холмах, пока те не ударили сверху.","У Тразименского озера, по Полибию, погибло около 15 000 римлян, а консул Фламиний пал в бою.","В 216 г. до н. э. Рим собрал небывалое войско — вместе с союзниками около 80 000 человек.","Галльская и иберийская конница Ганнибала стояла на левом краю у реки и первой сломала римских всадников.","При Каннах Ганнибал поставил в центр галлов и иберийцев, а ливийцев — по краям, и римляне оказались в мешке.","Консулы Варрон и Эмилий Павел командовали по очереди, через день, и Ганнибал выбрал для боя удобный для него день и место.","Говорят, после Канн конный начальник Магарбал просил Ганнибала идти на Рим, но тот не решился.","После Канн Рим не просил мира: в войска записывали даже совсем юных и тех, кого раньше не брали.","Фабия Максима прозвали Кунктатором — «Медлителем»: он не лез в большие битвы, а изматывал врага.","После Канн на сторону Ганнибала перешли многие города юга Италии, в том числе богатая Капуя.","Кельтиберы — воинственные племена центральной Испании; их нанимали и карфагеняне, и римляне.","Брат Ганнибала Гасдрубал остался в Испании; в 208 г. до н. э. Сципион разбил его, но Гасдрубал ушёл и двинулся к Италии.","В 207 г. до н. э. Гасдрубал перешёл Альпы и вошёл в Италию, чтобы соединиться с Ганнибалом.","Священный отряд — отборные граждане самого Карфагена, а вообще большая часть карфагенской армии была наёмной.","Римляне перехватили гонцов Гасдрубала с письмом к Ганнибалу и узнали, где и когда братья хотят встретиться.","Консул Нерон тайно увёл около 7000 лучших воинов на север, и в бою у реки Метавр римляне получили двойной перевес.","Метавр: Гасдрубал погиб, и братья так и не встретились; позже в Италии пытался воевать их младший брат Магон.","В 204 г. до н. э. Сципион переправил войско в Африку, и Карфагену пришлось защищать уже собственные земли.","Нумидийский царевич Масинисса перешёл на сторону Рима и привёл с собой отличную конницу.","В 203 г. до н. э. Карфаген вызвал Ганнибала домой — он покинул Италию, где воевал около пятнадцати лет.","При Заме у Ганнибала было около 80 слонов, но Сципион оставил в строю проходы, и многие слоны пробежали мимо римлян.","Победа при Заме в 202 г. до н. э. закончила войну, а Сципион получил прозвище Африканский."],"quiz":[{"wave":1,"q":"В каком году, по преданию, был основан Рим?","options":["509 г. до н. э.","264 г. до н. э.","753 г. до н. э."],"answer":2,"explain":"Римляне считали днём основания города 753 г. до н. э. Это дата из предания, а не точно проверенный факт."},{"wave":2,"q":"Кто, по преданию, основал город Рим?","options":["Ромул","Эней","Ганнибал"],"answer":0,"explain":"По преданию, близнецов Ромула и Рема выкормила волчица, а Ромул основал город и стал его первым царём. Эней считался лишь далёким предком римлян."},{"wave":3,"q":"Как звали отца Ганнибала, великого карфагенского полководца?","options":["Гасдрубал","Гамилькар Барка","Магон"],"answer":1,"explain":"Гамилькар Барка воевал с Римом в Первую Пуническую войну. По рассказу Полибия, он заставил маленького Ганнибала поклясться быть врагом Риму."},{"wave":4,"q":"Через какие горы Ганнибал повёл войско и слонов в Италию?","options":["Через Пиренеи","Через Апеннины","Через Альпы"],"answer":2,"explain":"Ганнибал перешёл Альпы осенью 218 г. до н. э. Путь был тяжёлым: холод, обвалы и нападения горцев."},{"wave":5,"q":"Какую хитрость применил Ганнибал при Треббии?","options":["Заманил голодных римлян через ледяную реку","Пустил по реке горящие лодки","Подкопал стены римского лагеря"],"answer":0,"explain":"Нумидийцы выманили римлян, и те переправились через холодную зимнюю реку, не поев. Усталых воинов ждали отдохнувшие карфагеняне и засада."},{"wave":6,"q":"Сколько консулов избирали в Римской республике каждый год?","options":["Одного","Двух","Десять"],"answer":1,"explain":"Консулов было двое, и власть у них была равная. Так римляне хотели не допустить, чтобы один человек стал царём."},{"wave":7,"q":"Что помогло Ганнибалу устроить засаду у Тразименского озера?","options":["Сильный дождь и гроза","Ночной штурм лагеря","Густой утренний туман и холмы вдоль дороги"],"answer":2,"explain":"Римское войско шло колонной между озером и холмами, а туман скрыл карфагенян. Они ударили со всех сторон, и построиться римляне не успели."},{"wave":8,"q":"Кто такие плебеи в Древнем Риме?","options":["Простые свободные граждане — крестьяне, ремесленники, торговцы","Знатные потомки первых родов","Рабы, привезённые из походов"],"answer":0,"explain":"Знатных называли патрициями, а остальных свободных граждан — плебеями. Долго именно патриции занимали главные должности."},{"wave":9,"q":"Что такое сенат в Древнем Риме?","options":["Римская армия","Совет знатных и опытных людей, который решал важные дела государства","Храм главных богов"],"answer":1,"explain":"В сенате заседали бывшие должностные лица и знатные римляне. Он решал вопросы войны, мира, денег и отношений с другими странами."},{"wave":10,"q":"В каком году до н. э. римляне прогнали последнего царя и создали республику?","options":["753","216","509"],"answer":2,"explain":"Последним царём был Тарквиний Гордый. После его изгнания в 509 г. до н. э. власть перешла к выборным должностным лицам."},{"wave":11,"q":"Что случилось с римским войском в битве при Каннах?","options":["Римляне были окружены и потерпели страшное поражение","Римляне прорвали центр и погнали врага","Обе армии разошлись без боя"],"answer":0,"explain":"Ганнибал дал римлянам вклиниться в центр, а с боков ударили ливийцы и конница. Римлян окружили, и погибли десятки тысяч человек."},{"wave":12,"q":"Как назывались небольшие отряды, на которые делился римский легион?","options":["Фаланги","Манипулы","Когорты-слоны"],"answer":1,"explain":"Манипулы были подвижнее сплошной фаланги: легион мог перестраиваться и действовать на неровной земле. Строились они в три линии."},{"wave":13,"q":"Что значит выражение «пиррова победа»?","options":["Победа без единой потери","Победа, которую одержали хитростью","Победа, добытая такой дорогой ценой, что она почти равна поражению"],"answer":2,"explain":"Царь Пирр победил римлян при Гераклее и Аскуле, но потерял столько воинов, что дальше воевать ему стало трудно."},{"wave":14,"q":"Из-за какого острова в основном воевали Рим и Карфаген в Первой Пунической войне?","options":["Сицилии","Сардинии","Крита"],"answer":0,"explain":"Первая Пуническая война шла с 264 до 241 г. до н. э. Победил Рим, а Сицилия стала его первой провинцией."},{"wave":15,"q":"Что, как говорят, посоветовал Магарбал Ганнибалу после победы при Каннах?","options":["Просить Рим о мире","Сразу идти на Рим","Вернуться в Карфаген"],"answer":1,"explain":"Ливий пишет, что Магарбал сказал Ганнибалу: «Ты умеешь побеждать, но не умеешь пользоваться победой». Ганнибал не пошёл на Рим: у него не было ни осадных машин, ни достаточно сил."},{"wave":16,"q":"В чём состояла тактика Фабия Максима?","options":["Каждый день нападать на лагерь Ганнибала","Просить помощи у Египта","Не вступать в большие битвы, а изматывать врага и отрезать ему припасы"],"answer":2,"explain":"Фабий шёл за Ганнибалом по холмам, где конница врага была слабее. Из-за этого его прозвали Кунктатором, то есть Медлителем."},{"wave":17,"q":"Кого римляне выбирали диктатором?","options":["Человека, получавшего особую власть на короткий срок в опасное время","Самого богатого гражданина","Победителя на играх"],"answer":0,"explain":"Диктатора назначали в трудный час, как правило, не больше чем на шесть месяцев. Фабий Максим стал диктатором после Тразименского озера."},{"wave":18,"q":"Какой крупный город Италии перешёл к Ганнибалу после Канн?","options":["Остия","Капуя","Анций"],"answer":1,"explain":"Капуя была одним из самых больших городов Италии. Римляне осадили её и в 211 г. до н. э. взяли, а Ганнибалу не удалось её спасти."},{"wave":19,"q":"Какой знаменитый учёный помогал защищать Сиракузы на Сицилии от римлян?","options":["Евклид","Пифагор","Архимед"],"answer":2,"explain":"Архимед строил метательные машины и подъёмные устройства. Сиракузы взял римский полководец Марцелл в 212 г. до н. э., и при взятии города Архимед погиб."},{"wave":20,"q":"Кем Гасдрубал приходился Ганнибалу?","options":["Родным братом","Сыном","Дядей по матери"],"answer":0,"explain":"Гасдрубал был младшим братом Ганнибала. Он оставался в Испании и в 207 г. до н. э. повёл войско в Италию на помощь Ганнибалу."},{"wave":21,"q":"Что сделал римский консул Нерон перед битвой у Метавра?","options":["Заключил мир с Ганнибалом","Тайно увёл часть войска на север, чтобы ударить по Гасдрубалу","Отступил в Рим"],"answer":1,"explain":"Нерон оставил лагерь против Ганнибала и быстро ушёл на север с лучшими воинами. Соединившись с другим консулом, он напал на Гасдрубала."},{"wave":22,"q":"Кто такие триарии в римском легионе?","options":["Самые молодые и бедные воины","Лучники и пращники","Самые опытные воины, стоявшие в третьей линии"],"answer":2,"explain":"Триарии вступали в бой, когда первые две линии не справлялись. Отсюда пошла римская поговорка: дело дошло до триариев — значит, положение тяжёлое."},{"wave":23,"q":"Зачем римские плебеи требовали записать законы на таблицах?","options":["Чтобы судьи не толковали законы как им выгодно","Чтобы украсить храмы","Чтобы отдать власть царю"],"answer":0,"explain":"Законы XII таблиц записали около 450 г. до н. э. и выставили на площади, чтобы каждый мог их прочитать."},{"wave":24,"q":"Чем закончилась битва у реки Метавр в 207 г. до н. э.?","options":["Победой Гасдрубала","Разгромом войска Гасдрубала и его гибелью","Мирным договором"],"answer":1,"explain":"Римляне разбили армию Гасдрубала, и сам он погиб. Братья Ганнибал и Гасдрубал так и не соединили войска."},{"wave":25,"q":"Кто из братьев Ганнибала после Метавра ещё пытался воевать в северной Италии?","options":["Гамилькар","Масинисса","Магон"],"answer":2,"explain":"Магон высадился на севере Италии в 205 г. до н. э. и собрал галлов и лигуров. Через два года его разбили, он был ранен и умер на обратном пути. Масинисса — это нумидийский царевич, а не брат Ганнибала."},{"wave":26,"q":"Какой смелый план придумал Сципион, чтобы закончить войну?","options":["Перенести войну в Африку, к самому Карфагену","Окружить Рим стеной","Отдать Ганнибалу Сицилию"],"answer":0,"explain":"Сципион высадился в Африке в 204 г. до н. э. Сенатор Фабий был против, считая, что это слишком рискованно. Но план сработал: Карфаген позвал Ганнибала на помощь."},{"wave":27,"q":"Что сделали плебеи в 494 г. до н. э., когда требовали защиты от знати (по преданию)?","options":["Подожгли Капитолий","Ушли из города на Священную гору — и добились народных трибунов","Прогнали сенаторов в изгнание"],"answer":1,"explain":"Народные трибуны могли остановить несправедливое решение должностного лица. Это сильно укрепило положение плебеев."},{"wave":28,"q":"Кто был союзником Рима в Африке и командовал нумидийской конницей при Заме?","options":["Ганнон","Пирр","Масинисса"],"answer":2,"explain":"Масинисса сначала был союзником Карфагена, а затем перешёл к Риму. Его конница помогла Сципиону при Заме."},{"wave":29,"q":"Как Сципион сумел справиться с боевыми слонами Ганнибала при Заме?","options":["Оставил между отрядами проходы, и слоны проскакивали мимо","Выкопал глубокий ров","Поджёг поле"],"answer":0,"explain":"Сципион построил манипулы так, чтобы между ними были широкие проходы. Слонов шумом трубачей и копьями гнали в эти коридоры или назад, на их же воинов."},{"wave":30,"q":"Какое почётное прозвище получил Сципион после победы над Карфагеном?","options":["Кунктатор","Африканский","Гордый"],"answer":1,"explain":"Победа при Заме в 202 г. до н. э. закончила Вторую Пуническую войну. Сципион стал Публием Корнелием Сципионом Африканским, а Кунктатором называли Фабия."}],"events":[{"afterWave":3,"chapter":1,"title":"Треббия: совет консулов","text":"Декабрь 218 г. до н. э. Ты консул Семпроний. Ганнибал стоит за рекой Треббией, твой коллега Сципион ранен и лежит в лагере, а воины рвутся в бой. Скоро выборы новых консулов, и слава победы достанется тебе.","options":[{"label":"Принять бой и переправиться через реку","correct":false,"result":"Так и поступил Семпроний. Римляне вошли в ледяную воду на голодный желудок, их окружили, и спаслась лишь часть войска."},{"label":"Дождаться, пока Сципион поправится, и весны","correct":true,"result":"Это советовал Сципион, но Семпроний не послушал. Отдохнувшие и сытые римляне на своём берегу бились бы куда лучше, а Ганнибалу пришлось бы зимовать в чужой стране."}]},{"afterWave":8,"chapter":2,"title":"Тразимен: погоня через холмы","text":"Весна 217 г. до н. э. Ты консул Фламиний. Ганнибал обошёл твоё войско и жжёт поля вокруг, а в Риме требуют остановить его. Дорога идёт вдоль озера между холмами, и утром над водой лежит туман.","options":[{"label":"Идти следом колонной, не медля","correct":false,"result":"Так и сделал Фламиний. Римляне попали в засаду между озером и холмами, и около 15 000 человек погибли, в том числе сам консул."},{"label":"Сначала отправить разведчиков на холмы","correct":true,"result":"Фламиний этого не сделал. Разведка заметила бы воинов на склонах, и римляне могли бы выбрать себе место для боя, а не идти в ловушку."},{"label":"Подождать в лагере второго консула","correct":false,"result":"Фламиний не стал ждать. Вместе они были бы сильнее, но Ганнибал мог бы за это время опустошить ещё больше земли, а римляне хотели защитить свои поля."}]},{"afterWave":13,"chapter":3,"title":"Канны: равнина или холмы","text":"Лето 216 г. до н. э. Ты консул, и у тебя огромное войско: около 80 000 человек. Ганнибал стоит на открытой равнине, где у него больше и сильнее всадников. Твой коллега советует не принимать бой на такой земле, а воины требуют сражения.","options":[{"label":"Принять бой на равнине","correct":false,"result":"Так и было при Каннах. Ганнибал окружил римское войско, и погибли десятки тысяч, среди них консул Эмилий Павел."},{"label":"Отказаться и вести войско в холмы","correct":true,"result":"Так хотел Эмилий Павел. В холмах конница Ганнибала не смогла бы окружить римлян, а им не пришлось бы так страшно платить за ошибку."}]},{"afterWave":18,"chapter":4,"title":"После Канн: как жить дальше","text":"Осень 216 г. до н. э. Рим потерял почти всё полевое войско, а часть союзников перешла к Ганнибалу. Одни сенаторы предлагают просить мира, другие — собрать новую армию и снова дать большое сражение. Фабий Максим предлагает иное.","options":[{"label":"Дать ещё одну генеральную битву","correct":false,"result":"Рим много раз пробовал так, и он терял армии. Ганнибал сильнее в открытом поле, особенно с конницей."},{"label":"Идти за Ганнибалом, не вступая в большие битвы, и брать города один за другим","correct":true,"result":"Так и делал Рим. Ганнибал много лет не мог найти новых союзников и пополнить войско, а римляне вернули Капую и многие города."},{"label":"Просить Ганнибала о мире","correct":false,"result":"Сенат отказался и от мира, и от выкупа пленных. Рим решил бороться до конца, и это его спасло."}]},{"afterWave":23,"chapter":5,"title":"Метавр: тайный поход","text":"207 г. до н. э. Ты консул Клавдий Нерон. Против тебя стоит Ганнибал на юге, а на севере к Италии идёт его брат Гасдрубал. Если братья соединятся, Риму придётся плохо, и твой коллега на севере не справится один.","options":[{"label":"Держать позиции и ждать, что будет","correct":false,"result":"Тогда Гасдрубал мог бы встретить только одного консула и соединиться с братом. Риск был бы слишком велик."},{"label":"Тайно увести часть войска на север","correct":true,"result":"Так и сделал Нерон: он уходил очень быстро, и Ганнибал долго не знал об этом. Римляне напали на Гасдрубала двумя армиями и разбили его."}]},{"afterWave":28,"chapter":6,"title":"Сципион: куда идти","text":"205 г. до н. э. Ты Сципион. Ганнибал уже много лет в Италии, и никто не может выгнать его оттуда. Фабий считает, что надо защищать Италию. Но ты побеждал в Испании и знаешь, что у Карфагена мало войск дома.","options":[{"label":"Защищать Италию и ждать","correct":false,"result":"Так хотел Фабий. Война тянулась бы без конца, потому что Ганнибал оставался бы в Италии."},{"label":"Высадиться в Африке, рядом с Карфагеном","correct":true,"result":"Так и поступил Сципион в 204 г. до н. э. Карфагену пришлось вызвать Ганнибала домой, и в 202 г. до н. э. при Заме Рим одержал победу."}]}],"encyclopedia":[{"id":"velites","kind":"unit","title":"Велиты","text":"Велиты — лёгкие пехотинцы римской армии. Это были молодые и небогатые воины: на доспехи у них денег не хватало. Они носили небольшой круглый щит и метали дротики. Они начинали бой издалека, а потом отходили за спины тяжёлой пехоты."},{"id":"legion","kind":"unit","title":"Легионеры","text":"Легионеры — основа римской армии. Первые две линии, гастаты и принципы, метали тяжёлые копья-пилумы, а потом бились короткими мечами. Пилум после броска гнулся, и вражеский щит с ним было трудно носить. Каждый легионер носил шлем, броню и большой щит."},{"id":"triarii","kind":"unit","title":"Триарии","text":"Триарии — самые опытные воины легиона, обычно уже немолодые. Они стояли в третьей линии и вступали в бой, только если первые две линии не справлялись. У них были длинные копья. От них пошла римская поговорка: «дело дошло до триариев» — то есть положение тяжёлое."},{"id":"archer","kind":"unit","title":"Критские лучники","text":"Остров Крит издавна славился лучниками. Римляне нанимали их и брали в союзные отряды. Стрелы лучников летели дальше, чем дротики, и это помогало обстреливать врага издалека. Лучников легко было сломать в ближнем бою, поэтому их прикрывали тяжёлой пехотой."},{"id":"ballista","kind":"unit","title":"Баллиста","text":"Баллиста — метательная машина, которая бросала тяжёлые стрелы или камни. Вместо лука у неё были скрученные жилы или канаты, и они сильно натягивались. Римляне применяли такие машины в основном при осаде городов. Одним из самых известных создателей метательных машин считают Архимеда из Сиракуз."},{"id":"trumpet","kind":"unit","title":"Трубачи","text":"В римской армии приказы подавали звуком труб и рогов. Воины знали сигналы на слух, потому что в шуме битвы голос не расслышать. По сигналу отряды шли вперёд, отходили или перестраивались. Хороший трубач помогал армии действовать дружно."},{"id":"gaul","kind":"enemy","title":"Галлы-союзники","text":"Галлы — кельтские племена, жившие на севере Италии и за Альпами. Одни галлы были недовольны римлянами и после первых боёв перешли на сторону Ганнибала. Они бились длинными мечами и яростно бросались в бой. Но без выучки они плохо держали строй, и поэтому Ганнибал ставил их в центр."},{"id":"iber","kind":"enemy","title":"Иберийские мечники","text":"Иберы — жители Испании, и в армии Ганнибала их было немало. Они воевали короткими мечами, которыми удобно и колоть, и рубить. По Полибию, при Каннах иберы были в белых туниках с красной каймой. Это были стойкие и опытные воины."},{"id":"libyan","kind":"enemy","title":"Ливийская пехота","text":"Ливийцы — тяжёлая пехота из подвластных Карфагену земель Африки. Это были самые надёжные воины Ганнибала. Полибий пишет, что при Каннах они были вооружены захваченным римским оружием. На краях строя они развернулись и ударили по римлянам с боков."},{"id":"slinger","kind":"enemy","title":"Балеарские пращники","text":"Балеарские острова лежат у берегов Испании, и их жители славились умением метать камни из пращи. Античные авторы пишут, что с детства они учились обращаться с пращой. Снаряды у них были и каменные, и свинцовые. Пращники обстреливали врага ещё до того, как начинался ближний бой."},{"id":"numid","kind":"enemy","title":"Нумидийская конница","text":"Нумидийцы — жители Северной Африки, прекрасные всадники. Ливий пишет, что они почти не пользовались уздечками и управляли конём голосом и коленями. Они быстро налетали, метали дротики и тут же уходили. Такими приёмами они заманили римлян к Треббии."},{"id":"elephant","kind":"enemy","title":"Боевые слоны","text":"Ганнибал привёл в Италию около 37 слонов (так пишет Полибий). Слоны пугали лошадей и могли ломать строй. Но в холодной Италии они мёрзли, и после Треббии выжил только один. На нём Ганнибал, по рассказам, ехал по болотам."},{"id":"celtiber","kind":"enemy","title":"Кельтиберы","text":"Кельтиберы — племена центральной Испании. Они были отважными бойцами и славились хорошими мечами. Кельтиберов нанимали и карфагеняне, и римляне. Римские полководцы в Испании тоже брали кельтиберов в наёмники."},{"id":"gaulcav","kind":"enemy","title":"Галльская конница","text":"Галльские всадники были храбрыми и сильными. Под Каннами они вместе с иберийской конницей стояли на левом краю у реки. Они быстро разбили римских всадников напротив и обошли римскую армию сзади. Так римский строй оказался окружён."},{"id":"sacred","kind":"enemy","title":"Священный отряд Карфагена","text":"Священный отряд — отборные воины, граждане самого Карфагена. Большая часть карфагенской армии набиралась из наёмников и подданных, а граждан среди воинов было немного. Поэтому такой отряд считался особенно почётным. Он был сильным и стойким, но его было немного."},{"id":"maharbal","kind":"boss","title":"Магарбал","text":"Магарбал — начальник конницы Ганнибала. Ливий пишет, что при Тразименском озере его всадники разбили отряд римской конницы. После Канн он, как говорят, посоветовал идти на Рим и сказал, что Ганнибал умеет побеждать, но не умеет пользоваться победой."},{"id":"hasdrubal","kind":"boss","title":"Гасдрубал","text":"Гасдрубал — младший брат Ганнибала. Он остался в Испании и воевал со Сципионом. В 208 г. до н. э. он потерпел поражение, но сумел увести войско и затем двинулся в Италию. Переход через Альпы он совершил быстрее, чем Ганнибал, но у реки Метавр в 207 г. до н. э. погиб в бою."},{"id":"mago","kind":"boss","title":"Магон","text":"Магон — младший брат Ганнибала. Он был с ним в Италии и участвовал в засаде при Треббии. После Канн он отвёз в Карфаген известие о победе. В 205 г. до н. э. он высадился на севере Италии и собрал галлов и лигуров, но в 203 г. до н. э. его разбили. Он был ранен и умер по дороге домой."},{"id":"hannibal","kind":"boss","title":"Ганнибал","text":"Ганнибал родился в 247 г. до н. э. в семье Гамилькара Барки. По рассказу Полибия, отец заставил его мальчиком поклясться быть врагом Риму. В 218 г. до н. э. он перешёл Альпы и около пятнадцати лет воевал в Италии. Проиграл при Заме в 202 г. до н. э., позже бежал на Восток и, как считают, умер около 183 г. до н. э."},{"id":"scipio","kind":"person","title":"Сципион Африканский","text":"Публий Корнелий Сципион был молодым римским полководцем. Он разбил карфагенян в Испании и взял их главный город Новый Карфаген. В 204 г. до н. э. он перенёс войну в Африку. В 202 г. до н. э. он победил Ганнибала при Заме и получил прозвище Африканский."},{"id":"fabius","kind":"person","title":"Фабий Максим Кунктатор","text":"Квинт Фабий Максим стал диктатором после Тразименского озера. Он не рвался в большие битвы, а шёл за Ганнибалом, отрезал ему припасы и берёг свои силы. Его прозвали Кунктатором, то есть Медлителем. Он спас Рим от новых поражений."},{"id":"marcellus","kind":"person","title":"Марк Клавдий Марцелл","text":"Марцелл был смелым римским полководцем. Фабия иногда называли «щитом» Рима, а Марцелла — его «мечом». В 212 г. до н. э. он взял Сиракузы, где погиб учёный Архимед. В 208 г. до н. э. Марцелл погиб в засаде."},{"id":"masinissa","kind":"person","title":"Масинисса","text":"Масинисса — царевич Нумидии, одной из областей Северной Африки. Сначала он воевал на стороне Карфагена, в том числе в Испании. Затем он перешёл на сторону Рима. При Заме в 202 г. до н. э. его конница помогла Сципиону победить Ганнибала."},{"id":"varro","kind":"person","title":"Гай Теренций Варрон","text":"Варрон был консулом в 216 г. до н. э. и вместе с Эмилием Павлом командовал римским войском при Каннах. Он горячо хотел дать бой. После поражения он остался жив и сумел собрать оставшихся воинов. Сенат, как рассказывает Ливий, поблагодарил его за то, что он не отчаялся в спасении государства."},{"id":"nero","kind":"person","title":"Гай Клавдий Нерон","text":"Нерон был консулом в 207 г. до н. э. Он стоял на юге Италии против Ганнибала, когда узнал, что Гасдрубал идёт с севера. Нерон отобрал около 7000 лучших воинов и тайно, очень быстро повёл их на север. Там он и второй консул вместе разбили Гасдрубала у реки Метавр."},{"id":"trebbia","kind":"battle","title":"Битва при Треббии, 218 г. до н. э.","text":"Первая большая битва Ганнибала в Италии шла зимой. Нумидийцы выманили римлян на другой берег холодной реки, и те вышли на бой голодными и замёрзшими. Часть карфагенян ждала в засаде, и римские колонны были окружены. Многие римляне погибли, но около 10 000 пробились к городу Плаценции."},{"id":"trasimene","kind":"battle","title":"Битва у Тразименского озера, 217 г. до н. э.","text":"Консул Фламиний пошёл за Ганнибалом по пятам. Дорога вела между озером и холмами, и утром стоял густой туман. Карфагеняне напали с холмов со всех сторон, и римляне не успели построиться. По Полибию, около 15 000 римлян погибло, и столько же попало в плен. Фламиний погиб."},{"id":"cannae","kind":"battle","title":"Битва при Каннах, 216 г. до н. э.","text":"У Ганнибала было около 50 000 воинов, а римлян — намного больше. Он поставил в центр галлов и иберийцев, а по краям ливийцев. Римляне вклинились в центр, а ливийцы ударили с боков, и конница зашла римлянам в тыл. Погибли десятки тысяч римлян, среди них консул Эмилий Павел. Это одно из самых страшных поражений Рима."},{"id":"attrition","kind":"battle","title":"Война на истощение, 215–208 гг. до н. э.","text":"После Канн Рим не просил мира и не давал Ганнибалу больших битв. Римляне осадили и в 211 г. до н. э. взяли Капую, а в 212 г. до н. э. — Сиракузы. Тарент Ганнибал занял в 212 г. до н. э., но в 209 г. до н. э. его вернул Фабий. Ганнибалу не хватало людей и припасов."},{"id":"metaurus","kind":"battle","title":"Битва при Метавре, 207 г. до н. э.","text":"Гасдрубал шёл из Испании на соединение с Ганнибалом. Римляне перехватили его гонцов с письмом и узнали, где и когда братья хотят встретиться. Консул Нерон быстро увёл часть войска на север и вместе со вторым консулом ударил по Гасдрубалу. Войско Гасдрубала было разбито, а сам он погиб."},{"id":"zama","kind":"battle","title":"Битва при Заме, 202 г. до н. э.","text":"Это решающая битва Второй Пунической войны. Ганнибал выставил около 80 слонов и три линии воинов. Сципион оставил в строю проходы, и слоны побежали мимо римлян или обратно на своих. Нумидийская конница Масиниссы ударила Ганнибалу в тыл. Ганнибал проиграл, и Карфаген принял тяжёлый мир."},{"id":"legion_structure","kind":"misc","title":"Как устроен легион","text":"В римском легионе в то время было около 4200 пехотинцев и 300 всадников. Пехота делилась на велитов, гастатов, принципов и триариев. Воины были разбиты на небольшие отряды — манипулы. Манипулы строились в три линии в шахматном порядке, и свежие бойцы могли сменять уставших."},{"id":"consuls","kind":"misc","title":"Консулы, сенат и диктатор","text":"В Римской республике каждый год выбирали двух консулов с равной властью. Они водили войска и вели государственные дела. Сенат — совет знатных и опытных римлян, который решал самые важные вопросы. В опасное время сенат мог назначить диктатора — человека с особой властью обычно на шесть месяцев."},{"id":"carthage","kind":"misc","title":"Что такое Карфаген","text":"Карфаген — богатый город-государство на севере Африки, на месте нынешнего Туниса. Его основали финикийцы, жители восточного побережья Средиземного моря. Карфаген был торговой державой с сильным флотом и владел землями в Африке, Испании и на островах. Римляне называли карфагенян пунами, поэтому войны с ними — Пунические."},{"id":"alps","kind":"misc","title":"Переход через Альпы","text":"Осенью 218 г. до н. э. Ганнибал повёл войско и слонов через Альпы. Путь занял около двух недель: горцы нападали, дорога обваливалась, а в горах был снег. Ливий пишет, что, по рассказам, Ганнибал сжигал огромные камни и поливал их уксусом, чтобы они трескались. Из-за потерь в Италию он пришёл с гораздо меньшим войском, чем выходил из Испании."},{"id":"punic1","kind":"misc","title":"Первая Пуническая война","text":"Эта война шла с 264 до 241 г. до н. э., в основном за остров Сицилию. Рим раньше не был морской державой, но построил большой флот. Говорят, они применяли на кораблях абордажные мостки, и это помогало им брать на абордаж вражеские суда. В 241 г. до н. э. Рим победил, получил Сицилию и деньги от Карфагена. Командовал карфагенянами Гамилькар Барка."},{"id":"aftermath","kind":"misc","title":"Что стало с Карфагеном","text":"После Замы Карфаген лишился флота и заморских земель и обязался платить Риму большие деньги. Прошло полвека, и город снова разбогател. Тогда римляне начали Третью Пуническую войну. В 146 г. до н. э. Карфаген был взят и разрушен. Говорят, римский сенатор Катон повторял: «Карфаген должен быть разрушен»."}]};
+// CONTENT_END
+const ENC_SECTIONS = [['Римляне',['unit']],['Враги Рима',['enemy','boss']],['Полководцы',['person']],['Битвы',['battle']],['Как это устроено',['misc']]];
+const KIND_LABEL = {unit:'Римляне', enemy:'Враги Рима', boss:'Полководец Карфагена', person:'Полководцы', battle:'Битвы', misc:'Как это устроено'};
+const KIND_HINT = {unit:'Построй этого воина на поле — и статья откроется.', enemy:'Откроется, когда этот враг впервые выйдет на дорогу.', boss:'Откроется, когда этот полководец появится в бою.',
+  battle:'Откроется, когда начнётся эта глава войны.', person:'Отвечай верно на вопросы перед волнами и выбирай верно на развилках истории.', misc:'Отвечай верно на вопросы перед волнами и выбирай верно на развилках истории.'};
+// internal type keys → encyclopedia ids
+const T2ENC = {velite:'velites', legion:'legion', triarii:'triarii', archer:'archer', ballista:'ballista', trumpet:'trumpet'};
+const E2ENC = {gaul:'gaul', iber:'iber', libyan:'libyan', slinger:'slinger', numid:'numid', elephant:'elephant', celtib:'celtiber', gcav:'gaulcav', sacred:'sacred',
+  maharbal:'maharbal', hasdrubal:'hasdrubal', mago:'mago', hannibal:'hannibal'};
+const ENC2T = {}, ENC2E = {};
+for (const k in T2ENC) ENC2T[T2ENC[k]] = k;
+for (const k in E2ENC) ENC2E[E2ENC[k]] = k;
+const CH_BATTLE = ['trebbia','trasimene','cannae','attrition','metaurus','zama'];
+// generals and "how it works" articles are earned one per success, in this order
+const REWARD_ORDER = ['punic1','fabius','alps','varro','legion_structure','marcellus','consuls','nero','carthage','masinissa','scipio','aftermath'];
+const QUIZ_REWARD = 25, EVENT_REWARD = 60;
+const ENC = (CONTENT.encyclopedia || []).filter(a => a && a.id && a.title);
+const ENC_BY = {}; for (const a of ENC) ENC_BY[a.id] = a;
+const quizFor = n => (CONTENT.quiz || []).find(q => q && q.wave === n && Array.isArray(q.options)) || null;
+const eventAfter = n => (CONTENT.events || []).find(e => e && e.afterWave === n && Array.isArray(e.options)) || null;
+const waveFact = n => (CONTENT.waveFacts || [])[n-1] || '';
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const paras = s => String(s || '').split(/\n+/).filter(x => x.trim()).map(x => '<p>'+esc(x)+'</p>').join('');
+
+// ---------- State ----------
+const G = {};
+function reset(){
+  Object.assign(G, {
+    state:'menu', coins:150, lives:20, wave:0, timer:15, waveTime:0, speed:1, paused:false,
+    enemies:[], towers:PADS.map(()=>null), projs:[], fx:[], queue:[], time:0,
+    abil:{fab:{cd:0,act:0}, sci:{cd:0,act:0}}, sel:-1, idSeq:1,
+    quiz:{}, events:{}, enc:{}, fastNext:false, fastWave:false, quizArt:null
+  });
+}
+reset();
+
+// ---------- Encyclopedia unlocks ----------
+let ENC_NEW = [];
+function encCount(){ let n = 0; for (const a of ENC) if (G.enc[a.id]) n++; return n; }
+function unlock(id){
+  if (!ENC_BY[id] || G.enc[id]) return null;
+  G.enc[id] = 1; refreshEncBtn(true); return ENC_BY[id];
+}
+function unlockNotify(id){ const a = unlock(id); if (a) ENC_NEW.push(a.title); return a; }
+function unlockReward(){
+  for (const id of REWARD_ORDER) { const a = unlock(id); if (a) return a; }
+  for (const a of ENC) if ((a.kind === 'person' || a.kind === 'misc') && !G.enc[a.id]) return unlock(a.id);
+  return null;
+}
+
+// ---------- Save / restore ----------
+// one snapshot at the start of every pause between waves and at the start of every wave
+const SAVE_KEY = 'hannibal-td-save', SAVE_V = 1;
+let lastSnap = null;
+function readBest(){ try { return +localStorage.getItem(BEST_KEY) || 0; } catch(e){ return 0; } }
+function snapshot(){
+  return {v:SAVE_V, wave:G.wave, coins:G.coins, lives:G.lives,
+    towers:G.towers.map((t,i) => t ? {pad:i, type:t.type, lvl:t.lvl, spent:t.spent} : null).filter(Boolean),
+    abil:{fab:+G.abil.fab.cd.toFixed(2), sci:+G.abil.sci.cd.toFixed(2)},
+    quiz:Object.assign({}, G.quiz), events:Object.assign({}, G.events), enc:ENC.filter(a => G.enc[a.id]).map(a => a.id),
+    fastNext:!!G.fastNext, best:readBest(), t:Date.now()};
+}
+function writeSave(s){ if (!s) return false; try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); return true; } catch(e){ return false; } }
+function readSave(){
+  try {
+    const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (!s || s.v !== SAVE_V || typeof s.wave !== 'number' || s.wave < 0 || s.wave >= WAVES.length || !(s.lives > 0)) return null;
+    return s;
+  } catch(e){ return null; }
+}
+function clearSave(){ lastSnap = null; try { localStorage.removeItem(SAVE_KEY); } catch(e){} }
+function persist(){ if (G.state === 'intermission') { lastSnap = snapshot(); writeSave(lastSnap); } }
+// closing the tab: between waves save as is; mid-wave keep the "start of this wave" snapshot
+function saveNow(){ if (G.state === 'intermission') persist(); else if (G.state === 'wave' && lastSnap) writeSave(lastSnap); }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveNow(); });
+window.addEventListener('pagehide', saveNow);
+
+function startGame(){
+  reset(); ENC_NEW = [];
+  G.state = 'intermission'; G.timer = 15;
+  CAM.tgt = null; CAM.vel = 0; setCamera(CAM.max);
+  hideScreens(); closeModals();
+  showWaveCard();
+  encSeen = 0; persist(); refreshUI(); refreshEncBtn();
+}
+function continueGame(){
+  const s = readSave(); if (!s) { startGame(); return false; }
+  reset(); ENC_NEW = [];
+  G.wave = s.wave|0; G.coins = Math.max(0, s.coins|0); G.lives = Math.max(1, s.lives|0);
+  for (const t of (s.towers || [])) {
+    if (!t || !TOWERS[t.type] || !PADS[t.pad] || G.towers[t.pad]) continue;
+    G.towers[t.pad] = {type:t.type, lvl:Math.max(1, Math.min(3, t.lvl|0)), spent:+t.spent || TOWERS[t.type].cost, cd:0, x:PADS[t.pad][0], y:PADS[t.pad][1], flash:0};
+  }
+  const ab = s.abil || {};
+  G.abil.fab.cd = Math.max(0, Math.min(ABIL.fab.cd, +ab.fab || 0)); G.abil.sci.cd = Math.max(0, Math.min(ABIL.sci.cd, +ab.sci || 0));
+  G.quiz = Object.assign({}, s.quiz || {}); G.events = Object.assign({}, s.events || {});
+  for (const id of (s.enc || [])) if (ENC_BY[id]) G.enc[id] = 1;
+  G.fastNext = !!s.fastNext;
+  G.state = 'intermission'; G.timer = 15;
+  CAM.tgt = null; CAM.vel = 0; setCamera(CAM.max);
+  hideScreens(); closeModals();
+  encSeen = encCount();
+  showWaveCard(); maybeEvent();
+  persist(); refreshUI(); refreshEncBtn();
+  return true;
+}
+// balance knobs (tuned by simulation through window.__game)
+const BAL = {hpK:0.7, hpG:0.09, hpG2:0.0, hpCh:[1,1,1,1.05,1.15,1.25], spd:1.25, rew:[0.5,0.36,0.34,0.44,0.48,0.5], waveBonus:[12,2], early:10};
+function waveHpMul(n){ return BAL.hpK * BAL.hpCh[chapterOf(n)] * (1 + BAL.hpG*(n-1) + BAL.hpG2*(n-1)*(n-1)); }
+function startWave(){
+  if (G.state !== 'intermission') return;
+  lastSnap = snapshot(); writeSave(lastSnap);   // "start of wave N": resources as they were when it began
+  if (!$('scrEvent').hidden) $('scrEvent').hidden = true;
+  G.fastWave = !!G.fastNext; G.fastNext = false; G.quizArt = null;
+  if (G.timer > 1 && G.wave > 0) { const bonus = BAL.early; G.coins += bonus; floatText(W/2, CAM.y + VIEW_H*.8, '+'+bonus+' 🪙', '#ffe07a'); }
+  G.wave++;
+  const w = WAVES[G.wave-1];
+  G.queue = [];
+  for (const [type,count,gap,off] of w.g) for (let i=0;i<count;i++) G.queue.push({t:off+i*gap, type});
+  G.queue.sort((a,b)=>a.t-b.t);
+  G.waveTime = 0; G.state = 'wave';
+  hideCard(); refreshUI();
+}
+function spawn(type){
+  const def = ENEMIES[type], hp = Math.round(def.hp * waveHpMul(G.wave));
+  const [x,y] = posAt(0);
+  if (E2ENC[type]) unlockNotify(E2ENC[type]);
+  G.enemies.push({id:G.idSeq++, type, def, hp, max:hp, d:0, x, y, panic:0, immune:0, dead:false, wob:Math.random()*6, born:G.time, inv:false, guarded:false});
+}
+function endWave(){
+  if (G.wave >= WAVES.length) { finish(true); return; }
+  G.coins += BAL.waveBonus[0] + BAL.waveBonus[1]*G.wave;
+  G.state = 'intermission'; G.timer = 15; G.fastWave = false;
+  showWaveCard(); persist(); maybeEvent(); refreshUI();
+}
+function quizCorrect(){ let n = 0; for (const q of (CONTENT.quiz || [])) if (q && G.quiz[q.wave] === q.answer) n++; return n; }
+function finish(win){
+  G.state = win ? 'won' : 'lost';
+  closeSheet(); hideCard(); closeModals(); clearSave();
+  if (win) {
+    for (const a of ENC) G.enc[a.id] = 1;
+    refreshEncBtn();
+    $('winQuiz').textContent = 'Верных ответов: ' + quizCorrect() + ' из ' + WAVES.length;
+    let best = 0; try { best = +localStorage.getItem(BEST_KEY) || 0; if (G.lives > best) localStorage.setItem(BEST_KEY, String(G.lives)); } catch(e){}
+    best = Math.max(best, G.lives);
+    $('winLives').textContent = G.lives; $('winCoins').textContent = G.coins;
+    $('winSum').textContent = 'Пройдено ' + WAVES.length + ' волн, стены: ' + G.lives + ', лучший результат: ' + best;
+    $('best2').textContent = G.lives >= best ? 'Это твой лучший результат!' : '';
+    $('best').textContent = 'Лучший результат: ' + best + ' стен';
+    $('scrWin').hidden = false;
+  } else {
+    $('loseWave').textContent = G.wave; $('scrLose').hidden = false;
+  }
+  refreshUI();
+}
+
+// ---------- Building ----------
+function towerStats(t){
+  const def = TOWERS[t.type], m = [1,1.45,2.0][t.lvl-1], rm = [1,1.12,1.25][t.lvl-1];
+  return {range:def.range*rm, dmg:def.dmg*m, cd:def.cd};
+}
+function upgradeCost(t){ return t.lvl >= 3 ? 0 : Math.round(TOWERS[t.type].cost * (t.lvl === 1 ? 0.7 : 1.0)); }
+function build(pad, type){
+  const def = TOWERS[type];
+  if (!def || G.towers[pad] || G.coins < def.cost || !isPlaying()) return false;
+  G.coins -= def.cost;
+  G.towers[pad] = {type, lvl:1, spent:def.cost, cd:0, x:PADS[pad][0], y:PADS[pad][1], flash:0};
+  unlock(T2ENC[type]);
+  refreshUI(); return true;
+}
+function upgrade(pad){
+  const t = G.towers[pad]; if (!t || t.lvl >= 3) return false;
+  const c = upgradeCost(t); if (G.coins < c) return false;
+  G.coins -= c; t.spent += c; t.lvl++; refreshUI(); return true;
+}
+function sell(pad){
+  const t = G.towers[pad]; if (!t) return false;
+  const back = Math.floor(t.spent*0.6); G.coins += back; G.towers[pad] = null;
+  floatText(t.x, t.y, '+'+back+' 🪙', '#ffe07a'); refreshUI(); return true;
+}
+function useAbility(k){
+  const a = G.abil[k]; if (!isPlaying() || a.cd > 0) return false;
+  a.cd = ABIL[k].cd; a.act = ABIL[k].dur; refreshUI(); return true;
+}
+function isPlaying(){ return G.state === 'wave' || G.state === 'intermission'; }
+
+// ---------- Update ----------
+function update(dt){
+  if (G.paused || !isPlaying()) return;
+  G.time += dt;
+  for (const k in G.abil){ const a = G.abil[k]; a.cd = Math.max(0, a.cd-dt); a.act = Math.max(0, a.act-dt); }
+  // the 15 s countdown waits while a quiz question or a fork of history is open
+  if (G.state === 'intermission') { if (!quizOpen() && !eventOpen()) G.timer -= dt; if (G.timer <= 0) startWave(); }
+  if (G.state === 'wave') {
+    G.waveTime += dt;
+    while (G.queue.length && G.queue[0].t <= G.waveTime) spawn(G.queue.shift().type);
+  }
+  const slow = G.abil.fab.act > 0 ? 0.5 : 1;
+  const boss = G.enemies.find(e => e.def.rally && !e.dead);
+  const guard = G.enemies.find(e => e.def.guard && !e.dead);
+  const trumpets = G.towers.filter(t => t && t.type === 'trumpet');
+  for (const e of G.enemies) {
+    if (e.dead) continue;
+    let mul = slow * BAL.spd * (G.fastWave ? 1.2 : 1);
+    e.guarded = !!(guard && e !== guard && (e.x-guard.x)**2 + (e.y-guard.y)**2 < 90*90);
+    if (e.def.stealth) e.inv = ((G.time - e.born) % 6) > 4;
+    if (boss && e !== boss && Math.hypot(e.x-boss.x, e.y-boss.y) < 85) mul *= 1.3;
+    let dir = 1;
+    if (e.def.ele) {
+      if (e.panic > 0) { e.panic -= dt; dir = -1.4; if (e.panic <= 0) e.immune = 2.5; }
+      else {
+        e.immune = Math.max(0, e.immune - dt);
+        if (e.immune <= 0) for (const t of trumpets) {
+          if (Math.hypot(e.x-t.x, e.y-t.y) <= towerStats(t).range) { e.panic = 3; t.flash = 0.6; floatText(e.x, e.y-22, 'Паника!', '#fff'); break; }
+        }
+      }
+    }
+    e.d = Math.max(0, e.d + dir * e.def.spd * mul * dt);
+    const p = posAt(e.d); e.x = p[0]; e.y = p[1];
+    if (e.d >= PATH_LEN) {
+      e.dead = true; G.lives -= e.def.lives;
+      floatText(GATE_X, WALL_Y - 6, '−'+e.def.lives+' 🏛️', '#ff6b5b');
+      G.fx.push({kind:'ring', x:GATE_X, y:WALL_Y+20, t:0, life:0.5, col:'#ff3b2f', r:40});
+    }
+  }
+  const dmgBuff = G.abil.sci.act > 0 ? 1.5 : 1;
+  for (const t of G.towers) {
+    if (!t) continue;
+    t.flash = Math.max(0, t.flash - dt);
+    if (t.type === 'trumpet') continue;
+    t.cd -= dt; if (t.cd > 0) continue;
+    const st = towerStats(t);
+    let best = null;
+    for (const e of G.enemies) {
+      if (e.dead || e.d <= 0 || e.inv) continue;
+      if ((e.x-t.x)**2 + (e.y-t.y)**2 <= st.range*st.range && (!best || e.d > best.d)) best = e;
+    }
+    if (!best) { t.cd = 0; continue; }
+    t.cd = st.cd;
+    G.projs.push({x:t.x, y:t.y, tgt:best, dmg:st.dmg*dmgBuff, type:t.type, kind:TOWERS[t.type].proj, spd:t.type==='ballista'?330:420, dead:false});
+  }
+  for (const p of G.projs) {
+    if (p.dead) continue;
+    const e = p.tgt;
+    if (e.dead) { p.dead = true; continue; }
+    const dx = e.x-p.x, dy = e.y-p.y, dist = Math.hypot(dx,dy), step = p.spd*dt;
+    if (dist <= step + e.def.r*0.5) {
+      p.dead = true;
+      hit(e, p.dmg, p.type);
+      const sp = TOWERS[p.type].splash;
+      if (sp) {
+        G.fx.push({kind:'ring', x:e.x, y:e.y, t:0, life:0.35, col:'#ffcf6b', r:sp});
+        for (const o of G.enemies) if (o !== e && !o.dead && Math.hypot(o.x-e.x,o.y-e.y) <= sp) hit(o, p.dmg*0.5, p.type);
+      }
+    } else { p.x += dx/dist*step; p.y += dy/dist*step; p.ang = Math.atan2(dy,dx); }
+  }
+  for (const f of G.fx) f.t += dt;
+  G.enemies = G.enemies.filter(e => !e.dead);
+  G.projs = G.projs.filter(p => !p.dead);
+  G.fx = G.fx.filter(f => f.t < f.life);
+  if (G.lives <= 0) { G.lives = 0; finish(false); return; }
+  if (G.state === 'wave' && !G.queue.length && !G.enemies.length) endWave();
+}
+function hit(e, dmg, ttype){
+  if (e.dead) return;
+  const d = e.def;
+  let m = 1;
+  if (ttype === 'velite' && d.ele) m *= 2;
+  if (ttype === 'triarii' && d.cav) m *= 2;
+  if (ttype === 'legion' && d.inf) m *= 1.3;
+  if (ttype === 'archer' && d.spd >= 55) m *= 1.5;
+  if (ttype === 'archer' && (d.armor || d.ele)) m *= 0.6;
+  if (ttype === 'velite' && d.dartArmor) m *= 0.7;
+  if (e.guarded) m *= 0.65;
+  e.hp -= dmg*m;
+  if (e.hp <= 0) {
+    const rew = Math.round(d.rew * BAL.rew[chapterOf(G.wave)]);
+    e.dead = true; G.coins += rew;
+    floatText(e.x, e.y-10, '+'+rew, '#ffe07a');
+  }
+}
+function floatText(x,y,text,col){ G.fx.push({kind:'text', x, y, text, col, t:0, life:0.9}); }
+
+// ---------- Render ----------
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const field = document.getElementById('field');
+let VS = 1, DPR = 1, VIEW_H = 560;
+// camera: world y of the top edge of the view; tgt = smooth scroll goal, vel = fling after a drag
+const CAM = {y:0, max:0, tgt:null, vel:0};
+function setCamera(y){ CAM.y = Math.max(0, Math.min(CAM.max, +y || 0)); return CAM.y; }
+function glideTo(y){ CAM.vel = 0; CAM.tgt = Math.max(0, Math.min(CAM.max, y)); }
+function resize(){
+  const r = field.getBoundingClientRect();
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  const cw = Math.max(1, r.width), ch = Math.max(1, r.height);
+  const nw = Math.round(cw*DPR), nh = Math.round(ch*DPR);
+  const oldMax = CAM.max, atRome = CAM.y >= oldMax - 1;
+  VS = cw/W; VIEW_H = ch/VS; CAM.max = Math.max(0, H - VIEW_H);
+  if (nw !== cv.width || nh !== cv.height) { cv.width = nw; cv.height = nh; }
+  if (!BG || BG.width !== Math.round(W*DPR*VS)) buildBg();
+  setCamera(atRome ? CAM.max : CAM.y);
+}
+
+// ---- drawing primitives (all sprites are drawn with these, once, into offscreen canvases) ----
+const SS = 3, INK = '#3a2616', TAU = Math.PI*2;
+function cnv(w,h,s){ const c = document.createElement('canvas'); c.width = Math.max(1,Math.ceil(w*(s||1))); c.height = Math.max(1,Math.ceil(h*(s||1))); return c; }
+function E(g,x,y,rx,ry,f,s,lw,rot){ g.beginPath(); g.ellipse(x,y,Math.max(.01,rx),Math.max(.01,ry),rot||0,0,TAU); if(f){g.fillStyle=f;g.fill();} if(s){g.strokeStyle=s;g.lineWidth=lw||1;g.stroke();} }
+function P(g,p,f,s,lw){ g.beginPath(); g.moveTo(p[0],p[1]); for(let i=2;i<p.length;i+=2) g.lineTo(p[i],p[i+1]); g.closePath(); if(f){g.fillStyle=f;g.fill();} if(s){g.strokeStyle=s;g.lineWidth=lw||1;g.lineJoin='round';g.stroke();} }
+function Ln(g,x1,y1,x2,y2,c,lw){ g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.strokeStyle=c; g.lineWidth=lw; g.lineCap='round'; g.stroke(); }
+function RR(g,x,y,w,h,r,f,s,lw){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); if(f){g.fillStyle=f;g.fill();} if(s){g.strokeStyle=s;g.lineWidth=lw||1;g.stroke();} }
+function limb(g,x1,y1,x2,y2,c,w){ Ln(g,x1,y1,x2,y2,INK,w+1.5); Ln(g,x1,y1,x2,y2,c,w); }
+function curve(g,pts,c,w,outline){ const draw=(col,lw)=>{ g.beginPath(); g.moveTo(pts[0],pts[1]); for(let i=2;i<pts.length;i+=4) g.quadraticCurveTo(pts[i],pts[i+1],pts[i+2],pts[i+3]); g.strokeStyle=col; g.lineWidth=lw; g.lineCap='round'; g.lineJoin='round'; g.stroke(); }; if(outline!==false) draw(INK,w+1.5); draw(c,w); }
+function spear(g,x1,y1,x2,y2,col,tl,tc,lw){
+  lw = lw||1.3; Ln(g,x1,y1,x2,y2,INK,lw+1.2); Ln(g,x1,y1,x2,y2,col,lw);
+  const dx=x2-x1, dy=y2-y1, l=Math.hypot(dx,dy), ux=dx/l, uy=dy/l, bx=x2-ux*tl, by=y2-uy*tl, hw=1.5;
+  P(g,[x2+ux*1.2,y2+uy*1.2,bx-uy*hw,by+ux*hw,bx+uy*hw,by-ux*hw],tc||'#b9bec4',INK,.7);
+}
+function eye(g,x,y){ E(g,x,y,.8,.95,INK); }
+function head(g,x,y,r,skin){ E(g,x,y,r,r,skin,INK,1); E(g,x+r*.95,y+.6,1.1,1.2,skin,INK,.6); E(g,x+r*.95-.4,y+.6,1,1.1,skin); eye(g,x+r*.42,y-.6); }
+function stride(f){ return f===1 ? [-5,5] : f===0 ? [-1.5,2] : [-2.6,2.6]; }
+function legs(g,f,col,shoe,w){ const [a,b]=stride(f); limb(g,-1.8,-11,a,-1.4,col,w||2.6); limb(g,1.8,-11,b,-1.4,col,w||2.6); E(g,a+.9,-1,2.3,1.15,shoe||'#5a3a1a',INK,.6); E(g,b+.9,-1,2.3,1.15,shoe||'#5a3a1a',INK,.6); }
+function tunic(g,col,trim,top,bot){ P(g,[-6,top,6,top,7.6,bot,-7.6,bot],col,INK,1); if(trim) Ln(g,-7.3,bot-1,7.3,bot-1,trim,1.4); }
+function shadeTorso(g,top,bot){ P(g,[-6,top,-1.5,top,-2.5,bot,-7.6,bot],'rgba(0,0,0,.10)'); }
+function star(g,x,y,r,f){ g.beginPath(); for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, rr=i%2?r*.45:r; g.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr);} g.closePath(); g.fillStyle=f; g.fill(); g.strokeStyle=INK; g.lineWidth=.8; g.stroke(); }
+
+const SKIN='#e7b58c', SKIN2='#c98f62', SKIN3='#8d5a3b';
+
+// ---- defenders (facing right, feet at 0,0) ----
+const DRAW_T = {
+  velite(g){
+    legs(g,-1,SKIN);
+    tunic(g,'#c79b5f','#8a5a2a',-22,-9); shadeTorso(g,-22,-9);
+    Ln(g,-6.6,-14,6.6,-14,'#6b4423',1.6);
+    E(g,-4.5,-16,6.6,6.6,'#8c5a2b',INK,1.1); E(g,-4.5,-16,4.6,4.6,null,'#d6b268',1); E(g,-4.5,-16,1.7,1.7,'#e2c07a',INK,.5);
+    head(g,1,-27.5,5,SKIN);
+    P(g,[-5.8,-27,-5.6,-32.5,-2.8,-35.6,2.4,-35.8,6,-33.4,9.4,-31,6.2,-30,2,-31.4,-2.6,-30.6,-5.4,-23.5,-7.2,-24],'#7b5a3d',INK,1);
+    P(g,[-3,-35,-2.2,-39,.2,-35.6],'#7b5a3d',INK,.8); P(g,[1,-35.8,2.6,-39.4,3.9,-35.3],'#7b5a3d',INK,.8);
+    E(g,7.6,-31.2,.6,.6,INK); Ln(g,-1,-33.5,4,-33.8,'#a07a52',1);
+    limb(g,4,-20.5,8.6,-27,SKIN,2.4);
+    spear(g,-7,-24.5,19,-33.5,'#7a5230',4.5,'#c3c8cd',1.3);
+    E(g,8.6,-27.4,1.6,1.6,SKIN,INK,.6);
+  },
+  legion(g){
+    spear(g,-9.5,-4,1.5,-44,'#7a5230',4,'#c3c8cd',1.4); Ln(g,-1.6,-30,.9,-40,'#8d939a',1.5);
+    legs(g,-1,SKIN);
+    tunic(g,'#b3261e','#7c1f16',-17,-9);
+    P(g,[-6,-23.5,6,-23.5,6.6,-15,-6.6,-15],'#bcc2c9',INK,1); shadeTorso(g,-23.5,-15);
+    Ln(g,-6,-20.5,6.2,-20.5,'#7d848d',.8); Ln(g,-6.3,-17.8,6.4,-17.8,'#7d848d',.8);
+    head(g,1,-28,5,SKIN);
+    g.beginPath(); g.arc(1,-28.8,5.7,Math.PI,0); g.closePath(); g.fillStyle='#c9ced4'; g.fill(); g.strokeStyle=INK; g.lineWidth=1; g.stroke();
+    P(g,[-4.7,-28.8,-7,-25.8,-4.4,-26.6],'#aeb4bb',INK,.8); P(g,[3.2,-28.8,6.2,-28.8,5,-24.4,3.4,-25.2],'#aeb4bb',INK,.8);
+    g.beginPath(); g.ellipse(.6,-33.8,5.6,3.4,0,Math.PI,0); g.closePath(); g.fillStyle='#c0231a'; g.fill(); g.strokeStyle=INK; g.lineWidth=.9; g.stroke();
+    for (let i=-4;i<=5;i+=1.8) Ln(g,.6+i,-34,.6+i*1.05,-36.4+Math.abs(i)*.35,'#e0473a',.5);
+    RR(g,3,-26.5,8.6,21,2,'#b3261e',INK,1.1); RR(g,4.2,-25.3,6.2,18.6,1.2,null,'#e8b84a',.9);
+    E(g,7.3,-16,2,2,'#e8b84a',INK,.6);
+    Ln(g,4.8,-21.4,7.3,-19.2,'#e8b84a',.9); Ln(g,9.8,-21.4,7.3,-19.2,'#e8b84a',.9);
+    Ln(g,4.8,-10.6,7.3,-12.8,'#e8b84a',.9); Ln(g,9.8,-10.6,7.3,-12.8,'#e8b84a',.9);
+    Ln(g,7.3,-24,7.3,-18.6,'#e8b84a',.9); Ln(g,7.3,-13.4,7.3,-8,'#e8b84a',.9);
+  },
+  triarii(g){
+    legs(g,-1,SKIN);
+    tunic(g,'#6d2a5a','#46163a',-17,-9);
+    P(g,[-6,-23.5,6,-23.5,6.8,-14,-6.8,-14],'#d3d8de',INK,1); shadeTorso(g,-23.5,-14);
+    for (let y=-22;y<-15;y+=2.1) for (let x=-5;x<6;x+=2.1) E(g,x+((y|0)%2?1:0),y,.45,.45,'#8e959e');
+    head(g,1,-28,5,SKIN);
+    g.beginPath(); g.arc(1,-28.8,5.8,Math.PI,0); g.closePath(); g.fillStyle='#e3e7ec'; g.fill(); g.strokeStyle=INK; g.lineWidth=1; g.stroke();
+    P(g,[3.2,-28.8,6.3,-28.8,5,-24.2,3.4,-25],'#c7ccd2',INK,.8);
+    curve(g,[-1.5,-34,-4,-39,-4.5,-45],'#2d2a2a',1.6); curve(g,[1,-34.4,1,-40,1.6,-46.5],'#7a2a6a',1.7); curve(g,[3.4,-34,5.6,-39,7,-44.5],'#2d2a2a',1.6);
+    E(g,5.8,-17,5,10.6,'#6d2a5a',INK,1.1); E(g,5.8,-17,3.9,9.4,null,'#e3e7ec',1); E(g,5.8,-17,1.9,1.9,'#e3e7ec',INK,.6);
+    limb(g,2,-20,7,-21,SKIN,2.4);
+    spear(g,-14,-19.2,25,-22,'#7a5230',5,'#dfe3e8',1.5);
+    E(g,7.2,-21.2,1.6,1.6,SKIN,INK,.6);
+  },
+  archer(g){
+    P(g,[-9.2,-28.6,-5.6,-29.4,-3,-12.6,-6.6,-11.8],'#7a4a24',INK,1);
+    Ln(g,-8.3,-28.8,-10,-33,'#efe7d4',1.6); Ln(g,-6.8,-29.2,-7.4,-33.6,'#c0392b',1.6); Ln(g,-5.4,-29.4,-4.6,-33.2,'#efe7d4',1.6);
+    legs(g,-1,SKIN);
+    tunic(g,'#2f5f9e','#1d3d6b',-22,-9); shadeTorso(g,-22,-9);
+    Ln(g,-6.6,-14,6.6,-14,'#6b4423',1.6); Ln(g,-5,-22,3,-14,'#6b4423',1.3);
+    head(g,1,-27.5,5,SKIN);
+    P(g,[-4.6,-29.4,1.2,-37.4,6.4,-29.4],'#d8b878',INK,1); Ln(g,-4.8,-29.4,6.6,-29.4,'#a78452',1.1);
+    limb(g,3,-20.5,10.2,-21.5,SKIN,2.3);
+    curve(g,[9.6,-32,17.8,-21.5,9.6,-11],'#6b3f1e',1.9);
+    Ln(g,9.6,-32,3.4,-21.5,'#f1e9d6',.6); Ln(g,3.4,-21.5,9.6,-11,'#f1e9d6',.6);
+    spear(g,3.4,-21.5,19,-21.5,'#5a3a1a',3,'#c3c8cd',.9);
+    E(g,10.4,-21.5,1.6,1.6,SKIN,INK,.6);
+  },
+  ballista(g){
+    function mini(x,s,flip){ g.save(); g.translate(x,0); g.scale(s*(flip?-1:1),s); legs(g,-1,SKIN); tunic(g,'#b3261e','#7c1f16',-22,-9); P(g,[-6,-23,6,-23,6.4,-15,-6.4,-15],'#bcc2c9',INK,1); head(g,1,-28,5,SKIN); g.beginPath(); g.arc(1,-28.8,5.7,Math.PI,0); g.closePath(); g.fillStyle='#c9ced4'; g.fill(); g.strokeStyle=INK; g.lineWidth=1; g.stroke(); g.beginPath(); g.ellipse(.6,-33.8,5.4,3.2,0,Math.PI,0); g.fillStyle='#c0231a'; g.fill(); g.restore(); }
+    mini(-21,.52,false);
+    limb(g,-4,-12,-13,-.5,'#8a5a2b',2.4); limb(g,4,-12,13,-.5,'#8a5a2b',2.4); limb(g,-10,-4,10,-4,'#8a5a2b',1.6);
+    P(g,[-3.6,-2,3.6,-2,2.6,-29,-2.6,-29],'#a86e35',INK,1); Ln(g,0,-4,0,-27,'#6e4520',1.2);
+    limb(g,-8,-25,-20,-17,'#8a5a2b',2.4); limb(g,8,-25,20,-17,'#8a5a2b',2.4);
+    Ln(g,-20,-17,0,-8.5,'#efe6d2',.8); Ln(g,20,-17,0,-8.5,'#efe6d2',.8);
+    RR(g,-12.5,-29.5,25,7.5,1.5,'#b07639',INK,1);
+    E(g,-8,-25.8,3.2,5.4,'#4a3424',INK,.9); E(g,8,-25.8,3.2,5.4,'#4a3424',INK,.9);
+    for (const sx of [-8,8]) for (let y=-29;y<-22;y+=1.6) Ln(g,sx-2.6,y,sx+2.6,y+.6,'#7a5f44',.6);
+    E(g,-12,-26,1.1,1.1,'#d0d4d8',INK,.4); E(g,12,-26,1.1,1.1,'#d0d4d8',INK,.4);
+    E(g,0,-12,3.8,3.4,'#9a958c',INK,.9); E(g,-1,-13,1.4,1.1,'#c9c4ba');
+    mini(21,.52,true);
+  },
+  trumpet(g){
+    legs(g,-1,SKIN);
+    tunic(g,'#a33a22','#6e2414',-22,-9); shadeTorso(g,-22,-9);
+    P(g,[-6,-23,6,-23,6.4,-15,-6.4,-15],'#8b5a33',INK,1);
+    const arc=(c,w)=>{ g.beginPath(); g.arc(-2.5,-21,12,.3*Math.PI,1.36*Math.PI); g.strokeStyle=c; g.lineWidth=w; g.lineCap='round'; g.stroke(); };
+    arc(INK,3.8); arc('#d4a634',2.3); arc('rgba(255,240,180,.75)',.7);
+    Ln(g,-13.6,-21,7.6,-21,'#7a5230',1.2);
+    limb(g,1.2,-9.6,5.2,-26.4,'#d4a634',1.3);
+    head(g,1,-27.5,5,SKIN);
+    P(g,[-5.8,-27,-5.8,-32.5,-2.8,-35.8,2.6,-35.8,6,-33.2,8.2,-31.2,5.6,-30.4,1.6,-31.6,-2.6,-30.6,-5.6,-23,-7.4,-24],'#4a3426',INK,1);
+    P(g,[-2.6,-35.2,-2,-38.4,.2,-35.6],'#4a3426',INK,.8); P(g,[1.4,-35.8,2.6,-38.8,3.8,-35.3],'#4a3426',INK,.8);
+    P(g,[-7.6,-31,-5.2,-33.8,8.2,-42.6,4.4,-46.6],'#e0b443',INK,1);
+    E(g,6.4,-44.8,2.4,3.6,'#8a6418',INK,.8,-.75);
+    limb(g,3,-20.5,6.4,-14,SKIN,2.3);
+  }
+};
+const T_SIZE = {velite:[56,56,50], legion:[56,58,52], triarii:[64,62,56], archer:[56,56,50], ballista:[64,48,44], trumpet:[56,58,52]};
+const T_SCALE = 1.1;
+
+// ---- enemies (facing right = direction of travel, f = walk frame 0/1) ----
+function horse(g,f,body,mane,s){
+  g.save(); g.scale(s,s);
+  const fr = f===1 ? [[8,-13,7,-4.5],[6,-13,11,-6],[-8,-13,-6,-3.5],[-6,-13,-11,-5.5]] : [[8,-13,13.5,-2],[6,-13,9,-1],[-8,-13,-13,-2],[-6,-13,-4,-1]];
+  limb(g,fr[1][0],fr[1][1],fr[1][2],fr[1][3],shadeOf(body),2.4); limb(g,fr[3][0],fr[3][1],fr[3][2],fr[3][3],shadeOf(body),2.4);
+  curve(g,[-11.5,-19.5,-17,-17,-16,-10],mane,2.2);
+  E(g,0,-17,12,6.6,body,INK,1.1);
+  P(g,[6,-20.5,9.6,-27.6,13.4,-29,12.6,-19],body,INK,1);
+  E(g,15.2,-26.6,4.4,2.7,body,INK,1,.5);
+  P(g,[11.6,-29.4,12.4,-32,13.6,-29],body,INK,.7);
+  curve(g,[7.4,-21,9.6,-28,12.6,-29.6],mane,1.6,false);
+  eye(g,14.6,-27.8);
+  limb(g,fr[0][0],fr[0][1],fr[0][2],fr[0][3],body,2.5); limb(g,fr[2][0],fr[2][1],fr[2][2],fr[2][3],body,2.5);
+  g.restore();
+}
+function shadeOf(c){ const n = parseInt(c.slice(1),16), f = v => Math.round(v*.76).toString(16).padStart(2,'0'); return '#'+f(n>>16)+f((n>>8)&255)+f(n&255); }
+const DRAW_E = {
+  gaul(g,f){
+    curve(g,[-1.5,-20.5,-6,-28,-9.5,-33.5],'#6b4423',1.7);
+    P(g,[-11.8,-36.6,-6.6,-35.6,-7.8,-30.8,-12.6,-31.4],'#b4bac0',INK,.9);
+    const [a,b]=stride(f); limb(g,-1.8,-11,a,-1.4,'#4f7a3a',3.2); limb(g,1.8,-11,b,-1.4,'#4f7a3a',3.2);
+    Ln(g,a*.5-1,-7,a*.5+1,-7,'#d8b34a',.8); Ln(g,b*.5,-6,b*.5+2,-6,'#d8b34a',.8);
+    E(g,a+.9,-1,2.2,1.1,SKIN,INK,.6); E(g,b+.9,-1,2.2,1.1,SKIN,INK,.6);
+    P(g,[-5.6,-23.4,5.6,-23.4,6.2,-11,-6.2,-11],SKIN,INK,1); shadeTorso(g,-23.4,-11);
+    Ln(g,-6,-12,6,-12,'#6b4423',1.8); Ln(g,-1,-18,1.6,-18,SKIN2,.6);
+    g.beginPath(); g.arc(1,-23.4,3.2,.15*Math.PI,.85*Math.PI); g.strokeStyle='#e0b23e'; g.lineWidth=1.2; g.stroke();
+    head(g,1,-28.4,5,SKIN);
+    P(g,[-5.4,-27,-7.4,-33.4,-4,-32,-2.8,-36.2,.2,-33,2.4,-36.6,3.8,-32.8,7,-34,5.6,-30.6,2,-31.8,-3.4,-30.6,-4.6,-24.8],'#d9652b',INK,.9);
+    P(g,[2.6,-25.8,6.4,-25.2,7.4,-23.6,4.6,-24.6,2.4,-24.4],'#d9652b',INK,.6);
+    limb(g,-3,-21.5,-2,-21,SKIN,2.3);
+    E(g,6.6,-16.5,4.3,9.4,'#3d6f8e',INK,1.1); Ln(g,6.6,-25.6,6.6,-7.4,'#e5d6a8',1.1); E(g,6.6,-16.5,1.8,2.2,'#c9a84a',INK,.6);
+  },
+  iber(g,f){
+    curve(g,[-2,-21,-12.4,-27.5,-8.4,-37.6],'#cdd2d8',2.3); Ln(g,-2.6,-20.4,-.6,-22.2,'#6b4423',1.8);
+    legs(g,f,SKIN2);
+    tunic(g,'#f3efe4','#b8281e',-23,-9); shadeTorso(g,-23,-9);
+    Ln(g,-3,-23,3,-23,'#b8281e',1.6); Ln(g,-6.6,-14,6.6,-14,'#6b4423',1.5);
+    head(g,1,-28,5,SKIN2);
+    g.beginPath(); g.arc(.6,-28.8,5.6,Math.PI*.95,Math.PI*2.02); g.lineTo(-4.4,-25); g.closePath(); g.fillStyle='#3a2a1e'; g.fill(); g.strokeStyle=INK; g.lineWidth=.8; g.stroke();
+    E(g,6.6,-17,5.6,5.6,'#9a3a22',INK,1.1); E(g,6.6,-17,3.8,3.8,null,'#e2c27a',1); E(g,6.6,-17,1.5,1.5,'#e2c27a',INK,.5);
+  },
+  libyan(g,f){
+    spear(g,-7,-3,-3.6,-42,'#7a5230',4,'#c3c8cd',1.3);
+    legs(g,f,SKIN3);
+    tunic(g,'#9b4a2b','#6e2a14',-17,-9);
+    P(g,[-6.2,-23.6,6.2,-23.6,7.2,-12,-7.2,-12],'#a6abb0',INK,1); shadeTorso(g,-23.6,-12);
+    for (let y=-22.4;y<-12.5;y+=2) for (let x=-5.4;x<6.4;x+=2) E(g,x+(Math.round(y)%2?1:0),y,.5,.5,'#6f757c');
+    head(g,1,-28,5,SKIN3);
+    g.beginPath(); g.arc(1,-28.6,5.9,Math.PI,0); g.closePath(); g.fillStyle='#c79a3a'; g.fill(); g.strokeStyle=INK; g.lineWidth=1; g.stroke();
+    Ln(g,-5.6,-28.4,7,-28.4,'#9c7426',1.2); E(g,1,-35,1.3,1.6,'#c79a3a',INK,.6);
+    P(g,[3.4,-28.6,6.4,-28.6,5,-24.4,3.4,-25],'#b18731',INK,.8);
+    E(g,6.4,-16.5,5.8,11.2,'#ddcb9e',INK,1.1); E(g,6.4,-16.5,4.6,10,null,'#9c7426',.8);
+    g.beginPath(); g.arc(6.4,-18,2.6,.15*Math.PI,.85*Math.PI,true); g.strokeStyle='#7a2a14'; g.lineWidth=1.3; g.stroke(); E(g,6.4,-19.2,1.1,1.1,'#7a2a14');
+  },
+  slinger(g,f){
+    legs(g,f,'#d9a374');
+    tunic(g,'#cfc5ad','#8b7a58',-22,-11); shadeTorso(g,-22,-11);
+    Ln(g,-6.2,-15,6.2,-15,'#6b4423',1.3); E(g,-6,-13,2.4,3,'#a07a52',INK,.7);
+    head(g,1,-27.5,4.8,'#d9a374');
+    g.beginPath(); g.arc(.8,-28.4,5.2,Math.PI*.95,Math.PI*2.02); g.closePath(); g.fillStyle='#2e2219'; g.fill();
+    Ln(g,-4.6,-29.2,5.6,-29.6,'#b8281e',1.3);
+    limb(g,2.6,-21,5,-31,'#d9a374',2.2);
+    limb(g,-2.6,-20.5,-5.4,-15,'#d9a374',2.1);
+  },
+  numid(g,f){
+    horse(g,f,'#9a6233','#3a2414',1);
+    spear(g,-6,-20,-1,-47,'#7a5230',3.6,'#c3c8cd',1.1); spear(g,-4,-20,2.4,-46.5,'#7a5230',3.6,'#c3c8cd',1.1);
+    E(g,-4.6,-26,3.8,3.8,'#c9a227',INK,.8); E(g,-4.6,-26,1.4,1.4,'#8a6418');
+    limb(g,-1.4,-20.6,4,-13.4,'#e8d9a8',2.8);
+    P(g,[-3.4,-32,3.4,-32,4,-20,-4,-20],'#e8d9a8',INK,1); Ln(g,-3.6,-23,3.8,-23,'#b8281e',1.2);
+    head(g,.8,-36,4.6,'#6b4026');
+    g.beginPath(); g.arc(.6,-36.8,5,Math.PI*.95,Math.PI*2.02); g.closePath(); g.fillStyle='#24180f'; g.fill();
+    limb(g,2,-29,7.6,-26,'#6b4026',2);
+  },
+  elephant(g,f){
+    const dx = f===1 ? 2.4 : -1.6;
+    curve(g,[-20,-25,-24,-21,-23.4,-14],INK,1,false);
+    limb(g,-12,-15,-13+dx,-1,'#6c6f78',5.6); limb(g,10,-15,11-dx,-1,'#6c6f78',5.6);
+    E(g,-1,-23,20.5,13.4,'#8a8d96',INK,1.2);
+    E(g,-1,-17.5,17,7,'rgba(0,0,0,.08)');
+    P(g,[-14,-34.5,10.6,-34.5,9,-25.8,-12.4,-25.8],'#b3261e',INK,1);
+    for (let x=-12;x<9;x+=2.4) Ln(g,x,-25.8,x+.2,-24.4,'#e2b44a',1);
+    RR(g,-9.6,-45,16,10.6,1,'#8b5a2b',INK,1);
+    for (let x=-9.6;x<6;x+=4) RR(g,x,-47.6,2.6,3,.4,'#8b5a2b',INK,.7);
+    Ln(g,-9.6,-41,6.4,-41,'#6b4423',.8); Ln(g,-1.6,-45,-1.6,-35,'#6b4423',.8);
+    head(g,-1.8,-49,3,SKIN2); g.beginPath(); g.arc(-1.8,-49.6,3.3,Math.PI,0); g.fillStyle='#c79a3a'; g.fill();
+    spear(g,1.4,-42,7.8,-57,'#7a5230',3,'#c3c8cd',1);
+    limb(g,-7.6,-15,-8.6-dx,0,'#8a8d96',6.6); limb(g,13,-15,14+dx*.8,0,'#8a8d96',6.6);
+    for (const x of [-8.6-dx,14+dx*.8]) { E(g,x-1.6,-.8,.9,.7,'#e8e2d4'); E(g,x+1.4,-.8,.9,.7,'#e8e2d4'); }
+    E(g,19,-27,9.8,9.4,'#8a8d96',INK,1.2);
+    curve(g,[25.6,-24.6,32.4,-16.4+(f?1:0),29.8,-6.4,29,-2,32.4,-3.2-(f?1:0)],'#8a8d96',4.4);
+    curve(g,[23.4,-20.6,30.6,-19,33,-24.4],'#f4ecd8',2.1);
+    E(g,12.6,-26.6,5.8,8.4,'#7b7e87',INK,1); E(g,12.4,-26.2,3.6,5.8,'#a9867f');
+    E(g,22.4,-29.6,1.5,1.6,'#fff'); E(g,22.8,-29.4,1,1.1,INK); Ln(g,20.6,-31.6,23.6,-31.8,'#5e616a',.8);
+    E(g,12.8,-38.6,3.6,3.2,'#d9c08a',INK,.8);
+    head(g,13.4,-43.4,3,'#7a4a2a'); E(g,13,-45.6,3.4,2,'#efe7d4',INK,.6);
+    Ln(g,15.4,-38,21.4,-42.6,'#5a3a1a',1);
+  },
+  hannibal(g,f){
+    Ln(g,-10,-20,-10,-64,INK,2.6); Ln(g,-10,-20,-10,-64,'#6b4423',1.5);
+    P(g,[-10,-60,3,-60,1.2,-55.4,3,-50.6,-10,-50.6],'#6b1d7a',INK,1); Ln(g,-10,-50.6,3,-50.6,'#e2b44a',1);
+    E(g,-10,-66,2.6,2.6,'#e2b44a',INK,.7); g.beginPath(); g.arc(-10,-63.2,3.8,.1*Math.PI,.9*Math.PI); g.strokeStyle='#e2b44a'; g.lineWidth=1.3; g.stroke();
+    horse(g,f,'#5a3b28','#1a120d',1.22);
+    P(g,[-10,-25,9,-25,10,-15,-11,-15],'#6b1d7a',INK,1); for (let x=-10;x<10;x+=2.2) Ln(g,x,-15,x+.2,-13.4,'#e2b44a',1);
+    P(g,[-1,-43,-15,-34,-19,-22,-11,-25,-6,-30],'#7d2390',INK,1); P(g,[-12,-27,-17,-23,-11,-25],'#5a1466');
+    limb(g,-1.6,-26,4.4,-18,'#7d2390',2.8);
+    P(g,[-3.6,-40,3.6,-40,4.2,-27,-4.2,-27],'#e0b041',INK,1); Ln(g,-3.4,-35,3.6,-35,'#b4852b',.8); Ln(g,-3.8,-31,3.9,-31,'#b4852b',.8);
+    head(g,.8,-45.4,5.2,'#d9a374');
+    P(g,[-1.6,-43.4,5,-42.6,5.8,-40.2,2,-38.8,-2.8,-40.6],'#3a2a1e',INK,.7);
+    Ln(g,-4.2,-47.2,5.8,-45,'#1a120d',.9); E(g,3.2,-46,1.9,1.6,'#1a120d');
+    g.beginPath(); g.arc(.8,-46.4,6,Math.PI,0); g.closePath(); g.fillStyle='#e8b93e'; g.fill(); g.strokeStyle=INK; g.lineWidth=1; g.stroke();
+    Ln(g,-5.2,-46.4,6.8,-46.4,'#a87c22',1.2);
+    g.beginPath(); g.ellipse(-.4,-52.6,6.4,4,0,Math.PI,0); g.closePath(); g.fillStyle='#c0231a'; g.fill(); g.strokeStyle=INK; g.lineWidth=.9; g.stroke();
+    limb(g,2,-36,7.4,-31,'#d9a374',2.2);
+  }
+};
+// [w, h, feet-y in canvas, visual top above feet, feet offset from logical position]
+const E_SIZE = {gaul:[48,48,44,38,7], iber:[48,48,44,40,7], libyan:[48,52,48,43,7], slinger:[44,46,42,36,7], numid:[56,54,50,47,8], elephant:[78,66,62,58,11], hannibal:[78,92,86,84,10]};
+const E_SCALE = {gaul:1.02, iber:1.02, libyan:1.02, slinger:1, numid:1.02, elephant:1.05, hannibal:1.04};
+// ---- new foes: Celtiberians, Gallic horse, the Sacred Band, and three commanders ----
+Object.assign(DRAW_E, {
+  celtib(g,f){
+    P(g,[-6,-24,-11,-10,-9.5,-6,-4,-9,-2,-23],'#24201e',INK,1);          // black sagum cloak behind
+    curve(g,[-1,-21,-9,-25,-10.5,-33],'#cdd2d8',2.1); Ln(g,-1.6,-20.6,.4,-22.4,'#6b4423',1.8);   // curved falcata
+    legs(g,f,SKIN2,'#3a2a1e');
+    tunic(g,'#4a4440','#8a2a1e',-23,-9); shadeTorso(g,-23,-9);
+    Ln(g,-6.6,-14,6.6,-14,'#2a1a10',1.6);
+    head(g,1,-28,5,SKIN2);
+    g.beginPath(); g.arc(1,-28.8,5.8,Math.PI,0); g.closePath(); g.fillStyle='#8f8a80'; g.fill(); g.strokeStyle=INK; g.lineWidth=1; g.stroke();
+    P(g,[-2.4,-33.8,-1,-39.6,3.4,-40.2,4.6,-34.4],'#8a2a1e',INK,.8);          // red horsehair crest
+    P(g,[3.4,-28.8,6.4,-28.8,5,-24.6,3.4,-25.2],'#7d786f',INK,.7);
+    E(g,6.4,-17,6.2,6.2,'#3d3734',INK,1.1); E(g,6.4,-17,4.4,4.4,null,'#b3a28a',1); E(g,6.4,-17,2,2,'#c9b48a',INK,.6);
+  },
+  gcav(g,f){
+    horse(g,f,'#d6d0c4','#6b5a48',1);
+    spear(g,-8,-18,4,-50,'#7a5230',4,'#c3c8cd',1.3);
+    E(g,-6,-26,3.6,6.2,'#3d6f8e',INK,.9); Ln(g,-6,-31.6,-6,-20.4,'#e5d6a8',.9);
+    P(g,[-3.6,-32,3.6,-32,4.2,-20,-4.2,-20],'#5d7f3a',INK,1);
+    for (let x=-3;x<4;x+=2.2) Ln(g,x,-31.4,x+.4,-20.4,'rgba(200,60,40,.55)',.7);
+    Ln(g,-4,-25,4,-25.4,'rgba(200,60,40,.55)',.7);
+    limb(g,-1.2,-20.6,4,-13.4,'#5d7f3a',2.8);
+    head(g,.8,-36,4.6,SKIN);
+    P(g,[-4.6,-35,-6.6,-40.6,-3.4,-39.6,-2,-43,.6,-40.4,3,-43.2,4.2,-39.8,6,-40.2,4.6,-37.6,1.4,-38.6,-3,-38],'#d9652b',INK,.8);
+    P(g,[2.2,-33.6,5.8,-33.2,6.6,-31.6,4,-32.4],'#d9652b',INK,.5);
+    limb(g,2,-29,7.6,-26,SKIN,2);
+  },
+  sacred(g,f){
+    spear(g,-7.2,-3,-3.4,-44,'#7a5230',4.2,'#dfe3e8',1.4);
+    legs(g,f,SKIN2,'#4a3424',2.8);
+    tunic(g,'#f6f2ea','#6b1d7a',-17,-8); Ln(g,-7.4,-10.4,7.4,-10.4,'#6b1d7a',1.1);
+    P(g,[-6.4,-24,6.4,-24,7.4,-12.6,-7.4,-12.6],'#e9ecef',INK,1); shadeTorso(g,-24,-12.6);
+    Ln(g,0,-24,0,-13,'rgba(120,120,130,.45)',.7); Ln(g,-6.4,-18.4,6.6,-18.4,'#b4852b',.9);
+    head(g,1,-28.4,5,SKIN2);
+    g.beginPath(); g.arc(1,-29,6,Math.PI,0); g.closePath(); g.fillStyle='#e2b44a'; g.fill(); g.strokeStyle=INK; g.lineWidth=1; g.stroke();
+    P(g,[-4.2,-34.2,-3.2,-40,5,-41,5.8,-34.8],'#f6f2ea',INK,.8); Ln(g,-3.6,-37.4,5.4,-38.2,'#6b1d7a',.8);
+    P(g,[3.4,-29,6.6,-29,5.2,-24.6,3.4,-25.2],'#c99a3a',INK,.7);
+    E(g,7,-17,7.2,7.2,'#f6f2ea',INK,1.2); E(g,7,-17,5.6,5.6,null,'#6b1d7a',1.1);
+    g.beginPath(); g.arc(7,-18.4,2.6,.15*Math.PI,.85*Math.PI,true); g.strokeStyle='#6b1d7a'; g.lineWidth=1.3; g.stroke(); E(g,7,-19.6,1.1,1.1,'#6b1d7a');
+  },
+  maharbal(g,f){
+    horse(g,f,'#3a2a22','#14100c',1.12);
+    P(g,[-10,-25,9,-25,10,-15,-11,-15],'#b8281e',INK,1); for (let x=-10;x<10;x+=2.4) Ln(g,x,-15,x+.2,-13.6,'#e2b44a',1);
+    spear(g,-9,-22,2,-58,'#7a5230',4.4,'#dfe3e8',1.4);
+    P(g,[-1,-42,-14,-33,-17,-24,-10,-26,-6,-30],'#b8281e',INK,1);
+    limb(g,-1.6,-26,4.4,-18,'#e8d9a8',2.8);
+    P(g,[-3.6,-40,3.6,-40,4.2,-27,-4.2,-27],'#e8d9a8',INK,1); Ln(g,-3.8,-31,3.9,-31,'#b8281e',1.3);
+    head(g,.8,-45,5,'#6b4026');
+    g.beginPath(); g.arc(.8,-46,5.8,Math.PI,0); g.closePath(); g.fillStyle='#e8b93e'; g.fill(); g.strokeStyle=INK; g.lineWidth=1; g.stroke();
+    P(g,[-2.4,-51.4,-1,-57,4.6,-56,4.4,-51.2],'#f4ecd8',INK,.8);
+    limb(g,2,-36,7.6,-32,'#6b4026',2.2);
+  },
+  hasdrubal(g,f){
+    P(g,[-5,-25,-12,-6,-9,-2,-3,-7,0,-24],'#7d2390',INK,1);                 // purple cloak
+    spear(g,-8,-2,-4.4,-46,'#7a5230',4.4,'#dfe3e8',1.5);
+    legs(g,f,SKIN2,'#4a3424',3);
+    Ln(g,-2.6,-7,-1.6,-4,'#c79a3a',2); Ln(g,2.6,-7,3.4,-4,'#c79a3a',2);     // greaves
+    tunic(g,'#9b4a2b','#e2b44a',-16,-8);
+    P(g,[-6.8,-25,6.8,-25,7.6,-13,-7.6,-13],'#d9a640',INK,1.1); shadeTorso(g,-25,-13);
+    g.beginPath(); g.arc(0,-21,3.2,.1*Math.PI,.9*Math.PI); g.strokeStyle='#8a6418'; g.lineWidth=.9; g.stroke();
+    Ln(g,-6.6,-16,6.8,-16,'#8a6418',.9);
+    head(g,1,-29.4,5.2,SKIN2);
+    P(g,[-1,-27,5.6,-26.4,6.2,-24,2.4,-22.8,-2.6,-24.4],'#2e2219',INK,.7);   // beard
+    g.beginPath(); g.arc(1,-30,6.2,Math.PI,0); g.closePath(); g.fillStyle='#c79a3a'; g.fill(); g.strokeStyle=INK; g.lineWidth=1; g.stroke();
+    P(g,[3.4,-30,6.8,-30,5.4,-25.4,3.4,-26],'#b18731',INK,.7);
+    curve(g,[-4.6,-35,0,-45,6,-38],'#b8281e',3.2);
+    E(g,7.4,-17.4,7.6,12,'#6b1d7a',INK,1.2); E(g,7.4,-17.4,6,10.4,null,'#e2b44a',1);
+    E(g,7.4,-17.4,2.4,2.4,'#e2b44a',INK,.6);
+  },
+  mago(g,f){
+    legs(g,f,SKIN2,'#2a2030');
+    P(g,[-6.4,-25,6,-25,9,-6,-9,-6],'#3d3550',INK,1); shadeTorso(g,-25,-6);
+    Ln(g,-8.4,-8,8.4,-8,'#8c7aa8',1); Ln(g,0,-25,0,-8,'rgba(140,122,168,.6)',.8);
+    curve(g,[-1,-22,-10,-26,-12,-36],'#cdd2d8',2);
+    head(g,1.4,-29.6,4.8,SKIN2);
+    P(g,[-5.6,-24,-6.4,-31,-3,-37.4,3,-38,7.6,-33,8,-28,5.6,-31,1,-34,-2.6,-31,-3,-24],'#2c2540',INK,1);   // hood
+    E(g,6.4,-16,5,9,'#2c2540',INK,1); E(g,6.4,-16,1.8,2,'#8c7aa8',INK,.5);
+    limb(g,3,-21,8,-19,SKIN2,2.2);
+  }
+});
+Object.assign(E_SIZE, {celtib:[48,48,44,40,7], gcav:[56,58,52,50,8], sacred:[50,52,48,43,7],
+  maharbal:[72,80,74,70,10], hasdrubal:[62,70,64,60,9], mago:[58,64,58,52,9]});
+Object.assign(E_SCALE, {celtib:1.02, gcav:1.02, sacred:1.04, maharbal:1.1, hasdrubal:1.3, mago:1.25, hannibal:1.18});
+
+function renderSprite(w,h,ay,fn,f,flip,scale){
+  const c = cnv(w,h,SS), g = c.getContext('2d');
+  g.setTransform(SS*(flip?-1:1),0,0,SS,flip?c.width:0,0); g.translate(w/2,ay); if (scale) g.scale(scale,scale);
+  g.lineJoin='round'; fn(g,f); return c;
+}
+function tinted(src,col){ const c = cnv(src.width,src.height,1), g = c.getContext('2d'); g.drawImage(src,0,0); g.globalCompositeOperation='source-atop'; g.fillStyle=col; g.fillRect(0,0,c.width,c.height); return c; }
+function blob(size,stops){ const c = cnv(size,size,1), g = c.getContext('2d'), r=size/2, gr = g.createRadialGradient(r,r,0,r,r,r); for (const [o,col] of stops) gr.addColorStop(o,col); g.fillStyle=gr; g.fillRect(0,0,size,size); return c; }
+
+const TS = {}, ES = {}, FXS = {};
+function buildSprites(){
+  for (const k in DRAW_T) { const [w,h,ay] = T_SIZE[k]; TS[k] = {w,h,ay, img:[renderSprite(w,h,ay,DRAW_T[k],-1,false,T_SCALE), renderSprite(w,h,ay,DRAW_T[k],-1,true,T_SCALE)]}; }
+  for (const k in DRAW_E) {
+    const [w,h,ay,top,foot] = E_SIZE[k], v = [[],[],[]];
+    for (let f=0; f<2; f++) for (let d=0; d<2; d++) {
+      const base = renderSprite(w,h,ay,DRAW_E[k],f,d===1,E_SCALE[k]);
+      (v[0][f] = v[0][f] || [])[d] = base;
+      (v[1][f] = v[1][f] || [])[d] = tinted(base,'rgba(80,140,235,.28)');
+      (v[2][f] = v[2][f] || [])[d] = tinted(base,'rgba(255,250,235,.75)');
+    }
+    ES[k] = {w,h,ay,top,foot,v};
+  }
+  FXS.shadow = blob(64,[[0,'rgba(48,34,12,.42)'],[.6,'rgba(48,34,12,.26)'],[1,'rgba(48,34,12,0)']]);
+  FXS.range = blob(256,[[0,'rgba(255,214,110,.04)'],[.82,'rgba(255,214,110,.12)'],[.95,'rgba(255,200,80,.34)'],[.985,'rgba(255,236,170,.55)'],[1,'rgba(255,200,80,0)']]);
+  FXS.halo = blob(96,[[0,'rgba(255,224,120,.75)'],[.5,'rgba(255,206,90,.35)'],[1,'rgba(255,200,80,0)']]);
+  FXS.aura = blob(256,[[0,'rgba(150,50,170,.0)'],[.7,'rgba(150,50,170,.10)'],[.97,'rgba(150,50,170,.22)'],[1,'rgba(150,50,170,0)']]);
+  FXS.glow = blob(64,[[0,'rgba(255,226,140,.9)'],[.55,'rgba(255,214,110,.45)'],[1,'rgba(255,200,80,0)']]);
+  FXS.dust = blob(48,[[0,'rgba(226,210,172,.95)'],[.55,'rgba(214,196,156,.6)'],[1,'rgba(214,196,156,0)']]);
+  FXS.flashRed = blob(128,[[0,'rgba(255,90,40,.9)'],[.5,'rgba(255,50,30,.45)'],[1,'rgba(255,40,20,0)']]);
+  FXS.star = renderSprite(10,10,5,g=>star(g,0,0,4.4,'#f6cf4a'),0,false);
+  FXS.starS = renderSprite(10,10,5,g=>star(g,0,0,4.4,'#e6ebf0'),0,false);
+  FXS.glass = renderSprite(10,13,6.5,g=>{ RR(g,-4,-6,8,1.6,.6,'#8b5a2b',INK,.6); RR(g,-4,4.4,8,1.6,.6,'#8b5a2b',INK,.6); P(g,[-3,-4.4,3,-4.4,.6,0,3,4.4,-3,4.4,-.6,0],'rgba(220,240,255,.9)',INK,.7); P(g,[-1.6,-2.4,1.6,-2.4,0,-.4],'#e5c46a'); P(g,[-2.4,4.4,2.4,4.4,0,2],'#e5c46a'); },0,false);
+  FXS.coin = renderSprite(12,12,6,g=>coinArt(g,5),0,false);
+  FXS.wallIc = renderSprite(14,12,6,g=>wallArt(g),0,false);
+}
+function coinArt(g,r){ E(g,0,.6,r,r,'#8a8a80'); const gr=g.createRadialGradient(-r*.4,-r*.4,0,0,0,r); gr.addColorStop(0,'#ffffff'); gr.addColorStop(.5,'#dcdcd2'); gr.addColorStop(1,'#a8a89c'); E(g,0,0,r,r,gr,'#6f6f66',r*.12); E(g,0,0,r*.74,r*.74,null,'rgba(110,110,100,.6)',r*.08); Ln(g,-r*.32,-r*.36,r*.32,r*.36,'#6f6f66',r*.16); Ln(g,r*.32,-r*.36,-r*.32,r*.36,'#6f6f66',r*.16); }
+function wallArt(g){ P(g,[-6.5,5,-6.5,-2,-5,-2,-5,-4,-3,-4,-3,-2,-1,-2,-1,-4,1,-4,1,-2,3,-2,3,-4,5,-4,5,-2,6.5,-2,6.5,5],'#d2ae7c',INK,.8); g.beginPath(); g.moveTo(-1.8,5); g.lineTo(-1.8,1.6); g.arc(0,1.6,1.8,Math.PI,0); g.lineTo(1.8,5); g.closePath(); g.fillStyle='#5a3a1a'; g.fill(); Ln(g,-6,1,-3,1,'#a9875a',.5); Ln(g,3,1,6,1,'#a9875a',.5); }
+
+// ---- static background: the whole 390×1700 landscape is painted once into BG; Rome's wall into WALL ----
+let BG = null, WALL = null;
+const WALL_TOP = 1540;   // world y where the wall layer canvas begins
+function rng(seed){ let s = seed>>>0; return () => { s = (s*1664525 + 1013904223)>>>0; return s/4294967296; }; }
+function segDist(x,y){ let m=1e9; for (const s of SEG){ const dx=s.x2-s.x1, dy=s.y2-s.y1; let t=((x-s.x1)*dx+(y-s.y1)*dy)/(s.len*s.len); t=Math.max(0,Math.min(1,t)); m=Math.min(m,Math.hypot(x-s.x1-dx*t,y-s.y1-dy*t)); } return m; }
+const VINES = [[330,326,52,58,'vine'],[286,634,50,44,'vine'],[8,1146,54,62,'vine'],[6,128,58,62,'wheat'],[322,1150,0,0,'none']].filter(v=>v[2]);
+const SIGNS = [];
+const FONT_D = '"Cinzel","Forum","Palatino Linotype",Georgia,serif', FONT_C = '"Forum","Cinzel","Palatino Linotype",Georgia,serif';
+function roadPath(g){
+  g.beginPath(); g.moveTo(PATH[0][0],PATH[0][1]-40);
+  for (let i=1;i<PATH.length;i++) g.lineTo(PATH[i][0],PATH[i][1]);
+  const l = PATH[PATH.length-1]; g.lineTo(l[0],l[1]+40);
+}
+function worldBox(){ return [-4, -4, W+4, H+4]; }
+function buildBg(){
+  if (!TS.velite) return;
+  const k = DPR*VS;
+  BG = BG || document.createElement('canvas'); BG.width = Math.round(W*k); BG.height = Math.round(H*k);
+  WALL = WALL || document.createElement('canvas'); WALL.width = BG.width; WALL.height = Math.round((H-WALL_TOP)*k);
+  const g = BG.getContext('2d'); g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,BG.width,BG.height);
+  g.fillStyle = '#a7ba64'; g.fillRect(0,0,BG.width,BG.height);
+  g.setTransform(k,0,0,k,0,0); g.lineJoin='round';
+  paintLand(g);
+  const w = WALL.getContext('2d'); w.setTransform(1,0,0,1,0,0); w.clearRect(0,0,WALL.width,WALL.height);
+  w.setTransform(k,0,0,k,0,-WALL_TOP*k); w.lineJoin='round';
+  w.translate(-5, WALL_Y-552);   // the wall art is authored in the old 400×600 frame
+  paintWall(w);
+  buildMiniBg();
+}
+function signpost(g,x,y,text,dir,size){
+  // wooden board with an arrow end; dir = 1 points right, -1 points left; (x,y) = centre of the board
+  g.font='bold 10px '+FONT_C; const tw = g.measureText(text).width, fs = size || 10, bw = tw*fs/10 + 12, bh = fs + 8;
+  const L = x - bw/2, R = x + bw/2, T = y - bh/2, B = y + bh/2;
+  Ln(g,x,B-2,x,B+14,INK,3.4); Ln(g,x,B-2,x,B+14,'#8a5a2b',2.2); E(g,x+2,B+14,5,1.6,'rgba(50,40,14,.3)');
+  const pts = dir > 0 ? [L,T,R,T,R+6,y,R,B,L,B] : [R,T,L,T,L-6,y,L,B,R,B];
+  P(g,pts,'#b9834a',INK,1); Ln(g,L+1,T+4.5,R-1,T+4.5,'rgba(90,55,25,.35)',.6); Ln(g,L+1,B-4.5,R-1,B-4.5,'rgba(90,55,25,.35)',.6);
+  g.fillStyle='#2f1e10'; g.textAlign='center'; g.textBaseline='middle'; g.font='bold '+fs+'px '+FONT_C; g.fillText(text,x+(dir>0?-1:1),y+.4);
+}
+function house(g,x,y,w,R){
+  // a little Italian farmhouse: plastered walls, terracotta tile roof, dark door; (x,y) = bottom-centre
+  const h = w*.62, rh = w*.42;
+  E(g,x+3,y+1,w*.62,w*.16,'rgba(50,40,14,.28)');
+  RR(g,x-w/2,y-h,w,h,1,'#efe2c6',INK,.8);
+  g.fillStyle='rgba(0,0,0,.10)'; g.fillRect(x+w*.18,y-h+.5,w*.32-.5,h-1);
+  RR(g,x-w*.12,y-h*.62,w*.24,h*.62,.8,'#6b4423',INK,.6);
+  RR(g,x-w*.40,y-h*.72,w*.16,w*.14,.5,'#3a2a1e'); if (w > 18) RR(g,x+w*.24,y-h*.72,w*.16,w*.14,.5,'#3a2a1e');
+  P(g,[x-w/2-2.4,y-h+.6,x,y-h-rh,x+w/2+2.4,y-h+.6],'#c25a34',INK,.9);
+  for (let i=1;i<4;i++){ const yy = y-h-rh+rh*i/4+.4, hw = (w/2+2.4)*i/4; Ln(g,x-hw,yy,x+hw,yy,'rgba(110,30,15,.45)',.6); }
+  P(g,[x,y-h-rh,x+w/2+2.4,y-h+.6,x+w*.18,y-h+.6],'rgba(0,0,0,.12)');
+  if (R() < .6) { RR(g,x+w*.18,y-h-rh*.9,3,rh*.5,.4,'#d9c7a6',INK,.5); }
+}
+function cypress(g,x,y,s){
+  const h=24*s, w=4.4*s;
+  E(g,x+4,y,6*s,2*s,'rgba(50,40,14,.28)',null,0,-.15);
+  g.beginPath(); g.moveTo(x,y-h); g.quadraticCurveTo(x+w*1.35,y-h*.45,x+w*.55,y); g.lineTo(x-w*.55,y); g.quadraticCurveTo(x-w*1.35,y-h*.45,x,y-h); g.closePath();
+  g.fillStyle='#2f5833'; g.fill(); g.strokeStyle='rgba(30,40,20,.7)'; g.lineWidth=.7; g.stroke();
+  g.beginPath(); g.moveTo(x-.4,y-h+2); g.quadraticCurveTo(x-w*1.1,y-h*.45,x-w*.35,y-1.5); g.quadraticCurveTo(x-w*.35,y-h*.5,x-.4,y-h+2); g.fillStyle='#4f8447'; g.fill();
+  Ln(g,x,y,x,y+1.2,'#5a3a1a',1.2);
+}
+function paintLand(g){
+  const [X0,Y0,X1,Y1] = worldBox(), R = rng(11);
+  // ground: alpine meadow at the top, Etruscan green in the middle, sun-baked earth near Rome
+  let gr = g.createLinearGradient(0,30,0,H);
+  gr.addColorStop(0,'#b7c66e'); gr.addColorStop(.18,'#aec468'); gr.addColorStop(.4,'#a6bd62'); gr.addColorStop(.62,'#adbd63');
+  gr.addColorStop(.8,'#a8b45e'); gr.addColorStop(.92,'#b3a964'); gr.addColorStop(1,'#bf9a62');
+  g.fillStyle = gr; g.fillRect(X0,0,X1-X0,Y1);
+  for (let i=0;i<14;i++){ const x=X0+R()*(X1-X0), y=1440+R()*140, r=30+R()*40; const b=g.createRadialGradient(x,y,0,x,y,r); b.addColorStop(0,'rgba(196,120,74,.32)'); b.addColorStop(1,'rgba(196,120,74,0)'); g.fillStyle=b; g.fillRect(x-r,y-r,r*2,r*2); }
+  // dappling
+  for (let i=0;i<260;i++){
+    const x=X0+R()*(X1-X0), y=40+R()*1520, r=16+R()*44, light=R()<.5;
+    const b=g.createRadialGradient(x,y,0,x,y,r);
+    b.addColorStop(0, light?'rgba(240,236,170,.30)':'rgba(84,118,48,.22)'); b.addColorStop(1, light?'rgba(240,236,170,0)':'rgba(84,118,48,0)');
+    g.fillStyle=b; g.fillRect(x-r,y-r,r*2,r*2);
+  }
+  // hills
+  for (const [x,y,rx,ry] of [[26,190,62,30],[372,200,58,30],[214,266,46,16],[196,40,70,14],[372,70,50,22],[24,360,40,26],[372,420,50,30],
+      [380,560,40,30],[30,820,56,32],[372,860,44,30],[210,780,50,14],[20,1000,40,30],[372,1010,44,28],[372,1220,40,30],[28,1280,40,20],[372,1470,60,30],[60,1440,50,18]]){
+    const h=g.createLinearGradient(x-rx*.4,y-ry,x+rx*.3,y+ry);
+    h.addColorStop(0,'rgba(214,222,140,.65)'); h.addColorStop(.6,'rgba(160,184,92,.35)'); h.addColorStop(1,'rgba(110,140,60,.35)');
+    E(g,x,y,rx,ry,h);
+    E(g,x+rx*.18,y+ry*.45,rx*.75,ry*.4,'rgba(90,120,50,.14)');
+  }
+  // Alps: sky and three layers of peaks, farther = paler and bluer
+  gr = g.createLinearGradient(0,Y0,0,42); gr.addColorStop(0,'#bcd8ec'); gr.addColorStop(1,'#e7efe2');
+  g.fillStyle = gr; g.fillRect(X0,Y0,X1-X0,46-Y0);
+  const layers = [
+    {base:30, top:[1,9], col:'#c3d1e2', snow:'#f7fafc', step:[22,34], seed:3},
+    {base:38, top:[8,18], col:'#98abc4', snow:'#f2f6fa', step:[26,40], seed:5},
+    {base:46, top:[22,33], col:'#7f9488', snow:null, step:[18,30], seed:9}
+  ];
+  for (const L of layers){
+    const r = rng(L.seed), pts = [X0-10, L.base+12]; let x = X0-10;
+    const peaks = [];
+    while (x < X1+30){ const px = x + L.step[0]*.5 + r()*L.step[1]*.5, py = L.top[0] + r()*(L.top[1]-L.top[0]); pts.push(px,py); peaks.push([px,py]); x = px + L.step[0]*.5 + r()*L.step[1]*.5; pts.push(x, L.base - r()*6); }
+    pts.push(X1+40, L.base+12);
+    P(g,pts,L.col);
+    if (L.snow) for (const [px,py] of peaks){ const d=(L.base-py)*.38; P(g,[px,py, px+d*.75,py+d, px+d*.3,py+d*.78, px,py+d*1.05, px-d*.35,py+d*.8, px-d*.8,py+d],L.snow); P(g,[px,py,px+d*.75,py+d,px+d*.3,py+d*.78],'rgba(150,175,205,.35)'); }
+    else for (const [px,py] of peaks){ for (let k=0;k<3;k++){ const tx=px-6+k*5+r()*3, ty=py+6+r()*6; P(g,[tx,ty-6,tx+2.6,ty+1.5,tx-2.6,ty+1.5],'#56705a'); } }
+    const hz = g.createLinearGradient(0,L.base-14,0,L.base+10); hz.addColorStop(0,'rgba(236,242,236,0)'); hz.addColorStop(1,'rgba(236,242,236,.45)');
+    g.fillStyle = hz; g.fillRect(X0,L.base-14,X1-X0,24);
+  }
+  gr = g.createLinearGradient(0,40,0,64); gr.addColorStop(0,'rgba(127,148,136,.9)'); gr.addColorStop(1,'rgba(160,184,100,0)');
+  g.fillStyle = gr; g.fillRect(X0,40,X1-X0,24);
+  // vineyards and a wheat field
+  for (const [vx,vy,vw,vh,kind] of VINES){
+    if (kind === 'wheat') {
+      RR(g,vx,vy,vw,vh,5,'rgba(222,186,96,.75)');
+      for (let y=vy+4; y<vy+vh-2; y+=4.2) Ln(g,vx+3,y,vx+vw-3,y+.6,'rgba(170,128,50,.45)',1.1);
+      continue;
+    }
+    RR(g,vx,vy,vw,vh,5,'rgba(186,146,92,.55)');
+    for (let y=vy+5; y<vy+vh-2; y+=6.5){ Ln(g,vx+3,y+1.5,vx+vw-3,y+1.5,'rgba(90,60,30,.25)',1.4); for (let x=vx+4; x<vx+vw-3; x+=4.2){ E(g,x,y,2.3,2,'#5f7f37'); E(g,x-.6,y-.7,1.2,1,'#86a64e'); } }
+  }
+  // Lake Trasimene: sandy shore, deep water in the middle, reeds
+  { const {x,y,rx,ry} = LAKE;
+    E(g,x+2,y+3,rx+5,ry+5,'rgba(60,50,20,.18)');
+    E(g,x,y,rx+5,ry+5,'#d3c08e');
+    const lg = g.createRadialGradient(x-rx*.2,y-ry*.3,4,x,y,rx); lg.addColorStop(0,'#86c3e0'); lg.addColorStop(.6,'#5a9fc6'); lg.addColorStop(1,'#3f7ea6');
+    E(g,x,y,rx,ry,lg,'#3a6f8f',1);
+    E(g,x-rx*.25,y-ry*.35,rx*.5,ry*.22,'rgba(255,255,255,.18)');
+    for (let i=0;i<9;i++){ const a=R()*TAU, rr=.25+R()*.5; const wx=x+Math.cos(a)*rx*rr, wy=y+Math.sin(a)*ry*rr; Ln(g,wx-4,wy,wx+4,wy-.2,'rgba(255,255,255,.7)',1); }
+    E(g,x+rx*.45,y-ry*.05,7,4.5,'#9fb466','rgba(60,80,30,.6)',.6);   // a small island
+    cypress(g,x+rx*.45,y-ry*.05+1,.55);
+    for (let i=0;i<22;i++){ const a=Math.PI*.15+R()*Math.PI*.7+(i%2?Math.PI:0), px=x+Math.cos(a)*(rx+2), py=y+Math.sin(a)*(ry+2); Ln(g,px,py,px+(R()-.5)*2,py-5-R()*4,'#5f7f37',1); }
+    signpost(g,x+4,y-ry-22,'Тразименское озеро',-1,9.4);
+  }
+  // river (crossed by a stone bridge) and the shallow ford near Rome
+  const stream = (fy,lw,col,dy) => { g.beginPath(); for (let x=X0-5;x<=X1+5;x+=4){ const y=fy(x)+(dy||0); x===X0-5?g.moveTo(x,y):g.lineTo(x,y);} g.strokeStyle=col; g.lineWidth=lw; g.lineCap='round'; g.stroke(); };
+  stream(riverY,18,'#cdb98a'); stream(riverY,13,'#4f8db2'); stream(riverY,8.5,'#72b2d6',-.8); stream(riverY,2.4,'rgba(200,232,248,.6)',-2.2);
+  for (let x=X0+6; x<X1; x+=17+((x*7)%9)){ const y=riverY(x)+((x*13)%5)-2.5; Ln(g,x,y,x+5,y-.3,'rgba(255,255,255,.75)',1); }
+  stream(fordY,13,'#cdb98a'); stream(fordY,9,'#5f9cc0'); stream(fordY,5.5,'#86c0de',-.6);
+  for (let x=X0+10; x<X1; x+=21+((x*5)%7)){ const y=fordY(x)+((x*11)%3)-1.5; Ln(g,x,y,x+4,y-.2,'rgba(255,255,255,.7)',.9); }
+  // road: shadow, curb stones, flagstones
+  g.save(); g.translate(1.6,2.6); roadPath(g); g.strokeStyle='rgba(60,42,14,.28)'; g.lineWidth=41; g.lineCap='butt'; g.lineJoin='round'; g.stroke(); g.restore();
+  roadPath(g); g.strokeStyle='#8f8574'; g.lineWidth=40; g.lineCap='butt'; g.lineJoin='round'; g.stroke();
+  g.setLineDash([7,1.4]); roadPath(g); g.strokeStyle='#cbbfa6'; g.lineWidth=37.6; g.stroke(); g.setLineDash([]);
+  const rc = cnv(BG.width,BG.height,1), rg = rc.getContext('2d');
+  rg.setTransform(g.getTransform());
+  const RS = rng(23), tones = ['#d9cdb3','#cdbfa3','#e2d7bf','#c4b597','#d4c6a8'];
+  for (let y=Y0-6; y<Y1; y+=7.2){
+    if (segDistY(y) > 24) continue;
+    let x = X0 - RS()*10;
+    while (x < X1){ const w = 6+RS()*6; rg.fillStyle = tones[(RS()*tones.length)|0]; rg.fillRect(x+.5,y+.5,w-1,6.2); x += w; }
+  }
+  rg.globalCompositeOperation='destination-in'; roadPath(rg); rg.strokeStyle='#000'; rg.lineWidth=31; rg.lineCap='butt'; rg.lineJoin='round'; rg.stroke();
+  rg.globalCompositeOperation='source-over';
+  roadPath(rg); rg.strokeStyle='rgba(80,60,30,.12)'; rg.lineWidth=31; rg.stroke();
+  roadPath(rg); rg.globalCompositeOperation='source-atop'; rg.strokeStyle='rgba(255,250,235,.10)'; rg.lineWidth=14; rg.stroke(); rg.globalCompositeOperation='source-over';
+  g.save(); g.setTransform(1,0,0,1,0,0); g.drawImage(rc,0,0); g.restore();
+  rc.width = rc.height = 1;
+  // stone bridge over the river (road crosses at x = 70)
+  { const bx = 70, by = riverY(bx);
+    g.fillStyle='rgba(30,60,80,.35)'; g.fillRect(bx-34,by-7,10,14); g.fillRect(bx+24,by-7,12,14);
+    for (const s of [-1,1]){ const x = bx + s*24; P(g,[x,by-5.5, x+s*9,by, x,by+5.5],'#cbbd9c',INK,.7); P(g,[x,by+1.5,x+s*9,by,x,by+5.5],'rgba(0,0,0,.14)'); }
+    for (const x of [bx-25.5,bx+19]) {
+      RR(g,x+1,by-13,6.5,28,1.6,'rgba(40,30,10,.3)');
+      RR(g,x,by-14,6.5,28,1.6,'#d3c5a6',INK,.9); Ln(g,x+.8,by-13,x+.8,by+13,'rgba(255,250,235,.6)',1);
+      for (let y=by-9.5; y<by+14; y+=4.6) Ln(g,x+.4,y,x+6.1,y,'rgba(110,92,62,.7)',.6);
+    }
+  }
+  // the ford: water runs over the flagstones, stepping stones mark the crossing
+  { const fx = 70, fy = fordY(fx);
+    g.save(); g.beginPath(); g.rect(fx-22,fy-9,44,18); g.clip();
+    g.globalAlpha=.55; stream(fordY,9,'#6aa8cc'); g.globalAlpha=.6; stream(fordY,3,'#bfe2f2',-.8); g.globalAlpha=1;
+    g.restore();
+    for (const dx of [-14,-5,4,13]) { E(g,fx+dx+.6,fy+1.4,3.6,2.4,'rgba(30,50,60,.3)'); E(g,fx+dx,fy+.6,3.4,2.3,'#bdb7a6',INK,.6); E(g,fx+dx-.8,fy,1.4,.9,'#e2ddd0'); }
+    for (const s of [-1,1]) for (let i=0;i<4;i++){ const x=fx+s*(26+i*4), y=fordY(x); Ln(g,x,y+3,x+(i%2?1:-1),y-5,'#5f7f37',1); }
+  }
+  // villages: clusters of farmhouses with tile roofs
+  const HR = rng(57);
+  for (const v of VILLAGES) for (const [x,y,w] of v) house(g,x,y,w,HR);
+  // a cypress wood
+  { const FR = rng(91), {x0,y0,x1,y1} = FOREST, pts = [];
+    for (let y=y0; y<=y1; y+=11) for (let x=x0+((y/11)%2?5:0); x<=x1; x+=11) pts.push([x+(FR()-.5)*5, y+(FR()-.5)*4]);
+    for (const [x,y] of pts) if (segDist(x,y) > 30) cypress(g,x,y,.8+FR()*.45);
+  }
+  // props: cypresses, olives, rocks, flowers — rejection-sampled away from road, plates, water, fields, villages, wall
+  const free = (x,y,pad) => {
+    if (y < 64 || y > 1548) return false;
+    if (segDist(x,y) < 24+pad) return false;
+    for (const [px,py] of PADS) if (Math.hypot(px-x,py-y) < 24+pad) return false;
+    if (Math.abs(y - riverY(x)) < 12+pad) return false;
+    if (Math.abs(y - fordY(x)) < 10+pad) return false;
+    if (((x-LAKE.x)/(LAKE.rx+10+pad))**2 + ((y-LAKE.y)/(LAKE.ry+10+pad))**2 < 1) return false;
+    if (x > LAKE.x-70 && x < LAKE.x+80 && y > LAKE.y-LAKE.ry-40 && y < LAKE.y-LAKE.ry) return false;
+    for (const [vx,vy,vw,vh] of VINES) if (x>vx-6 && x<vx+vw+6 && y>vy-4 && y<vy+vh+10) return false;
+    for (const v of VILLAGES) for (const [hx,hy,hw] of v) if (Math.abs(x-hx) < hw*.8+12+pad && y > hy-hw-12 && y < hy+14) return false;
+    if (x > FOREST.x0-10 && x < FOREST.x1+10 && y > FOREST.y0-14 && y < FOREST.y1+8) return false;
+    if (x > 90 && x < 180 && y < 90) return false;
+    return x > X0+4 && x < X1-4;
+  };
+  const props = [], PR = rng(41);
+  const place = (n,kind,pad,minGap) => { let tries=0; while (n>0 && tries++<9000){ const x=X0+PR()*(X1-X0), y=64+PR()*1484; if (!free(x,y,pad)) continue; if (props.some(p=>Math.hypot(p.x-x,p.y-y)<minGap)) continue; props.push({x,y,kind,s:.85+PR()*.35}); n--; } };
+  place(62,'cypress',2,13); place(38,'olive',4,16); place(26,'rock',0,10);
+  props.sort((a,b)=>a.y-b.y);
+  for (const p of props){
+    if (p.kind==='cypress') cypress(g,p.x,p.y,p.s);
+    else if (p.kind==='olive'){ const r=6.2*p.s, cy=p.y-6.5*p.s;
+      E(g,p.x+3,p.y,r*1.1,r*.38,'rgba(50,40,14,.25)');
+      limb(g,p.x,p.y,p.x+.6,cy+2,'#6b5338',1.4);
+      E(g,p.x+r*.45,cy+r*.25,r*.75,r*.62,'#6f8452'); E(g,p.x-r*.45,cy+r*.2,r*.7,r*.6,'#7f9461'); E(g,p.x,cy-r*.25,r*.8,r*.66,'#8fa26c');
+      E(g,p.x-r*.3,cy-r*.45,r*.38,r*.28,'#b3c08f'); E(g,p.x+r*.4,cy-r*.05,r*.22,r*.18,'#a7b884');
+    } else { const s=p.s*3.4;
+      E(g,p.x+1.2,p.y+.8,s*1.3,s*.55,'rgba(50,40,14,.22)');
+      P(g,[p.x-s,p.y,p.x-s*.7,p.y-s*.9,p.x+s*.2,p.y-s*1.15,p.x+s,p.y-s*.4,p.x+s*.9,p.y],'#a9a395','rgba(60,50,40,.6)',.6);
+      P(g,[p.x-s*.7,p.y-s*.9,p.x+s*.2,p.y-s*1.15,p.x+s*.1,p.y-s*.5,p.x-s*.5,p.y-s*.45],'#cbc5b6');
+    }
+  }
+  for (let i=0;i<330;i++){ const x=X0+PR()*(X1-X0), y=64+PR()*1480; if (!free(x,y,-6)) continue; E(g,x,y,.9,.9,['#d8452f','#f4efe0','#e9c54a','#c95a8a'][(PR()*4)|0]); }
+  // signposts
+  signpost(g,135,64,'Из-за Альп',-1,10);
+  // stone building plates
+  for (const [x,y] of PADS){
+    E(g,x+1.6,y+2.8,18.6,17,'rgba(52,36,12,.32)');
+    const pg = g.createRadialGradient(x-6,y-7,1,x,y,19); pg.addColorStop(0,'#f6f0e3'); pg.addColorStop(.7,'#ddd3c0'); pg.addColorStop(1,'#bfb39c');
+    E(g,x,y,18,18,pg,'#857a66',1.1);
+    E(g,x,y,12.6,12.6,null,'rgba(125,112,92,.55)',1);
+    for (let a=0;a<4;a++){ const an=a*Math.PI/2+.4; Ln(g,x+Math.cos(an)*12.8,y+Math.sin(an)*12.8,x+Math.cos(an)*17.6,y+Math.sin(an)*17.6,'rgba(125,112,92,.55)',.8); }
+    E(g,x-5,y-6,4,2.2,'rgba(255,255,255,.35)',null,0,-.6);
+    Ln(g,x-3,y+3,x+3,y-3,'rgba(125,112,92,.5)',1); Ln(g,x-3,y-3,x+3,y+3,'rgba(125,112,92,.5)',1);
+    Ln(g,x+1.6,y-4.4,x+4.4,y-1.6,'rgba(125,112,92,.5)',1.6); Ln(g,x-4.6,y-4.2,x-2,y-3.4,'rgba(125,112,92,.5)',1.2);
+  }
+}
+// is any road row near this y? (skips painting flagstone rows that the road never touches)
+function segDistY(y){ let m = 1e9; for (const s of SEG){ const a=Math.min(s.y1,s.y2), b=Math.max(s.y1,s.y2); m = Math.min(m, y<a ? a-y : y>b ? y-b : 0); } return m; }
+function paintWall(g){
+  const X0 = 0, X1 = 400, Y1 = H - (WALL_Y-552) + 4;
+  // temple with pediment and dome peeking over the wall
+  RR(g,58,526,72,5,1,'#e6dccb',INK,.8);
+  P(g,[56,526,94,511,132,526],'#efe7d6',INK,1); P(g,[64,524,94,514.6,124,524],'#d9cdb6');
+  Ln(g,56,526,94,511,'#b0432c',1.4); Ln(g,94,511,132,526,'#b0432c',1.4);
+  for (let x=64;x<=124;x+=10){ RR(g,x-2.4,531,4.8,22,.8,'#f2ebdc','rgba(58,38,22,.6)',.6); Ln(g,x-.6,532,x-.6,552,'rgba(150,135,110,.45)',.6); }
+  g.fillStyle='rgba(60,40,20,.25)'; g.fillRect(59,531,70,3);
+  E(g,320,536,26,19,'#ddd2bb',INK,1);
+  for (let a=-3;a<=3;a++) { g.beginPath(); g.ellipse(320,536,Math.abs(a)*7.6+.1,19,0,Math.PI,0); g.strokeStyle='rgba(120,100,70,.35)'; g.lineWidth=.6; g.stroke(); }
+  RR(g,316,513,8,6,1,'#ddd2bb',INK,.8); E(g,320,512.6,4.6,2,'#b0432c',INK,.6);
+  RR(g,292,536,56,14,1,'#e6dccb',INK,.8); for (let x=297;x<346;x+=7) RR(g,x,538.6,3,8,1.2,'#5d4630');
+  for (const [x,w] of [[150,22],[236,18],[270,16],[136,12]]){ RR(g,x,538,w,14,1,'#e9d7b6',INK,.6); P(g,[x-1.6,539,x+w/2,532,x+w+1.6,539],'#b84a2e',INK,.6); }
+  E(g,262,542,3,8,'#2f5833'); E(g,148,540,2.6,8,'#2f5833');
+  // wall body: brick courses with offset joints
+  const top = 552;
+  let gr = g.createLinearGradient(0,top,0,Y1); gr.addColorStop(0,'#d4b083'); gr.addColorStop(1,'#b48d5f');
+  g.fillStyle=gr; g.fillRect(X0,top,X1-X0,Y1-top);
+  const BR = rng(77);
+  for (let y=top+2, row=0; y<Y1; y+=5.2, row++){
+    for (let x=X0-(row%2?6:0); x<X1; x+=12){ g.fillStyle = ['rgba(150,96,52,.18)','rgba(255,240,210,.14)','rgba(120,70,40,.12)','rgba(0,0,0,0)'][(BR()*4)|0]; g.fillRect(x+.6,y+.5,10.8,4.2); }
+    Ln(g,X0,y,X1,y,'rgba(110,78,44,.45)',.55);
+    for (let x=X0-(row%2?6:0); x<X1; x+=12) Ln(g,x,y,x,y+5.2,'rgba(110,78,44,.4)',.55);
+  }
+  // coping and merlons
+  RR(g,X0,548,X1-X0,5,0,'#e3cba2'); Ln(g,X0,553,X1,553,'rgba(90,60,30,.5)',1);
+  for (let x=X0+2; x<X1; x+=14){ RR(g,x,540.5,9,8,.6,'#d9bb8e',INK,.6); g.fillStyle='rgba(0,0,0,.12)'; g.fillRect(x+6.5,541,2.4,7.4); }
+  // two towers with red tile roofs
+  for (const cx of [38,362]){
+    RR(g,cx-17,530,34,Y1-530,1,'#cfa97a',INK,1);
+    for (let y=534; y<Y1; y+=5.2) Ln(g,cx-17,y,cx+17,y,'rgba(110,78,44,.4)',.55);
+    g.fillStyle='rgba(0,0,0,.10)'; g.fillRect(cx+8,531,8.4,Y1-531);
+    g.beginPath(); g.moveTo(cx-3,566); g.lineTo(cx-3,558); g.arc(cx,558,3,Math.PI,0); g.lineTo(cx+3,566); g.closePath(); g.fillStyle='#3a2616'; g.fill();
+    P(g,[cx-21,531,cx,506,cx+21,531],'#b84a2e',INK,1.1);
+    for (let k=1;k<5;k++){ const y=506+k*5, hw=21*k/5; Ln(g,cx-hw,y,cx+hw,y,'rgba(110,30,15,.5)',.7); }
+    P(g,[cx,506,cx+21,531,cx+9,531],'rgba(0,0,0,.14)');
+    E(g,cx,505.4,1.6,1.6,'#e2b44a',INK,.5);
+  }
+  // gatehouse with arched gate and wooden doors
+  RR(g,166,534,68,Y1-534,1,'#d6b386',INK,1);
+  for (let y=538; y<Y1; y+=5.2) Ln(g,166,y,234,y,'rgba(110,78,44,.4)',.55);
+  for (let x=167; x<232; x+=13){ RR(g,x,527,8.4,8,.6,'#dcbf92',INK,.6); }
+  g.beginPath(); g.moveTo(181,Y1+2); g.lineTo(181,577); g.arc(200,577,19,Math.PI,0); g.lineTo(219,Y1+2); g.closePath(); g.fillStyle='#e8d4ae'; g.fill(); g.strokeStyle=INK; g.lineWidth=1; g.stroke();
+  for (let a=0;a<=8;a++){ const an=Math.PI+a*Math.PI/8; Ln(g,200+Math.cos(an)*15.8,577+Math.sin(an)*15.8,200+Math.cos(an)*19,577+Math.sin(an)*19,'rgba(110,78,44,.7)',.8); }
+  g.beginPath(); g.moveTo(184.5,Y1+2); g.lineTo(184.5,577); g.arc(200,577,15.5,Math.PI,0); g.lineTo(215.5,Y1+2); g.closePath();
+  gr = g.createLinearGradient(184,0,216,0); gr.addColorStop(0,'#7a4a22'); gr.addColorStop(.5,'#9a6431'); gr.addColorStop(1,'#6e421d');
+  g.fillStyle=gr; g.fill(); g.strokeStyle=INK; g.lineWidth=1; g.stroke();
+  for (let x=188.4; x<214; x+=3.9) Ln(g,x,566,x,Y1,'rgba(50,28,10,.45)',.6);
+  Ln(g,200,562,200,Y1,INK,1.2);
+  for (const y of [572,588]){ Ln(g,185,y,215,y,'#3e2c1c',1.8); for (let x=187.5;x<214;x+=4.2) E(g,x,y,.6,.6,'#c7c0b0'); }
+  E(g,196.6,580,1.1,1.1,'#d4a634',INK,.4); E(g,203.4,580,1.1,1.1,'#d4a634',INK,.4);
+  // SPQR standard on red cloth above the gate
+  Ln(g,182,536.6,218,536.6,'#6b4423',1.6); E(g,182,536.6,1.3,1.3,'#e2b44a'); E(g,218,536.6,1.3,1.3,'#e2b44a');
+  P(g,[184.5,537,215.5,537,215.5,556,200,560.5,184.5,556],'#a8241a',INK,1);
+  P(g,[186.4,538.6,213.6,538.6,213.6,555,200,558.8,186.4,555],null,'#e2b44a',.7);
+  g.fillStyle='#f6d47a'; g.textAlign='center'; g.textBaseline='middle'; g.font='700 8.4px '+FONT_D; g.fillText('SPQR',200,547.6);
+  // marble plaque "РИМ"
+  RR(g,98,566,52,18,2,'#f1eadc',INK,.9); RR(g,100.5,568.4,47,13.2,1.4,null,'rgba(180,133,43,.8)',.6);
+  g.fillStyle='#8e2419'; g.font='12.5px '+FONT_C; g.fillText('РИМ',124,575.6);
+  // torches/garland on the right
+  for (const x of [268,300]) { E(g,x,573,6.4,6.4,'#b8862f',INK,.8); E(g,x,573,4.4,4.4,null,'#e8c25a',.8); E(g,x,573,1.6,1.6,'#e8c25a'); }
+}
+
+// ---- runtime state for effects (render-only, never touches game state) ----
+const TRACK = new Map(), PTRACK = new WeakMap(), FXSEEN = new WeakSet(), PARTS = [];
+let RT = 0, lastNow = 0, lastGT = 0;
+const RM = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+function addDust(x,y,n,spread,life){ for (let i=0;i<n;i++){ const a=Math.random()*TAU; PARTS.push({k:'dust',x:x+Math.cos(a)*spread*.4,y:y+Math.sin(a)*spread*.25,vx:Math.cos(a)*spread*1.6,vy:Math.sin(a)*spread*.7-6,t:0,life:life||.55,r:5+Math.random()*4}); } }
+function stripEmoji(s){ return s.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu,'').trim(); }
+function enemyFoot(e){ return e.y + ES[e.type].foot; }
+
+function draw(){
+  const now = performance.now(); const raw = lastNow ? Math.min(.1,(now-lastNow)/1000) : 0; lastNow = now; RT += raw;
+  let dtR = G.time - lastGT; if (G.time < lastGT) { TRACK.clear(); PARTS.length = 0; } lastGT = G.time; if (!(dtR > 0) || dtR > .25) dtR = 0;
+  const K = DPR*VS, cy = CAM.y, vy0 = cy - 60, vy1 = cy + VIEW_H + 60, vis = y => y > vy0 && y < vy1;
+  ctx.setTransform(1,0,0,1,0,0);
+  if (BG) { const sy = Math.round(cy*K), sh = Math.min(cv.height, BG.height - sy); ctx.drawImage(BG,0,sy,cv.width,sh,0,0,cv.width,sh); }
+  else { ctx.fillStyle='#a7ba64'; ctx.fillRect(0,0,cv.width,cv.height); }
+  ctx.setTransform(K,0,0,K,0,-cy*K);
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  const playing = isPlaying();
+
+  // plates: free ones glow faintly gold, selected one strongly
+  if (playing) for (let i=0;i<PADS.length;i++){
+    const [x,y] = PADS[i]; if (!vis(y)) continue;
+    if (i === G.sel && !G.towers[i]) { ctx.drawImage(FXS.glow,x-30,y-30,60,60); E(ctx,x,y,18.5,18.5,null,'#f6d26a',2.2); }
+    else if (!G.towers[i]) { ctx.globalAlpha = .45 + .2*Math.sin(RT*2.4+i); E(ctx,x,y,18.4,18.4,null,'#f1c95a',1.4); ctx.globalAlpha = 1; }
+  }
+  // selected range
+  if (G.sel >= 0 && G.towers[G.sel]) { const t = G.towers[G.sel], r = towerStats(t).range; ctx.drawImage(FXS.range,t.x-r,t.y-r,r*2,r*2); }
+  // Hannibal's aura
+  for (const e of G.enemies) if (e.def.boss && vis(e.y)) ctx.drawImage(FXS.aura,e.x-85,e.y-85,170,170);
+
+  // enemy bookkeeping: facing, hit flash, deaths
+  const seen = new Set();
+  for (const e of G.enemies){
+    seen.add(e.id);
+    let s = TRACK.get(e.id);
+    if (!s) { s = {e, face:1, px:e.x, hp:e.hp, fl:0}; TRACK.set(e.id,s); }
+    const dx = e.x - s.px; if (Math.abs(dx) > .02) s.face = dx > 0 ? 1 : -1; s.px = e.x;
+    if (e.hp < s.hp - .01) s.fl = .1; s.hp = e.hp; s.fl = Math.max(0, s.fl - (dtR || raw*.0));
+    if (e.panic > 0 && Math.random() < dtR*14) addDust(e.x - s.face*14, enemyFoot(e), 1, 6, .5);
+  }
+  for (const [id,s] of TRACK) if (!seen.has(id)) {
+    if (s.e.hp <= 0) { addDust(s.e.x, enemyFoot(s.e)-4, s.e.def.ele||s.e.def.boss?7:4, s.e.def.ele?14:8, .6); PARTS.push({k:'ghost',e:s.e,face:s.face,t:0,life:.35}); }
+    TRACK.delete(id);
+  }
+
+  // depth-sorted figures
+  const items = [];
+  for (const t of G.towers) if (t && vis(t.y)) items.push({y:t.y+5, t});
+  for (const e of G.enemies) if (vis(e.y)) items.push({y:enemyFoot(e), e});
+  items.sort((a,b)=>a.y-b.y);
+  const buff = G.abil.sci.act > 0, slowed = G.abil.fab.act > 0;
+  for (const it of items){
+    if (it.t) drawTower(it.t, buff); else drawEnemy(it.e, slowed);
+  }
+
+  // projectiles
+  for (const p of G.projs){
+    if (!vis(p.y)) continue;
+    let s = PTRACK.get(p); if (!s) { s = {sx:p.x, sy:p.y, px:p.x, py:p.y-12}; PTRACK.set(p,s); }
+    const tr = Math.hypot(p.x-s.sx,p.y-s.sy), rem = Math.hypot(p.tgt.x-p.x,p.tgt.y-p.y), tt = tr/(tr+rem+.001);
+    const stone = p.kind === 'stone', Hh = stone ? Math.min(48,(tr+rem)*.3) : Math.min(14,(tr+rem)*.1);
+    const lift = 14*(1-tt) + 8*tt, h = Math.sin(Math.PI*tt)*Hh, dx = p.x, dy = p.y - lift - h;
+    let ang = Math.atan2(dy - s.py, dx - s.px); if (Math.hypot(dx-s.px,dy-s.py) < .01) ang = p.ang || 0;
+    s.px = dx; s.py = dy;
+    if (stone) {
+      ctx.drawImage(FXS.shadow, p.x-4, p.y+2, 8, 4);
+      E(ctx,dx,dy,3.8,3.6,'#8f897e',INK,.8); E(ctx,dx-1.1,dy-1.2,1.5,1.2,'#c8c2b6');
+    } else {
+      const L = p.kind==='arrow'?10:p.kind==='dart'?11:p.kind==='pilum'?15:16, c=Math.cos(ang), sn=Math.sin(ang);
+      const bx = dx - c*L, by = dy - sn*L;
+      Ln(ctx,bx,by,dx,dy,'rgba(40,24,10,.35)',p.kind==='spear'?2.6:2.2);
+      Ln(ctx,bx,by,dx,dy,p.kind==='pilum'?'#8d939a':'#7a5230',p.kind==='arrow'?1:p.kind==='spear'?1.7:1.4);
+      if (p.kind==='pilum') Ln(ctx,bx,by,dx-c*7,dy-sn*7,'#7a5230',1.5);
+      P(ctx,[dx+c*2.6,dy+sn*2.6,dx-sn*1.4,dy+c*1.4,dx+sn*1.4,dy-c*1.4],'#dfe3e8',INK,.5);
+      if (p.kind==='arrow'){ Ln(ctx,bx,by,bx-c*2-sn*1.6,by-sn*2+c*1.6,'#e8e0d0',1); Ln(ctx,bx,by,bx-c*2+sn*1.6,by-sn*2-c*1.6,'#c0392b',1); }
+    }
+  }
+
+  // logic fx: splash rings → dust + splash circle; breach ring → gate flash + wall shake
+  let breach = 0;
+  for (const f of G.fx){
+    const k = f.t/f.life;
+    if (f.kind === 'ring' && f.col === '#ff3b2f') { breach = Math.max(breach, 1-k); continue; }
+    if (f.kind === 'ring') {
+      if (!FXSEEN.has(f)) { FXSEEN.add(f); addDust(f.x,f.y+4,5,12,.6); }
+      ctx.globalAlpha = (1-k)*.55; E(ctx,f.x,f.y+5,f.r*(.5+k*.5),f.r*(.5+k*.5)*.45,'rgba(240,220,160,.25)','rgba(255,236,180,.9)',2); ctx.globalAlpha = 1;
+    }
+  }
+  // particles
+  for (let i=PARTS.length-1;i>=0;i--){
+    const q = PARTS[i]; q.t += dtR; const k = q.t/q.life;
+    if (k >= 1) { PARTS.splice(i,1); continue; }
+    if (q.k === 'dust') { q.x += q.vx*dtR; q.y += q.vy*dtR; const r = q.r*(.6+k*.9); ctx.globalAlpha = (1-k)*.85; ctx.drawImage(FXS.dust,q.x-r,q.y-r,r*2,r*2); ctx.globalAlpha = 1; }
+    else if (q.k === 'ghost') { const S = ES[q.e.type]; ctx.globalAlpha = 1-k; const img = S.v[2][0][q.face>0?0:1]; const fy = enemyFoot(q.e) + k*4; ctx.drawImage(img,q.e.x-S.w/2,fy-S.ay+k*S.ay*.3,S.w,S.h*(1-k*.3)); ctx.globalAlpha = 1; }
+  }
+  if (PARTS.length > 160) PARTS.splice(0, PARTS.length-160);
+
+  // wall layer (enemies vanish behind it into the gate)
+  if (WALL && cy + VIEW_H > WALL_TOP) {
+    const sh = breach > 0 && !RM ? Math.sin(RT*70)*1.6*breach*K : 0;
+    ctx.setTransform(1,0,0,1,sh,Math.round((WALL_TOP-cy)*K)+(breach>0?Math.cos(RT*55)*.6*breach*K:0)); ctx.drawImage(WALL,0,0);
+    ctx.setTransform(K,0,0,K,0,-cy*K);
+  }
+  if (breach > 0) {
+    const gy = WALL_Y + 25, gx = GATE_X;
+    ctx.globalAlpha = breach; ctx.drawImage(FXS.flashRed,gx-46,gy-40,92,80);
+    ctx.globalAlpha = breach*.7; ctx.beginPath(); ctx.moveTo(gx-15.5,gy+23); ctx.lineTo(gx-15.5,gy); ctx.arc(gx,gy,15.5,Math.PI,0); ctx.lineTo(gx+15.5,gy+23); ctx.closePath(); ctx.fillStyle='#ff3b20'; ctx.fill(); ctx.globalAlpha = 1;
+  }
+
+  // floating text
+  for (const f of G.fx){
+    if (f.kind !== 'text' || !vis(f.y)) continue;
+    const k = f.t/f.life, y = f.y - k*24, txt = stripEmoji(f.text), coin = f.text.indexOf('🪙')>=0 || (f.col==='#ffe07a' && /^\+\d/.test(f.text)), wall = f.text.indexOf('🏛')>=0;
+    ctx.globalAlpha = k > .6 ? (1-k)/.4 : 1;
+    ctx.font = '700 14px '+FONT_D;
+    const w = ctx.measureText(txt).width, icon = coin||wall ? 13 : 0, x0 = f.x - (w+icon)/2;
+    ctx.lineWidth = 3.4; ctx.strokeStyle = 'rgba(40,22,6,.75)'; ctx.lineJoin='round';
+    ctx.textAlign = 'left'; ctx.strokeText(txt, x0+icon, y); ctx.fillStyle = f.col; ctx.fillText(txt, x0+icon, y); ctx.textAlign = 'center';
+    if (coin) ctx.drawImage(FXS.coin, x0-1, y-6.5, 12, 12);
+    if (wall) ctx.drawImage(FXS.wallIc, x0-1.5, y-6.5, 14, 12);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawTower(t, buff){
+  const S = TS[t.type], st = towerStats(t), x = t.x, fy = t.y + 5;
+  // face the nearest enemy in range
+  let face = 1, bd = st.range*st.range;
+  for (const e of G.enemies){ const d = (e.x-x)**2 + (e.y-t.y)**2; if (d < bd) { bd = d; face = e.x >= x ? 1 : -1; } }
+  if (t.lvl >= 2) { E(ctx,x,t.y,19.2,19.2,null,'rgba(58,38,22,.55)',3.6); E(ctx,x,t.y,19.2,19.2,null,t.lvl===3?'#f2c14e':'#e6ebf0',2.2); }
+  if (buff) { const p = 1 + .08*Math.sin(RT*6); ctx.drawImage(FXS.halo,x-26*p,fy-36*p,52*p,52*p); }
+  if (t.type === 'trumpet' && t.flash > 0) { ctx.globalAlpha = t.flash; E(ctx,x,t.y,st.range*(1-t.flash/0.6*0.5),st.range*(1-t.flash/0.6*0.5),null,'#ffd85a',3); ctx.globalAlpha = 1; }
+  ctx.drawImage(FXS.shadow, x-13, fy-4.5, 26, 9);
+  const br = RM ? 1 : 1 + .02*Math.sin(RT*2.3 + x*.05), def = TOWERS[t.type];
+  const kick = def.cd && t.cd > st.cd - .12 ? -face*1.3 : 0;
+  const img = S.img[face>0?0:1], h = S.h*br;
+  ctx.drawImage(img, x - S.w/2 + kick, fy - S.ay*br, S.w, h);
+  if (t.lvl >= 2) { const n = t.lvl-1, sy = fy - 50; for (let i=0;i<n;i++) ctx.drawImage(t.lvl===3?FXS.star:FXS.starS, x - n*4.5 + i*9, sy, 9, 9); }
+}
+
+function drawEnemy(e, slowed){
+  const S = ES[e.type], s = TRACK.get(e.id), face = s ? s.face : 1, fl = s ? s.fl : 0;
+  let x = e.x; if (e.panic > 0) x += Math.sin(RT*40)*1.5;
+  const fy = enemyFoot(e), frame = (Math.floor(e.d/(e.def.cav||e.def.mount||e.def.ele?9:6) + e.wob) & 1), bob = frame ? -.7 : 0;
+  if (e.guarded) { ctx.globalAlpha = .55 + .2*Math.sin(RT*5 + e.wob); E(ctx,x,fy-1,S.w*.32,S.w*.12,null,'#e2b44a',1.6); ctx.globalAlpha = 1; }
+  ctx.drawImage(FXS.shadow, x-S.w*.3, fy-S.w*.11, S.w*.6, S.w*.22);
+  const variant = fl > 0 ? 2 : slowed ? 1 : 0;
+  if (e.inv) { ctx.globalAlpha = .28; ctx.drawImage(FXS.dust, x-S.w*.45, fy-S.top*.8, S.w*.9, S.top*.8); }
+  ctx.drawImage(S.v[variant][frame][face>0?0:1], x - S.w/2, fy - S.ay + bob, S.w, S.h);
+  ctx.globalAlpha = 1;
+  if (e.type === 'slinger') {
+    const hx = x + face*5, hy = fy - 31 + bob, a = RT*(slowed?9:16) + e.wob, sx = hx + Math.cos(a)*6.5, sy = hy - 4 + Math.sin(a)*2.6;
+    Ln(ctx,hx,hy,sx,sy,'#5a3a1a',.8); E(ctx,sx,sy,1.5,1.5,'#7a746a',INK,.4);
+  }
+  const top = fy - S.top + bob;
+  if (slowed) ctx.drawImage(FXS.glass, x - 4.5 + (e.hp < e.max ? 0 : 0), top - (e.hp < e.max ? 17 : 12), 9, 11.7);
+  if (e.panic > 0) { E(ctx,x,top-9,5.4,5.4,'#d8261b','#fff3d6',1.2); ctx.fillStyle='#fff'; ctx.font='800 9px '+FONT_D; ctx.fillText('!',x,top-8.6); }
+  if (e.def.boss) {
+    ctx.font = '15px '+FONT_C; ctx.lineWidth = 3.6; ctx.strokeStyle = 'rgba(40,22,6,.8)'; ctx.lineJoin = 'round';
+    ctx.strokeText(e.def.name, x, top-13); ctx.fillStyle = e.inv ? 'rgba(255,246,230,.55)' : '#fff6e6'; ctx.fillText(e.def.name, x, top-13);
+  }
+  if (e.hp < e.max) {
+    const bw = Math.max(18, S.w*(e.def.boss?.6:.42)), f = Math.max(0, e.hp/e.max);
+    ctx.fillStyle = 'rgba(30,18,6,.6)'; ctx.fillRect(x-bw/2-.8, top-4.8, bw+1.6, 3.6);
+    ctx.fillStyle = f > .5 ? '#5fd35a' : f > .25 ? '#f2c230' : '#f04a2e'; ctx.fillRect(x-bw/2, top-4, bw*f, 2);
+  }
+}
+
+// ---- UI art: icons and portraits rendered once into data URLs ----
+const IC = {};
+function iconURL(w,h,fn,scale){ return renderSprite(w,h,h/2,fn,0,false,scale).toDataURL(); }
+function lockOn(g){ for (let i=0;i<6;i++) E(g,-14+i*5.4,-10+i*4.4,2.4,1.5,null,'#6f6a62',1.1,.68); RR(g,6,3,10,8,1.4,'#9a948a',INK,.8); g.beginPath(); g.arc(11,3,3,Math.PI,0); g.strokeStyle=INK; g.lineWidth=1.4; g.stroke(); E(g,11,6.6,1,1.2,INK); }
+const LOCK_ART = [
+  g=>{ E(g,-6,6,6,6,'#7a5a3a',INK,1); E(g,-6,6,1.6,1.6,INK); P(g,[-14,6,6,-2,8,2,-12,10],'#8a5a2b',INK,1); RR(g,-8,-9,22,8,3.6,'#3d3d42',INK,1); g.save(); g.restore(); E(g,14,-5,1.8,4,'#1f1f22'); },
+  g=>{ RR(g,-9,-12,18,22,4,'#b9bec4',INK,1.1); Ln(g,-7,-3,7,-3,INK,1.8); Ln(g,0,-11,0,8,'rgba(0,0,0,.35)',1); for (let i=-1;i<=1;i++) E(g,i*3.6,3,.9,.9,INK); P(g,[0,-12,-2,-20,4,-17],'#b3261e',INK,.8); },
+  g=>{ curve(g,[-14,-4,0,-14,14,-4],'#6b3f1e',2.2); Ln(g,-14,-4,14,-4,'#efe6d2',.7); RR(g,-2,-8,4,20,1,'#8a5a2b',INK,1); spear(g,0,6,0,-14,'#5a3a1a',3,'#c3c8cd',1); },
+  g=>{ RR(g,-14,-6,22,7,2,'#4a4a4f',INK,1); RR(g,8,-4.4,7,3.6,1,'#2c2c30',INK,.8); limb(g,-6,1,-12,12,'#5a5a60',1.6); limb(g,-6,1,0,12,'#5a5a60',1.6); RR(g,-4,1,8,6,1,'#6b6b4a',INK,.8); }
+];
+function portraitHannibal(g){
+  const gr = g.createRadialGradient(-10,-14,4,0,0,60); gr.addColorStop(0,'#f2d79a'); gr.addColorStop(1,'#c7863f');
+  E(g,0,0,60,60,gr,'#8a5a1e',3); E(g,0,0,55,55,null,'#f3dc9a',1.4);
+  // elephant behind
+  g.save(); g.beginPath(); g.arc(0,0,54,0,TAU); g.clip();
+  E(g,40,14,20,16,'#9a9da5',INK,1.2); E(g,50,4,10,11,'#9a9da5',INK,1.2); curve(g,[56,8,60,22,55,32],'#9a9da5',5); curve(g,[53,12,59,12,61,6],'#f4ecd8',2.2); E(g,44,4,6.5,9,'#878a93',INK,1); eye(g,52,0);
+  g.restore();
+  // cloak and cuirass
+  P(g,[-44,60,-38,30,-18,18,18,18,38,30,44,60],'#6b1d7a',INK,1.6); P(g,[-16,60,-14,22,14,22,16,60],'#e0b041',INK,1.4); Ln(g,-13,34,13,34,'#b4852b',1.4); Ln(g,-14,44,14,44,'#b4852b',1.4);
+  E(g,-26,24,7,5,'#e2b44a',INK,1.2); E(g,26,24,7,5,'#e2b44a',INK,1.2);
+  // head
+  RR(g,-6,6,12,14,4,'#d9a374',INK,1.2);
+  E(g,0,-8,17,19,'#d9a374',INK,1.6);
+  P(g,[-15,-2,-14,10,-6,20,6,20,14,10,15,-2,10,4,0,6,-10,4],'#3a2a1e',INK,1.2);
+  P(g,[-8,8,8,8,4,11,-4,11],'#7a3a2a');
+  eye(g,6.5,-9); Ln(g,3,-13,10,-13.6,INK,1.4);
+  Ln(g,-17,-16,17,-6,'#1a120d',2); E(g,-6.5,-9.5,5.2,4.4,'#1a120d');
+  P(g,[0,-6,2.6,2,-2.6,2],'rgba(150,90,50,.5)');
+  g.beginPath(); g.arc(0,-12,19.5,Math.PI*1.02,Math.PI*1.98); g.lineTo(19,-8); g.lineTo(-19,-8); g.closePath(); g.fillStyle='#e8b93e'; g.fill(); g.strokeStyle=INK; g.lineWidth=1.6; g.stroke();
+  Ln(g,-19,-10,19,-10,'#a87c22',2.4); P(g,[-19,-10,-21,4,-15,2,-14,-8],'#e8b93e',INK,1.2); P(g,[19,-10,21,4,15,2,14,-8],'#e8b93e',INK,1.2);
+  g.beginPath(); g.ellipse(0,-30,17,9,0,Math.PI,0); g.closePath(); g.fillStyle='#c0231a'; g.fill(); g.strokeStyle=INK; g.lineWidth=1.4; g.stroke();
+  for (let i=-14;i<=14;i+=3) Ln(g,i,-30.5,i*1.05,-36.5+Math.abs(i)*.22,'#e0473a',.8);
+}
+function portraitLaurel(g){
+  const gr = g.createRadialGradient(-8,-10,4,0,0,60); gr.addColorStop(0,'#fff6dc'); gr.addColorStop(1,'#e8d4a2');
+  E(g,0,0,58,58,gr,'#b4852b',2.4);
+  for (const s of [-1,1]) for (let i=0;i<13;i++){
+    const a = Math.PI/2 + s*(.35 + i*.2), r = 40, x = Math.cos(a)*r, y = Math.sin(a)*r;
+    for (const off of [-1,1]) { const la = a + s*Math.PI/2 + off*.55; E(g,x+Math.cos(la)*6,y+Math.sin(la)*6,7,2.8,i%2?'#5d7a3a':'#7d9a4a',INK,.9,la); }
+  }
+  for (const s of [-1,1]) { g.beginPath(); g.arc(0,0,40,Math.PI/2+s*.35,Math.PI/2+s*2.8,s<0); g.strokeStyle='#6b4423'; g.lineWidth=1.6; g.stroke(); }
+  P(g,[-6,40,6,40,14,56,6,52,0,58,-6,52,-14,56],'#b3261e',INK,1.2);
+  g.fillStyle='#8e2419'; g.textAlign='center'; g.textBaseline='middle'; g.font='700 22px '+FONT_D; g.fillText('SPQR',0,1);
+  Ln(g,-20,-14,20,-14,'#b4852b',1); Ln(g,-20,15,20,15,'#b4852b',1);
+}
+function portraitGate(g){
+  const gr = g.createRadialGradient(0,10,4,0,0,60); gr.addColorStop(0,'#ffb35a'); gr.addColorStop(.5,'#c9572e'); gr.addColorStop(1,'#5a2a18');
+  E(g,0,0,58,58,gr,'#3a2616',2.4);
+  g.save(); g.beginPath(); g.arc(0,0,57,0,TAU); g.clip();
+  P(g,[-58,60,-58,-20,-34,-20,-34,60],'#cfa97a',INK,1.2); P(g,[34,60,34,-26,58,-26,58,60],'#cfa97a',INK,1.2);
+  g.beginPath(); g.moveTo(-34,60); g.lineTo(-34,-6); g.arc(0,-6,34,Math.PI,0); g.lineTo(34,60); g.lineTo(26,60); g.lineTo(26,-6); g.arc(0,-6,26,0,Math.PI,true); g.lineTo(-26,60); g.closePath(); g.fillStyle='#e8d4ae'; g.fill(); g.strokeStyle=INK; g.lineWidth=1.4; g.stroke();
+  P(g,[-4,-40,2,-28,-3,-18],null,INK,1.6);
+  P(g,[-26,60,-24,8,-2,14,-6,60],'#8a5a2b',INK,1.4); for (let x=-22;x<-6;x+=5) Ln(g,x,12,x+1,58,'rgba(40,20,5,.5)',1);
+  P(g,[4,58,30,40,36,48,10,64],'#7a4a22',INK,1.4); Ln(g,10,56,32,42,'#3e2c1c',2);
+  P(g,[-2,14,2,24,-1,34,3,46],null,'#2a1a0a',1.2);
+  for (const [x,y,r] of [[-30,50,7],[-14,54,6],[18,54,8],[34,50,6],[0,56,5]]) P(g,[x-r,y+r*.6,x-r*.7,y-r*.5,x+r*.4,y-r*.7,x+r,y+r*.6],'#bfa37a',INK,1);
+  for (const [x,y,r] of [[-14,-44,9],[4,-50,11],[20,-42,8]]) E(g,x,y,r,r*.8,'rgba(90,80,75,.55)');
+  g.restore(); E(g,0,0,58,58,null,'#3a2616',2.4); E(g,0,0,55,55,null,'#e7c46c',1.2);
+}
+const ABIL_ART = {
+  fab: g=>{ const gr=g.createRadialGradient(-6,-6,2,0,0,20); gr.addColorStop(0,'#5d86b8'); gr.addColorStop(1,'#2c4a74'); E(g,0,0,19,19,gr); g.save(); g.scale(1.5,1.5); RR(g,-6,-9,12,2.4,1,'#c99a4a',INK,.7); RR(g,-6,6.6,12,2.4,1,'#c99a4a',INK,.7); P(g,[-4.6,-6.6,4.6,-6.6,1,0,4.6,6.6,-4.6,6.6,-1,0],'rgba(232,244,255,.95)',INK,.8); P(g,[-2.6,-3.6,2.6,-3.6,0,-.6],'#e5c46a'); P(g,[-3.8,6.6,3.8,6.6,0,2.6],'#e5c46a'); Ln(g,0,-.6,0,5,'#e5c46a',.6); g.restore(); },
+  sci: g=>{ const gr=g.createRadialGradient(-6,-6,2,0,0,20); gr.addColorStop(0,'#c7432f'); gr.addColorStop(1,'#7c1f16'); E(g,0,0,19,19,gr); P(g,[3,-15,-7,1,-1,1,-4,15,7,-3,1,-3],'#f2c94e',INK,1); for (const s of [-1,1]) { P(g,[s*5,-2,s*15,-8,s*13,-3,s*16,-1,s*6,2],'#f2c94e',INK,.8); } }
+};
+const KIND_ART = {
+  person: g=>{ const gr=g.createRadialGradient(-6,-6,2,0,0,20); gr.addColorStop(0,'#f3e2b8'); gr.addColorStop(1,'#cfa560'); E(g,0,0,19,19,gr);
+    g.save(); g.beginPath(); g.arc(0,0,18.6,0,TAU); g.clip();
+    P(g,[-16,20,-12,8,-4,4,4,4,12,8,16,20],'#f4efe2',INK,1); P(g,[-12,8,-4,4,6,16,2,20,-8,12],'#b3261e',INK,.9);
+    RR(g,-3,-1,6,6,2,SKIN,INK,.9); E(g,0,-7,7.6,8.6,SKIN,INK,1.1); E(g,7,-6.4,1.4,1.6,SKIN,INK,.6); eye(g,3.2,-8); Ln(g,1,-10.6,5,-10.8,INK,.8);
+    P(g,[-7.6,-8,-7,-13,-2,-15.8,4,-15,7.4,-12,3,-12.6,-3,-11.4,-5,-6],'#5a3a1e',INK,.8);
+    for (let i=0;i<5;i++){ const a=Math.PI*1.05+i*.22; E(g,Math.cos(a)*8.4,-7+Math.sin(a)*8.4,2.6,1.2,'#5d7a3a',INK,.5,a+1.2); }
+    g.restore(); E(g,0,0,18.6,18.6,null,'#8a5a1e',1.4); },
+  battle: g=>{ const gr=g.createRadialGradient(-6,-6,2,0,0,20); gr.addColorStop(0,'#c7432f'); gr.addColorStop(1,'#7c1f16'); E(g,0,0,19,19,gr,'#5a160f',1.2);
+    E(g,0,0,14,14,null,'#e2b44a',1);
+    for (const s of [-1,1]) { g.save(); g.rotate(s*Math.PI/4); RR(g,-1.6,-15,3.2,20,1,'#dfe3e8',INK,.8); Ln(g,0,-13.4,0,3.6,'rgba(120,130,140,.6)',.6); RR(g,-5.4,5,10.8,2.6,1,'#c79a3a',INK,.7); RR(g,-1.2,7.4,2.4,5.4,.8,'#6b4423',INK,.6); E(g,0,13.6,1.8,1.8,'#c79a3a',INK,.5); g.restore(); } },
+  misc: g=>{ const gr=g.createRadialGradient(-6,-6,2,0,0,20); gr.addColorStop(0,'#6f93be'); gr.addColorStop(1,'#2c4a74'); E(g,0,0,19,19,gr,'#22385a',1.2);
+    RR(g,-10,-12,20,3.4,1,'#f1eadc',INK,.8); E(g,-9.4,-10.3,2.6,2.6,'#f1eadc',INK,.7); E(g,9.4,-10.3,2.6,2.6,'#f1eadc',INK,.7);
+    RR(g,-6,-8.6,12,18,.5,'#efe7d6',INK,.8); for (const x of [-3,0,3]) Ln(g,x,-7.6,x,8.6,'rgba(120,100,70,.55)',.8);
+    RR(g,-9,9.4,18,3.6,.8,'#e6dccb',INK,.8); }
+};
+function encIcon(a){
+  if (a.kind === 'unit' && ENC2T[a.id]) return IC['t_'+ENC2T[a.id]];
+  if ((a.kind === 'enemy' || a.kind === 'boss') && ENC2E[a.id]) return IC['e_'+ENC2E[a.id]];
+  if (a.id === 'fabius') return IC.fab;
+  if (a.id === 'scipio') return IC.sci;
+  return IC['k_'+a.kind] || IC.k_misc;
+}
+function buildIcons(){
+  for (const k in KIND_ART) IC['k_'+k] = iconURL(40,40,KIND_ART[k]);
+  for (const k of TOWER_ORDER) IC['t_'+k] = TS[k].img[0].toDataURL();
+  for (const k in ES) IC['e_'+k] = ES[k].v[0][0][0].toDataURL();
+  LOCK_ART.forEach((fn,i)=>{ IC['l_'+i] = iconURL(40,40,g=>{ fn(g); lockOn(g); }); });
+  IC.coin = iconURL(14,14,g=>coinArt(g,6.4)); IC.walls = iconURL(16,14,g=>{ g.scale(1.1,1.1); wallArt(g); });
+  IC.fab = iconURL(40,40,ABIL_ART.fab); IC.sci = iconURL(40,40,ABIL_ART.sci);
+  IC.pHannibal = iconURL(124,124,portraitHannibal); IC.pLaurel = iconURL(124,124,portraitLaurel); IC.pGate = iconURL(124,124,portraitGate);
+  document.querySelectorAll('img[data-ic]').forEach(im => { if (IC[im.dataset.ic]) im.src = IC[im.dataset.ic]; });
+}
+function img(src,cls){ return '<img class="ii'+(cls?' '+cls:'')+'" src="'+(src||'')+'" alt="">'; }
+const icT = k => img(IC['t_'+k]), icE = k => img(IC['e_'+k]), icCoin = () => img(IC.coin);
+buildSprites(); buildIcons();
+if (document.fonts && document.fonts.load) {
+  Promise.all([document.fonts.load('700 10px Cinzel','SPQR 0123'), document.fonts.load('12px Forum','Из-за Альп')]).then(() => { buildBg(); buildIcons(); }).catch(()=>{});
+}
+
+
+// ---------- UI ----------
+function $(id){ return document.getElementById(id); }
+const ui = {coins:$('coins'), lives:$('lives'), wave:$('wave'), next:$('btnNext'), speed:$('btnSpeed'), pause:$('btnPause'),
+  fab:$('abFab'), sci:$('abSci'), sheet:$('sheet'), toast:$('toast'), card:$('card'), roster:$('roster'), pm:$('pausemark')};
+function buildRoster(){
+  let h = '';
+  for (const k of TOWER_ORDER){ const d = TOWERS[k];
+    h += '<button class="unit" data-t="'+k+'">'+icT(k)+'<span class="nm">'+d.name+'</span><span class="pr">'+icCoin()+d.cost+'</span></button>'; }
+  LOCKED.forEach((d,i)=>{ h += '<button class="unit locked" data-l="'+i+'" aria-label="'+d.name+' — недоступно">'+img(IC['l_'+i])+'<span class="nm">'+d.name+'</span><span class="pr" style="color:var(--muted)">закрыто</span></button>'; });
+  ui.roster.innerHTML = h;
+}
+buildRoster();
+let lastUI = '';
+function refreshUI(){
+  ui.coins.textContent = G.coins; ui.lives.textContent = G.lives;
+  ui.wave.textContent = G.wave + '/' + WAVES.length;
+  if (G.state === 'intermission') {
+    ui.next.disabled = false; ui.next.textContent = 'Следующая волна ▶ ' + Math.max(0,Math.ceil(G.timer));
+  } else { ui.next.disabled = true; ui.next.textContent = G.state === 'wave' ? 'Идёт волна ' + G.wave : 'Следующая волна'; }
+  ui.speed.textContent = '×' + G.speed; ui.speed.setAttribute('aria-pressed', G.speed === 2 ? 'true':'false');
+  ui.pause.textContent = G.paused ? '▶' : '❚❚'; ui.pause.setAttribute('aria-pressed', G.paused ? 'true':'false');
+  ui.pm.hidden = !(G.paused && isPlaying());
+  for (const k of ['fab','sci']) {
+    const a = G.abil[k], b = ui[k];
+    b.querySelector('.med').style.setProperty('--p', (a.cd > 0 ? (1 - a.cd/ABIL[k].cd)*100 : 100) + '%');
+    b.classList.toggle('cooling', a.cd > 0 && a.act <= 0);
+    b.classList.toggle('active', a.act > 0);
+  }
+  const selEmpty = G.sel >= 0 && !G.towers[G.sel];
+  ui.roster.querySelectorAll('.unit[data-t]').forEach(b => {
+    b.classList.toggle('cant', G.coins < TOWERS[b.dataset.t].cost);
+    b.classList.toggle('sel', false);
+  });
+  if (!ui.sheet.hidden && ui.sheet.dataset.mode) {
+    const key = ui.sheet.dataset.mode + G.coins + G.sel + (G.towers[G.sel] ? G.towers[G.sel].lvl : 0);
+    if (key !== lastUI) renderSheet();
+  }
+  void selEmpty;
+}
+function renderSheet(){
+  const i = G.sel; if (i < 0) return;
+  const t = G.towers[i], s = ui.sheet;
+  s.className = 'sheet marble ' + (PADS[i][1] - CAM.y > VIEW_H*0.52 ? 'top' : 'bottom');
+  if (!t) {
+    s.dataset.mode = 'build';
+    let h = '<h3><span>Кого поставить?</span><button data-close aria-label="Закрыть">×</button></h3><div class="grid3">';
+    for (const k of TOWER_ORDER){ const d = TOWERS[k];
+      h += '<button class="pick" data-b="'+k+'"'+(G.coins<d.cost?' disabled':'')+'>'+icT(k)+'<span class="nm">'+d.name+'</span><span class="pr">'+icCoin()+d.cost+'</span></button>'; }
+    s.innerHTML = h + '</div>';
+  } else {
+    s.dataset.mode = 'tower';
+    const d = TOWERS[t.type], st = towerStats(t), uc = upgradeCost(t);
+    s.innerHTML = '<h3><span>'+icT(t.type)+d.name+' · ур. '+t.lvl+'</span><button data-close aria-label="Закрыть">×</button></h3>'
+      + '<div class="fact" style="margin:0">'+d.note+(d.dmg?' · урон '+Math.round(st.dmg):'')+' · дальность '+Math.round(st.range)+'</div>'
+      + '<div class="row3"><button class="act up" data-up'+(t.lvl>=3||G.coins<uc?' disabled':'')+'>'+(t.lvl>=3?'Макс. уровень':'Улучшить · '+icCoin()+uc)+'</button>'
+      + '<button class="act" data-sell>Продать · +'+Math.floor(t.spent*0.6)+'</button>'
+      + '<button class="act" data-art="'+T2ENC[t.type]+'" aria-label="Статья в свитке знаний"><span class="em">📜</span></button></div>'
+      + '<p class="fact">'+d.fact+'</p>';
+  }
+  lastUI = s.dataset.mode + G.coins + G.sel + (t ? t.lvl : 0);
+  s.hidden = false;
+}
+function openSheet(i){ G.sel = i; renderSheet(); }
+function closeSheet(){ G.sel = -1; ui.sheet.hidden = true; ui.sheet.dataset.mode = ''; }
+ui.sheet.addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  if (b.hasAttribute('data-close')) closeSheet();
+  else if (b.dataset.b) { const k = b.dataset.b, fresh = !G.enc[T2ENC[k]]; if (build(G.sel, k)) { closeSheet(); builtToast(k, fresh); } }
+  else if (b.dataset.art) { const id = b.dataset.art; closeSheet(); showArticle(id); }
+  else if (b.hasAttribute('data-up')) { upgrade(G.sel); renderSheet(); }
+  else if (b.hasAttribute('data-sell')) { sell(G.sel); closeSheet(); }
+});
+let toastTimer = 0;
+function toast(html, sec){ ui.toast.innerHTML = html; ui.toast.hidden = false; ui.sheet.hidden || (ui.toast.hidden = true); toastTimer = sec || 4; }
+function builtToast(k, fresh){
+  const d = TOWERS[k];
+  toast(icT(k)+'<b>'+d.name+'.</b> '+d.fact+(fresh && ENC_BY[T2ENC[k]] ? '<span class="tnew">📜 В свитке знаний новая статья: «'+esc(ENC_BY[T2ENC[k]].title)+'»</span>' : ''), fresh ? 5 : 4);
+}
+function quizOpen(){
+  if (G.state !== 'intermission' || ui.card.hidden) return false;
+  const n = G.wave + 1; return !!quizFor(n) && G.quiz[n] === undefined;
+}
+function quizHTML(n){
+  const q = quizFor(n); if (!q) return '';
+  const ans = G.quiz[n];
+  let h = '<div class="quiz">';
+  if (ans === -1) return h + '<p class="qex">Вопрос пропущен.</p></div>';
+  h += '<div class="qq"><span class="qm">ВОПРОС</span>'+esc(q.q)+'</div>';
+  q.options.forEach((o,i) => {
+    let c = 'qo';
+    if (ans !== undefined) c += i === q.answer ? ' ok' : i === ans ? ' bad' : ' dim';
+    h += '<button class="'+c+'" data-q="'+i+'"'+(ans !== undefined ? ' disabled' : '')+'><span class="k">'+'АБВ'[i]+'</span><span>'+esc(o)+'</span></button>';
+  });
+  if (ans === undefined) h += '<div class="qfoot"><span class="qrew">Верный ответ: +'+QUIZ_REWARD+' '+icCoin()+'</span><button class="qskip" data-skip>Пропустить</button></div>';
+  else if (ans === q.answer) {
+    const art = G.quizArt && G.quizArt.n === n ? G.quizArt.title : '';
+    h += '<p class="qex good"><b>Верно! +'+QUIZ_REWARD+' денариев.</b> '+esc(q.explain)+(art ? '<span class="qnew">📜 Новая статья в свитке: «'+esc(art)+'»</span>' : '')+'</p>';
+  } else h += '<p class="qex bad"><b>Не совсем.</b> Верный ответ — «'+esc(q.options[q.answer])+'». '+esc(q.explain)+'</p>';
+  return h + '</div>';
+}
+function showWaveCard(){
+  const n = G.wave + 1; if (n > WAVES.length) return;
+  const w = WAVES[n-1], e = ENEMIES[w.lead];
+  const fact = esc(waveFact(n) || w.fact || e.fact);
+  const warn = G.fastNext ? '<p class="warn">⚡ Эта волна идёт на 20% быстрее</p>' : '';
+  let top;
+  if ((n-1) % 5 === 0) {
+    const ci = chapterOf(n), c = CHAPTERS[ci];
+    unlockNotify(CH_BATTLE[ci]);
+    ui.card.className = 'card chap';
+    top = img(IC['e_'+c.lead],'por')+'<div><div class="ch">Глава '+(ci+1)+' из '+CHAPTERS.length+' · '+c.year+'</div><div class="t">'+c.name+'</div><p>'+c.fact+'</p><p class="nx">Волна <b>'+n+'</b>: '+w.title+'</p><p>'+fact+'</p>'+warn+'</div>';
+  } else {
+    ui.card.className = 'card';
+    top = img(IC['e_'+w.lead],'por')+'<div><div class="t">Волна <b>'+n+'</b>: '+w.title+'</div><p>'+fact+'</p>'+warn+'</div>';
+  }
+  const sc = ui.card.querySelector('.cin'), keep = sc && !ui.card.hidden ? sc.scrollTop : 0;
+  ui.card.hidden = false;
+  ui.card.innerHTML = (quizOpen() ? '' : '<button class="x" aria-label="Скрыть">×</button>') + '<div class="cin"><div class="ctop">'+top+'</div>'+quizHTML(n)+'</div>';
+  const nc = ui.card.querySelector('.cin'); if (nc && keep) nc.scrollTop = keep;
+}
+function hideCard(){ ui.card.hidden = true; }
+function answerQuiz(i){
+  const n = G.wave + 1, q = quizFor(n);
+  if (!q || G.state !== 'intermission' || G.quiz[n] !== undefined) return false;
+  i = i|0; if (i !== -1 && (i < 0 || i >= q.options.length)) return false;
+  G.quiz[n] = i;
+  if (i === q.answer) {
+    G.coins += QUIZ_REWARD;
+    floatText(W/2, CAM.y + VIEW_H*.72, '+'+QUIZ_REWARD+' 🪙', '#ffe07a');
+    const a = unlockReward(); G.quizArt = a ? {n, title:a.title} : null;
+  }
+  showWaveCard(); persist(); refreshUI();
+  const ex = ui.card.querySelector('.qex'), cin = ui.card.querySelector('.cin');
+  if (ex && cin) cin.scrollTop = Math.max(cin.scrollTop, ex.offsetTop + ex.offsetHeight - cin.clientHeight + 8);
+  return true;
+}
+const skipQuiz = () => answerQuiz(-1);
+ui.card.addEventListener('click', ev => {
+  const b = ev.target.closest('button');
+  if (b && b.dataset.q !== undefined) { answerQuiz(+b.dataset.q); return; }
+  if (b && b.hasAttribute('data-skip')) { skipQuiz(); return; }
+  if (quizOpen()) return;
+  if (b && b.classList.contains('x')) { hideCard(); return; }
+  if (ev.target.closest('.quiz')) return;
+  hideCard();
+});
+function hideScreens(){ $('scrStart').hidden = $('scrWin').hidden = $('scrLose').hidden = true; }
+
+// ---- forks of history ----
+const scrEvent = $('scrEvent'), evBox = $('evBox');
+function eventOpen(){ return !scrEvent.hidden; }
+function maybeEvent(){
+  const e = eventAfter(G.wave);
+  if (G.state === 'intermission' && e && G.events[e.afterWave] === undefined) { renderEvent(e, null); scrEvent.hidden = false; G.paused = false; }
+}
+function renderEvent(e, res){
+  const ch = CHAPTERS[chapterOf(e.afterWave + 1)], chosen = G.events[e.afterWave];
+  let h = '<div class="sin"><div class="ch">Развилка истории · после волны '+e.afterWave+'</div><h2>'+esc(e.title)+'</h2>'+paras(e.text);
+  h += '<div class="eask">'+(chosen === undefined ? 'Как поступить?' : 'Твой выбор')+'</div>';
+  e.options.forEach((o,i) => {
+    let c = 'qo';
+    if (chosen !== undefined) c += o.correct ? ' ok' : i === chosen ? ' bad' : ' dim';
+    h += '<button class="'+c+'" data-e="'+i+'"'+(chosen !== undefined ? ' disabled' : '')+'><span class="k">'+'АБВГ'[i]+'</span><span>'+esc(o.label)+'</span></button>';
+  });
+  if (chosen !== undefined) {
+    const o = e.options[chosen] || {};
+    h += o.correct
+      ? '<div class="eres good"><b>Мудрое решение!</b>'+esc(o.result)+'<span class="eff">+'+EVENT_REWARD+' денариев, Фабий и Сципион снова готовы.</span>'+(res && res.art ? '<span class="qnew">📜 Новая статья в свитке: «'+esc(res.art)+'»</span>' : '')+'</div>'
+      : '<div class="eres bad"><b>Ошибка дорого стоила.</b>'+esc(o.result)+'<span class="eff">−2 стены. Следующая волна придёт на 20% быстрее.</span></div>';
+    h += '</div><button class="cta" data-go>Дальше</button>';
+  } else h += '</div>';
+  evBox.innerHTML = h;
+  evBox.querySelector('.sin').scrollTop = 0;
+}
+function chooseEvent(i){
+  const e = eventAfter(G.wave);
+  if (!e || G.state !== 'intermission' || G.events[e.afterWave] !== undefined) return false;
+  const o = e.options[i|0]; if (!o) return false;
+  G.events[e.afterWave] = i|0;
+  let art = null;
+  if (o.correct) {
+    G.coins += EVENT_REWARD; G.abil.fab.cd = 0; G.abil.sci.cd = 0;
+    floatText(W/2, CAM.y + VIEW_H*.72, '+'+EVENT_REWARD+' 🪙', '#ffe07a');
+    const a = unlockReward(); art = a && a.title;
+  } else {
+    G.lives = Math.max(1, G.lives - 2); G.fastNext = true;
+  }
+  if (!scrEvent.hidden) renderEvent(e, {art});
+  showWaveCard(); persist(); refreshUI();
+  return true;
+}
+function closeEvent(){ scrEvent.hidden = true; }
+evBox.addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  if (b.dataset.e !== undefined) chooseEvent(+b.dataset.e);
+  else if (b.hasAttribute('data-go')) closeEvent();
+});
+
+// ---- scroll of knowledge (encyclopedia) and article cards ----
+const scrEnc = $('scrEnc'), scrArt = $('scrArt'), artBox = $('artBox');
+let encSeen = 0;
+function refreshEncBtn(fresh){
+  const n = encCount();
+  $('encN').textContent = n + '/' + ENC.length;
+  $('btnEnc').classList.toggle('fresh', !!fresh || (n > encSeen && G.state !== 'menu'));
+  $('btnEnc').setAttribute('aria-label', 'Свиток знаний: открыто ' + n + ' из ' + ENC.length);
+}
+function renderEnc(){
+  let h = '';
+  for (const [name, kinds] of ENC_SECTIONS) {
+    const list = ENC.filter(a => kinds.indexOf(a.kind) >= 0); if (!list.length) continue;
+    h += '<h3>'+name+'<span>'+list.filter(a => G.enc[a.id]).length+'/'+list.length+'</span></h3><div class="etiles">';
+    for (const a of list) { const o = !!G.enc[a.id];
+      h += '<button class="et'+(o?'':' lock')+'" data-a="'+esc(a.id)+'" aria-label="'+(o?esc(a.title):'Закрытая статья')+'">'+img(encIcon(a))+'<span>'+(o?esc(a.title):'?')+'</span></button>'; }
+    h += '</div>';
+  }
+  $('encBody').innerHTML = h;
+  $('encCnt').textContent = 'Открыто ' + encCount() + '/' + ENC.length;
+}
+function openEnc(){ if (G.state === 'menu') return; closeSheet(); renderEnc(); scrEnc.hidden = false; $('encBody').scrollTop = 0; encSeen = encCount(); refreshEncBtn(); }
+function closeEnc(){ scrEnc.hidden = true; }
+function showArticle(id){
+  const a = ENC_BY[id]; if (!a) return false;
+  const o = !!G.enc[id];
+  artBox.innerHTML = '<div class="sin"><div class="ahead">'+img(encIcon(a))+'<div><div class="ch">'+(KIND_LABEL[a.kind]||'Свиток знаний')+'</div><h2>'+(o?esc(a.title):'Статья ещё не открыта')+'</h2></div></div>'
+    + (o ? paras(a.text) : '<p>'+(KIND_HINT[a.kind]||'')+'</p>') + '</div><button class="cta" data-close>Закрыть</button>';
+  if (!o) artBox.querySelector('.ahead img').style.filter = 'grayscale(1) brightness(.6)';
+  scrArt.hidden = false; artBox.querySelector('.sin').scrollTop = 0;
+  return true;
+}
+function closeArticle(){ scrArt.hidden = true; }
+function closeModals(){ scrEvent.hidden = true; scrEnc.hidden = true; scrArt.hidden = true; }
+function modalOpen(){ return !scrEvent.hidden || !scrEnc.hidden || !scrArt.hidden; }
+$('btnEnc').addEventListener('click', openEnc);
+$('encClose').addEventListener('click', closeEnc);
+scrEnc.addEventListener('click', ev => { if (ev.target === scrEnc) { closeEnc(); return; } const b = ev.target.closest('.et'); if (b) showArticle(b.dataset.a); });
+scrArt.addEventListener('click', ev => { if (ev.target === scrArt || ev.target.closest('[data-close]')) closeArticle(); });
+
+// ---- start screen: continue or new game ----
+function renderStart(){
+  const s = readSave(), box = $('startBtns');
+  if (s) {
+    const n = s.wave + 1, c = CHAPTERS[chapterOf(n)];
+    box.innerHTML = '<button class="cta two" id="btnCont">Продолжить<small>волна '+n+', глава «'+c.name+'»</small></button><br>'
+      + '<button class="cta2" id="btnNew">Новая игра</button>'
+      + '<div class="confirm" id="confirmNew" hidden><p>Текущий прогресс будет удалён.</p><div class="row2"><button class="act" data-cancel>Отмена</button><button class="act danger" data-really>Начать заново</button></div></div>';
+  } else box.innerHTML = '<button class="cta" id="btnStart">Защищать Рим</button>';
+}
+$('startBtns').addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  if (b.id === 'btnStart') startGame();
+  else if (b.id === 'btnCont') continueGame();
+  else if (b.id === 'btnNew') { $('confirmNew').hidden = false; b.hidden = true; }
+  else if (b.hasAttribute('data-cancel')) { $('confirmNew').hidden = true; $('btnNew').hidden = false; }
+  else if (b.hasAttribute('data-really')) { clearSave(); startGame(); }
+});
+renderStart();
+
+ui.roster.addEventListener('click', ev => {
+  const b = ev.target.closest('button'); if (!b) return;
+  if (b.dataset.l !== undefined) { const d = LOCKED[+b.dataset.l]; closeSheet(); toast(img(IC['l_'+b.dataset.l])+'<b>'+d.name+':</b> '+d.line+' Построить нельзя.'); return; }
+  const k = b.dataset.t, d = TOWERS[k];
+  if (G.sel >= 0 && !G.towers[G.sel]) { const fresh = !G.enc[T2ENC[k]]; if (build(G.sel, k)) { closeSheet(); builtToast(k, fresh); } return; }
+  toast(icT(k)+'<b>'+d.name+' · '+icCoin()+d.cost+'.</b> '+d.note+'. '+d.fact+' <br>Нажми на кружок у дороги, чтобы поставить.', 5);
+});
+for (const k of ['fab','sci']) ui[k].addEventListener('click', () => {
+  const ok = useAbility(k), a = ABIL[k];
+  toast(img(IC[k])+'<b>'+a.name+(ok?'!':' — ещё '+Math.ceil(G.abil[k].cd)+' с')+'</b> '+a.fact, 3.5);
+});
+ui.next.addEventListener('click', () => startWave());
+ui.speed.addEventListener('click', () => { G.speed = G.speed === 1 ? 2 : 1; refreshUI(); });
+ui.pause.addEventListener('click', () => { if (isPlaying()) { G.paused = !G.paused; refreshUI(); } });
+$('btnAgain1').addEventListener('click', startGame);
+$('btnAgain2').addEventListener('click', startGame);
+try { const b = +localStorage.getItem(BEST_KEY); if (b) $('best').textContent = 'Лучший результат: ' + b + ' стен'; } catch(e){}
+
+function tapAt(cx, cy){
+  if (!isPlaying()) return;
+  const r = cv.getBoundingClientRect();
+  const x = (cx - r.left)/VS, y = (cy - r.top)/VS + CAM.y;
+  // enemies: hit test against the drawn figure (feet below the logical point, body above it)
+  let hitE = null, hd = 1e9;
+  for (const e of G.enemies) {
+    if (e.d <= 0) continue;
+    const S = ES[e.type], fy = e.y + S.foot, top = fy - S.top, hw = Math.max(14, S.w*.32);
+    if (x > e.x - hw && x < e.x + hw && y > top - 6 && y < fy + 6) { const d = Math.hypot(e.x-x, (top+fy)/2-y); if (d < hd) { hd = d; hitE = e; } }
+  }
+  if (hitE) {
+    closeSheet(); ui.toast.hidden = true;
+    const id = E2ENC[hitE.type];
+    if (G.enc[id] && showArticle(id)) return;
+    toast(icE(hitE.type)+'<b>'+hitE.def.name+'.</b> '+hitE.def.fact); return;
+  }
+  // defenders: a tap on the figure itself (above its plate) opens the article
+  for (let i=0;i<PADS.length;i++) {
+    const t = G.towers[i]; if (!t) continue;
+    if (Math.abs(x - t.x) < 14 && y > t.y - 46 && y < t.y - 19) { closeSheet(); ui.toast.hidden = true; if (showArticle(T2ENC[t.type])) return; }
+  }
+  let best = -1, bd = 28;
+  PADS.forEach((p,i) => { const d = Math.hypot(p[0]-x, p[1]-y); if (d < bd) { bd = d; best = i; } });
+  if (best >= 0) { ui.toast.hidden = true; if (G.sel === best && !ui.sheet.hidden) closeSheet(); else openSheet(best); }
+  else closeSheet();
+}
+// drag to scroll; a press that moves < 8px and lasts < 250 ms is a tap
+let drag = null;
+cv.addEventListener('pointerdown', ev => {
+  ev.preventDefault();
+  try { cv.setPointerCapture(ev.pointerId); } catch(e){}
+  CAM.tgt = null; CAM.vel = 0;
+  drag = {id:ev.pointerId, sx:ev.clientX, sy:ev.clientY, cam:CAM.y, t:performance.now(), moved:false, ly:ev.clientY, lt:performance.now(), v:0};
+});
+cv.addEventListener('pointermove', ev => {
+  if (!drag || ev.pointerId !== drag.id) return;
+  const dy = ev.clientY - drag.sy;
+  if (!drag.moved && Math.hypot(ev.clientX - drag.sx, dy) >= 8) drag.moved = true;
+  if (!drag.moved) return;
+  setCamera(drag.cam - dy/VS);
+  const now = performance.now(), dt = Math.max(1, now - drag.lt);
+  drag.v = drag.v*.6 + (-(ev.clientY - drag.ly)/VS/dt*1000)*.4; drag.ly = ev.clientY; drag.lt = now;
+});
+cv.addEventListener('pointerup', ev => {
+  if (!drag || ev.pointerId !== drag.id) return;
+  const d = drag; drag = null;
+  if (d.moved) { if (performance.now() - d.lt < 80) CAM.vel = Math.max(-2400, Math.min(2400, d.v)); }
+  else if (performance.now() - d.t < 250) tapAt(ev.clientX, ev.clientY);
+});
+cv.addEventListener('pointercancel', () => { drag = null; });
+cv.addEventListener('wheel', ev => { ev.preventDefault(); CAM.tgt = null; CAM.vel = 0; setCamera(CAM.y + ev.deltaY*(ev.deltaMode === 1 ? 16 : 1)/VS); }, {passive:false});
+
+// ---- minimap, off-screen arrows, boss bar ----
+const mmc = $('mmc'), MMW = 28, MMH = 200;
+let MMBG = null;
+function buildMiniBg(){
+  const d = Math.min(2, window.devicePixelRatio || 1);
+  mmc.width = MMW*d; mmc.height = MMH*d;
+  MMBG = MMBG || document.createElement('canvas'); MMBG.width = mmc.width; MMBG.height = mmc.height;
+  const g = MMBG.getContext('2d'); g.setTransform(d,0,0,d,0,0); g.clearRect(0,0,MMW,MMH);
+  RR(g,.5,.5,MMW-1,MMH-1,5,'rgba(247,243,234,.62)','rgba(180,133,43,.9)',1);
+  const sx = MMW/W, sy = MMH/H;
+  g.fillStyle = 'rgba(160,190,215,.9)'; g.fillRect(1,1,MMW-2,60*sy);
+  g.beginPath(); for (let x=0;x<=W;x+=20){ const y=riverY(x)*sy; x?g.lineTo(x*sx,y):g.moveTo(0,y); } g.strokeStyle='rgba(63,126,166,.9)'; g.lineWidth=1.4; g.stroke();
+  g.beginPath(); for (let x=0;x<=W;x+=20){ const y=fordY(x)*sy; x?g.lineTo(x*sx,y):g.moveTo(0,y); } g.strokeStyle='rgba(63,126,166,.7)'; g.lineWidth=1; g.stroke();
+  E(g,LAKE.x*sx,LAKE.y*sy,LAKE.rx*sx,LAKE.ry*sy,'rgba(63,126,166,.85)');
+  g.beginPath(); PATH.forEach(([x,y],i) => i ? g.lineTo(x*sx,Math.max(1,y*sy)) : g.moveTo(x*sx,Math.max(1,y*sy)));
+  g.strokeStyle='rgba(120,95,60,.95)'; g.lineWidth=1.6; g.lineJoin='round'; g.stroke();
+  g.fillStyle='rgba(157,43,31,.9)'; g.fillRect(2, WALL_Y*sy, MMW-4, MMH-WALL_Y*sy-2);
+}
+function drawMini(){
+  if (!MMBG) return;
+  const d = mmc.width/MMW, g = mmc.getContext('2d'), sx = MMW/W, sy = MMH/H;
+  g.setTransform(1,0,0,1,0,0); g.clearRect(0,0,mmc.width,mmc.height); g.drawImage(MMBG,0,0);
+  g.setTransform(d,0,0,d,0,0);
+  for (const t of G.towers) if (t) { g.fillStyle = '#2f5f9e'; g.fillRect(t.x*sx-1.3, t.y*sy-1.3, 2.6, 2.6); }
+  for (const e of G.enemies) if (e.d > 0) { const r = e.def.boss ? 2.4 : 1.3; E(g,e.x*sx,e.y*sy,r,r,e.def.boss?'#ffd23a':'#e0261b',e.def.boss?'#7c1f16':null,.8); }
+  const vy = CAM.y*sy, vh = Math.min(MMH, VIEW_H*sy);
+  RR(g,1,vy+.5,MMW-2,vh-1,3,'rgba(255,255,255,.22)','#2f2218',1.4);
+}
+function mmPick(ev){ const r = mmc.getBoundingClientRect(); const y = (ev.clientY - r.top)/r.height*H; CAM.tgt = null; CAM.vel = 0; setCamera(y - VIEW_H/2); }
+let mmDrag = false;
+mmc.addEventListener('pointerdown', ev => { ev.preventDefault(); ev.stopPropagation(); mmDrag = true; try { mmc.setPointerCapture(ev.pointerId); } catch(e){} mmPick(ev); });
+mmc.addEventListener('pointermove', ev => { if (mmDrag) mmPick(ev); });
+mmc.addEventListener('pointerup', () => { mmDrag = false; });
+mmc.addEventListener('pointercancel', () => { mmDrag = false; });
+$('btnAlps').addEventListener('click', () => glideTo(0));
+$('btnRome').addEventListener('click', () => glideTo(CAM.max));
+const indTop = $('indTop'), indBot = $('indBot'), bossbar = $('bossbar');
+function offscreen(){
+  let up = 0, dn = 0, upY = -1, dnY = 1e9;
+  for (const e of G.enemies) { if (e.d <= 0) continue;
+    if (e.y < CAM.y + 6) { up++; upY = Math.max(upY, e.y); }
+    else if (e.y > CAM.y + VIEW_H - 6) { dn++; dnY = Math.min(dnY, e.y); } }
+  // the arrow that matters most points to the enemy closest to Rome
+  let lead = null; for (const e of G.enemies) if (!lead || e.d > lead.d) lead = e;
+  return {up, dn, upY, dnY, lead};
+}
+function refreshCamUI(){
+  const o = offscreen();
+  indTop.hidden = !o.up; if (o.up) indTop.querySelector('span').textContent = o.up;
+  indBot.hidden = !o.dn; if (o.dn) indBot.querySelector('span').textContent = o.dn;
+  indTop.dataset.y = o.upY; indBot.dataset.y = o.dnY;
+  const boss = G.enemies.find(e => e.def.boss && !e.dead);
+  bossbar.hidden = !boss; field.classList.toggle('hasboss', !!boss);
+  if (boss) { $('bossName').textContent = boss.def.name; $('bossFill').style.transform = 'scaleX(' + Math.max(0, boss.hp/boss.max).toFixed(3) + ')'; }
+}
+indTop.addEventListener('click', () => glideTo(+indTop.dataset.y - VIEW_H*.35));
+indBot.addEventListener('click', () => glideTo(+indBot.dataset.y - VIEW_H*.55));
+window.addEventListener('resize', resize);
+if (window.ResizeObserver) new ResizeObserver(resize).observe(field);
+resize();
+
+// ---------- Loop ----------
+let last = 0, uiAcc = 0, mmAcc = 1, MANUAL = false;
+function frame(ts){
+  const raw = last ? Math.min(0.1, (ts - last)/1000) : 0; last = ts;
+  if (!G.paused && isPlaying() && !MANUAL && !modalOpen()) {
+    let dt = raw * G.speed;
+    while (dt > 0) { const s = Math.min(dt, 1/60); update(s); dt -= s; }
+  }
+  if (toastTimer > 0) { toastTimer -= raw; if (toastTimer <= 0) ui.toast.hidden = true; }
+  if (CAM.tgt !== null) { const k = 1 - Math.exp(-raw*9); setCamera(CAM.y + (CAM.tgt - CAM.y)*k); if (Math.abs(CAM.tgt - CAM.y) < .5) { setCamera(CAM.tgt); CAM.tgt = null; } }
+  else if (Math.abs(CAM.vel) > 8 && !drag) { setCamera(CAM.y + CAM.vel*raw); CAM.vel *= Math.exp(-raw*4); if (CAM.y <= 0 || CAM.y >= CAM.max) CAM.vel = 0; }
+  uiAcc += raw; if (uiAcc > 0.15) {
+    uiAcc = 0; refreshUI();
+    if (ENC_NEW.length && isPlaying() && ui.sheet.hidden && ui.card.hidden && !modalOpen()) {
+      toast('<b>📜 Свиток знаний:</b> '+(ENC_NEW.length > 1 ? 'новые статьи ' : 'новая статья ')+ENC_NEW.map(t => '«'+esc(t)+'»').join(', ')+'. Нажми на фигурку или на 📜, чтобы прочитать.', 4);
+      ENC_NEW = [];
+    }
+  }
+  mmAcc += raw; if (mmAcc >= 0.1) { mmAcc = 0; drawMini(); refreshCamUI(); }
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.__game = {BAL, manual:v=>{MANUAL=!!v;}, setCamera:y=>{CAM.tgt=null;CAM.vel=0;return setCamera(y);}, camera:()=>({y:CAM.y,max:CAM.max,viewH:VIEW_H}), drawMini, refreshCamUI, CHAPTERS, G, update, startGame, startWave, build, upgrade, sell, useAbility, upgradeCost, TOWERS, ENEMIES, WAVES, PADS, PATH, SEG, PATH_LEN, draw, refreshUI,
+  CONTENT, ENC, quizFor, eventAfter, answerQuiz, skipQuiz, chooseEvent, closeEvent, quizOpen, eventOpen, quizCorrect,
+  openEnc, closeEnc, showArticle, closeArticle, unlock, encCount, T2ENC, E2ENC,
+  snapshot, readSave, saveNow, clearSave, continueGame, renderStart, SAVE_KEY};
+})();
+</script>
