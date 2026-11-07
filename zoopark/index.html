@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Зоопарк</title>
+<style>
+:root{
+  --ink:#3b2a1a; --paper:#fff4d6; --paper2:#ffe9b0; --grass:#9fd36b; --sun:#ffcf4a;
+  --red:#e8604c; --blue:#4aa8d8; --green:#5cb85c; --sand:#ecd7a4; --bg:#f6e7c0;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:"Trebuchet MS","Segoe UI",Roboto,Arial,sans-serif;overscroll-behavior:none}
+body{touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#app{max-width:430px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;padding:6px 8px 8px;gap:6px}
+#hud{display:flex;gap:6px;align-items:stretch;flex:none}
+.chip{background:var(--paper);border:3px solid var(--ink);border-radius:12px;padding:6px 10px;font-weight:800;font-size:15px;
+  box-shadow:0 3px 0 var(--ink);display:flex;align-items:center;white-space:nowrap}
+#hDay{flex:1}
+#hMoney{flex:1.3;justify-content:center;color:#1e6b2c;font-size:17px}
+#btnMenu{font-size:20px;padding:4px 12px;cursor:pointer;color:var(--ink)}
+#info{flex:none;background:var(--paper2);border:3px solid var(--ink);border-radius:12px;padding:6px 10px;font-size:13px;line-height:1.3;min-height:56px}
+#info b{font-weight:800}
+#info .warn{color:#b8321f;font-weight:800}
+#mapWrap{flex:none;margin:0 auto;width:min(100%,calc((100dvh - 320px) * 360 / 420));min-width:240px}
+canvas#map{display:block;width:100%;height:auto;border:3px solid var(--ink);border-radius:14px;background:#ecd7a4;touch-action:none}
+#panel{flex:1;min-height:0;overflow:auto;background:var(--paper);border:3px solid var(--ink);border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.btn{font:inherit;font-weight:800;font-size:17px;color:var(--ink);background:var(--sun);border:3px solid var(--ink);border-radius:14px;
+  padding:10px 14px;min-height:46px;box-shadow:0 4px 0 var(--ink);cursor:pointer}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.btn.go{background:var(--green);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35);font-size:19px}
+.btn.alt{background:var(--paper2)}
+.btn.red{background:var(--red);color:#fff}
+.btn[disabled]{opacity:.5}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.hint{font-size:13px;line-height:1.35}
+.head{font-weight:800;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.item{font:inherit;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:12px;padding:3px 2px 5px;
+  display:flex;flex-direction:column;align-items:center;gap:0;cursor:pointer;line-height:1.15;box-shadow:0 3px 0 var(--ink)}
+.item:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.item canvas{width:42px;height:42px}
+.item b{font-size:11px}.item span{font-size:11px;font-weight:800;color:#1e6b2c}.item small{font-size:9.5px;opacity:.8}
+.item.no{opacity:.45}
+.bar{height:14px;border:3px solid var(--ink);border-radius:9px;background:#fff;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--green);width:0}
+#ov{position:fixed;inset:0;background:rgba(59,42,26,.55);display:flex;align-items:center;justify-content:center;padding:10px;z-index:10;overflow:auto}
+#ov.hidden{display:none}
+#card{background:var(--paper);border:4px solid var(--ink);border-radius:18px;box-shadow:0 6px 0 var(--ink);padding:14px;
+  width:100%;max-width:400px;max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:10px}
+#card h2{margin:0;font-size:22px}
+#card p{margin:0;line-height:1.4;font-size:15px}
+.q{font-size:18px;line-height:1.45;font-weight:700;background:#fff;border:3px solid var(--ink);border-radius:12px;padding:10px}
+.tag{display:inline-block;font-size:12px;font-weight:800;background:var(--blue);color:#fff;border:2px solid var(--ink);border-radius:20px;padding:1px 9px}
+.ans{font-size:30px;font-weight:800;text-align:center;background:#fff;border:3px solid var(--ink);border-radius:12px;min-height:54px;padding:4px;letter-spacing:1px}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.pad .btn{font-size:22px;padding:6px 0;min-height:48px}
+.ok{background:#dff3d2;border:3px solid var(--ink);border-radius:12px;padding:10px}
+.bad{background:#ffdcd3;border:3px solid var(--ink);border-radius:12px;padding:10px}
+.sum{width:100%;border-collapse:collapse;font-size:15px}.sum td{padding:3px 0;border-bottom:2px dashed #cdb57d}.sum td:last-child{text-align:right;font-weight:800}
+.stars{font-size:38px;text-align:center;letter-spacing:6px;color:#e5a600;text-shadow:0 2px 0 var(--ink)}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 3px;font-weight:800}
+.fr i{font-style:normal;border-bottom:2px solid currentColor;padding:0 4px 1px}.fr b{padding-top:1px}
+#toast{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:20px;padding:8px 16px;
+  font-weight:700;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:20;max-width:90%;text-align:center}
+#toast.on{opacity:1}
+@media (max-height:700px){#info{min-height:48px;font-size:12px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <div class="chip" id="hDay">День 1 / 30</div>
+    <div class="chip" id="hMoney">0 ₽</div>
+    <button class="chip" id="btnMenu" aria-label="Меню">≡</button>
+  </div>
+  <div id="info"></div>
+  <div id="mapWrap"><canvas id="map" width="720" height="840"></canvas></div>
+  <div id="panel"></div>
+</div>
+<div id="ov" class="hidden"><div id="card"></div></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* ===================== ДАННЫЕ ===================== */
+const DAYS = 30, START_MONEY = 6000, TICKET = 100, FEED = 20, CAFE_SPEND = 30;
+const BASE_CAP = 30, KASSA_CAP = 30, CAFE_CAP = 30, SELL_K = 0.7;
+const SAVE_KEY = 'zoopark-save-v1', BEST_KEY = 'zoopark-best';
+const REWARD = [400, 700, 1100, 1600];
+const GRADE = ['4 класс', '5 класс', '5–6 класс', '6 класс'];
+const ANI = {
+  rab:  {name:'Кролик',   pl:['кролик','кролика','кроликов'], price:1200,  kg:4,  vis:3},
+  goat: {name:'Коза',     pl:['коза','козы','коз'],           price:2000,  kg:8,  vis:5},
+  peng: {name:'Пингвин',  pl:['пингвин','пингвина','пингвинов'], price:3500, kg:10, vis:8},
+  monk: {name:'Обезьяна', pl:['обезьяна','обезьяны','обезьян'], price:5000, kg:14, vis:11},
+  zebra:{name:'Зебра',    pl:['зебра','зебры','зебр'],        price:7000,  kg:20, vis:15},
+  lion: {name:'Лев',      pl:['лев','льва','львов'],          price:10000, kg:30, vis:22}
+};
+const BUILD = {
+  kassa:{name:'Касса', price:3000, text:'+30 мест'},
+  cafe: {name:'Кафе',  price:4000, text:'+30 ₽/гость'}
+};
+const SHOP = ['rab','goat','peng','monk','zebra','lion','kassa','cafe'];
+const priceOf = c => c.t === 'a' ? ANI[c.k].price : BUILD[c.k].price;
+const nameOf  = c => c.t === 'a' ? ANI[c.k].name  : BUILD[c.k].name;
+
+/* ===================== УТИЛИТЫ ===================== */
+const $ = s => document.querySelector(s);
+const ri = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const money = n => Math.round(n).toLocaleString('ru-RU') + ' ₽';
+const num = n => String(n).replace('.', ',');
+const plur = (n,f) => { const a=n%100, b=n%10; return (a>10&&a<15)?f[2]:b===1?f[0]:(b>1&&b<5)?f[1]:f[2]; };
+const fr = (a,b) => `<span class="fr"><i>${a}</i><b>${b}</b></span>`;
+function toast(t){ const e=$('#toast'); e.textContent=t; e.classList.add('on'); clearTimeout(toast.t); toast.t=setTimeout(()=>e.classList.remove('on'),2200); }
+function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+
+/* ===================== СОСТОЯНИЕ ===================== */
+let S = null;          // игра
+let mode = 'idle';     // idle | cell | sim | over (экран поверх)
+let sel = -1;          // выбранная клетка
+let sim = null;
+
+function newState(){
+  return {v:1, day:1, money:START_MONEY, cells:Array(16).fill(null),
+    stats:{right:0, wrong:0, skip:0, vis:0, earned:0}, task:null, taskDone:false};
+}
+function save(){ if(S) lsSet(SAVE_KEY, S); }
+
+function owned(){ const o={}; S.cells.forEach(c=>{ if(c&&c.t==='a') o[c.k]=(o[c.k]||0)+1; }); return o; }
+function count(kind){ return S.cells.filter(c=>c&&c.t==='b'&&c.k===kind).length; }
+function isHoliday(d){ const r=d%7; return r===6||r===0; }
+function tier(){
+  const d=S.day; let t = d<=5?1 : d<=12?2 : d<=20?3 : 4;
+  if (S.cells.filter(Boolean).length >= 10) t++;
+  return Math.min(4,t);
+}
+
+/* ===================== ЭКОНОМИКА ДНЯ ===================== */
+function computeDay(){
+  const animals = S.cells.filter(c=>c&&c.t==='a');
+  let left = S.money, foodKg = 0, foodCost = 0, demand = 0, hungry = 0;
+  const mult = isHoliday(S.day) ? 1.4 : 1;
+  animals.forEach(c=>{
+    const A = ANI[c.k], need = A.kg*FEED;
+    foodKg += A.kg;
+    if (left >= need){ left -= need; foodCost += need; demand += A.vis; }
+    else { hungry++; demand += A.vis*0.5; }
+  });
+  demand = Math.round(demand*mult);
+  const cap = BASE_CAP + KASSA_CAP*count('kassa');
+  const vis = Math.min(demand, cap);
+  const cafeServed = Math.min(vis, CAFE_CAP*count('cafe'));
+  const income = vis*TICKET, cafeInc = cafeServed*CAFE_SPEND;
+  return {demand, cap, vis, lost:Math.max(0,demand-cap), cafeServed, income, cafeInc, foodKg, foodCost, hungry,
+          net: income+cafeInc-foodCost, holiday: mult>1};
+}
+function applyDay(r){
+  S.money += r.net;
+  S.stats.vis += r.vis; S.stats.earned += r.income + r.cafeInc;
+  S.day++;
+}
+function capital(){ return S.money + S.cells.reduce((s,c)=>s+(c?priceOf(c):0),0); }
+const STAR_AT = [40000, 90000, 130000]; // автоигрок: без задач ≈38k, 50 % верных ≈115k, 100 % ≈160k
+function stars(cap){ return STAR_AT.filter(x=>cap>=x).length; }
+
+/* ===================== ЗАДАЧИ ===================== */
+const TASKS = {
+  feed(t){
+    const own = owned(), ids = Object.keys(own);
+    let id, n, real = false;
+    if (ids.length && Math.random() < .85){ id = pick(ids); n = own[id]; real = true; }
+    else { id = pick(Object.keys(ANI)); n = ri(2,5); }
+    if (t===1 && n>6){ n = ri(2,6); real = false; }
+    const A = ANI[id];
+    const intro = `${real?'В вашем зоопарке':'Допустим, в зоопарке'} ${n} ${plur(n,A.pl)}.`;
+    if (t===1){
+      return {q:`${intro} На одно животное нужно ${A.kg} кг корма в день. Сколько кг корма нужно на день?`,
+              a:n*A.kg, u:'кг', sol:`${n} × ${A.kg} = ${n*A.kg} кг`};
+    }
+    if (t===2){
+      const d = ri(3,7);
+      return {q:`${intro} На одно животное нужно ${A.kg} кг корма в день. Сколько кг корма нужно на ${d} ${plur(d,['день','дня','дней'])}?`,
+              a:n*A.kg*d, u:'кг', sol:`${n} × ${A.kg} × ${d} = ${n*A.kg*d} кг`};
+    }
+    if (t===3){
+      const day = pick([125,200,250,500]), days = ri(4,12), tn = day*days/1000;
+      return {q:`Привезли ${num(tn)} т корма. Зоопарк съедает ${day} кг в день. На сколько дней хватит корма?`,
+              a:days, u:'дн.', sol:`${num(tn)} т = ${day*days} кг; ${day*days} ÷ ${day} = ${days}`};
+    }
+    const bag = pick([25,40,50]), cost = pick([300,400,500,600]), k = ri(3,9), kg = bag*k;
+    return {q:`Мешок корма на ${bag} кг стоит ${cost} ₽. Сколько рублей стоит ${kg} кг корма?`,
+            a:k*cost, u:'₽', sol:`${kg} ÷ ${bag} = ${k} меш.; ${k} × ${cost} = ${k*cost} ₽`};
+  },
+  discount(t){
+    if (t===1){
+      const p = pick([100,200,300,400,500,600]), pc = pick([10,50]), a = p - p*pc/100;
+      return {q:`Билет стоит ${p} ₽. Сегодня скидка ${pc} %. Сколько рублей стоит билет со скидкой?`,
+              a, u:'₽', sol:`${pc} % от ${p} = ${p*pc/100}; ${p} − ${p*pc/100} = ${a}`};
+    }
+    if (t===2){
+      const p = pick([200,240,280,320,360,400]), pc = pick([10,20,25,50,75]), d = p*pc/100;
+      return {q:`Билет стоит ${p} ₽. Скидка ${pc} %. Сколько рублей стоит билет со скидкой?`,
+              a:p-d, u:'₽', sol:`${pc} % от ${p} = ${d}; ${p} − ${d} = ${p-d}`};
+    }
+    if (t===3){
+      const p = pick([100,160,200,240,300,400]), pc = pick([15,30,35,40]), k = ri(3,5), d = p*pc/100;
+      return {q:`Билет стоит ${p} ₽. Семейная скидка ${pc} %. Сколько рублей заплатит семья, купив ${k} билета(ов)?`,
+              a:k*(p-d), u:'₽', sol:`${pc} % от ${p} = ${d}; билет ${p-d} ₽; ${k} × ${p-d} = ${k*(p-d)}`};
+    }
+    const o = pick([240,280,320,400,480,600]), pc = pick([20,25,40,50]), f = o*(100-pc)/100;
+    return {q:`После скидки ${pc} % билет стоит ${f} ₽. Сколько он стоил до скидки?`,
+            a:o, u:'₽', sol:`${100-pc} % цены = ${f} ₽; 1 % = ${f/(100-pc)} ₽; 100 % = ${o} ₽`};
+  },
+  geom(t){
+    if (t===1){
+      const a = ri(3,9); let b = ri(3,9); if (b===a) b = a+1>9 ? a-1 : a+1;
+      return {q:`Вольер имеет форму прямоугольника ${a} × ${b} м. Сколько метров забора нужно, чтобы обнести его целиком?`,
+              a:2*(a+b), u:'м', sol:`P = 2 × (${a} + ${b}) = ${2*(a+b)} м`};
+    }
+    if (t===2){
+      const a = ri(4,12), b = ri(4,12);
+      return {q:`Вольер ${a} × ${b} м засеивают травой. Сколько квадратных метров травы нужно?`,
+              a:a*b, u:'м²', sol:`S = ${a} × ${b} = ${a*b} м²`};
+    }
+    if (t===3){
+      const a = ri(6,12), b = ri(5,10), g = pick([2,3]), c = pick([20,30,40,50]), L = 2*(a+b)-g;
+      return {q:`Вольер ${a} × ${b} м обносят забором. В воротах шириной ${g} м забора нет. Метр забора стоит ${c} ₽. Сколько рублей стоит забор?`,
+              a:L*c, u:'₽', sol:`P = ${2*(a+b)} м; без ворот ${L} м; ${L} × ${c} = ${L*c} ₽`};
+    }
+    const s = ri(4,9), o = ri(s+1,14);
+    return {q:`Площадь вольера ${s*o} м², одна из его сторон — ${s} м. Сколько метров забора нужно вокруг вольера?`,
+            a:2*(s+o), u:'м', sol:`Другая сторона ${s*o} ÷ ${s} = ${o} м; P = 2 × (${s} + ${o}) = ${2*(s+o)} м`};
+  },
+  frac(t){
+    const kidsWord = 'дети';
+    if (t===1){
+      const d = pick([2,4,5,10]), N = d*ri(4,20);
+      return {q:`Сегодня пришло ${N} посетителей. ${fr(1,d)} из них — ${kidsWord}. Сколько детей пришло?`,
+              a:N/d, u:'чел.', sol:`${N} ÷ ${d} = ${N/d}`};
+    }
+    if (t===2){
+      const d = pick([3,4,5,6,8,10]), n = ri(2,d-1), N = d*ri(8,24);
+      return {q:`Сегодня пришло ${N} посетителей. ${fr(n,d)} из них — ${kidsWord}. Сколько детей пришло?`,
+              a:N/d*n, u:'чел.', sol:`${N} ÷ ${d} = ${N/d}; ${N/d} × ${n} = ${N/d*n}`};
+    }
+    if (t===3){
+      const d = pick([4,5,8,10]), n = ri(1,d-1), N = d*ri(10,25);
+      return {q:`Сегодня пришло ${N} посетителей. ${fr(n,d)} из них — ${kidsWord}. Сколько взрослых пришло?`,
+              a:N-N/d*n, u:'чел.', sol:`Детей: ${N} ÷ ${d} × ${n} = ${N/d*n}; взрослых: ${N} − ${N/d*n} = ${N-N/d*n}`};
+    }
+    const b1 = pick([3,5,6]), b2 = pick([2,3,4]), a1 = ri(1,b1-1), N = b1*b2*ri(2,6);
+    const kids = N/b1*a1;
+    return {q:`Сегодня пришло ${N} посетителей. ${fr(a1,b1)} из них — дети, а ${fr(1,b2)} детей — дошкольники. Сколько дошкольников пришло?`,
+            a:kids/b2, u:'чел.', sol:`Детей: ${N} ÷ ${b1} × ${a1} = ${kids}; дошкольников: ${kids} ÷ ${b2} = ${kids/b2}`};
+  },
+  time(t){
+    if (t===1){
+      const h1 = ri(8,10), h2 = ri(16,19);
+      return {q:`Зоопарк открыт с ${h1}:00 до ${h2}:00. Сколько часов он работает?`, a:h2-h1, u:'ч', sol:`${h2} − ${h1} = ${h2-h1} ч`};
+    }
+    if (t===2){
+      const h1 = ri(8,10), h2 = ri(16,18), m = (h2*60) - (h1*60+30);
+      return {q:`Касса работает с ${h1}:30 до ${h2}:00. Сколько минут она работает?`, a:m, u:'мин', sol:`с ${h1}:30 до ${h2}:00 — ${Math.floor(m/60)} ч ${m%60} мин = ${m} мин`};
+    }
+    if (t===3){
+      const x = pick([40,45,75,90,150]), k = ri(3,5), h = ri(7,9), mm = pick(['00','15','30','45']);
+      return {q:`Первое кормление пингвинов в ${h}:${mm}. Потом кормят каждые ${x} мин. Через сколько минут после первого кормления начнётся ${k}-е кормление?`,
+              a:(k-1)*x, u:'мин', sol:`Промежутков ${k-1}: ${k-1} × ${x} = ${(k-1)*x} мин`};
+    }
+    const e = pick([35,40,45,50]), r = pick([10,15,20]), hrs = pick([6,8]), T = hrs*60, a = Math.floor(T/(e+r));
+    return {q:`Экскурсия длится ${e} мин, после неё перерыв ${r} мин. Сколько полных экскурсий с перерывом уместится в рабочий день ${hrs} ч?`,
+            a, u:'экск.', sol:`Одна экскурсия с перерывом ${e+r} мин; ${T} ÷ ${e+r} = ${num((T/(e+r)).toFixed(1))} → ${a} полных`};
+  },
+  money(t){
+    if (t===1){
+      const p = pick([10,15,20,25,30]), n = ri(2,6); let x = Math.ceil(n*p/50)*50; if (x===n*p) x += 50;
+      return {q:`Купили ${n} билетов по ${p} ₽ и дали кассиру ${x} ₽. Сколько рублей сдачи получат?`, a:x-n*p, u:'₽', sol:`${n} × ${p} = ${n*p}; ${x} − ${n*p} = ${x-n*p}`};
+    }
+    if (t===2){
+      const a = ri(16,30)*50, b = ri(3,8)*50, c = ri(2,6)*50;
+      return {q:`За день выручка ${a} ₽. На корм потратили ${b} ₽, на зарплату — ${c} ₽. Сколько рублей прибыли за день?`, a:a-b-c, u:'₽', sol:`${a} − ${b} − ${c} = ${a-b-c}`};
+    }
+    if (t===3){
+      const a = pick([100,150,200,300,400]), n = ri(2,4), m = ri(2,6);
+      return {q:`Взрослый билет стоит ${a} ₽, детский — вдвое дешевле. Пришли ${n} взрослых и ${m} детей. Сколько рублей они заплатят?`,
+              a:n*a+m*a/2, u:'₽', sol:`Детский ${a/2} ₽; ${n} × ${a} + ${m} × ${a/2} = ${n*a} + ${m*a/2} = ${n*a+m*a/2}`};
+    }
+    const A = ANI[pick(['zebra','lion','monk','peng'])], s = pick([500,800,1200,1500]), d = Math.ceil(A.price/s);
+    return {q:`Вы хотите купить животное «${A.name}» за ${A.price} ₽. Вы откладываете по ${s} ₽ в день. За сколько дней накопите нужную сумму?`,
+            a:d, u:'дн.', sol:`${A.price} ÷ ${s} = ${num((A.price/s).toFixed(1))} → ${d} дн. (неполный день считаем целым)`};
+  },
+  avg(t){
+    if (t<=2){
+      const a = ri(5,15)*10; let b = a + 20*ri(1,5);
+      return {q:`Вчера в зоопарк пришло ${a} человек, сегодня — ${b}. Сколько человек приходит в среднем за день?`, a:(a+b)/2, u:'чел.', sol:`(${a} + ${b}) ÷ 2 = ${(a+b)/2}`};
+    }
+    if (t===3){
+      const m = ri(6,20)*10, d = ri(1,4)*10, e = ri(1,4)*10, v = [m-d, m+e, m+d-e];
+      return {q:`За три дня в зоопарк пришло ${v[0]}, ${v[1]} и ${v[2]} человек. Сколько человек приходит в среднем за день?`, a:m, u:'чел.', sol:`(${v[0]} + ${v[1]} + ${v[2]}) ÷ 3 = ${v[0]+v[1]+v[2]} ÷ 3 = ${m}`};
+    }
+    const m = ri(10,20)*10, v = [m-ri(1,3)*10, m+ri(1,3)*10, m-ri(0,2)*10], x = 4*m - v[0]-v[1]-v[2];
+    return {q:`В среднем за 4 дня в зоопарк приходило ${m} человек в день. В первые три дня пришло ${v[0]}, ${v[1]} и ${v[2]}. Сколько человек пришло в четвёртый день?`,
+            a:x, u:'чел.', sol:`Всего за 4 дня: 4 × ${m} = ${4*m}; ${4*m} − ${v[0]+v[1]+v[2]} = ${x}`};
+  },
+  share(t){
+    if (t===1){
+      const n = ri(2,9), k = ri(3,15);
+      return {q:`${n*k} кг моркови поровну разложили между ${n} вольерами. Сколько кг моркови получил каждый вольер?`, a:k, u:'кг', sol:`${n*k} ÷ ${n} = ${k}`};
+    }
+    if (t===2){
+      const k = pick([6,8,12,15]), r = ri(1,k-1), c = k*ri(5,12)+r;
+      return {q:`В ящике ${c} кг корма. Его раскладывают порциями по ${k} кг. Сколько кг корма останется после раздачи всех полных порций?`,
+              a:r, u:'кг', sol:`${c} ÷ ${k} = ${Math.floor(c/k)} (ост. ${r})`};
+    }
+    if (t===3){
+      const cap = pick([150,200,250,300]); let total = cap*ri(3,9) + ri(1,cap-1); total = Math.round(total/10)*10;
+      if (total%cap===0) total += 10;
+      return {q:`Нужно привезти ${total} кг сена. В одну машину помещается ${cap} кг. Сколько машин понадобится?`, a:Math.ceil(total/cap), u:'маш.',
+              sol:`${total} ÷ ${cap} = ${num((total/cap).toFixed(1))} → ${Math.ceil(total/cap)} (неполную машину тоже нужно)`};
+    }
+    const [a,b] = pick([[2,3],[1,4],[3,5],[2,5]]), m = ri(10,40), tot = (a+b)*m;
+    return {q:`Корм смешивают: ${a} ч. зерна и ${b} ч. овощей. Всего нужно ${tot} кг смеси. Сколько кг зерна в ней?`, a:a*m, u:'кг',
+            sol:`Всего частей ${a}+${b}=${a+b}; одна часть ${tot} ÷ ${a+b} = ${m} кг; зерна ${a} × ${m} = ${a*m} кг`};
+  }
+};
+const TOPIC = {feed:'Корм', discount:'Скидки', geom:'Вольер', frac:'Посетители', time:'Время', money:'Деньги', avg:'Среднее', share:'Раздел'};
+function genTask(){
+  const t = tier();
+  let types = Object.keys(TASKS);
+  if (S.task && S.task.type) types = types.filter(x=>x!==S.task.type);
+  if (Object.keys(owned()).length && Math.random()<.3) types = ['feed'];
+  const type = pick(types), g = TASKS[type](t);
+  return {type, tier:t, q:g.q, a:g.a, u:g.u, sol:g.sol, reward:REWARD[t-1]};
+}
+
+/* ===================== ГРАФИКА (всё кодом) ===================== */
+const INK = '#3b2a1a';
+const cv = $('#map'), ctx = cv.getContext('2d');
+const LW = 360, LH = 420, CELL = 80, GAP = 8;
+const cx0 = i => GAP + (i%4)*(CELL+GAP), cy0 = i => GAP + Math.floor(i/4)*(CELL+GAP);
+const latX = i => 4 + 88*i;
+
+function oval(c,x,y,rx,ry,f,lw=3){ c.beginPath(); c.ellipse(x,y,rx,ry,0,0,6.2832); c.fillStyle=f; c.fill(); if(lw){ c.lineWidth=lw; c.strokeStyle=INK; c.stroke(); } }
+function rect(c,x,y,w,h,f,lw=3){ c.fillStyle=f; c.fillRect(x,y,w,h); if(lw){ c.lineWidth=lw; c.strokeStyle=INK; c.strokeRect(x,y,w,h); } }
+function poly(c,pts,f,lw=3){ c.beginPath(); pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])); c.closePath(); c.fillStyle=f; c.fill(); if(lw){ c.lineWidth=lw; c.lineJoin='round'; c.strokeStyle=INK; c.stroke(); } }
+function dot(c,x,y,r=1.8,f=INK){ c.beginPath(); c.arc(x,y,r,0,6.2832); c.fillStyle=f; c.fill(); }
+function line(c,pts,col,lw){ c.beginPath(); pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1])); c.lineWidth=lw; c.strokeStyle=col; c.lineCap='round'; c.stroke(); }
+
+const DRAW = {
+  rab(c){
+    oval(c,-17,6,5,5,'#fff');
+    oval(c,8,17,6,3.5,'#f6f0e4'); oval(c,-8,17,6,3.5,'#f6f0e4');
+    oval(c,0,7,17,12,'#f6f0e4');
+    oval(c,9,-20,3.6,10,'#f6f0e4'); oval(c,9,-20,1.4,6.5,'#f4a3b5',0);
+    oval(c,17,-19,3.6,10,'#f6f0e4'); oval(c,17,-19,1.4,6.5,'#f4a3b5',0);
+    oval(c,14,-4,10,9,'#f6f0e4');
+    dot(c,17,-6); dot(c,23,-3,1.7,'#e86a8a');
+  },
+  goat(c){
+    line(c,[[15,-14],[13,-25]],INK,5); line(c,[[15,-14],[13,-25]],'#f2f2f2',2);
+    line(c,[[21,-14],[24,-24]],INK,5); line(c,[[21,-14],[24,-24]],'#f2f2f2',2);
+    [-14,-8,6,12].forEach(x=>rect(c,x-2.5,8,5,13,'#d9c8a5',2.5));
+    poly(c,[[-21,-2],[-27,-6],[-22,3]],'#efe3c8');
+    oval(c,-2,3,20,11,'#efe3c8');
+    oval(c,18,-8,9,8,'#efe3c8');
+    poly(c,[[24,-2],[19,-1],[22,8]],'#fff',2.5);
+    oval(c,11,-9,5,2.5,'#d9c8a5',2); dot(c,20,-10); dot(c,25,-7,1.4);
+  },
+  peng(c){
+    oval(c,-6,21,6,3,'#f5a623'); oval(c,6,21,6,3,'#f5a623');
+    oval(c,0,1,15,21,'#2f3e52');
+    oval(c,0,5,9.5,15,'#fff',0);
+    oval(c,-15,3,4,11,'#2f3e52'); oval(c,15,3,4,11,'#2f3e52');
+    poly(c,[[-4,-13],[4,-13],[0,-7]],'#f5a623',2.5);
+    dot(c,-5,-17,2.6,'#fff'); dot(c,5,-17,2.6,'#fff'); dot(c,-5,-17,1.2); dot(c,5,-17,1.2);
+  },
+  monk(c){
+    line(c,[[-9,16],[-24,18],[-26,2],[-18,-3]],INK,6); line(c,[[-9,16],[-24,18],[-26,2],[-18,-3]],'#8a5a34',3);
+    oval(c,0,8,13,15,'#8a5a34');
+    oval(c,0,11,8,10,'#e8c79a',0);
+    oval(c,-15,8,4,10,'#8a5a34'); oval(c,15,8,4,10,'#8a5a34');
+    oval(c,-12,-14,5,5,'#8a5a34'); oval(c,12,-14,5,5,'#8a5a34'); dot(c,-12,-14,2.4,'#e8c79a'); dot(c,12,-14,2.4,'#e8c79a');
+    oval(c,0,-13,12,11,'#8a5a34');
+    oval(c,0,-10,8.5,7.5,'#e8c79a',0);
+    dot(c,-3.5,-13,1.7); dot(c,3.5,-13,1.7); line(c,[[-3,-6],[0,-4],[3,-6]],INK,2);
+  },
+  zebra(c){
+    [-14,-8,10,16].forEach(x=>{ rect(c,x-2.5,8,5,14,'#fff',2.5); rect(c,x-2.5,16,5,3,INK,0); });
+    line(c,[[-22,-2],[-28,6],[-26,12]],INK,3);
+    c.save(); c.beginPath(); c.ellipse(-2,3,22,12,0,0,6.2832); c.clip();
+    c.fillStyle='#fff'; c.fillRect(-30,-12,60,30);
+    c.fillStyle=INK; for(let x=-18;x<=16;x+=7){ c.beginPath(); c.moveTo(x,-12); c.lineTo(x+4,-12); c.lineTo(x+1,18); c.lineTo(x-3,18); c.fill(); }
+    c.restore(); c.beginPath(); c.ellipse(-2,3,22,12,0,0,6.2832); c.lineWidth=3; c.strokeStyle=INK; c.stroke();
+    poly(c,[[14,-3],[20,-17],[28,-14],[24,0]],'#fff');
+    oval(c,26,-12,8,6,'#fff'); oval(c,30,-10,3,2.5,'#444',0);
+    poly(c,[[18,-18],[21,-26],[24,-16]],'#fff',2.5);
+    line(c,[[18,-17],[14,-4]],INK,3); dot(c,25,-15,1.6);
+  },
+  lion(c){
+    [-14,-7,7,13].forEach(x=>rect(c,x-3,9,6,12,'#f0b73c',2.5));
+    line(c,[[-22,2],[-30,-4],[-30,-14]],INK,5); line(c,[[-22,2],[-30,-4],[-30,-14]],'#f0b73c',2);
+    oval(c,-30,-16,4,5,'#c77a1d',2.5);
+    oval(c,-6,5,20,12,'#f0b73c');
+    oval(c,14,-4,16,16,'#c77a1d');
+    oval(c,14,-3,10.5,10,'#f0b73c');
+    oval(c,7,-18,3.5,3.5,'#f0b73c',2.5); oval(c,21,-18,3.5,3.5,'#f0b73c',2.5);
+    dot(c,10,-6); dot(c,18,-6); poly(c,[[12,-2],[16,-2],[14,1]],'#e86a8a',1.5);
+    line(c,[[14,1],[14,4],[10,5]],INK,1.8); line(c,[[14,4],[18,5]],INK,1.8);
+  }
+};
+
+function drawCafe(c,x,y){
+  rect(c,x+14,y+34,52,34,'#f7e1b5');
+  rect(c,x+30,y+46,20,22,'#9a6232',2.5);
+  // навес
+  for(let i=0;i<6;i++){ poly(c,[[x+10+i*10,y+22],[x+20+i*10,y+22],[x+20+i*10,y+36],[x+10+i*10,y+36]], i%2?'#fff':'#e8604c',2.5); }
+  poly(c,[[x+10,y+22],[x+70,y+22],[x+64,y+12],[x+16,y+12]],'#e8604c');
+  oval(c,x+22,y+52,5,5,'#fff',2.5); rect(c,x+18,y+49,8,7,'#fff',2.5);
+  oval(c,x+58,y+52,5,5,'#ffcf4a',2.5);
+}
+function drawKassa(c,x,y){
+  rect(c,x+16,y+26,48,40,'#7ec3e6');
+  rect(c,x+22,y+36,36,16,'#fff7d8',2.5);
+  poly(c,[[x+12,y+26],[x+68,y+26],[x+62,y+14],[x+18,y+14]],'#4aa8d8');
+  oval(c,x+40,y+58,9,5,'#ffcf4a',2.5);
+  c.fillStyle=INK; c.font='bold 14px sans-serif'; c.textAlign='center'; c.fillText('₽',x+40,y+49);
+  rect(c,x+30,y+60,20,6,'#2f7fa8',0);
+}
+
+function drawAnimal(c,k,x,y,s){ c.save(); c.translate(x,y); c.scale(s,s); c.lineJoin='round'; DRAW[k](c); c.restore(); }
+
+function drawCell(c,i,time){
+  const x = cx0(i), y = cy0(i), cell = S.cells[i];
+  // трава/площадка
+  const g = (i+Math.floor(i/4))%2 ? '#a6d874' : '#9fd36b';
+  c.fillStyle = cell && cell.t==='b' ? '#e9d49c' : g;
+  c.fillRect(x,y,CELL,CELL);
+  c.lineWidth = 3; c.strokeStyle = INK;
+  if (!cell){
+    c.setLineDash([6,5]); c.strokeStyle='rgba(59,42,26,.55)'; c.strokeRect(x+3,y+3,CELL-6,CELL-6); c.setLineDash([]);
+    oval(c,x+40,y+40,13,13,'#fff7d8'); line(c,[[x+34,y+40],[x+46,y+40]],INK,3); line(c,[[x+40,y+34],[x+40,y+46]],INK,3);
+  } else if (cell.t==='a'){
+    // забор
+    c.lineWidth=7; c.strokeStyle=INK; c.strokeRect(x+4,y+4,CELL-8,CELL-8);
+    c.lineWidth=3.5; c.strokeStyle='#d9a066'; c.strokeRect(x+4,y+4,CELL-8,CELL-8);
+    [[4,4],[CELL-4,4],[4,CELL-4],[CELL-4,CELL-4],[CELL/2,4],[CELL/2,CELL-4],[4,CELL/2],[CELL-4,CELL/2]].forEach(p=>rect(c,x+p[0]-3,y+p[1]-3,6,6,'#b9783a',2));
+    // кормушка
+    oval(c,x+16,y+CELL-16,7,3.5,'#c97d3c',2); oval(c,x+16,y+CELL-17,5,2,'#5cb85c',0);
+    const bob = Math.sin(time*3 + i)*1.8;
+    drawAnimal(c, cell.k, x+40, y+44+bob, .92);
+    if (S._hungry && S._hungry.has(i)){ oval(c,x+66,y+14,8,8,'#e8604c',2.5); c.fillStyle='#fff'; c.font='bold 11px sans-serif'; c.textAlign='center'; c.fillText('!',x+66,y+18); }
+  } else if (cell.k==='cafe') drawCafe(c,x,y);
+  else drawKassa(c,x,y);
+  if (i===sel){ c.lineWidth=5; c.strokeStyle='#ffcf4a'; c.strokeRect(x+1.5,y+1.5,CELL-3,CELL-3); c.lineWidth=2; c.strokeStyle=INK; c.strokeRect(x-1,y-1,CELL+2,CELL+2); }
+}
+
+function drawGate(c){
+  // площадь у ворот
+  c.fillStyle='#ecd7a4'; c.fillRect(0,358,LW,62);
+  rect(c,0,372,LW,48,'#ecd7a4',0);
+  for(let x=10;x<LW;x+=24){ rect(c,x,398,12,4,'#d8be86',0); }
+  // арка
+  rect(c,142,388,12,28,'#c97d3c'); rect(c,206,388,12,28,'#c97d3c');
+  rect(c,136,370,88,20,'#4aa8d8');
+  c.fillStyle='#fff'; c.font='bold 13px sans-serif'; c.textAlign='center'; c.fillText('ЗООПАРК',180,385);
+  dot(c,142,380,3,'#ffcf4a'); dot(c,218,380,3,'#ffcf4a');
+}
+
+function drawPerson(c,x,y,col,t){
+  const w = Math.sin(t*10 + x*.1)*1.5;
+  oval(c,x,y+1,6,2.5,'rgba(0,0,0,.18)',0);
+  rect(c,x-4,y-9+w*.2,8,9,col,2);
+  oval(c,x,y-13,4.2,4.2,'#f7d2a8',2);
+}
+
+function render(time){
+  const sc = cv.width/LW;
+  ctx.setTransform(sc,0,0,sc,0,0);
+  ctx.fillStyle='#ecd7a4'; ctx.fillRect(0,0,LW,LH);
+  // дорожки (песок) уже фон; рисуем точки пересечений
+  ctx.fillStyle='#e0c88c';
+  for(let i=0;i<5;i++) ctx.fillRect(latX(i)-1,0,2,358);
+  for(let j=0;j<5;j++) ctx.fillRect(0,latX(j)-1,LW,2);
+  if (S){
+    for(let i=0;i<16;i++) drawCell(ctx,i,time);
+    drawGate(ctx);
+    if (sim){
+      sim.agents.forEach(a=>drawPerson(ctx,a.x,a.y,a.col,time));
+      sim.pops.forEach(p=>{ ctx.globalAlpha=Math.max(0,1-p.age/1.1); ctx.fillStyle='#1e6b2c'; ctx.strokeStyle='#fff'; ctx.lineWidth=3;
+        ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.strokeText(p.txt,p.x,p.y-p.age*26); ctx.fillText(p.txt,p.x,p.y-p.age*26); ctx.globalAlpha=1; });
+    }
+  }
+}
+
+/* ===================== СИМУЛЯЦИЯ ДНЯ ===================== */
+const COLS = ['#e8604c','#4aa8d8','#f2b632','#7ac26b','#b57edc','#f08cb0'];
+function route(from, row, col){
+  // from: {x,y}; цель: (центр клетки col, нижняя линия row)
+  const tx = cx0(col)+40, ty = latX(row+1);
+  const pts = [];
+  if (Math.abs(from.y-ty) < 1){ pts.push({x:tx,y:ty}); }
+  else {
+    const near = [0,1,2,3,4].map(i=>latX(i)).sort((a,b)=>Math.abs(a-from.x)-Math.abs(b-from.x)).slice(0,2);
+    const L = pick(near);
+    pts.push({x:L,y:from.y},{x:L,y:ty},{x:tx,y:ty});
+  }
+  return pts;
+}
+function mkAgent(){
+  const spots = [];
+  S.cells.forEach((c,i)=>{ if (c && (c.t==='a' || c.k==='cafe')) spots.push(i); });
+  if (!spots.length) return null;
+  const n = Math.min(spots.length, ri(2,3)), chosen = [];
+  while (chosen.length<n){ const s = pick(spots); if (!chosen.includes(s)) chosen.push(s); }
+  let cur = {x:180,y:412}; const wp = [{x:180,y:latX(4),wait:0}];
+  cur = {x:180,y:latX(4)};
+  chosen.forEach(i=>{
+    route(cur, Math.floor(i/4), i%4).forEach((p,k,arr)=>wp.push({x:p.x,y:p.y,wait:k===arr.length-1?1.1:0}));
+    cur = wp[wp.length-1];
+  });
+  // назад к воротам
+  route(cur, 3, 2).forEach(p=>wp.push({x:p.x,y:p.y,wait:0}));
+  wp.push({x:180,y:latX(4),wait:0},{x:180,y:420,wait:0});
+  return {x:180,y:414,col:pick(COLS),wp,i:0,wait:0};
+}
+function startSim(){
+  const r = computeDay();
+  S._hungry = new Set();
+  if (r.hungry){ let left=S.money; S.cells.forEach((c,i)=>{ if(c&&c.t==='a'){ const need=ANI[c.k].kg*FEED; if(left>=need) left-=need; else S._hungry.add(i); } }); }
+  sim = {t:0, T:12, r, entered:0, agents:[], pops:[], speed:1, cash:0};
+  mode = 'sim'; sel = -1;
+  renderPanel(); renderInfo();
+}
+function updateSim(dt){
+  const s = sim, d = dt*s.speed;
+  s.t += d;
+  const target = Math.min(s.r.vis, Math.floor(s.r.vis*Math.min(1,s.t/s.T)));
+  while (s.entered < target){
+    s.entered++;
+    const plus = TICKET + (s.entered <= s.r.cafeServed ? CAFE_SPEND : 0);
+    s.cash += plus;
+    if (s.pops.length < 12) s.pops.push({x:180+ri(-18,18), y:368, age:0, txt:'+'+plus});
+    const every = Math.max(1, Math.ceil(s.r.vis/40));
+    if (s.entered % every === 0 && s.agents.length < 40){ const a = mkAgent(); if (a) s.agents.push(a); }
+  }
+  s.pops.forEach(p=>p.age+=d); s.pops = s.pops.filter(p=>p.age<1.1);
+  s.agents.forEach(a=>{
+    let left = 70*d;
+    while (left>0 && a.i<a.wp.length){
+      if (a.wait>0){ const w = Math.min(a.wait,left/70); a.wait-=w; left-=w*70; if(a.wait>0) break; a.i++; continue; }
+      const p = a.wp[a.i], dx = p.x-a.x, dy = p.y-a.y, dist = Math.hypot(dx,dy);
+      if (dist <= left){ a.x=p.x; a.y=p.y; left-=dist; a.wait = p.wait||0; if(!a.wait) a.i++; }
+      else { a.x+=dx/dist*left; a.y+=dy/dist*left; left=0; }
+    }
+  });
+  s.agents = s.agents.filter(a=>a.i<a.wp.length);
+  const bar = $('#simBar'); if (bar) bar.style.width = Math.min(100,s.t/s.T*100)+'%';
+  const live = $('#simLive'); if (live) live.innerHTML = `Гостей: <b>${s.entered}</b> из ${s.r.vis} · Выручка: <b>${money(s.cash)}</b>`;
+  if (s.t >= s.T && s.entered >= s.r.vis) finishDay();
+}
+function finishDay(){
+  const r = sim.r, dayNo = S.day;
+  applyDay(r);
+  sim = null; S._hungry = null; mode = 'over';
+  save();
+  renderHud(); renderInfo(); renderPanel();
+  showSummary(r, dayNo);
+}
+
+/* ===================== UI: HUD / инфо / панель ===================== */
+function renderHud(){
+  $('#hDay').textContent = `День ${Math.min(S.day,DAYS)} / ${DAYS}`;
+  $('#hMoney').textContent = money(S.money);
+}
+function renderInfo(){
+  if (!S) return;
+  const r = computeDay(), el = $('#info');
+  if (mode==='sim'){ el.innerHTML = `<b>Идёт день ${S.day}</b>${r.holiday?' · выходной!':''}<br>Гости ходят по дорожкам, у ворот звенят монеты.`; return; }
+  const animals = S.cells.filter(c=>c&&c.t==='a').length;
+  let l1 = `<b>День ${S.day}</b>${r.holiday?' · <b>выходной</b>: гостей на 40 % больше':''}`;
+  let l2;
+  if (!animals) l2 = 'Купи первое животное: тапни пустую клетку на карте.';
+  else {
+    l2 = `Придёт <b>${r.vis}</b> из ${r.demand} желающих (касса пропустит ${r.cap}) · корм ${r.foodKg} кг = ${money(r.foodCost)}`;
+    if (r.hungry) l2 += `<br><span class="warn">Не хватает денег на корм: голодных ${r.hungry}</span>`;
+    else if (r.lost>0) l2 += `<br><span class="warn">Очередь: ${r.lost} гостей не войдут — нужна касса</span>`;
+  }
+  el.innerHTML = l1 + '<br>' + l2;
+}
+function iconCanvas(k){
+  const c = document.createElement('canvas'); c.width=c.height=88; const g = c.getContext('2d'); g.scale(88/80,88/80);
+  g.fillStyle='#bfe3a0'; g.fillRect(0,0,80,80);
+  if (ANI[k]) drawAnimal(g,k,40,44,.92); else if (k==='cafe') drawCafe(g,0,0); else drawKassa(g,0,0);
+  return c;
+}
+function renderPanel(){
+  const p = $('#panel'); p.innerHTML = '';
+  if (mode==='sim'){
+    p.innerHTML = `<div class="head"><span>Рабочий день</span><button class="btn alt" data-act="speed" style="min-height:36px;padding:4px 12px;font-size:15px">×${sim.speed}</button></div>
+      <div class="bar"><i id="simBar"></i></div><div class="hint" id="simLive"></div>
+      <div class="hint">${sim.r.holiday?'Выходной — народу много! ':''}Корм уже выдан: ${money(sim.r.foodCost)}.</div>`;
+    return;
+  }
+  if (mode==='cell' && sel>=0){
+    const c = S.cells[sel];
+    if (!c){
+      const h = document.createElement('div'); h.className='head';
+      h.innerHTML = '<span>Что построим?</span><button class="btn alt" data-act="close" style="min-height:34px;padding:2px 12px;font-size:15px">Закрыть</button>';
+      p.appendChild(h);
+      const g = document.createElement('div'); g.className='grid';
+      SHOP.forEach(k=>{
+        const A = ANI[k], B = BUILD[k], price = A?A.price:B.price;
+        const b = document.createElement('button'); b.className='item'+(S.money<price?' no':''); b.dataset.act='buy'; b.dataset.k=k;
+        b.appendChild(iconCanvas(k));
+        b.insertAdjacentHTML('beforeend', `<b>${A?A.name:B.name}</b><span>${price.toLocaleString('ru-RU')} ₽</span><small>${A?`${A.kg} кг · +${A.vis}`:B.text}</small>`);
+        g.appendChild(b);
+      });
+      p.appendChild(g);
+      p.insertAdjacentHTML('beforeend','<div class="hint">Под ценой: корм в день (кг) · гостей в день.</div>');
+    } else {
+      const price = priceOf(c), back = c.day===S.day ? price : Math.round(price*SELL_K);
+      const A = c.t==='a' ? ANI[c.k] : null;
+      p.insertAdjacentHTML('beforeend', `<div class="head"><span>${nameOf(c)}</span><button class="btn alt" data-act="close" style="min-height:34px;padding:2px 12px;font-size:15px">Закрыть</button></div>`);
+      p.insertAdjacentHTML('beforeend', `<div class="hint">${A?`Привлекает <b>${A.vis}</b> гостей в день. Ест <b>${A.kg} кг</b> корма в день (${money(A.kg*FEED)}).`
+        : c.k==='kassa'?'Пропускает ещё <b>30</b> гостей в день.':'Обслуживает до <b>30</b> гостей в день, каждый тратит <b>30 ₽</b>.'}<br>Окупаемость — несколько дней.</div>`);
+      p.insertAdjacentHTML('beforeend', `<button class="btn red" data-act="sell">Продать за ${money(back)}${c.day===S.day?' (вернуть деньги)':' (70 %)'}</button>`);
+    }
+    return;
+  }
+  p.insertAdjacentHTML('beforeend', `<div class="hint">Тапни клетку, чтобы построить или продать. Корм списывается при открытии. Верные ответы на задачи — это деньги, так что считай внимательно.</div>`);
+  p.insertAdjacentHTML('beforeend', `<button class="btn go" data-act="open">Открыть зоопарк ▶</button>`);
+}
+
+/* ===================== ЭКРАНЫ-КАРТОЧКИ ===================== */
+function card(html){ $('#card').innerHTML = html; $('#ov').classList.remove('hidden'); $('#card').scrollTop=0; }
+function closeCard(){ $('#ov').classList.add('hidden'); }
+
+let typed = '';
+function showTask(){
+  const t = S.task; mode = 'over'; typed = '';
+  const pad = [1,2,3,4,5,6,7,8,9].map(n=>`<button class="btn" data-act="key" data-k="${n}">${n}</button>`).join('')
+    + `<button class="btn alt" data-act="back">⌫</button><button class="btn" data-act="key" data-k="0">0</button><button class="btn go" data-act="answer">OK</button>`;
+  card(`<div class="head"><span>День ${S.day}: задача директора</span><span class="tag">${GRADE[t.tier-1]}</span></div>
+    <div class="q">${t.q}</div>
+    <div class="ans" id="ansBox">&nbsp;</div>
+    <div class="pad">${pad}</div>
+    <button class="btn alt" data-act="skip" style="min-height:40px;font-size:15px">Пропустить (без награды)</button>`);
+  updateAns();
+}
+function updateAns(){ const b = $('#ansBox'); if (b) b.innerHTML = typed ? typed + ` <small style="font-size:16px;opacity:.6">${S.task.u}</small>` : '<small style="font-size:15px;opacity:.5">введи ответ</small>'; }
+function answerTask(skip){
+  const t = S.task; let html, ok = false;
+  if (skip){
+    S.stats.skip++;
+    html = `<div class="bad"><b>Пропущено.</b><br>Верный ответ: <b>${t.a} ${t.u}</b><br><small>${t.sol}</small></div>`;
+  } else {
+    if (!typed){ toast('Сначала введи ответ'); return; }
+    ok = Number(typed) === t.a;
+    if (ok){
+      S.stats.right++; S.money += t.reward;
+      html = `<div class="ok"><b>Верно! +${money(t.reward)}</b><br>${pick(['Директор доволен!','Так держать!','Бухгалтерия аплодирует!','Зоопарк в надёжных руках!'])}<br><small>${t.sol}</small></div>`;
+    } else {
+      const fine = Math.min(S.money, Math.round(t.reward/2/10)*10);
+      S.stats.wrong++; S.money -= fine;
+      html = `<div class="bad"><b>Не совсем. −${money(fine)}</b><br>Верный ответ: <b>${t.a} ${t.u}</b><br><small>${t.sol}</small></div>`;
+    }
+  }
+  S.taskDone = true; save(); renderHud(); renderInfo();
+  card(`<h2>${ok?'Отлично!':'Разбор задачи'}</h2><div class="q" style="font-size:15px">${t.q}</div>${html}<button class="btn go" data-act="build">К стройке ▶</button>`);
+}
+function showSummary(r, dayNo){
+  const last = dayNo >= DAYS;
+  const rows = [
+    ['Гостей', r.vis + (r.lost?` (ещё ${r.lost} не вошли)`:'')],
+    ['Билеты', money(r.income)],
+    ['Кафе', money(r.cafeInc)],
+    ['Корм', '−'+money(r.foodCost)],
+    ['Прибыль', (r.net>=0?'+':'−')+money(Math.abs(r.net))]
+  ].map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td></tr>`).join('');
+  let tip = '';
+  if (r.lost>0) tip = '<p>Очередь у входа! Построй <b>кассу</b>, чтобы пропускать больше гостей.</p>';
+  else if (r.hungry) tip = '<p>Часть животных голодала. Оставляй деньги на корм!</p>';
+  card(`<h2>Итог дня ${dayNo}${r.holiday?' (выходной)':''}</h2><table class="sum">${rows}</table>${tip}
+    <p>Денег в кассе: <b>${money(S.money)}</b></p>
+    <button class="btn go" data-act="${last?'final':'next'}">${last?'К итогам ▶':'Следующий день ▶'}</button>`);
+}
+function showFinal(){
+  const cap = capital(), st = stars(cap), best = lsGet(BEST_KEY), isBest = !best || cap > best.capital;
+  if (isBest) lsSet(BEST_KEY, {capital:cap, stars:st});
+  lsDel(SAVE_KEY);
+  mode = 'over';
+  card(`<h2>Зоопарк открыт ${DAYS} дней!</h2>
+    <div class="stars">${'★'.repeat(st)}${'☆'.repeat(3-st)}</div>
+    <table class="sum">
+      <tr><td>Капитал (деньги + постройки)</td><td>${money(cap)}</td></tr>
+      <tr><td>Гостей за всё время</td><td>${S.stats.vis}</td></tr>
+      <tr><td>Верных ответов</td><td>${S.stats.right} из ${DAYS}</td></tr>
+      <tr><td>Лучший результат</td><td>${money(isBest?cap:best.capital)}</td></tr>
+    </table>
+    <p>${isBest?'Новый рекорд!':'Попробуй побить рекорд.'} ${st===3?'Это зоопарк мечты!':st===2?'Отличный зоопарк!':st===1?'Зоопарк выжил и развивается.':'В следующий раз получится лучше.'}</p>
+    <button class="btn go" data-act="new">Сыграть ещё</button>`);
+}
+function showStart(){
+  const sv = lsGet(SAVE_KEY), best = lsGet(BEST_KEY);
+  mode = 'over';
+  card(`<h2 style="font-size:28px;text-align:center">Зоопарк</h2>
+    <p style="text-align:center">Построй зоопарк мечты за ${DAYS} дней.<br>Купи животных, поставь кассу и кафе, а перед каждым днём реши задачу директора — верный ответ приносит деньги.</p>
+    ${best?`<p style="text-align:center">Рекорд: <b>${money(best.capital)}</b> ${'★'.repeat(best.stars)}</p>`:''}
+    ${sv?`<button class="btn go" data-act="continue">Продолжить (день ${sv.day})</button><button class="btn alt" data-act="new">Новая игра</button>`
+        :`<button class="btn go" data-act="new">Играть</button>`}`);
+}
+function showMenu(){
+  if (mode==='sim') return;
+  const prev = mode;
+  card(`<h2>Меню</h2>
+    <p><b>Как играть.</b> Каждый день: реши задачу → купи животных, кассы и кафе → открой зоопарк. Гостей приходит столько, сколько привлекают животные, но не больше, чем пропускают кассы. Корм стоит ${FEED} ₽ за кг. В выходные гостей больше.</p>
+    <button class="btn go" data-act="resume">Продолжить</button>
+    <button class="btn red" data-act="restart">Начать заново</button>`);
+  card.prev = prev; mode = 'over';
+}
+
+/* ===================== ДЕЙСТВИЯ ===================== */
+function startGame(){
+  S = newState(); save(); startDay();
+}
+function startDay(){
+  if (S.day > DAYS){ showFinal(); return; }
+  if (!S.cells.some(c=>c&&c.t==='a') && S.money < ANI.rab.price){ S.money = ANI.rab.price; toast('Город выдал грант на кролика: 1 200 ₽'); }
+  S.task = genTask(); S.taskDone = false; sel = -1; mode='over';
+  save(); renderHud(); renderInfo(); renderPanel(); showTask();
+}
+function toBuild(){
+  closeCard(); mode='idle'; sel=-1; renderPanel(); renderInfo(); renderHud();
+}
+function buy(k){
+  const A = ANI[k], B = BUILD[k], price = A?A.price:B.price;
+  if (S.cells[sel]) return;
+  if (S.money < price){ toast(`Не хватает ${money(price-S.money)}`); return; }
+  S.money -= price;
+  S.cells[sel] = A ? {t:'a', k, day:S.day} : {t:'b', k, day:S.day};
+  save(); renderHud(); renderInfo(); renderPanel(); toast(`${A?A.name:B.name} куплен(а)`);
+}
+function sell(){
+  const c = S.cells[sel]; if (!c) return;
+  const price = priceOf(c), back = c.day===S.day ? price : Math.round(price*SELL_K);
+  S.money += back; S.cells[sel] = null; mode='idle';
+  save(); renderHud(); renderInfo(); renderPanel(); toast(`Продано за ${money(back)}`);
+}
+
+document.addEventListener('click', e=>{
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act;
+  switch(a){
+    case 'key': if (typed.length<7){ typed = (typed==='0'?'':typed) + b.dataset.k; updateAns(); } break;
+    case 'back': typed = typed.slice(0,-1); updateAns(); break;
+    case 'answer': answerTask(false); break;
+    case 'skip': answerTask(true); break;
+    case 'build': toBuild(); break;
+    case 'next': closeCard(); startDay(); break;
+    case 'final': showFinal(); break;
+    case 'new': startGame(); break;
+    case 'continue': { const sv = lsGet(SAVE_KEY); if (sv){ S = sv; renderHud(); renderInfo(); if (S.task && !S.taskDone) showTask(); else toBuild(); } else startGame(); } break;
+    case 'open': startSim(); break;
+    case 'speed': sim.speed = sim.speed===1?2:1; b.textContent = '×'+sim.speed; break;
+    case 'close': mode='idle'; sel=-1; renderPanel(); break;
+    case 'buy': buy(b.dataset.k); break;
+    case 'sell': sell(); break;
+    case 'resume': closeCard(); mode = S ? 'idle' : 'over'; if (S && S.task && !S.taskDone){ showTask(); } renderPanel(); break;
+    case 'restart': if (confirm('Начать заново? Весь прогресс будет потерян.')) startGame(); break;
+  }
+});
+$('#btnMenu').addEventListener('click', ()=>{ if (S && mode!=='sim') showMenu(); });
+
+function cellAt(ev){
+  const r = cv.getBoundingClientRect(), x = (ev.clientX-r.left)/r.width*LW, y = (ev.clientY-r.top)/r.height*LH;
+  for(let i=0;i<16;i++){ const cx=cx0(i), cy=cy0(i); if (x>=cx&&x<=cx+CELL&&y>=cy&&y<=cy+CELL) return i; }
+  return -1;
+}
+cv.addEventListener('pointerdown', ev=>{
+  if (!S || mode==='sim' || mode==='over') return;
+  const i = cellAt(ev); if (i<0) return;
+  sel = i; mode = 'cell'; renderPanel();
+});
+
+/* ===================== ЦИКЛ ===================== */
+function fitCanvas(){
+  const dpr = Math.min(window.devicePixelRatio||1, 2), w = Math.max(360, Math.round(cv.clientWidth*dpr)) ;
+  cv.width = Math.round(w); cv.height = Math.round(w*LH/LW);
+}
+let last = 0;
+function frame(ts){
+  requestAnimationFrame(frame);
+  const dt = Math.min(.05,(ts-last)/1000 || 0); last = ts;
+  if (sim) updateSim(dt);
+  render(ts/1000);
+}
+fitCanvas(); window.addEventListener('resize', fitCanvas);
+requestAnimationFrame(frame);
+
+/* Отладка: window.__zoo (в публикационной сборке вырезать) */
+window.__zoo = {
+  get S(){ return S; }, ANI, BUILD, TASKS, genTask, computeDay, applyDay, capital, stars, startGame, startDay, tier,
+  buy(i,k){ sel=i; buy(k); }, setSel(i){ sel=i; },
+  skipTaskAnswer(){ if(S.task){ typed=String(S.task.a); answerTask(false); } },
+  instantDay(){ const r=computeDay(); applyDay(r); return r; }
+};
+
+showStart();
+</script>
+</body>
+</html>
