@@ -74,6 +74,23 @@ h2{margin:6px 0}
 .acc>button{width:100%;text-align:left;background:#fff;padding:10px 12px;font-weight:700;min-height:46px}
 .acc .in{padding:0 12px 10px;font-size:14px}
 .acc .in p{margin:4px 0}
+.ic{height:1.2em;width:auto;vertical-align:-0.2em}
+.ico{height:1.5em;width:auto;vertical-align:-0.4em}
+.av img{width:100%;height:100%;object-fit:cover;object-position:50% 12%}
+.hdav{width:40px;height:40px;border-radius:50%;background:var(--yel);display:flex;align-items:center;justify-content:center;font-size:26px;overflow:hidden}
+.hdav img{width:100%;height:100%;object-fit:cover;object-position:50% 12%}
+.docimg{display:block;margin:0 auto;height:96px;width:auto}
+.dieimg{height:100px;width:auto;margin:0 auto;display:block}
+.start.art{background-size:cover;background-position:center top}
+.start.art .logo,.start.art h1,.start.art>p{display:none}
+.start.art{justify-content:flex-end;padding-bottom:20px}
+.start.art .btn{box-shadow:0 3px 0 rgba(0,0,0,.18)}
+.start.art .stt{margin:24px 0 auto}
+.row3{display:flex;gap:6px;width:100%;max-width:300px}
+.row3 .btn{flex:1;min-height:42px;padding:6px 4px;font-size:13px;margin:6px 0}
+.start.art .btn{min-height:44px;margin:5px 0}
+.start.art .note{background:rgba(255,255,255,.8);border-radius:10px;padding:4px 8px;margin-top:6px}
+.stt{font-size:44px;font-weight:800;color:#fff;text-shadow:0 3px 0 var(--teal2),0 0 12px rgba(0,0,0,.25);margin:0}
 .toast{position:absolute;left:50%;top:70px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:8px 14px;border-radius:14px;z-index:40;font-weight:700}
 </style>
 </head>
@@ -146,8 +163,15 @@ const DIS = [{"n":"Простуда","e":"🤧","t":1,"g":"resp","s":["насм�
 'use strict';
 /* ---------- Слоты под картинки ----------
    Когда картинки готовы (WebP в game/img/), перечислить имена здесь: тогда игра подставит их, иначе рисует код. */
-const ART = {};   // например { pat_vanya_sick: 1, ... }
-function artImg(name, alt) { return ART[name] ? '<img src="img/' + name + '.webp" alt="' + (alt || '') + '">' : ''; }
+/*ART_START*/ const ART = {"pat_vanya_sick": 1, "pat_vanya_neutral": 1, "pat_vanya_happy": 1, "pat_vanya_worse": 1, "pat_timur_sick": 1, "pat_timur_neutral": 1, "pat_timur_happy": 1, "pat_timur_worse": 1, "pat_artem_sick": 1, "pat_artem_neutral": 1, "pat_artem_happy": 1, "pat_artem_worse": 1, "pat_misha_sick": 1, "pat_misha_neutral": 1, "pat_misha_happy": 1, "pat_misha_worse": 1, "pat_masha_sick": 1, "pat_masha_neutral": 1, "pat_masha_happy": 1, "pat_masha_worse": 1, "pat_sonya_sick": 1, "pat_sonya_neutral": 1, "pat_sonya_happy": 1, "pat_sonya_worse": 1, "pat_katya_sick": 1, "pat_katya_neutral": 1, "pat_katya_happy": 1, "pat_katya_worse": 1, "pat_liza_sick": 1, "pat_liza_neutral": 1, "pat_liza_happy": 1, "pat_liza_worse": 1, "pat_sergey_sick": 1, "pat_sergey_neutral": 1, "pat_sergey_happy": 1, "pat_sergey_worse": 1, "pat_anna_sick": 1, "pat_anna_neutral": 1, "pat_anna_happy": 1, "pat_anna_worse": 1, "pat_nikolay_sick": 1, "pat_nikolay_neutral": 1, "pat_nikolay_happy": 1, "pat_nikolay_worse": 1, "pat_nina_sick": 1, "pat_nina_neutral": 1, "pat_nina_happy": 1, "pat_nina_worse": 1, "doctor_smile": 1, "doctor_think": 1, "it_cold": 1, "it_bandage": 1, "it_water": 1, "it_warm_drink": 1, "it_fix": 1, "it_antipyretic": 1, "it_hands": 1, "it_tweezers": 1, "it_antihist": 1, "it_cream": 1, "it_brush": 1, "it_dentist": 1, "it_eyes_rest": 1, "it_shoes": 1, "it_isolate": 1, "it_doctor": 1, "it_shade": 1, "it_fresh_air": 1, "it_rest": 1, "it_exercise": 1, "it_diet": 1, "it_adults": 1, "it_stetho": 1, "it_calm": 1, "ic_book": 1, "ic_notes": 1, "ic_star": 1, "ic_timer": 1, "ic_bulb": 1, "ic_check": 1, "ic_door": 1, "ic_lens": 1, "dice1": 1, "dice2": 1, "dice3": 1, "dice4": 1, "dice5": 1, "dice6": 1, "bg_office": 1, "cover": 1}; /*ART_END*/
+/* картинка по имени; если её нет или она не загрузилась — запасной вариант fb (эмодзи) */
+function img(name, fb, cls) {
+  if (!ART[name]) return fb || '';
+  return '<img class="' + (cls || '') + '" src="img/' + name + '.webp" alt="" draggable="false" onerror="this.replaceWith(document.createTextNode(\'' + (fb || '').replace(/'/g, '') + '\'))">';
+}
+const ico = a => img('it_' + a, ACT[a][1], 'ico');
+const DIEFB = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+const dieFace = n => img('dice' + n, DIEFB[n - 1], 'dieimg');
 
 const SEASON = 20, MAXPICK = 4;
 const PAT = [ // k, имя, возраст, пол, значок
@@ -230,19 +254,20 @@ function renderPlay() {
   const el = $('scrPlay');
   el.innerHTML =
     '<div class="top"><span class="pill">Смена ' + S.shift + '/' + SEASON + '</span><div class="bar" id="bar"><i></i></div><span class="pill" id="tl"></span></div>' +
-    '<div class="top" style="background:var(--teal2);padding:4px 10px;font-size:14px"><span>⭐ ' + S.rep + '</span><span class="sp"></span><span>' + rankName() + '</span><span class="sp"></span><span>📖 ' + G.pool.length + '</span></div>' +
+    '<div class="top" style="background:var(--teal2);padding:4px 10px;font-size:14px"><span>' + img('ic_star', '⭐', 'ic') + ' ' + S.rep + '</span><span class="sp"></span><span>' + rankName() + '</span><span class="sp"></span><span>' + img('ic_book', '📖', 'ic') + ' ' + G.pool.length + '</span></div>' +
     '<div class="body" id="pl"></div>' +
-    '<div style="display:flex;gap:8px;padding:8px 10px;background:#fff"><button class="btn alt sm" style="flex:1" id="bBook">📖 Справочник</button><button class="btn alt sm" style="flex:1" id="bNote">📓 Тетрадь</button></div>';
+    '<div style="display:flex;gap:8px;padding:8px 10px;background:#fff"><button class="btn alt sm" style="flex:1" id="bBook">' + img('ic_book', '📖', 'ic') + ' Справочник</button><button class="btn alt sm" style="flex:1" id="bNote">' + img('ic_notes', '📓', 'ic') + ' Тетрадь</button></div>';
   $('bBook').onclick = () => openBook(); $('bNote').onclick = () => openNotes();
   const pl = $('pl');
+  if (ART.bg_office) pl.style.background = 'url(img/bg_office.webp) center top/cover no-repeat';
   pl.innerHTML = G.pts.map((q, i) => ptCard(q, i)).join('');
   pl.querySelectorAll('.pt').forEach(b => b.onclick = () => { const q = G.pts[+b.dataset.i]; if (q.st === 'wait') openTreat(+b.dataset.i); });
   updateBar();
 }
 function avatar(q) {
   const mood = q.st === 'wait' ? '😷' : q.st === 'cured' ? '😊' : q.st === 'worse' ? '😣' : '🚶';
-  const k = 'pat_' + q.p[0] + '_' + (q.st === 'wait' ? 'sick' : q.st === 'cured' ? 'happy' : 'worse');
-  return '<div class="av">' + (artImg(k, q.p[1]) || q.p[4]) + '<b>' + mood + '</b></div>';
+  const k = 'pat_' + q.p[0] + '_' + (q.st === 'wait' ? 'sick' : q.st === 'cured' ? 'happy' : q.st === 'worse' ? 'worse' : 'neutral');
+  return '<div class="av">' + (ART[k] ? img(k, q.p[4]) : q.p[4] + '<b>' + mood + '</b>') + '</div>';
 }
 function ptCard(q, i) {
   const tag = q.st === 'wait' ? '<span class="tag wait">ждёт</span>' : q.st === 'cured' ? '<span class="tag ok">вылечен</span>' : q.st === 'worse' ? '<span class="tag bad">хуже</span>' : '<span class="tag bad">ушёл</span>';
@@ -262,7 +287,7 @@ function actList() { // Л1: только назначения, нужные д�
 }
 function drawTreat() {
   const q = G.pts[T.i], m = $('mdl'); m.hidden = false; m.className = 'modal';
-  m.innerHTML = '<div class="sheet"><div class="hd"><span style="font-size:28px">' + q.p[4] + '</span><span>' + esc(q.p[1]) + '</span><span class="sp"></span><button class="x" id="tClose" aria-label="Закрыть">✕</button></div><div class="bd" id="tBd"></div><div class="ft"><div class="row2"><button class="btn alt sm" id="tBook">📖 Справочник</button><button class="btn sm" id="tGo">Назначить</button></div></div></div>';
+  m.innerHTML = '<div class="sheet"><div class="hd"><span class="hdav">' + (ART['pat_' + q.p[0] + '_neutral'] ? img('pat_' + q.p[0] + '_neutral', q.p[4]) : q.p[4]) + '</span><span>' + esc(q.p[1]) + '</span><span class="sp"></span><button class="x" id="tClose" aria-label="Закрыть">✕</button></div><div class="bd" id="tBd"></div><div class="ft"><div class="row2"><button class="btn alt sm" id="tBook">' + img('ic_book', '📖', 'ic') + ' Справочник</button><button class="btn sm" id="tGo">Назначить</button></div></div></div>';
   $('tClose').onclick = () => { T = null; closeModal(); };
   $('tBook').onclick = () => openBook(true);
   $('tGo').onclick = submitTreat;
@@ -273,7 +298,7 @@ function drawTreatBody() {
   $('tBd').innerHTML = '<div class="say mut">«' + esc(q.dis.c) + '»</div><div class="sym" style="margin-bottom:6px">' + q.dis.s.map(s => '<span>' + esc(s) + '</span>').join('') + '</div>' +
     '<div class="step">1. Что с пациентом?</div><input type="search" id="tQ" placeholder="Поиск по названию" value="' + esc(T.q) + '"><div class="lst" id="tDx"></div>' +
     '<div class="step">2. Что назначить? (до ' + MAXPICK + ') <span id="tCnt" class="mut"></span></div>' +
-    '<div class="chips" id="tAc"></div><div style="margin-top:8px"><button class="btn alt sm" id="tHint">💡 Подсказка (' + S.hints + ')</button></div>';
+    '<div class="chips" id="tAc"></div><div style="margin-top:8px"><button class="btn alt sm" id="tHint">' + img('ic_bulb', '💡', 'ic') + ' Подсказка (' + S.hints + ')</button></div>';
   $('tQ').oninput = e => { T.q = e.target.value; drawDx(); };
   $('tHint').onclick = useHint;
   drawDx(); drawAc();
@@ -291,7 +316,7 @@ function drawDx() {
   updGo();
 }
 function drawAc() {
-  $('tAc').innerHTML = actList().map(a => '<button class="chip' + (T.acts.includes(a) ? ' sel' : '') + (T.hint === a ? ' hint' : '') + '" data-a="' + a + '">' + ACT[a][1] + ' ' + esc(ACT[a][0]) + '</button>').join('');
+  $('tAc').innerHTML = actList().map(a => '<button class="chip' + (T.acts.includes(a) ? ' sel' : '') + (T.hint === a ? ' hint' : '') + '" data-a="' + a + '">' + ico(a) + ' ' + esc(ACT[a][0]) + '</button>').join('');
   $('tAc').querySelectorAll('.chip').forEach(b => b.onclick = () => {
     const a = b.dataset.a, k = T.acts.indexOf(a);
     if (k >= 0) T.acts.splice(k, 1); else if (T.acts.length < MAXPICK) T.acts.push(a); else toast('Не больше ' + MAXPICK);
@@ -314,15 +339,14 @@ function submitTreat() {
 }
 function rollDie(q, r, diag, acts, frac) {
   const m = $('mdl'); m.className = 'modal mid';
-  m.innerHTML = '<div class="sheet"><div class="bd center"><h2>Лечение почти верное!</h2><p>Диагноз правильный, но назначения неполные или с лишним. Судьба решится кубиком: <b>чётное — вылечен</b>, нечётное — станет хуже.</p><div class="die" id="die">🎲</div><div id="dieTx" class="mut">&nbsp;</div></div><div class="ft"><button class="btn" id="dieGo">🎲 Бросить кубик</button></div></div>';
-  const faces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
-  $('dieGo').onclick = () => {
+  m.innerHTML = '<div class="sheet"><div class="bd center">' + img('doctor_think', '', 'docimg') + '<h2>Лечение почти верное!</h2><p>Диагноз правильный, но назначения неполные или с лишним. Судьба решится кубиком: <b>чётное — вылечен</b>, нечётное — станет хуже.</p><div class="die" id="die">' + dieFace(6) + '</div><div id="dieTx" class="mut">&nbsp;</div></div><div class="ft"><button class="btn" id="dieGo">🎲 Бросить кубик</button></div></div>';
+    $('dieGo').onclick = () => {
     $('dieGo').disabled = true;
     const die = $('die'); die.classList.add('roll');
-    const iv = setInterval(() => { die.textContent = faces[rnd(6)]; }, 90);
+    const iv = setInterval(() => { die.innerHTML = dieFace(1 + rnd(6)); }, 90);
     setTimeout(() => {
       clearInterval(iv); die.classList.remove('roll');
-      const n = 1 + rnd(6); die.textContent = faces[n - 1];
+      const n = 1 + rnd(6); die.innerHTML = dieFace(n);
       const ok = n % 2 === 0;
       $('dieTx').innerHTML = '<b class="' + (ok ? 'good' : 'badc') + '">Выпало ' + n + ' — ' + (ok ? 'чётное, вылечен!' : 'нечётное, стало хуже') + '</b>';
       $('dieGo').disabled = false; $('dieGo').textContent = 'Дальше';
@@ -346,9 +370,9 @@ function showFeedback(q, st, r, diag, acts, dr) {
   const d = q.dis, m = $('mdl'); m.hidden = false; m.className = 'modal mid';
   const head = st === 'cured' ? (r.v === 'full' ? '🎉 Вылечен!' : '😅 Повезло — вылечен') : st === 'worse' ? '😣 Стало хуже' : '🚪 Ушёл к другому врачу';
   const diagTx = diag === d.i ? '<span class="good">Диагноз верный: ' + esc(d.n) + '</span>' : '<span class="badc">Диагноз неверный.</span> Было: <b>' + esc(d.n) + '</b>' + (diag >= 0 ? ' (вы выбрали: ' + esc(DIS[diag].n) + ')' : '');
-  const need = d.d.map(a => '<span class="chip ' + (acts.includes(a) ? 'sel' : '') + '">' + (acts.includes(a) ? '✔ ' : '') + ACT[a][1] + ' ' + esc(ACT[a][0]) + '</span>').join('');
+  const need = d.d.map(a => '<span class="chip ' + (acts.includes(a) ? 'sel' : '') + '">' + (acts.includes(a) ? '✔ ' : '') + ico(a) + ' ' + esc(ACT[a][0]) + '</span>').join('');
   const wrong = acts.filter(a => !d.d.includes(a)).map(a => ACT[a][1] + ' ' + ACT[a][0]);
-  m.innerHTML = '<div class="sheet"><div class="bd"><h2 class="center">' + head + '</h2><div class="center mut">Репутация ' + (dr >= 0 ? '+' : '') + dr + '</div><p>' + diagTx + '</p>' +
+  m.innerHTML = '<div class="sheet"><div class="bd">' + (st === 'cured' ? img('doctor_smile', '', 'docimg') : '') + '<h2 class="center">' + head + '</h2><div class="center mut">Репутация ' + (dr >= 0 ? '+' : '') + dr + '</div><p>' + diagTx + '</p>' +
     '<div class="step">Нужно было</div><div class="chips">' + need + '</div>' +
     (wrong.length ? '<p class="mut">Лишнее или вредное: ' + esc(wrong.join('; ')) + '</p>' : '') +
     '<p><b>Чего не делать:</b> ' + esc(d.x) + '</p><p class="mut">💡 ' + esc(d.f) + '</p></div><div class="ft"><button class="btn" id="fbNext">Дальше</button></div></div>';
@@ -423,13 +447,15 @@ function show(id) { ['scrStart', 'scrPlay', 'scrEnd'].forEach(s => $(s).hidden =
 function toast(t) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; $('app').appendChild(d); setTimeout(() => d.remove(), 1600); }
 function startScr() {
   const has = load() && (S.shift > 1 || S.total > 0);
-  $('scrStart').innerHTML = '<div class="logo">' + (artImg('logo', 'Доктор') || '🩺') + '</div><h1>Доктор</h1><p class="mut" style="margin:0 0 16px">Лечи пациентов за 90 секунд и стань Профессором!</p>' +
+  $('scrStart').innerHTML = '<div class="logo">' + img('logo', '🩺') + '</div><h1>Доктор</h1><p class="mut" style="margin:0 0 16px">Лечи пациентов за 90 секунд и стань Профессором!</p>' +
     (has ? '<button class="btn" id="sCont">▶ Продолжить (смена ' + S.shift + ')</button><button class="btn alt" id="sNew">Новая игра</button>' : '<button class="btn" id="sNew">▶ Играть</button>') +
-    '<button class="btn alt" id="sBook">📖 Справочник</button><button class="btn alt" id="sNote">📓 Тетрадь ошибок</button><button class="btn alt" id="sHow">Как играть</button>' +
+    '<div class="row3"><button class="btn alt" id="sBook">' + img('ic_book', '📖', 'ic') + ' Справочник</button><button class="btn alt" id="sNote">' + img('ic_notes', '📓', 'ic') + ' Тетрадь</button><button class="btn alt" id="sHow">Как играть</button></div>' +
     '<div class="note">Игра учит основам первой помощи. Она не заменяет врача: если плохо себя чувствуешь, скажи взрослым.</div>';
   if (has) $('sCont').onclick = () => startShift();
   $('sNew').onclick = () => { S = fresh(); save(); startShift(); };
   $('sBook').onclick = () => openBook(); $('sNote').onclick = () => openNotes(); $('sHow').onclick = () => howTo();
+  const sc = $('scrStart');
+  if (ART.cover) { sc.className = 'scr start art'; sc.style.backgroundImage = 'url(img/cover.webp)'; sc.insertAdjacentHTML('afterbegin', '<div class="stt">Доктор</div>'); }
   show('scrStart');
 }
 PF.onPause = function () {};
