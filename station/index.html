@@ -18,7 +18,7 @@ body{touch-action:manipulation;user-select:none;-webkit-user-select:none}
 canvas#map{display:block;width:100%;height:auto}
 #gauges{flex:none;display:flex;gap:4px}
 .g{flex:1;background:var(--paper);border:3px solid var(--ink);border-radius:10px;padding:2px 0;text-align:center;font-weight:800;font-size:12px;line-height:1.15}
-.g i{font-style:normal;display:block;font-size:15px}
+.g i{font-style:normal;display:block;font-size:15px;height:20px}.g i .ic{width:20px;height:20px}
 .g.warn{background:#ffe08a}.g.bad{background:#ff9d9d}
 #info{flex:none;background:var(--paper2);border:3px solid var(--ink);border-radius:11px;padding:3px 9px;font-size:12.5px;line-height:1.3;min-height:36px;display:flex;align-items:center}
 #panel{flex:1;min-height:0;display:flex;flex-direction:column;gap:5px}
@@ -108,9 +108,9 @@ const MOD={
 const BUY=['hab','lab','green','lock','panel','rad','batt'];
 const EXTERNAL=['panel','rad'];
 const RES={
- o2:{n:'Кислород',u:'кг',p:100,m:1,step:10,ic:'🫁'},
- water:{n:'Вода',u:'л',p:20,m:1,step:50,ic:'💧'},
- food:{n:'Еда',u:'кг',p:150,m:1,step:20,ic:'🍎'},
+ o2:{n:'Кислород',u:'кг',p:100,m:1,step:10,ic:'🫁',k:'o2'},
+ water:{n:'Вода',u:'л',p:20,m:1,step:50,ic:'💧',k:'water'},
+ food:{n:'Еда',u:'кг',p:150,m:1,step:20,ic:'🍎',k:'food'},
  kit:{n:'Расходники для опытов',u:'кг',p:100,m:1,step:10,ic:'🧪'},
  spare:{n:'Запчасти',u:'шт',p:800,m:5,step:1,ic:'🔧'},
  fuel:{n:'Топливо',u:'кг',p:200,m:1,step:10,ic:'⛽'}
@@ -176,10 +176,11 @@ function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 const PF={rewarded(cb){toast('Ролик (заглушка SDK)…');setTimeout(cb,900);}};
 
 /* картинки (WebP в img/, нарезаны tools/make_art.py). Нет файла — рисуется кодом */
-const IMGN=/*IMGN*/[]/*END*/;
+const IMGN=/*IMGN*/['bg_earth','cosmo1','cosmo2','cosmo3','cosmo4','cover_start','ic_food','ic_health','ic_heat','ic_o2','ic_power','ic_water','mod_batt','mod_core','mod_green','mod_hab','mod_lab','mod_lock','mod_panel','mod_rad']/*END*/;
 const IMG={};
 IMGN.forEach(n=>{const i=new Image();i.onload=()=>{IMG[n]=i;if(S)render();};i.src='img/'+n+'.webp';});
-const imgTag=(n,cls,fb)=>!IMGN.includes(n)?(fb||''):`<img class="${cls||'ic'}" src="img/${n}.webp" alt="" onerror="this.outerHTML='${fb||''}'">`;
+const imgTag=(n,cls,fb)=>!IMGN.includes(n)?(fb||''):`<img class="${cls||'ic'}" src="img/${n}.webp" alt="" onerror="this.outerHTML=decodeURIComponent('${encodeURIComponent(fb||'')}')">`;
+const ICO=(k,e)=>imgTag('ic_'+k,'ic',e);
 
 /* ================= СОСТОЯНИЕ ================= */
 let S=null,tab='st',auto=0,busy=false;
@@ -481,10 +482,10 @@ function renderHud(){
   $('#hCoin').textContent='◎ '+S.coins;
   const pw=power(),gs=[];
   const dg=(k,ic)=>{const d=daysLeft(k);gs.push(`<div class="g ${d<3?'bad':d<7?'warn':''}"><i>${ic}</i>${d>=99?'∞':fmt(d,0)+' дн.'}</div>`);};
-  dg('o2','🫁');dg('water','💧');dg('food','🍎');
-  gs.push(`<div class="g ${pw.sup<.5?'bad':pw.sup<1?'warn':''}"><i>⚡</i>${Math.round(pw.sup*100)} %</div>`);
-  gs.push(`<div class="g ${pw.over?'bad':''}"><i>🌡️</i>${Math.round(pw.C/Math.max(1,pw.radCap)*100)} %</div>`);
-  gs.push(`<div class="g ${S.health<40?'bad':S.health<75?'warn':''}"><i>❤️</i>${Math.round(S.health)} %</div>`);
+  dg('o2',ICO('o2','🫁'));dg('water',ICO('water','💧'));dg('food',ICO('food','🍎'));
+  gs.push(`<div class="g ${pw.sup<.5?'bad':pw.sup<1?'warn':''}"><i>${ICO('power','⚡')}</i>${Math.round(pw.sup*100)} %</div>`);
+  gs.push(`<div class="g ${pw.over?'bad':''}"><i>${ICO('heat','🌡️')}</i>${Math.round(pw.C/Math.max(1,pw.radCap)*100)} %</div>`);
+  gs.push(`<div class="g ${S.health<40?'bad':S.health<75?'warn':''}"><i>${ICO('health','❤️')}</i>${Math.round(S.health)} %</div>`);
   $('#gauges').innerHTML=gs.join('');
   $('#info').textContent=S.log[0]||'Добро пожаловать на борт!';
   $('#tabs').innerHTML=TABS.map(t=>`<button class="tab ${tab===t[0]?'on':''}" data-a="tab" data-t="${t[0]}"><b>${t[1]}</b>${t[2]}</button>`).join('');
@@ -507,14 +508,14 @@ function viewStation(){
   Object.keys(MOD).forEach(t=>{const a=tot(t);if(!a)return;const w=cnt(t);
     h+=`<div class="kv"><span>${imgTag('mod_'+t,'ic','')}${MOD[t].n} ×${a}${w<a?` <span class="warn">(рабочих ${w})</span>`:''}</span><b>${MOD[t].info||'—'}</b></div>`;});
   h+='</div>';
-  h+=`<div class="box"><b>⚡ Энергия за оборот (90 мин)</b>
+  h+=`<div class="box"><b>${ICO('power','⚡')} Энергия за оборот (90 мин)</b>
   <div class="kv"><span>Потребление C</span><b>${pw.C} кВт</b></div>
   <div class="kv"><span>Выработка: ${pw.P} пан. × 4 кВт × 0,75 ч</span><b class="${pw.g<1?'warn':'good'}">${fmt(pw.genE)} кВт·ч</b></div>
   <div class="kv"><span>Нужно за оборот: ${pw.C} × 1,5 ч</span><b>${fmt(pw.needE)} кВт·ч</b></div>
   <div class="kv"><span>Ночью: ${pw.C} × 0,75 ч</span><b>${fmt(pw.batNeed)} кВт·ч</b></div>
   <div class="kv"><span>Аккумуляторы: ${pw.B} × 3 кВт·ч</span><b class="${pw.b<1?'warn':'good'}">${fmt(pw.batCap)} кВт·ч</b></div>
   <div class="hint">Обеспечено энергией: <b>${Math.round(pw.sup*100)} %</b>. ${pw.sup<1?'Лаборатория и оранжерея работают медленнее!':'Всё в порядке.'}</div></div>
-  <div class="box"><b>🌡️ Тепло</b><div class="kv"><span>Нагрузка ${pw.C} кВт; радиаторы ${pw.R} × 10</span><b class="${pw.over?'warn':'good'}">${pw.radCap} кВт</b></div>
+  <div class="box"><b>${ICO('heat','🌡️')} Тепло</b><div class="kv"><span>Нагрузка ${pw.C} кВт; радиаторы ${pw.R} × 10</span><b class="${pw.over?'warn':'good'}">${pw.radCap} кВт</b></div>
   <div class="hint">${pw.over?'Перегрев! Опыты идут вдвое медленнее, поломки чаще.':'Охлаждения достаточно.'}</div></div>`;
   const br=S.mods.map((m,i)=>[m,i]).filter(x=>x[0].b);
   if(br.length){h+='<div class="head warn">🔧 Неисправно</div>';
@@ -525,9 +526,9 @@ function viewSupply(){
   const nd=need(),g=greenKg();
   let h=`<div class="head"><span>Запасы</span><span>до стыковки: ${Math.max(0,nextDock()-S.day)} дн.</span></div><div class="box">`;
   const row=(ic,n,st,u,perDay,dl)=>`<div class="kv"><span>${ic} ${n}: <b>${fmt(st,1)} ${u}</b>${perDay?` <small>(−${fmt(perDay)} в сутки)</small>`:''}</span><b class="${dl!==null&&dl<5?'warn':''}">${dl===null?'':(dl>=99?'∞':fmt(dl,1)+' дн.')}</b></div>`;
-  h+=row('🫁','Кислород',S.st.o2,'кг',nd.o2,daysLeft('o2'));
-  h+=row('💧','Вода',S.st.water,'л',nd.water,daysLeft('water'));
-  h+=row('🍎','Еда',S.st.food,'кг',nd.food-g,daysLeft('food'));
+  h+=row(ICO('o2','🫁'),'Кислород',S.st.o2,'кг',nd.o2,daysLeft('o2'));
+  h+=row(ICO('water','💧'),'Вода',S.st.water,'л',nd.water,daysLeft('water'));
+  h+=row(ICO('food','🍎'),'Еда',S.st.food,'кг',nd.food-g,daysLeft('food'));
   h+=row('🧪','Расходники',S.st.kit,'кг',0,null);
   h+=row('🔧','Запчасти',S.st.spare,'шт',0,null);
   h+=row('⛽','Топливо',S.st.fuel,'кг',0,null);
@@ -565,7 +566,7 @@ function viewCargo(){
   <button class="btn alt sm" data-a="coach">◎ Помощь ЦУПа: припасы на ${Math.max(1,nextDock()-S.day)} дн. (−1 ◎)</button>
   <div class="head">Припасы</div>`;
   RKEYS.forEach(k=>{const r=RES[k],pd=['o2','water','food'].includes(k)?projDays(k):null;
-    h+=`<div class="cart"><div class="nm"><b>${r.ic} ${r.n}</b><small>${r.p} ₽/${r.u}${r.m!==1?`, ${r.m} кг/${r.u}`:''} · на складе ${fmt(S.st[k],0)}${pd!==null?` · хватит на <b class="${pd<nextDock()-S.day?'warn':'good'}">${pd>=99?'∞':fmt(pd,1)} дн.</b>`:''}</small></div>
+    h+=`<div class="cart"><div class="nm"><b>${r.k?ICO(r.k,r.ic):r.ic} ${r.n}</b><small>${r.p} ₽/${r.u}${r.m!==1?`, ${r.m} кг/${r.u}`:''} · на складе ${fmt(S.st[k],0)}${pd!==null?` · хватит на <b class="${pd<nextDock()-S.day?'warn':'good'}">${pd>=99?'∞':fmt(pd,1)} дн.</b>`:''}</small></div>
     <div class="step"><button class="btn" data-a="cart" data-k="${k}" data-d="-1">−</button><b>${c[k]}</b><button class="btn" data-a="cart" data-k="${k}" data-d="1">+</button></div></div>`;});
   h+='<div class="head">Модули и улучшения</div>';
   BUY.forEach(t=>{const m=MOD[t];
