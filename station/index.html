@@ -86,8 +86,367 @@ canvas#map{display:block;width:100%;height:auto}
 </div>
 <div id="ov" class="hidden"><div id="card"></div></div>
 <div id="toast"></div>
+<script src="/sdk.js"></script>
 <script>
 'use strict';
+/* ===== ЯЗЫК (генерируется tools/i18n_build.py) ===== */
+const LANG_KEY='kosmos-lang-v1',RU_FAM=['ru','be','kk','uk','uz','tg','hy','az','ky','tt','tk','ka','mo','et','lv','lt'];
+const RU=/*RU*/{"k44f1a4": "Узловой", "k7ad55d": "Жилой", "k6fad0e": "3 спальных места", "k7a8540": "Лаборатория", "k78fc07": "1 эксперимент", "k1faf8f": "Оранжерея", "k0678ba": "+3 кг еды в сутки", "k715fc6": "Шлюз", "k8f1ce5": "выход в космос, ремонт снаружи", "k254853": "Панель", "k54c7a1": "4 кВт на свету", "k5d603d": "Радиатор", "k7624f3": "отводит 10 кВт тепла", "ka71543": "Аккумулятор", "k012332": "хранит 3 кВт·ч", "k37bbf2": "Кислород", "k59ddef": "кг", "k5ecbec": "Вода", "k516cbe": "л", "k2af9ea": "Еда", "k33f8e6": "Расходники для опытов", "kbddee6": "Запчасти", "ka5640e": "шт", "k1c00b8": "Топливо", "k3634f1": "Кресс-салат в невесомости", "k13e063": "Снимки Земли", "k41e893": "Рост кристаллов", "k15c3d9": "Мышцы в невесомости", "kcc1577": "Сплавы металлов", "k8ef2c9": "Полезные бактерии", "k357bde": "Новые лекарства", "kc29b42": "Квантовые опыты", "k169dd0": "Алёна", "ke6b1e5": "Максим", "ke0f9d6": "Тимур", "ke29d70": "Света", "kc3e42c": "Игорь", "k0f11e5": "Нина", "kbbb678": "Какая планета ближе всех к Солнцу?", "k1ac581": "Меркурий", "k06583f": "Венера", "k42ff10": "Земля", "kbc667f": "Марс", "k82f08f": "Меркурий — самая близкая к Солнцу и самая быстрая планета.", "ka7e49c": "Как называется естественный спутник Земли?", "keafee5": "Луна", "kdc284d": "Фобос", "kd08d62": "Титан", "k7b9a5a": "Европа", "k45b331": "Вокруг Земли обращается одна Луна.", "ke19f5a": "Кто первым полетел в космос?", "k46919b": "Юрий Гагарин", "k56ae47": "Алексей Леонов", "ka78af2": "Нил Армстронг", "k8ed49b": "Герман Титов", "k53060c": "Юрий Гагарин, 12 апреля 1961 года, корабль «Восток».", "k530b66": "В каком году Гагарин полетел в космос?", "k2606cf": "1961 год. А в 1957-м запустили первый спутник.", "kefe3bb": "Как называется наша галактика?", "k66951d": "Млечный Путь", "k0981f1": "Андромеда", "k7d4fa0": "Туманность Ориона", "ke19a05": "Большая Медведица", "kdb8fa9": "Солнце — одна из звёзд галактики Млечный Путь.", "kb4542b": "Сколько планет в Солнечной системе?", "k6621f7": "Восемь: от Меркурия до Нептуна.", "k97ab5e": "Какую планету называют красной?", "k2f59e8": "Юпитер", "k3575ca": "Сатурн", "kd08ba8": "Марс красный из-за ржавчины (оксидов железа) на поверхности.", "k80e557": "Что происходит с предметами в невесомости?", "k9f95c4": "Они парят", "kf8d375": "Падают вниз", "kb71ddd": "Становятся тяжелее", "k1f1a79": "Исчезают", "kecccbe": "Станция и всё в ней непрерывно падают вокруг Земли, поэтому всё парит.", "ka3ecc4": "С какого космодрома стартовал Гагарин?", "k906974": "Байконур", "kc0997c": "Плесецк", "k998ccc": "Восточный", "k3b1430": "Канаверал", "keb0b23": "Байконур в Казахстане.", "ke2cec4": "Что находится в центре Солнечной системы?", "kdbf396": "Солнце", "kedf405": "Солнце — звезда, вокруг неё обращаются все планеты.", "k95bb9a": "Как назывался первый искусственный спутник Земли?", "ka98587": "«Спутник-1»", "kdddf11": "«Луна-1»", "k4a0df3": "«Восток-1»", "k4e8cc2": "«Прогресс»", "k6c191d": "Спутник-1 запустили 4 октября 1957 года.", "k007e1c": "Кто первая женщина в космосе?", "k3ced76": "Валентина Терешкова", "k29ab4d": "Светлана Савицкая", "k4af47f": "Елена Кондакова", "k7f8773": "Салли Райд", "kff37a6": "Терешкова полетела в 1963 году.", "k1e113e": "Кто первым вышел в открытый космос?", "kfaeb5d": "Эдвин Олдрин", "kc50dc8": "Леонов вышел в космос 18 марта 1965 года.", "k696d61": "Какая планета самая большая?", "k6c9378": "Нептун", "kb15ce8": "Юпитер больше всех остальных планет вместе взятых.", "ke42b37": "У какой планеты самые заметные кольца?", "k91c7b6": "Кольца Сатурна из льда и камней видны даже в маленький телескоп.", "kdd36d3": "Почему на Земле день сменяется ночью?", "kd78aa8": "Земля вращается вокруг своей оси", "kf0766f": "Земля обращается вокруг Солнца", "kb15936": "Солнце гаснет ночью", "ka4c834": "Луна закрывает Солнце", "kcc5fdd": "Один оборот вокруг оси — сутки (24 часа).", "k603779": "Кто первым ступил на Луну?", "kf2cc9e": "Базз Олдрин", "kbde6f4": "Алан Шепард", "kf3bafe": "Нил Армстронг, 1969 год, «Аполлон-11».", "kb696b7": "За какое время МКС облетает Землю?", "kdd4f92": "Около 90 минут", "kfad473": "Около суток", "k98f124": "Около недели", "k9eb8f3": "Около 10 минут", "kb0249a": "Скорость около 8 км/с, один оборот — примерно 1,5 часа.", "k468966": "Что такое комета?", "k28ada9": "Ледяное тело с хвостом", "kce46be": "Маленькая планета", "k240fb1": "Звезда", "ka77dec": "Спутник", "kd45876": "Вблизи Солнца лёд испаряется и образует хвост.", "k52d006": "Сколько длится год на Земле?", "kb59d06": "Около 365 суток", "k4b6289": "30 суток", "k82904a": "100 суток", "ke14e41": "24 часа", "k4172b4": "Земля облетает Солнце примерно за 365 суток.", "kb2affc": "За сколько света от Солнца идёт до Земли?", "k6876e6": "Около 8 минут", "k57c448": "1 секунду", "ke5f168": "1 час", "k0212c7": "1 сутки", "k48b9bd": "Расстояние 150 млн км, скорость света 300 000 км/с: ≈ 500 секунд.", "k91133f": "Какая планета самая горячая?", "k51d87a": "На Венере плотная атмосфера, парниковый эффект — около 460 °C.", "ke66676": "Что такое созвездие?", "ke04fe0": "Группа звёзд, образующая рисунок", "kbaacb4": "Одна яркая звезда", "k590a64": "Скопление планет", "kb6eab6": "Вид метеора", "k49d065": "Созвездия — «картинки» из звёзд: Большая Медведица, Орион.", "k1a3c76": "На какую сторону света показывает Полярная звезда?", "k54ae39": "На север", "k6de5e4": "На юг", "k77f5ea": "На восток", "ka1c5a9": "На запад", "k3dbee8": "Она почти неподвижна на небе над Северным полюсом.", "k22fa57": "Сколько восходов Солнца в сутки видит экипаж МКС?", "kd36214": "Около 16", "k7e237f": "Около 100", "kf3e93c": "24 ч × 60 = 1440 мин; 1440 ÷ 90 = 16 оборотов.", "k487485": "Зачем космонавтам заниматься спортом?", "k79584e": "В невесомости слабеют мышцы и кости", "k0e4fd5": "Чтобы согреться", "kf27fe8": "Чтобы не уснуть", "kaaa4e0": "Чтобы весить больше", "kcffbc4": "Без нагрузки мышцы и кости теряют силу, поэтому на станции спорт 2 часа в день.", "k06d0a3": "Что такое космический мусор?", "k8c02b8": "Обломки спутников и ракет", "kbb926a": "Метеориты из пояса астероидов", "k85fd1b": "Лунная пыль", "k42f5b9": "Облака газа", "kaaabf7": "Мелкий обломок летит быстро и опасен для станции.", "k937b4d": "У какой планеты самая высокая гора-вулкан (Олимп)?", "k45032b": "Гора Олимп на Марсе — около 22 км высотой.", "kfad8c4": "Сколько примерно длится лунный месяц (полный цикл фаз)?", "k1faa74": "Около 29–30 суток", "k99c17f": "Около 7 суток", "k46d370": "Около 1 суток", "k77a011": "Фазы Луны повторяются примерно каждые 29,5 суток.", "k384afa": "Что даёт космонавтам кислород на МКС?", "k1ca6d1": "Электролиз воды", "k54fc17": "Деревья на борту", "k372f14": "Воздух из космоса", "ke951c1": "Лунный грунт", "ka72459": "Электричество разделяет воду на кислород и водород.", "kd65c88": "Ролик (имитация: на площадке будет настоящий)…", "k7178e4": "День {0}: {1}", "k7b7a15": "Опыт завершён", "k6a7770": "«{0}»: +{1} и {2} очк. науки.", "k2e7a65": "опыт «{0}» завершён (+{1})", "kd5e3b1": "нет кислорода", "k7d20c1": "нет воды", "k4eab3b": "нет еды", "k04153e": "мало энергии", "k618f08": "много отходов", "ke29907": "тесно: мест {0}", "k7ba58b": "Здоровье экипажа падает", "k08e71c": "{0}. Здоровье: {1} %.", "k34d8be": "здоровье −: {0}", "k992694": "Поломка!", "k4e5fbc": ", а также шлюз", "k979204": "Вышел из строя модуль «{0}». Ремонт: вкладка «Станция» (нужны запчасть и свободный космонавт{1}).", "kff1c00": "поломка: {0}", "k523c7b": "Вспышка на Солнце", "k8b5f2d": "Экипаж укрылся в защищённом отсеке. Завтра опыты не продвигаются.", "k6a647f": "вспышка на Солнце", "k79dded": "Запас на исходе", "k26540c": "{0}: хватит ещё на {1} дн. Следующая стыковка — на {2}-й день.", "ka2ac23": "Стыковка!", "k510650": "Грузовик «Прогресс» у станции. Получено финансирование {0}.", "kc554ca": "стыковка, финансирование {0}", "ke5545c": "Манёвр выполнен, облако обломков прошло мимо. Топлива −10 кг.", "kfb144e": "Попадание! Сломан модуль «{0}».", "k8f1d9f": "Попаданий нет.", "k89c49d": "Повезло: обломки прошли мимо.", "kfbe8e2": "Опыт откроется при {0} очк. науки", "k708a2d": "Нет свободной лаборатории", "kaf6d47": "Нужно свободных космонавтов: {0}", "k69fdfd": "Мало расходников: нужно {0} кг", "kde6517": "Ремонт снаружи: нужен рабочий шлюз", "k7396f2": "Нет запчастей — ждите груз", "kcb9094": "Все космонавты заняты опытами", "k6040e8": "отремонтирован: {0}", "k2a19d0": "Отремонтировано: {0}", "k0dcd9c": "Нужен рабочий шлюз", "kad29a2": "Следующий выход через {0} дн.", "k4593ae": "Нужно 2 свободных космонавта", "k2b275b": "Нужно 5 кг топлива", "k224bfd": "выход в космос: уборка мусора +4 000 ₽", "kda3b53": "Орбита очищена: риск −10, +4 000 ₽", "ke47132": "Перегруз: {0} кг из {1}", "kdbb313": "Не хватает денег: нужно {0}", "k6080da": "Мест на станции: {0} из {1}", "k8175df": "Максимум космонавтов — {0}", "k8ea203": "Не хватает спальных мест ({0})", "k2a5dfd": "Нужна монета знаний", "kd8e169": "ЦУП подставил припасы на {0} дн.", "k965c17": "груз принят на {0}", "k231981": " (её не будет, финал на 90-й день)", "kc3d4b4": "<h2>Груз принят</h2><p>Масса {0} кг, оплачено {1}. Отходы вывезены. Следующая стыковка — на {2}-й день{3}.</p><button class=\"btn go\" data-a=\"close\">Работаем!</button>", "kee2291": "выполнен, +15 000 ₽", "k95a092": "не выполнен", "k7c522e": "Этап 1 (3 опыта, здоровье ≥ 70 %): {0} (опытов {1}, здоровье {2} %).", "k29dc08": "выполнен, +25 000 ₽", "k4eb001": "Этап 2 (25 очков науки, 4 космонавта): {0} (очков {1}, космонавтов {2}).", "k59e6c4": "На станции {0} космонавта(ов). Один человек дышит 0,84 кг кислорода в сутки. Сколько кг кислорода нужно на 30 суток?", "ka033b6": "{0} × 0,84 = {1} кг в сутки; {2} × 30 = {3} кг.", "k3ea3e6": "Станция потребляет {0} кВт. Ночь длится 45 минут (0,75 ч). Один аккумулятор хранит 3 кВт·ч. Сколько аккумуляторов нужно? (округли вверх)", "k75ab12": "{0} × 0,75 = {1} кВт·ч за ночь; {2} ÷ 3 = {3} → округляем вверх: {4}.", "k299617": "Станция потребляет {0} кВт. Панель даёт 4 кВт, но светит только половину оборота. Сколько панелей нужно? (округли вверх)", "kcf4a2a": "Каждая панель в среднем даёт 4 ÷ 2 = 2 кВт; {0} ÷ 2 = {1} → вверх: {2}.", "k857410": "Грузоподъёмность грузовика {0} кг. Загрузили {1} кг. Сколько процентов грузоподъёмности занято?", "k282c68": "Станция потребляет {0} кВт. Один радиатор отводит 10 кВт тепла. Сколько радиаторов нужно? (округли вверх)", "kcb40e1": "{0} ÷ 10 = {1} → округляем вверх: {2}.", "kf84539": "Начинается миссия! Вы командуете станцией 90 суток. Сначала — контроль ЦУПа, потом соберёте заказ для грузовика.", "k44a698": "Грузовик «Прогресс» у станции. Сначала — контроль ЦУПа.", "k7a0475": "<h2>🚀 Стыковка {0} из 3</h2>\n  <p>{1}</p>\n  {2}\n  <p class=\"hint\">3 вопроса по космосу и одна задача. Верные ответы увеличивают грузоподъёмность и дают монеты знаний.</p>\n  <button class=\"btn go\" data-a=\"quizgo\">К контролю ЦУПа</button>", "k8d53bd": "Верно! +50 кг к грузоподъёмности", "kecbf28": "Не совсем.", "kcba469": "<div class=\"{0}\"><b>{1}</b><br>{2}</div><button class=\"btn go\" data-a=\"qnext\">Дальше</button>", "k5dbca3": "<span class=\"tag\">Вопрос {0} из 3 · астрономия</span><div class=\"q\">{1}</div>\n    {2}\n    {3}", "k3f9df3": "<span class=\"tag\">Расчёт ЦУПа</span><div class=\"q\">{0}</div>\n    <div class=\"calcin\" id=\"calcIn\">{1} <small>{2}</small></div>\n    <div class=\"pad\">{3}</div>\n    <button class=\"btn go\" data-a=\"calcok\">Ответить</button>", "k5acce7": "Расчёт верный: +5 000 ₽ и ◎ +1", "k150128": "Расчёт неверный.", "kd1720b": " Все три верно: ◎ +1.", "k438464": "<span class=\"tag\">Итоги контроля</span>\n    <div class=\"{0}\"><b>{1}</b><br>{2}</div>\n    <p>Верных ответов по космосу: <b>{3} из 3</b>. Грузоподъёмность грузовика: <b>{4} + {5} = {6} кг</b>.{7}</p>\n    <button class=\"btn go\" data-a=\"toorder\">К заказу груза</button>", "k8a0fc2": "Введи число", "k813d28": "<button class=\"btn go\" data-a=\"flow\">Дальше</button>", "kc4f318": "<h2>⚠️ Космический мусор</h2><p>ЦУП сообщает: облако обломков сближается со станцией. Что делаем?</p>\n  <button class=\"btn go\" data-a=\"ev\" data-c=\"move\" {0}>Манёвр уклонения (топливо −10 кг; есть {1})</button>\n  <button class=\"btn red\" data-a=\"ev\" data-c=\"risk\">Рискнуть (40 % — поломка внешнего модуля)</button>", "k12a043": "Миссия прервана: экипаж эвакуирован из-за плохого самочувствия.", "kd434f8": "Миссия прервана: финансирование прекращено (долг больше 20 000 ₽).", "k9ec50f": "Миссия завершена! 90 суток на орбите.", "k7be9e0": "{0}<h2>Итог миссии</h2><p>{1}</p>\n  <div class=\"stars\">{2}{3}</div>\n  <div class=\"box\"><div class=\"kv\"><span>Очки науки</span><b>{4}</b></div><div class=\"kv\"><span>Опытов завершено</span><b>{5}</b></div><div class=\"kv\"><span>Деньги</span><b>{6}</b></div><div class=\"kv\"><span>Космонавтов</span><b>{7}</b></div><div class=\"kv\"><span>Верных ответов ЦУПа</span><b>{8}</b></div><div class=\"kv\"><span>Рекорд науки</span><b>{9}</b></div></div>\n  <p class=\"hint\">Звёзды по очкам науки: ★ {10}, ★★ {11}, ★★★ {12}.</p>\n  {13}<button class=\"btn go\" data-a=\"newgame\">Играть снова</button>", "k8ef162": "<button class=\"btn go\" data-a=\"cont\">Продолжить (день {0})</button><button class=\"btn alt\" data-a=\"newgame\">Новая миссия</button>", "kfc258a": "<button class=\"btn go\" data-a=\"newgame\">Начать миссию</button>", "k30ae37": "{0}\n  <h2 style=\"text-align:center\">Космическая станция</h2>\n  <p>Командуй орбитальной станцией 90 суток: следи за воздухом, водой, едой и энергией, заказывай грузовики, ставь опыты и зарабатывай на науке.</p>\n  {1}\n  <button class=\"btn alt sm\" data-a=\"rules\">Правила</button> <button class=\"btn alt sm\" data-a=\"lang\">{2}</button> {3}", "ke5555d": "<h2>Правила</h2>\n  <p><b>Цель:</b> набрать очки науки за 90 суток. Опыты приносят деньги и очки.</p>\n  <p><b>Каждые сутки</b> космонавт расходует 0,84 кг кислорода, 3 л воды и 2 кг еды. Грузовик приходит раз в 30 суток (дни 1, 31, 61) — заказ считай заранее!</p>\n  <p><b>Энергия:</b> панель даёт 4 кВт только на свету (45 мин из 90). Ночью станцию кормят аккумуляторы (3 кВт·ч каждый). Радиатор отводит 10 кВт тепла.</p>\n  <p><b>Ломается — чини:</b> нужны запчасть и свободный космонавт.</p>\n  <button class=\"btn go\" data-a=\"{0}\">Понятно</button>", "kf4f89b": "<h2>Меню</h2><button class=\"btn go\" data-a=\"close\">Продолжить</button>\n  <button class=\"btn alt\" data-a=\"reward\">Ролик → ◎ +1 монета знаний</button>\n  <button class=\"btn alt\" data-a=\"rules2\">Правила</button>\n  <button class=\"btn alt\" data-a=\"lang\">{0}</button>\n  {1}\n  <button class=\"btn red\" data-a=\"newgame2\">Начать заново</button>", "kf1df9e": "Станция", "ke4446a": "Запасы", "k0764b2": "Наука", "k515c1a": "Груз", "kbe7810": "Цели", "kff1587": "День {0}/{1}", "kacb6d3": "{0} дн.", "k3e1f8c": "Добро пожаловать на борт!", "k861bef": "<button class=\"btn go\" data-a=\"deliver\">✔ Принять груз</button>", "kbb0e47": "Заказ груза →", "k877c99": "К контролю ЦУПа", "kcb80ae": "<button class=\"btn go\" data-a=\"day\">День ▶</button><button class=\"btn alt\" data-a=\"days5\">5 дней ▶▶</button>", "k2fdf90": "<div class=\"head\"><span>Станция</span><span>мест занято {0} из {1}</span></div><div class=\"box\">", "kf736c6": " <span class=\"warn\">(рабочих {0})</span>", "k4decf4": "Лаборатория и оранжерея работают медленнее!", "k7f4fd4": "Всё в порядке.", "k343217": "Перегрев! Опыты идут вдвое медленнее, поломки чаще.", "kcdd749": "Охлаждения достаточно.", "k83fc2f": "<div class=\"box\"><b>{0} Энергия за оборот (90 мин)</b>\n  <div class=\"kv\"><span>Потребление C</span><b>{1} кВт</b></div>\n  <div class=\"kv\"><span>Выработка: {2} пан. × 4 кВт × 0,75 ч</span><b class=\"{3}\">{4} кВт·ч</b></div>\n  <div class=\"kv\"><span>Нужно за оборот: {5} × 1,5 ч</span><b>{6} кВт·ч</b></div>\n  <div class=\"kv\"><span>Ночью: {7} × 0,75 ч</span><b>{8} кВт·ч</b></div>\n  <div class=\"kv\"><span>Аккумуляторы: {9} × 3 кВт·ч</span><b class=\"{10}\">{11} кВт·ч</b></div>\n  <div class=\"hint\">Обеспечено энергией: <b>{12} %</b>. {13}</div></div>\n  <div class=\"box\"><b>{14} Тепло</b><div class=\"kv\"><span>Нагрузка {15} кВт; радиаторы {16} × 10</span><b class=\"{17}\">{18} кВт</b></div>\n  <div class=\"hint\">{19}</div></div>", "k3e20d0": "<div class=\"head warn\">🔧 Неисправно</div>", "k6078a4": " · нужен шлюз", "k92d415": "<div class=\"cart\"><div class=\"nm\"><b>{0}</b><small>запчастей: {1} · свободных космонавтов: {2}{3}</small></div><button class=\"btn sm red\" data-a=\"repair\" data-i=\"{4}\">Починить</button></div>", "k4abd49": "<div class=\"head\"><span>Запасы</span><span>до стыковки: {0} дн.</span></div><div class=\"box\">", "k360c4e": " <small>(−{0} в сутки)</small>", "kf826ac": "Расходники", "k3f2634": "Отходы", "k2b0fd2": " × ½ (регенерация)", "k81b765": ", оранжерея даёт {0} кг", "k417b28": "</div><div class=\"hint\">{0} × 0,84 = {1} кг кислорода в сутки. Вода: {2} × 3{3} = {4} л. Еда: {5} × 2 = {6} кг{7}.</div>", "k1133e5": "<div class=\"head\"><span>Экипаж</span><span>здоровье {0} %</span></div><div class=\"bar {1}\"><div style=\"width:{2}%\"></div></div>", "k2939e0": "свободен", "k82b6f3": "<div class=\"hint\">Спальных мест: {0}. Зарплата: {1} × {2} = {3} в сутки.</div>", "kb8ea66": "<div class=\"head\"><span>Наука</span><span>очков: <b>{0}</b> · опытов: {1}</span></div>\n  <div class=\"hint\">Лабораторий: {2} (занято {3}) · свободных космонавтов: {4} · расходников: {5} кг</div>", "k99729b": "<span class=\"warn\">лаборатория неисправна</span>", "k924976": "<div class=\"exp\"><b>🔬 {0}</b><div class=\"bar\"><div style=\"width:{1}%\"></div></div><small>осталось ≈ {2} дн. · {3} чел. {4}</small></div>", "kdca0b4": " · ещё {0} дн.", "k1d963a": "<div class=\"exp\"><b>🧑‍🚀 Выход в космос: убрать мусор</b><small>шлюз, 2 космонавта, топливо 5 кг · +4 000 ₽ · риск столкновения сейчас {0} % в сутки (−10 пунктов за выход){1}</small><button class=\"btn sm alt\" data-a=\"walk\">Выйти</button></div>", "kbcee70": "<div class=\"head\">Эксперименты</div>", "k28a52b": " · откроется при {0} очк.", "ka2e3d9": "<button class=\"btn sm go\" data-a=\"exp\" data-i=\"{0}\">Запустить</button>", "k9a65d7": "<div class=\"exp {0}\"><b>{1}</b><small>{2} дн. · {3} чел. · расходники {4} кг · награда {5} · {6} очк.{7}</small>{8}</div>", "k5b6320": "<span class=\"good\">грузовик у станции</span>", "k3446f6": "придёт на {0}-й день", "k0b1dc2": "<button class=\"btn alt sm\" data-a=\"rush\">📺 Срочный груз: +100 кг (ролик)</button>", "kdab80d": "<div class=\"good\" style=\"text-align:center\">Срочный груз: +100 кг к этому грузовику</div>", "k34f647": "<div class=\"head\"><span>🚚 Заказ на грузовик</span><span>{0}</span></div>\n  <div class=\"box\"><div class=\"kv\"><span>Масса</span><b class=\"{1}\">{2} из {3} кг ({4} %)</b></div>\n  <div class=\"bar {5}\"><div style=\"width:{6}%\"></div></div>\n  <div class=\"kv\"><span>Стоимость (запуск {7})</span><b class=\"{8}\">{9}</b></div>\n  <div class=\"kv\"><span>Деньги</span><b>{10}</b></div>{11}</div>\n  {12}\n  <button class=\"btn alt sm\" data-a=\"coach\">◎ Помощь ЦУПа: припасы на {13} дн. (−1 ◎)</button>\n  <div class=\"head\">Припасы</div>", "k707b87": ", {0} кг/{1}", "k8c4edc": " · хватит на <b class=\"{0}\">{1} дн.</b>", "k940a29": "<div class=\"cart\"><div class=\"nm\"><b>{0} {1}</b><small>{2} ₽/{3}{4} · на складе {5}{6}</small></div>\n    <div class=\"step\"><button class=\"btn\" data-a=\"cart\" data-k=\"{7}\" data-d=\"-1\">−</button><b>{8}</b><button class=\"btn\" data-a=\"cart\" data-k=\"{9}\" data-d=\"1\">+</button></div></div>", "k8215c4": "<div class=\"head\">Модули и улучшения</div>", "ke6c5da": "{0} кВт · ", "k69ee7d": "<div class=\"cart\"><div class=\"nm\"><b>{0}{1}</b><small>{2} · {3} кг · {4}{5}</small></div>\n    <div class=\"step\"><button class=\"btn\" data-a=\"cart\" data-k=\"{6}\" data-d=\"-1\">−</button><b>{7}</b><button class=\"btn\" data-a=\"cart\" data-k=\"{8}\" data-d=\"1\">+</button></div></div>", "k1c40bc": "· <b class=\"good\">уже стоит</b>", "k20f6a6": "<div class=\"cart\"><div class=\"nm\"><b>♻️ Регенерация воды</b><small>{0} · {1} кг · возвращает 50 % воды {2}</small></div>\n    <div class=\"step\"><button class=\"btn\" data-a=\"cart\" data-k=\"regen\" data-d=\"-1\">−</button><b>{3}</b><button class=\"btn\" data-a=\"cart\" data-k=\"regen\" data-d=\"1\" {4}>+</button></div></div>\n  <div class=\"cart\"><div class=\"nm\"><b>🧑‍🚀 Новый космонавт</b><small>{5} · зарплата {6} ₽/сут · сейчас {7}, мест {8}</small></div>\n    <div class=\"step\"><button class=\"btn\" data-a=\"cart\" data-k=\"crew\" data-d=\"-1\">−</button><b>{9}</b><button class=\"btn\" data-a=\"cart\" data-k=\"crew\" data-d=\"1\">+</button></div></div>", "kdd19af": "<div class=\"hint\">Пока пусто</div>", "k958aaa": "<div class=\"head\"><span>Цели</span><span>очки науки: <b>{0}</b></span></div>\n  <div class=\"box\"><div class=\"kv\"><span>{1} День 31: 3 опыта, здоровье ≥ 70 %</span><b>+15 000 ₽</b></div><small>Сейчас: опытов {2}, здоровье {3} %</small></div>\n  <div class=\"box\"><div class=\"kv\"><span>{4} День 61: 25 очков, 4 космонавта</span><b>+25 000 ₽</b></div><small>Сейчас: очков {5}, космонавтов {6}</small></div>\n  <div class=\"box\"><div class=\"kv\"><span>🏁 День 90: финал</span><b>★ {7} · ★★ {8} · ★★★ {9}</b></div><small>Рекорд науки: {10}</small></div>\n  <div class=\"head\">Журнал</div><div class=\"box\">{11}</div>", "k5d2ee4": "🌙 Ночь · {0} из 45 мин", "k0cf67e": "☀️ Свет · {0} из 45 мин", "k291055": "<h2>Итог</h2><div class=\"ok\">{0}</div><button class=\"btn go\" data-a=\"flow\">Дальше</button>", "ka4ff70": "<h2>Начать заново?</h2><p>Текущий прогресс будет потерян.</p><button class=\"btn red\" data-a=\"newgame\">Да, заново</button><button class=\"btn alt\" data-a=\"menu\">Отмена</button>", "k04a4ae": "Ролик не засчитан", "kb2524d": "Срочный груз: +100 кг", "k0d71b4": "◎ +1 монета знаний", "kfac284": "Монеты знаний: подсказка ЦУПа в заказе груза (1 ◎)", "ke291c3": "Космическая станция", "k94394b": "Монеты знаний", "kdd904b": "Меню"}/*END*/;
+const EN=/*EN*/{"k44f1a4": "Hub", "k7ad55d": "Habitat", "k6fad0e": "3 sleeping spots", "k7a8540": "Lab", "k78fc07": "1 experiment", "k1faf8f": "Greenhouse", "k0678ba": "+3 kg of food per day", "k715fc6": "Airlock", "k8f1ce5": "spacewalks and outside repairs", "k254853": "Solar panel", "k54c7a1": "4 kW in sunlight", "k5d603d": "Radiator", "k7624f3": "removes 10 kW of heat", "ka71543": "Battery", "k012332": "stores 3 kWh", "k37bbf2": "Oxygen", "k59ddef": "kg", "k5ecbec": "Water", "k516cbe": "L", "k2af9ea": "Food", "k33f8e6": "Experiment supplies", "kbddee6": "Spare parts", "ka5640e": "pcs", "k1c00b8": "Fuel", "k3634f1": "Growing watercress in zero gravity", "k13e063": "Photos of Earth", "k41e893": "Crystal growth", "k15c3d9": "Muscles in zero gravity", "kcc1577": "Metal alloys", "k8ef2c9": "Helpful bacteria", "k357bde": "New medicines", "kc29b42": "Quantum experiments", "k169dd0": "Alyona", "ke6b1e5": "Maxim", "ke0f9d6": "Timur", "ke29d70": "Sveta", "kc3e42c": "Igor", "k0f11e5": "Nina", "kbbb678": "Which planet is closest to the Sun?", "k1ac581": "Mercury", "k06583f": "Venus", "k42ff10": "Earth", "kbc667f": "Mars", "k82f08f": "Mercury is the closest planet to the Sun and moves around it the fastest.", "ka7e49c": "What is Earth's natural satellite called?", "keafee5": "The Moon", "kdc284d": "Phobos", "kd08d62": "Titan", "k7b9a5a": "Europa", "k45b331": "Earth has one natural moon.", "ke19f5a": "Who was the first person in space?", "k46919b": "Yuri Gagarin", "k56ae47": "Alexei Leonov", "ka78af2": "Neil Armstrong", "k8ed49b": "Gherman Titov", "k53060c": "Yuri Gagarin flew into space on April 12, 1961, aboard Vostok.", "k530b66": "What year did Gagarin fly into space?", "k2606cf": "1961. The first satellite was launched in 1957.", "kefe3bb": "What is our galaxy called?", "k66951d": "Milky Way", "k0981f1": "Andromeda", "k7d4fa0": "Orion Nebula", "ke19a05": "Ursa Major", "kdb8fa9": "The Sun is one of the stars in the Milky Way galaxy.", "kb4542b": "How many planets are in our Solar System?", "k6621f7": "Eight, from Mercury to Neptune.", "k97ab5e": "Which planet is called the Red Planet?", "k2f59e8": "Jupiter", "k3575ca": "Saturn", "kd08ba8": "Mars is red because of rust (iron oxides) on its surface.", "k80e557": "What happens to objects in zero gravity?", "k9f95c4": "They float", "kf8d375": "They fall down", "kb71ddd": "They become heavier", "k1f1a79": "They disappear", "kecccbe": "The station and everything inside it are constantly falling around Earth, so objects float.", "ka3ecc4": "Which spaceport did Gagarin launch from?", "k906974": "Baikonur", "kc0997c": "Plesetsk", "k998ccc": "Vostochny", "k3b1430": "Cape Canaveral", "keb0b23": "Baikonur is in Kazakhstan.", "ke2cec4": "What is at the center of our Solar System?", "kdbf396": "The Sun", "kedf405": "The Sun is a star. All the planets orbit around it.", "k95bb9a": "What was the first artificial satellite of Earth called?", "ka98587": "Sputnik 1", "kdddf11": "Luna 1", "k4a0df3": "Vostok 1", "k4e8cc2": "Progress", "k6c191d": "Sputnik 1 was launched on October 4, 1957.", "k007e1c": "Who was the first woman in space?", "k3ced76": "Valentina Tereshkova", "k29ab4d": "Svetlana Savitskaya", "k4af47f": "Yelena Kondakova", "k7f8773": "Sally Ride", "kff37a6": "Tereshkova flew into space in 1963.", "k1e113e": "Who was the first person to walk in space?", "kfaeb5d": "Buzz Aldrin", "kc50dc8": "Leonov made the first spacewalk on March 18, 1965.", "k696d61": "Which planet is the largest?", "k6c9378": "Neptune", "kb15ce8": "Jupiter is bigger than all the other planets combined.", "ke42b37": "Which planet has the most visible rings?", "k91c7b6": "Saturn's rings are made of ice and rock. You can see them with a small telescope.", "kdd36d3": "Why does day turn into night on Earth?", "kd78aa8": "Earth spins on its axis", "kf0766f": "Earth orbits the Sun", "kb15936": "The Sun turns off at night", "ka4c834": "The Moon blocks the Sun", "kcc5fdd": "One full spin on its axis takes one day (24 hours).", "k603779": "Who was the first person to walk on the Moon?", "kf2cc9e": "Buzz Aldrin", "kbde6f4": "Alan Shepard", "kf3bafe": "Neil Armstrong, in 1969, during Apollo 11.", "kb696b7": "How long does it take the ISS to orbit Earth?", "kdd4f92": "About 90 minutes", "kfad473": "About one day", "k98f124": "About one week", "k9eb8f3": "About 10 minutes", "kb0249a": "The ISS travels at about 8 km/s. One orbit takes about 1.5 hours.", "k468966": "What is a comet?", "k28ada9": "An icy object with a tail", "kce46be": "A small planet", "k240fb1": "A star", "ka77dec": "A moon", "kd45876": "Near the Sun, ice turns into gas and forms a tail.", "k52d006": "How long is one year on Earth?", "kb59d06": "About 365 days", "k4b6289": "30 days", "k82904a": "100 days", "ke14e41": "24 hours", "k4172b4": "Earth takes about 365 days to orbit the Sun.", "kb2affc": "How long does sunlight take to reach Earth?", "k6876e6": "About 8 minutes", "k57c448": "1 second", "ke5f168": "1 hour", "k0212c7": "1 day", "k48b9bd": "Distance: 150 million km. Speed of light: 300,000 km/s. That is about 500 seconds.", "k91133f": "Which planet is the hottest?", "k51d87a": "Venus has a thick atmosphere that traps heat. Its temperature is about 460°C.", "ke66676": "What is a constellation?", "ke04fe0": "A group of stars that forms a pattern", "kbaacb4": "One bright star", "k590a64": "A group of planets", "kb6eab6": "A type of meteor", "k49d065": "Constellations are patterns of stars, like Ursa Major and Orion.", "k1a3c76": "Which direction does the North Star point to?", "k54ae39": "North", "k6de5e4": "South", "k77f5ea": "East", "ka1c5a9": "West", "k3dbee8": "The North Star stays almost still in the sky above the North Pole.", "k22fa57": "How many sunrises does the ISS crew see each day?", "kd36214": "About 16", "k7e237f": "About 100", "kf3e93c": "24 h × 60 = 1,440 min; 1,440 ÷ 90 = 16 orbits.", "k487485": "Why do astronauts need to exercise?", "k79584e": "Muscles and bones get weaker in zero gravity", "k0e4fd5": "To stay warm", "kf27fe8": "To stay awake", "kaaa4e0": "To weigh more", "kcffbc4": "Without exercise, muscles and bones lose strength. That is why astronauts exercise for 2 hours a day.", "k06d0a3": "What is space junk?", "k8c02b8": "Broken pieces of satellites and rockets", "kbb926a": "Meteorites from the asteroid belt", "k85fd1b": "Moon dust", "k42f5b9": "Clouds of gas", "kaaabf7": "Even a tiny piece of space junk moves very fast and can damage the station.", "k937b4d": "Which planet has the tallest volcano, Olympus Mons?", "k45032b": "Olympus Mons on Mars is about 22 km tall.", "kfad8c4": "About how long is a lunar month (one full cycle of Moon phases)?", "k1faa74": "About 29–30 days", "k99c17f": "About 7 days", "k46d370": "About 1 day", "k77a011": "The Moon's phases repeat about every 29.5 days.", "k384afa": "How do astronauts get oxygen on the ISS?", "k1ca6d1": "By splitting water with electricity", "k54fc17": "From trees on board", "k372f14": "From air in space", "ke951c1": "From Moon soil", "ka72459": "Electricity splits water into oxygen and hydrogen.", "kd65c88": "Video (demo: a real one will play on the platform)…", "k7178e4": "Day {0}: {1}", "k7b7a15": "Experiment complete", "k6a7770": "\"{0}\": +{1} and {2} science points.", "k2e7a65": "experiment \"{0}\" complete (+{1})", "kd5e3b1": "no oxygen", "k7d20c1": "no water", "k4eab3b": "no food", "k04153e": "not enough power", "k618f08": "too much waste", "ke29907": "not enough room: {0} spots", "k7ba58b": "Crew health is dropping", "k08e71c": "{0}. Health: {1}%.", "k34d8be": "health down: {0}", "k992694": "Something broke!", "k4e5fbc": ", and an airlock", "k979204": "The \"{0}\" module has broken down. To repair it, open the Station tab (you need a spare part and a free astronaut{1}).", "kff1c00": "broken module: {0}", "k523c7b": "Solar flare", "k8b5f2d": "The crew is safe in a protected area. Experiments will not make progress tomorrow.", "k6a647f": "solar flare", "k79dded": "Supplies running low", "k26540c": "{0}: enough for {1} more days. Next docking: day {2}.", "ka2ac23": "Docking!", "k510650": "The Progress cargo ship has arrived. Funding received: {0}.", "kc554ca": "docking, funding {0}", "ke5545c": "Maneuver complete! The debris cloud missed the station. Fuel: −10 kg.", "kfb144e": "Impact! The \"{0}\" module is broken.", "k8f1d9f": "No impacts.", "k89c49d": "Lucky! The debris missed the station.", "kfbe8e2": "Unlock this experiment with {0} science points", "k708a2d": "No free Lab", "kaf6d47": "Free astronauts needed: {0}", "k69fdfd": "Not enough experiment supplies: need {0} kg", "kde6517": "Outside repairs need a working Airlock", "k7396f2": "No spare parts. Wait for the cargo ship.", "kcb9094": "All astronauts are busy with experiments", "k6040e8": "repaired: {0}", "k2a19d0": "Repaired: {0}", "k0dcd9c": "A working Airlock is needed", "kad29a2": "Next spacewalk in {0} days.", "k4593ae": "Need 2 free astronauts", "k2b275b": "Need 5 kg of fuel", "k224bfd": "spacewalk: clean up space junk +4,000 ₽", "kda3b53": "Orbit cleared: risk −10, +4,000 ₽", "ke47132": "Overloaded: {0} kg out of {1}", "kdbb313": "Not enough money: need {0}", "k6080da": "Station spots: {0} out of {1}", "k8175df": "Maximum astronauts: {0}", "k8ea203": "Not enough sleeping spots ({0})", "k2a5dfd": "Need a knowledge coin", "kd8e169": "Mission Control added supplies for {0} days.", "k965c17": "cargo received for {0}", "k231981": " (no more docking; the mission ends on day 90)", "kc3d4b4": "<h2>Cargo received</h2><p>Weight: {0} kg. Paid: {1}. Waste removed. Next docking: day {2}{3}.</p><button class=\"btn go\" data-a=\"close\">Let's go!</button>", "kee2291": "completed, +15,000 ₽", "k95a092": "not completed", "k7c522e": "Goal 1 (3 experiments, health ≥ 70%): {0} (experiments: {1}, health: {2}%).", "k29dc08": "completed, +25,000 ₽", "k4eb001": "Goal 2 (25 science points, 4 astronauts): {0} (points: {1}, astronauts: {2}).", "k59e6c4": "There are {0} astronauts on the station. Each person uses 0.84 kg of oxygen per day. How many kg of oxygen are needed for 30 days?", "ka033b6": "{0} × 0.84 = {1} kg per day; {2} × 30 = {3} kg.", "k3ea3e6": "The station uses {0} kW. Night lasts 45 minutes (0.75 h). One Battery stores 3 kWh. How many Batteries are needed? (Round up.)", "k75ab12": "{0} × 0.75 = {1} kWh per night; {2} ÷ 3 = {3} → round up: {4}.", "k299617": "The station uses {0} kW. One Solar panel makes 4 kW, but gets sunlight for only half an orbit. How many panels are needed? (Round up.)", "kcf4a2a": "Each panel makes an average of 4 ÷ 2 = 2 kW; {0} ÷ 2 = {1} → round up: {2}.", "k857410": "The cargo ship can carry {0} kg. You loaded {1} kg. What percentage of its cargo capacity is used?", "k282c68": "The station uses {0} kW. One Radiator removes 10 kW of heat. How many Radiators are needed? (Round up.)", "kcb40e1": "{0} ÷ 10 = {1} → round up: {2}.", "kf84539": "The mission begins! You will run the space station for 90 days. First, complete a Mission Control check. Then, prepare your cargo order.", "k44a698": "The Progress cargo ship is at the station. First, complete the Mission Control check.", "k7a0475": "<h2>🚀 Docking {0} of 3</h2>\n  <p>{1}</p>\n  {2}\n  <p class=\"hint\">3 space questions and 1 math problem. Correct answers increase cargo capacity and earn knowledge coins.</p>\n  <button class=\"btn go\" data-a=\"quizgo\">Start Mission Control Check</button>", "k8d53bd": "Correct! +50 kg cargo capacity", "kecbf28": "Not quite.", "kcba469": "<div class=\"{0}\"><b>{1}</b><br>{2}</div><button class=\"btn go\" data-a=\"qnext\">Next</button>", "k5dbca3": "<span class=\"tag\">Question {0} of 3 · Astronomy</span><div class=\"q\">{1}</div>\n    {2}\n    {3}", "k3f9df3": "<span class=\"tag\">Mission Control Math</span><div class=\"q\">{0}</div>\n    <div class=\"calcin\" id=\"calcIn\">{1} <small>{2}</small></div>\n    <div class=\"pad\">{3}</div>\n    <button class=\"btn go\" data-a=\"calcok\">Submit Answer</button>", "k5acce7": "Correct calculation: +5,000 ₽ and ◎ +1", "k150128": "Incorrect calculation.", "kd1720b": " All three correct: ◎ +1.", "k438464": "<span class=\"tag\">Check Results</span>\n    <div class=\"{0}\"><b>{1}</b><br>{2}</div>\n    <p>Correct space answers: <b>{3} of 3</b>. Cargo ship capacity: <b>{4} + {5} = {6} kg</b>.{7}</p>\n    <button class=\"btn go\" data-a=\"toorder\">Prepare Cargo Order</button>", "k8a0fc2": "Enter a number", "k813d28": "<button class=\"btn go\" data-a=\"flow\">Next</button>", "kc4f318": "<h2>⚠️ Space Junk</h2><p>Mission Control reports that a cloud of debris is approaching the station. What should we do?</p>\n  <button class=\"btn go\" data-a=\"ev\" data-c=\"move\" {0}>Dodge the debris (fuel −10 kg; available: {1})</button>\n  <button class=\"btn red\" data-a=\"ev\" data-c=\"risk\">Take a risk (40% chance an outside module breaks)</button>", "k12a043": "Mission ended: the crew was evacuated because of poor health.", "kd434f8": "Mission ended: funding was stopped (debt over 20,000 ₽).", "k9ec50f": "Mission complete! 90 days in orbit.", "k7be9e0": "{0}<h2>Mission Results</h2><p>{1}</p>\n  <div class=\"stars\">{2}{3}</div>\n  <div class=\"box\"><div class=\"kv\"><span>Science points</span><b>{4}</b></div><div class=\"kv\"><span>Experiments completed</span><b>{5}</b></div><div class=\"kv\"><span>Money</span><b>{6}</b></div><div class=\"kv\"><span>Astronauts</span><b>{7}</b></div><div class=\"kv\"><span>Correct Mission Control answers</span><b>{8}</b></div><div class=\"kv\"><span>Science record</span><b>{9}</b></div></div>\n  <p class=\"hint\">Stars based on science points: ★ {10}, ★★ {11}, ★★★ {12}.</p>\n  {13}<button class=\"btn go\" data-a=\"newgame\">Play Again</button>", "k8ef162": "<button class=\"btn go\" data-a=\"cont\">Continue (day {0})</button><button class=\"btn alt\" data-a=\"newgame\">New Mission</button>", "kfc258a": "<button class=\"btn go\" data-a=\"newgame\">Start Mission</button>", "k30ae37": "{0}\n  <h2 style=\"text-align:center\">Space Station</h2>\n  <p>Run a space station for 90 days! Manage oxygen, water, food, and power. Order supplies, run experiments, and earn money through science.</p>\n  {1}\n  <button class=\"btn alt sm\" data-a=\"rules\">How to Play</button> <button class=\"btn alt sm\" data-a=\"lang\">{2}</button> {3}", "ke5555d": "<h2>How to Play</h2>\n  <p><b>Goal:</b> Earn science points in 90 days. Experiments earn money and points.</p>\n  <p><b>Every day,</b> each astronaut uses 0.84 kg of oxygen, 3 L of water, and 2 kg of food. A cargo ship arrives every 30 days (days 1, 31, and 61). Plan your orders ahead!</p>\n  <p><b>Power:</b> Each Solar panel makes 4 kW only in sunlight (45 minutes out of 90). At night, Batteries power the station (3 kWh each). Each Radiator removes 10 kW of heat.</p>\n  <p><b>If something breaks, fix it:</b> You need a spare part and a free astronaut.</p>\n  <button class=\"btn go\" data-a=\"{0}\">Got It!</button>", "kf4f89b": "<h2>Menu</h2><button class=\"btn go\" data-a=\"close\">Continue</button>\n  <button class=\"btn alt\" data-a=\"reward\">Watch Ad → ◎ +1 knowledge coin</button>\n  <button class=\"btn alt\" data-a=\"rules2\">How to Play</button>\n  <button class=\"btn alt\" data-a=\"lang\">{0}</button>\n  {1}\n  <button class=\"btn red\" data-a=\"newgame2\">Start Over</button>", "kf1df9e": "Station", "ke4446a": "Supplies", "k0764b2": "Science", "k515c1a": "Cargo", "kbe7810": "Goals", "kff1587": "Day {0}/{1}", "kacb6d3": "{0} days", "k3e1f8c": "Welcome aboard!", "k861bef": "<button class=\"btn go\" data-a=\"deliver\">✔ Receive Cargo</button>", "kbb0e47": "Cargo Order →", "k877c99": "Mission Control Check", "kcb80ae": "<button class=\"btn go\" data-a=\"day\">Day ▶</button><button class=\"btn alt\" data-a=\"days5\">5 Days ▶▶</button>", "k2fdf90": "<div class=\"head\"><span>Station</span><span>spots used: {0} of {1}</span></div><div class=\"box\">", "kf736c6": " <span class=\"warn\">({0} working)</span>", "k4decf4": "The Lab and Greenhouse are working more slowly!", "k7f4fd4": "Everything is fine.", "k343217": "Overheating! Experiments take twice as long, and breakdowns happen more often.", "kcdd749": "Cooling is enough.", "k83fc2f": "<div class=\"box\"><b>{0} Power per orbit (90 min)</b>\n  <div class=\"kv\"><span>Power use C</span><b>{1} kW</b></div>\n  <div class=\"kv\"><span>Generated: {2} panels × 4 kW × 0.75 h</span><b class=\"{3}\">{4} kWh</b></div>\n  <div class=\"kv\"><span>Needed per orbit: {5} × 1.5 h</span><b>{6} kWh</b></div>\n  <div class=\"kv\"><span>At night: {7} × 0.75 h</span><b>{8} kWh</b></div>\n  <div class=\"kv\"><span>Batteries: {9} × 3 kWh</span><b class=\"{10}\">{11} kWh</b></div>\n  <div class=\"hint\">Power supplied: <b>{12}%</b>. {13}</div></div>\n  <div class=\"box\"><b>{14} Heat</b><div class=\"kv\"><span>Heat load {15} kW; Radiators {16} × 10</span><b class=\"{17}\">{18} kW</b></div>\n  <div class=\"hint\">{19}</div></div>", "k3e20d0": "<div class=\"head warn\">🔧 Broken Modules</div>", "k6078a4": " · Airlock needed", "k92d415": "<div class=\"cart\"><div class=\"nm\"><b>{0}</b><small>spare parts: {1} · free astronauts: {2}{3}</small></div><button class=\"btn sm red\" data-a=\"repair\" data-i=\"{4}\">Repair</button></div>", "k4abd49": "<div class=\"head\"><span>Supplies</span><span>until docking: {0} days</span></div><div class=\"box\">", "k360c4e": " <small>(−{0} per day)</small>", "kf826ac": "Experiment supplies", "k3f2634": "Waste", "k2b0fd2": " × ½ (recycling)", "k81b765": ", Greenhouse produces {0} kg", "k417b28": "</div><div class=\"hint\">{0} × 0.84 = {1} kg of oxygen per day. Water: {2} × 3{3} = {4} L. Food: {5} × 2 = {6} kg{7}.</div>", "k1133e5": "<div class=\"head\"><span>Crew</span><span>health {0}%</span></div><div class=\"bar {1}\"><div style=\"width:{2}%\"></div></div>", "k2939e0": "available", "k82b6f3": "<div class=\"hint\">Sleeping spots: {0}. Pay: {1} × {2} = {3} per day.</div>", "kb8ea66": "<div class=\"head\"><span>Science</span><span>points: <b>{0}</b> · experiments: {1}</span></div>\n  <div class=\"hint\">Labs: {2} ({3} in use) · free astronauts: {4} · experiment supplies: {5} kg</div>", "k99729b": "<span class=\"warn\">Lab is broken</span>", "k924976": "<div class=\"exp\"><b>🔬 {0}</b><div class=\"bar\"><div style=\"width:{1}%\"></div></div><small>about {2} days left · {3} people {4}</small></div>", "kdca0b4": " · {0} more days", "k1d963a": "<div class=\"exp\"><b>🧑‍🚀 Spacewalk: Clean Up Space Junk</b><small>Airlock, 2 astronauts, 5 kg of fuel · +4,000 ₽ · current collision risk: {0}% per day (−10 points per spacewalk){1}</small><button class=\"btn sm alt\" data-a=\"walk\">Go Outside</button></div>", "kbcee70": "<div class=\"head\">Experiments</div>", "k28a52b": " · unlocks at {0} points", "ka2e3d9": "<button class=\"btn sm go\" data-a=\"exp\" data-i=\"{0}\">Start</button>", "k9a65d7": "<div class=\"exp {0}\"><b>{1}</b><small>{2} days · {3} people · supplies {4} kg · reward {5} · {6} points{7}</small>{8}</div>", "k5b6320": "<span class=\"good\">cargo ship at the station</span>", "k3446f6": "arrives on day {0}", "k0b1dc2": "<button class=\"btn alt sm\" data-a=\"rush\">📺 Extra Cargo: +100 kg (watch ad)</button>", "kdab80d": "<div class=\"good\" style=\"text-align:center\">Extra Cargo: +100 kg for this ship</div>", "k34f647": "<div class=\"head\"><span>🚚 Cargo Ship Order</span><span>{0}</span></div>\n  <div class=\"box\"><div class=\"kv\"><span>Weight</span><b class=\"{1}\">{2} of {3} kg ({4}%)</b></div>\n  <div class=\"bar {5}\"><div style=\"width:{6}%\"></div></div>\n  <div class=\"kv\"><span>Cost (launch {7})</span><b class=\"{8}\">{9}</b></div>\n  <div class=\"kv\"><span>Money</span><b>{10}</b></div>{11}</div>\n  {12}\n  <button class=\"btn alt sm\" data-a=\"coach\">◎ Mission Control Help: {13} days of supplies (−1 ◎)</button>\n  <div class=\"head\">Supplies</div>", "k707b87": ", {0} kg/{1}", "k8c4edc": " · enough for <b class=\"{0}\">{1} days</b>", "k940a29": "<div class=\"cart\"><div class=\"nm\"><b>{0} {1}</b><small>{2} ₽/{3}{4} · in stock: {5}{6}</small></div>\n    <div class=\"step\"><button class=\"btn\" data-a=\"cart\" data-k=\"{7}\" data-d=\"-1\">−</button><b>{8}</b><button class=\"btn\" data-a=\"cart\" data-k=\"{9}\" data-d=\"1\">+</button></div></div>", "k8215c4": "<div class=\"head\">Modules and Upgrades</div>", "ke6c5da": "{0} kW · ", "k69ee7d": "<div class=\"cart\"><div class=\"nm\"><b>{0}{1}</b><small>{2} · {3} kg · {4}{5}</small></div>\n    <div class=\"step\"><button class=\"btn\" data-a=\"cart\" data-k=\"{6}\" data-d=\"-1\">−</button><b>{7}</b><button class=\"btn\" data-a=\"cart\" data-k=\"{8}\" data-d=\"1\">+</button></div></div>", "k1c40bc": "· <b class=\"good\">already installed</b>", "k20f6a6": "<div class=\"cart\"><div class=\"nm\"><b>♻️ Water Recycling</b><small>{0} · {1} kg · recovers 50% of water {2}</small></div>\n    <div class=\"step\"><button class=\"btn\" data-a=\"cart\" data-k=\"regen\" data-d=\"-1\">−</button><b>{3}</b><button class=\"btn\" data-a=\"cart\" data-k=\"regen\" data-d=\"1\" {4}>+</button></div></div>\n  <div class=\"cart\"><div class=\"nm\"><b>🧑‍🚀 New Astronaut</b><small>{5} · pay {6} ₽/day · crew now: {7}, spots: {8}</small></div>\n    <div class=\"step\"><button class=\"btn\" data-a=\"cart\" data-k=\"crew\" data-d=\"-1\">−</button><b>{9}</b><button class=\"btn\" data-a=\"cart\" data-k=\"crew\" data-d=\"1\">+</button></div></div>", "kdd19af": "<div class=\"hint\">Nothing here yet</div>", "k958aaa": "<div class=\"head\"><span>Goals</span><span>science points: <b>{0}</b></span></div>\n  <div class=\"box\"><div class=\"kv\"><span>{1} Day 31: 3 experiments, health ≥ 70%</span><b>+15,000 ₽</b></div><small>Now: {2} experiments, health {3}%</small></div>\n  <div class=\"box\"><div class=\"kv\"><span>{4} Day 61: 25 points, 4 astronauts</span><b>+25,000 ₽</b></div><small>Now: {5} points, {6} astronauts</small></div>\n  <div class=\"box\"><div class=\"kv\"><span>🏁 Day 90: Final Results</span><b>★ {7} · ★★ {8} · ★★★ {9}</b></div><small>Science record: {10}</small></div>\n  <div class=\"head\">Log</div><div class=\"box\">{11}</div>", "k5d2ee4": "🌙 Night · {0} of 45 min", "k0cf67e": "☀️ Sunlight · {0} of 45 min", "k291055": "<h2>Results</h2><div class=\"ok\">{0}</div><button class=\"btn go\" data-a=\"flow\">Next</button>", "ka4ff70": "<h2>Start Over?</h2><p>Your current progress will be lost.</p><button class=\"btn red\" data-a=\"newgame\">Yes, Start Over</button><button class=\"btn alt\" data-a=\"menu\">Cancel</button>", "k04a4ae": "Ad reward not received", "kb2524d": "Extra Cargo: +100 kg", "k0d71b4": "◎ +1 knowledge coin", "kfac284": "Knowledge coins: Mission Control help with cargo orders (1 ◎)", "ke291c3": "Space Station", "k94394b": "Knowledge coins", "kdd904b": "Menu"}/*END*/;
+const HASEN=Object.keys(EN).length>0;
+const LANG=(()=>{if(!HASEN)return 'ru';try{const s=localStorage.getItem(LANG_KEY);if(s==='ru'||s==='en')return s;}catch(e){}
+  try{const q=new URLSearchParams(location.search).get('lang');if(q==='ru'||q==='en')return q;}catch(e){}
+  try{const l=(navigator.language||'ru').slice(0,2).toLowerCase();return RU_FAM.includes(l)?'ru':'en';}catch(e){return 'ru';}})();
+const DS=LANG==='ru'?',':'.';
+const LANGBTN=!HASEN?'':LANG==='ru'?'🌐 English':'🌐 Русский';
+const T=(k,a)=>{let s=(LANG==='en'&&EN[k])||RU[k];if(s===undefined)return k;return a?s.replace(/\{(\d+)\}/g,(m,i)=>a[+i]):s;};
+/* Премиум: общий модуль для браузерных игр на Яндекс Играх.
+   Платный Премиум на срок (30 дней или год), без автопродления: «используемая» покупка, срок считается по серверному
+   времени Яндекса и хранится в облачных данных игрока. Подробно: README.md рядом с этим файлом.
+   Модуль ничего не знает об игре: хранилище, звук и реклама подключаются через init() и несколько вызовов хозяина.
+   Без SDK, без покупок или без созданных товаров в консоли кнопка и карточки скрыты, игра работает как раньше. */
+window.Premium = (function () {
+  "use strict";
+  var DAY = 86400000;
+
+  /* ---- Настройки: все числа и товары в одном месте ---- */
+  var config = {
+    adGapMs: 5 * 60 * 1000,     // интервал полноэкранной рекламы; хозяин читает его при показе (решение владельца 8 ноября: 5 минут)
+    cardEvery: 3,               // карточка «Надоела реклама?» после каждой 3-й показанной полноэкранной рекламы
+    remindDays: 3,              // напоминание о конце Премиума за столько дней и меньше (раз в сутки)
+    pollMs: 60000,              // как часто сверять срок с серверным временем
+    tokensKeep: 20,             // сколько токенов последних покупок помнить
+    products: {                 // id товара в консоли Яндекса → срок
+      premium_30: { days: 30 },
+      premium_365: { days: 365 }
+    },
+    order: ["premium_30", "premium_365"],
+    corner: true,               // кнопка «Премиум» в углу экрана
+    zIndex: 50
+  };
+
+  /* ---- Тексты (временные, их заменит сессия «Тексты»). Подмена: Premium.init({ texts: { ru: {...}, en: {...} } }) ---- */
+  var TEXTS = {
+    ru: {
+      btn: "Премиум", btnOn: "Премиум · {0} д.", title: "Премиум",
+      activeUntil: "Активен до {0}. Осталось {1}.",
+      notActive: "Сейчас Премиум не включён.",
+      perks: ["Без полноэкранной рекламы и баннеров.", "Награды за ролики выдаются сразу, без просмотра.", "Правила и сложность игры не меняются: Премиум не помогает выигрывать."],
+      p30: "Премиум на 30 дней", p365: "Премиум на год",
+      validTo: "Будет действовать до {0}", buy: "Купить", extend: "Продлить",
+      note: "Один платёж, без автопродления: больше ничего не спишется. Если Премиум уже идёт, новый срок добавится к концу.",
+      close: "Закрыть", later: "Не сейчас",
+      adTitle: "Надоела реклама?", adText: "Премиум: без роликов и баннеров, 30 дней за {0}, не продлевается сам.", adMore: "Узнать про Премиум",
+      soonTitle: "Премиум скоро закончится", soonText: "Осталось {0}. Продлить?",
+      endTitle: "Премиум закончился", endText: "Реклама вернулась. Можно включить Премиум снова.",
+      busy: "Ждём подтверждения оплаты…", done: "Готово! Премиум активен до {0}.",
+      fail: "Покупка не прошла. Деньги не списаны.", saveFail: "Оплата принята, но срок пока не сохранился. Не закрывайте игру, мы повторим при следующем запуске.",
+      d1: "{0} день", d2: "{0} дня", d5: "{0} дней", free: "Ян", lang: "ru-RU"
+    },
+    en: {
+      btn: "Premium", btnOn: "Premium · {0} d", title: "Premium",
+      activeUntil: "Active until {0}. {1} left.",
+      notActive: "Premium is not active.",
+      perks: ["No full-screen ads or banners.", "Rewards for videos are given instantly, no watching.", "The rules and difficulty stay the same: Premium does not help you win."],
+      p30: "Premium for 30 days", p365: "Premium for a year",
+      validTo: "Will be active until {0}", buy: "Buy", extend: "Extend",
+      note: "One payment, no auto-renewal: nothing else will be charged. If Premium is already running, the new period is added to the end.",
+      close: "Close", later: "Not now",
+      adTitle: "Tired of ads?", adText: "Premium: no videos or banners, 30 days for {0}, does not renew by itself.", adMore: "About Premium",
+      soonTitle: "Premium ends soon", soonText: "{0} left. Extend?",
+      endTitle: "Premium has ended", endText: "Ads are back. You can turn Premium on again.",
+      busy: "Waiting for payment confirmation…", done: "Done! Premium is active until {0}.",
+      fail: "The purchase did not go through. You were not charged.", saveFail: "Payment accepted, but the period is not saved yet. Keep the game open, we will retry on the next start.",
+      d1: "{0} day", d2: "{0} days", d5: "{0} days", free: "Yan", lang: "en-GB"
+    }
+  };
+
+  /* ---- Состояние ---- */
+  var sdk = null, payments = null, store = null;
+  var lang = "ru", texts = TEXTS.ru;
+  var catalog = {};                   // id → описание товара из консоли
+  var st = blank();
+  var off = 0;                        // запасная поправка серверного времени, если serverTime() недоступен
+  var ready = false, canBuy = false, busy = false, chain = Promise.resolve();
+  var listeners = [], pollTimer = 0, lastActive = false;
+  var ui = { corner: null, ov: null, box: null, status: "", mode: "", style: null, lastFocus: null };
+
+  function blank() { return { until: 0, tokens: [], ads: 0, cardAt: 0, remindDay: 0, endShown: 0 }; }
+  function clean(o) {
+    var r = blank();
+    if (!o || typeof o !== "object") return r;
+    r.until = Math.max(0, Number(o.until) || 0);
+    r.tokens = Array.isArray(o.tokens) ? o.tokens.filter(function (t) { return typeof t === "string"; }).slice(-config.tokensKeep) : [];
+    r.ads = Math.max(0, Math.floor(Number(o.ads) || 0));
+    r.cardAt = Math.max(0, Math.floor(Number(o.cardAt) || 0));
+    r.remindDay = Math.max(0, Math.floor(Number(o.remindDay) || 0));
+    r.endShown = Math.max(0, Number(o.endShown) || 0);
+    return r;
+  }
+  function parse(raw) { try { return clean(typeof raw === "string" ? JSON.parse(raw) : raw); } catch (e) { return blank(); } }
+  /* Слияние двух снимков (облако и устройство): срок и счётчики берём большие, токены объединяем.
+     Хозяин вызывает при импорте облака, иначе срок мог бы пропасть при конфликте двух устройств. */
+  function mergeState(a, b) {
+    var x = parse(a), y = parse(b), r = blank(), seen = {};
+    r.until = Math.max(x.until, y.until); r.ads = Math.max(x.ads, y.ads); r.cardAt = Math.max(x.cardAt, y.cardAt);
+    r.remindDay = Math.max(x.remindDay, y.remindDay); r.endShown = Math.max(x.endShown, y.endShown);
+    y.tokens.concat(x.tokens).forEach(function (t) { if (!seen[t]) { seen[t] = 1; r.tokens.push(t); } });
+    r.tokens = r.tokens.slice(-config.tokensKeep);
+    return JSON.stringify(r);
+  }
+  function persist() { try { if (store && store.set) store.set(JSON.stringify(st)); } catch (e) {} }
+  function loadState() { try { st = parse(store && store.get ? store.get() : null); } catch (e) { st = blank(); } }
+
+  /* ---- Серверное время: часы устройства не используем ---- */
+  function now() {
+    if (sdk && typeof sdk.serverTime === "function") {
+      try { var t = sdk.serverTime(); if (typeof t === "number" && t > 0) { off = t - Date.now(); return t; } } catch (e) {}
+    }
+    return Date.now() + off;
+  }
+  function active() { return st.until > now(); }
+  function daysLeft() { var ms = st.until - now(); return ms > 0 ? Math.ceil(ms / DAY) : 0; }
+  function available() { return !!(ready && canBuy); }
+
+  /* ---- Утилиты текста ---- */
+  function fmt(s) { var a = arguments; return String(s).replace(/\{(\d)\}/g, function (m, i) { var v = a[Number(i) + 1]; return v == null ? "" : v; }); }
+  function tx(k) { var v = texts[k]; return v != null ? v : (TEXTS.ru[k] != null ? TEXTS.ru[k] : k); }
+  function plural(n) {
+    if (lang === "en") return fmt(n === 1 ? tx("d1") : tx("d2"), n);
+    var m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return fmt(tx("d1"), n);
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return fmt(tx("d2"), n);
+    return fmt(tx("d5"), n);
+  }
+  function dateStr(ms) {
+    try { return new Date(ms).toLocaleDateString(tx("lang"), { day: "numeric", month: "long", year: "numeric" }).replace(/\s*г\.$/, ""); }   // без «г.», чтобы в конце фразы не было «г..»
+    catch (e) { return new Date(ms).toISOString().slice(0, 10); }
+  }
+  function priceOf(id) { var c = catalog[id]; return c && c.price ? String(c.price) : ""; }
+  function dayIdx() { return Math.floor(now() / DAY); }
+  function emit() { var a = active(); lastActive = a; listeners.slice().forEach(function (f) { try { f(a); } catch (e) {} }); renderCorner(); if (ui.ov && ui.mode === "shop") renderShop(); }
+
+  /* ---- Покупка и начисление: запись в облако подтверждена, и только потом consumePurchase ---- */
+  function grant(p) {
+    var id = p && p.productID, tok = p && p.purchaseToken, prod = config.products[id];
+    if (!prod || !tok) return Promise.resolve(false);
+    if (st.tokens.indexOf(tok) < 0) {
+      var base = Math.max(now(), st.until);
+      st.until = base + prod.days * DAY;
+      st.tokens.push(tok); if (st.tokens.length > config.tokensKeep) st.tokens.shift();
+      persist();
+    }
+    return Promise.resolve(store && store.save ? store.save() : false).then(function (ok) {
+      if (!ok) { var e = new Error("save"); e.code = "save"; throw e; }
+      // срок уже сохранён: если закрыть покупку не вышло, её закроют при следующем запуске, второй раз срок не начислится
+      return Promise.resolve(payments.consumePurchase(tok)).then(function () {}, function () {});
+    }).then(function () { emit(); return true; });
+  }
+  function queue(f) { var r = chain.then(f, f); chain = r.then(function () {}, function () {}); return r; }
+  function checkPurchases() {
+    return queue(function () {
+      return payments.getPurchases().then(function (list) {
+        list = Array.isArray(list) ? list : (list && list.purchases) || [];
+        return list.reduce(function (p, item) { return p.then(function () { return grant(item).catch(function () {}); }); }, Promise.resolve());
+      });
+    }).catch(function () {}).then(function () { emit(); });
+  }
+  function buy(id) {
+    if (busy || !canBuy || !config.products[id]) return Promise.resolve(false);
+    busy = true; setStatus(tx("busy")); renderShop();
+    return queue(function () {
+      return payments.purchase({ id: id, developerPayload: "pm" }).then(function (p) {
+        return grant(p).then(function () { setStatus(fmt(tx("done"), dateStr(st.until))); return true; }, function (e) {
+          setStatus(e && e.code === "save" ? tx("saveFail") : tx("fail")); return false;
+        });
+      }, function () { setStatus(tx("fail")); return false; });
+    }).then(function (r) { busy = false; renderShop(); return r; }, function () { busy = false; renderShop(); return false; });
+  }
+
+  /* ---- Вызовы хозяина ---- */
+  function noteFullscreen() { st.ads++; persist(); }
+  /* Показать карточку на спокойном экране (меню, результат). Возвращает true, если карточка открыта. */
+  function maybeCard() {
+    if (!available() || ui.ov) return false;
+    if (active()) {
+      if (daysLeft() <= config.remindDays && st.remindDay !== dayIdx()) { st.remindDay = dayIdx(); persist(); openCard("soon"); return true; }
+      return false;
+    }
+    if (st.until > 0 && st.endShown !== st.until) { st.endShown = st.until; persist(); openCard("end"); return true; }
+    if (config.cardEvery > 0 && Math.floor(st.ads / config.cardEvery) > Math.floor(st.cardAt / config.cardEvery)) { st.cardAt = st.ads; persist(); openCard("ad"); return true; }
+    return false;
+  }
+
+  /* ---- Интерфейс ---- */
+  var CSS = ".pm-corner{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:max(12px,env(safe-area-inset-right,0px));z-index:var(--pm-z,50);display:inline-flex;align-items:center;gap:5px;" +
+    "min-height:40px;padding:0 12px;border-radius:20px;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:var(--pm-gold,#f2c14e);color:#2a2110;font:600 14px/1 var(--f-display,system-ui,sans-serif);letter-spacing:.02em;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.25)}" +
+    ".pm-corner[hidden]{display:none}.pm-corner.on{background:var(--pm-paper,var(--paper,#f4edd9));color:var(--pm-ink,var(--fg,#22304a))}" +
+    ".pm-corner:focus-visible,.pm-btn:focus-visible,.pm-x:focus-visible{outline:3px solid var(--pm-focus,var(--focus,#1d5cc0));outline-offset:2px}" +
+    ".pm-ov{position:fixed;inset:0;z-index:calc(var(--pm-z,50) + 10);display:grid;place-items:center;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));background:var(--pm-scrim,rgba(20,18,12,.5))}" +
+    ".pm-ov[hidden]{display:none}.pm-box{position:relative;box-sizing:border-box;width:100%;max-width:420px;max-height:calc(100% - 8px);overflow-y:auto;background:var(--pm-paper,var(--paper,#f4edd9));color:var(--pm-ink,var(--fg,#22304a));" +
+    "border:1.5px solid var(--pm-ink,var(--fg,#22304a));border-radius:12px;padding:18px 18px 16px;box-shadow:0 10px 34px rgba(0,0,0,.4);font:15px/1.4 var(--f-body,system-ui,sans-serif);-webkit-user-select:none;user-select:none}" +
+    ".pm-box h2{margin:0 36px 8px 0;font:600 22px/1.2 var(--f-display,system-ui,sans-serif);text-wrap:balance}.pm-box p{margin:0 0 10px}.pm-sub{color:var(--pm-muted,var(--muted,#615d4f));font-size:14px}" +
+    ".pm-x{position:absolute;top:8px;right:8px;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer}" +
+    ".pm-perks{margin:0 0 12px;padding-left:20px}.pm-perks li{margin:0 0 4px}" +
+    ".pm-prod{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:10px 12px;margin:0 0 10px;border:1.5px solid var(--pm-line,var(--line,#b9ab86));border-radius:10px;background:var(--pm-paper2,var(--paper-2,#ebe1c6))}" +
+    ".pm-prod b{font:600 17px/1.2 var(--f-display,system-ui,sans-serif)}.pm-prod .pm-price{font:600 17px/1 var(--f-display,system-ui,sans-serif);font-variant-numeric:tabular-nums;white-space:nowrap}" +
+    ".pm-prod .pm-sub{grid-column:1 / -1}.pm-btn{box-sizing:border-box;min-height:44px;padding:0 16px;border-radius:8px;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:transparent;color:inherit;font:600 16px/1 var(--f-display,system-ui,sans-serif);cursor:pointer}" +
+    ".pm-btn.main{background:var(--pm-red,var(--red,#b3352b));border-color:var(--pm-red,var(--red,#b3352b));color:var(--pm-redink,var(--red-ink,#fff7ea))}.pm-btn:disabled{opacity:.55;cursor:default}" +
+    ".pm-prod .pm-btn{grid-column:1 / -1;width:100%}.pm-row{display:flex;gap:10px;flex-wrap:wrap}.pm-row .pm-btn{flex:1 1 140px}" +
+    ".pm-status{min-height:20px;margin:6px 0 0;font-size:14px;font-style:italic}@media (prefers-reduced-motion:no-preference){.pm-box{animation:pmIn .2s ease-out}}@keyframes pmIn{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}";
+
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function ensureUi() {
+    if (ui.style) return;
+    ui.style = el("style"); ui.style.textContent = CSS; document.head.appendChild(ui.style);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && ui.ov) closeOv(); });
+  }
+  function renderCorner() {
+    if (!config.corner || typeof document === "undefined") return;
+    var show = ready && (canBuy || active());
+    try { document.documentElement.classList.toggle("pm-on", !!show); } catch (e) {}
+    if (!show) { if (ui.corner) ui.corner.hidden = true; return; }
+    ensureUi();
+    if (!ui.corner) {
+      ui.corner = el("button", "pm-corner"); ui.corner.type = "button"; ui.corner.id = "pmCorner";
+      ui.corner.addEventListener("click", function () { openShop(); });
+      document.body.appendChild(ui.corner);
+    }
+    var on = active();
+    ui.corner.hidden = false;
+    ui.corner.classList.toggle("on", on);
+    // звезда и подпись отдельными элементами: хозяин может скрыть подпись на тесном экране (.pm-lbl), кнопка остаётся звездой
+    ui.corner.textContent = "";
+    ui.corner.appendChild(el("span", "pm-st", "★"));
+    ui.corner.appendChild(el("span", "pm-lbl", on ? fmt(tx("btnOn"), daysLeft()) : tx("btn")));
+    ui.corner.setAttribute("aria-label", on ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("btn"));
+  }
+  function setStatus(s) { ui.status = s || ""; var n = ui.box && ui.box.querySelector(".pm-status"); if (n) n.textContent = ui.status; }
+  function mountOv() {
+    ensureUi(); closeOv(true);
+    ui.lastFocus = document.activeElement;
+    ui.ov = el("div", "pm-ov"); ui.ov.setAttribute("role", "dialog"); ui.ov.setAttribute("aria-modal", "true");
+    ui.box = el("div", "pm-box"); ui.ov.appendChild(ui.box);
+    ui.ov.addEventListener("click", function (e) { if (e.target === ui.ov) closeOv(); });
+    document.body.appendChild(ui.ov);
+  }
+  function closeOv(quiet) {
+    if (ui.ov && ui.ov.parentNode) ui.ov.parentNode.removeChild(ui.ov);
+    ui.ov = null; ui.box = null; ui.mode = ""; ui.status = "";
+    if (!quiet && ui.lastFocus && ui.lastFocus.focus) { try { ui.lastFocus.focus({ preventScroll: true }); } catch (e) {} }
+  }
+  function xBtn() { var b = el("button", "pm-x", "×"); b.type = "button"; b.setAttribute("aria-label", tx("close")); b.addEventListener("click", function () { closeOv(); }); return b; }
+  function productCard(id) {
+    var days = config.products[id].days, c = el("div", "pm-prod");
+    var base = Math.max(now(), st.until);
+    c.appendChild(el("b", "", id === "premium_365" ? tx("p365") : tx("p30")));
+    c.appendChild(el("span", "pm-price", priceOf(id) || ""));
+    c.appendChild(el("span", "pm-sub", fmt(tx("validTo"), dateStr(base + days * DAY))));
+    var b = el("button", "pm-btn main", active() ? tx("extend") : tx("buy")); b.type = "button"; b.disabled = busy; b.setAttribute("data-pm-buy", id);
+    b.addEventListener("click", function () { buy(id); });
+    c.appendChild(b);
+    return c;
+  }
+  function renderShop() {
+    if (!ui.box || ui.mode !== "shop") return;
+    var b = ui.box; b.textContent = "";
+    b.appendChild(xBtn());
+    var h = el("h2", "", tx("title")); h.id = "pmTitle"; b.appendChild(h);
+    ui.ov.setAttribute("aria-labelledby", "pmTitle");
+    b.appendChild(el("p", "", active() ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("notActive")));
+    var ul = el("ul", "pm-perks"); texts.perks.forEach(function (s) { ul.appendChild(el("li", "", s)); }); b.appendChild(ul);
+    config.order.forEach(function (id) { if (catalog[id]) b.appendChild(productCard(id)); });
+    b.appendChild(el("p", "pm-sub", tx("note")));
+    var s = el("p", "pm-status", ui.status); s.setAttribute("role", "status"); s.setAttribute("aria-live", "polite"); b.appendChild(s);
+  }
+  function openShop() {
+    if (!ready || (!canBuy && !active())) return;
+    mountOv(); ui.mode = "shop"; renderShop();
+    var f = ui.box.querySelector(".pm-prod .pm-btn") || ui.box.querySelector(".pm-x"); if (f) try { f.focus({ preventScroll: true }); } catch (e) {}
+  }
+  function openCard(kind) {
+    mountOv(); ui.mode = "card:" + kind;
+    var b = ui.box, p30 = priceOf("premium_30");
+    var title = kind === "ad" ? tx("adTitle") : kind === "soon" ? tx("soonTitle") : tx("endTitle");
+    var text = kind === "ad" ? fmt(tx("adText"), p30 || ("99 " + tx("free"))) : kind === "soon" ? fmt(tx("soonText"), plural(daysLeft())) : tx("endText");
+    b.appendChild(xBtn());
+    var h = el("h2", "", title); h.id = "pmTitle"; b.appendChild(h); ui.ov.setAttribute("aria-labelledby", "pmTitle");
+    b.appendChild(el("p", "", text));
+    var row = el("div", "pm-row");
+    var go = el("button", "pm-btn main", kind === "ad" ? tx("adMore") : (kind === "soon" ? tx("extend") : tx("buy"))); go.type = "button";
+    go.addEventListener("click", function () { openShop(); });
+    var no = el("button", "pm-btn", tx("later")); no.type = "button"; no.addEventListener("click", function () { closeOv(); });
+    row.appendChild(go); row.appendChild(no); b.appendChild(row);
+    try { no.focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  /* ---- Запуск ---- */
+  function setLang(l) {
+    lang = l === "en" ? "en" : "ru"; texts = Object.assign({}, TEXTS.ru, TEXTS[lang] || {});
+    renderCorner(); if (ui.ov) { if (ui.mode === "shop") renderShop(); else { var m = ui.mode.split(":")[1]; openCard(m); } }
+  }
+  function tick() {
+    var a = active();
+    if (a !== lastActive) emit(); else renderCorner();
+  }
+  function init(o) {
+    o = o || {};
+    if (o.config) Object.keys(o.config).forEach(function (k) { config[k] = o.config[k]; });
+    if (o.texts) Object.keys(o.texts).forEach(function (l) { TEXTS[l] = Object.assign(TEXTS[l] || {}, o.texts[l]); });
+    sdk = o.sdk || null; store = o.store || null;
+    setLang(o.lang || lang);
+    loadState();
+    ready = true; lastActive = active();
+    try { document.addEventListener("visibilitychange", function () { if (!document.hidden) tick(); }); } catch (e) {}
+    clearInterval(pollTimer); pollTimer = setInterval(tick, config.pollMs);
+    renderCorner();
+    if (!sdk || typeof sdk.getPayments !== "function") return Promise.resolve(false);
+    return sdk.getPayments({ signed: false }).then(function (pay) {
+      payments = pay;
+      return pay.getCatalog();
+    }).then(function (list) {
+      list = Array.isArray(list) ? list : [];
+      list.forEach(function (c) { if (c && config.products[c.id]) catalog[c.id] = c; });
+      canBuy = !!(store && store.save && config.order.some(function (id) { return catalog[id]; }));
+      renderCorner();
+      return canBuy ? checkPurchases().then(function () { return true; }) : false;
+    }).catch(function () { canBuy = false; renderCorner(); return false; });
+  }
+
+  return {
+    config: config,
+    init: init, setLang: setLang,
+    active: active, until: function () { return st.until; }, daysLeft: daysLeft, available: available,
+    noteFullscreen: noteFullscreen, maybeCard: maybeCard, openShop: openShop,
+    onChange: function (f) { if (typeof f === "function") listeners.push(f); },
+    mergeState: mergeState,
+    refresh: function () { return canBuy ? checkPurchases() : Promise.resolve(); },
+    _state: function () { return JSON.parse(JSON.stringify(st)); }
+  };
+})();
+
+/* Тексты Премиума и новые строки интерфейса (RU+EN). Источник: publish\texts\kosmostanciya\premium.md. Не извлекается в ru.json. В игре нет баннера — слово «баннер» убрано. */
+const PREMIUM_TEXTS={
+ ru:{btn:"Премиум",btnOn:"Премиум · {0} д.",p30:"Премиум на 30 дней",p365:"Премиум на год",
+  perks:["Полноэкранная реклама отключается.","Награды за ролики выдаются сразу, без просмотра.","Подсказки и игровые лимиты остаются прежними."],
+  note:"Оплата один раз. Премиум действует 30 дней или год — в зависимости от выбранного товара. Автопродления и повторных списаний нет.",
+  adTitle:"Надоела реклама?",adText:"Управляй экипажем и рассчитывай ресурсы станции без рекламных пауз! Премиум убирает полноэкранную рекламу, а награды за ролики выдаёт сразу.",adMore:"Узнать про Премиум",
+  soonTitle:"Премиум скоро закончится",soonText:"Ещё {0} без рекламных пауз на орбите. Премиум закончится сам, без списаний. При желании его можно купить снова.",
+  endTitle:"Премиум закончился",endText:"Полноэкранная реклама снова показывается, а награды требуют просмотра роликов. Экипаж продолжает свою миссию!"},
+ en:{btn:"Premium",btnOn:"Premium · {0} d",p30:"30-Day Premium",p365:"1-Year Premium",
+  perks:["Full-screen ads are disabled.","Video rewards are instant, no watching.","Hints and game limits stay the same."],
+  note:"One-time payment. Premium lasts 30 days or 1 year, depending on your purchase. No automatic renewal or recurring charges.",
+  adTitle:"Tired of ads?",adText:"Manage your crew and calculate station resources without ad breaks! Premium removes full-screen ads and gives video rewards instantly.",adMore:"Learn About Premium",
+  soonTitle:"Premium Is Ending Soon",soonText:"{0} more without ad breaks in orbit. Premium ends automatically with no further charges. You can buy it again whenever you like.",
+  endTitle:"Premium Has Ended",endText:"Full-screen ads are back, and video rewards require watching ads again. Your crew's mission continues!"}
+};
+const PX={
+ ru:{star:"★ Премиум",starOn:"★ Премиум · осталось {0} дн.",free:"Получить (Премиум)",rushFree:"⭐ Срочный груз: +100 кг (Премиум, без ролика)",coinFree:"Получить ◎ +1 (Премиум, 1 раз в сутки миссии)",coinDone:"Сегодня монета уже получена. Завтра — снова!"},
+ en:{star:"★ Premium",starOn:"★ Premium · {0} d left",free:"Claim (Premium)",rushFree:"⭐ Extra Cargo: +100 kg (Premium, no ad)",coinFree:"Claim ◎ +1 (Premium, once per mission day)",coinDone:"Already claimed today. Come back tomorrow!"}
+};
+const PXT=(k,a)=>String((PX[LANG]||PX.ru)[k]).replace(/\{0\}/g,a);
+
+
 /* ================= ДАННЫЕ ================= */
 const DAYS=90,SLOTS=16,DOCKS=[1,31,61];
 const PANEL_KW=4,BATT_KWH=3,RAD_KW=10,NIGHT_H=.75,ORBIT_H=1.5;
@@ -96,71 +455,71 @@ const CAP=1500,LAUNCH=10000,GRANT=40000,CREW_COST=8000,REGEN_COST=15000,REGEN_MA
 const SAVE_KEY='kosmos-save-v1',BEST_KEY='kosmos-best-v1';
 const STAR_AT=[25,50,85];
 const MOD={
- core:{n:'Узловой',cost:0,mass:0,pw:1,ic:'🛰️'},
- hab:{n:'Жилой',cost:18000,mass:150,pw:2,info:'3 спальных места'},
- lab:{n:'Лаборатория',cost:25000,mass:180,pw:3,info:'1 эксперимент'},
- green:{n:'Оранжерея',cost:20000,mass:160,pw:2,info:'+3 кг еды в сутки'},
- lock:{n:'Шлюз',cost:12000,mass:120,pw:1,info:'выход в космос, ремонт снаружи'},
- panel:{n:'Панель',cost:6000,mass:40,pw:0,info:'4 кВт на свету'},
- rad:{n:'Радиатор',cost:4000,mass:40,pw:0,info:'отводит 10 кВт тепла'},
- batt:{n:'Аккумулятор',cost:3000,mass:30,pw:0,info:'хранит 3 кВт·ч'}
+ core:{n:T("k44f1a4"),cost:0,mass:0,pw:1,ic:'🛰️'},
+ hab:{n:T("k7ad55d"),cost:18000,mass:150,pw:2,info:T("k6fad0e")},
+ lab:{n:T("k7a8540"),cost:25000,mass:180,pw:3,info:T("k78fc07")},
+ green:{n:T("k1faf8f"),cost:20000,mass:160,pw:2,info:T("k0678ba")},
+ lock:{n:T("k715fc6"),cost:12000,mass:120,pw:1,info:T("k8f1ce5")},
+ panel:{n:T("k254853"),cost:6000,mass:40,pw:0,info:T("k54c7a1")},
+ rad:{n:T("k5d603d"),cost:4000,mass:40,pw:0,info:T("k7624f3")},
+ batt:{n:T("ka71543"),cost:3000,mass:30,pw:0,info:T("k012332")}
 };
 const BUY=['hab','lab','green','lock','panel','rad','batt'];
 const EXTERNAL=['panel','rad'];
 const RES={
- o2:{n:'Кислород',u:'кг',p:100,m:1,step:10,ic:'🫁',k:'o2'},
- water:{n:'Вода',u:'л',p:20,m:1,step:50,ic:'💧',k:'water'},
- food:{n:'Еда',u:'кг',p:150,m:1,step:20,ic:'🍎',k:'food'},
- kit:{n:'Расходники для опытов',u:'кг',p:100,m:1,step:10,ic:'🧪'},
- spare:{n:'Запчасти',u:'шт',p:800,m:5,step:1,ic:'🔧'},
- fuel:{n:'Топливо',u:'кг',p:200,m:1,step:10,ic:'⛽'}
+ o2:{n:T("k37bbf2"),u:T("k59ddef"),p:100,m:1,step:10,ic:'🫁',k:'o2'},
+ water:{n:T("k5ecbec"),u:T("k516cbe"),p:20,m:1,step:50,ic:'💧',k:'water'},
+ food:{n:T("k2af9ea"),u:T("k59ddef"),p:150,m:1,step:20,ic:'🍎',k:'food'},
+ kit:{n:T("k33f8e6"),u:T("k59ddef"),p:100,m:1,step:10,ic:'🧪'},
+ spare:{n:T("kbddee6"),u:T("ka5640e"),p:800,m:5,step:1,ic:'🔧'},
+ fuel:{n:T("k1c00b8"),u:T("k59ddef"),p:200,m:1,step:10,ic:'⛽'}
 };
 const RKEYS=Object.keys(RES);
 const EXP=[
- {n:'Кресс-салат в невесомости',d:3,c:1,kit:5,rew:6000,sc:1,need:0},
- {n:'Снимки Земли',d:2,c:1,kit:2,rew:4000,sc:1,need:0},
- {n:'Рост кристаллов',d:5,c:1,kit:10,rew:12000,sc:2,need:2},
- {n:'Мышцы в невесомости',d:6,c:2,kit:15,rew:24000,sc:4,need:5},
- {n:'Сплавы металлов',d:8,c:2,kit:25,rew:40000,sc:7,need:10},
- {n:'Полезные бактерии',d:10,c:2,kit:30,rew:56000,sc:10,need:18},
- {n:'Новые лекарства',d:12,c:3,kit:40,rew:90000,sc:16,need:30},
- {n:'Квантовые опыты',d:15,c:3,kit:60,rew:160000,sc:30,need:45}
+ {n:T("k3634f1"),d:3,c:1,kit:5,rew:6000,sc:1,need:0},
+ {n:T("k13e063"),d:2,c:1,kit:2,rew:4000,sc:1,need:0},
+ {n:T("k41e893"),d:5,c:1,kit:10,rew:12000,sc:2,need:2},
+ {n:T("k15c3d9"),d:6,c:2,kit:15,rew:24000,sc:4,need:5},
+ {n:T("kcc1577"),d:8,c:2,kit:25,rew:40000,sc:7,need:10},
+ {n:T("k8ef2c9"),d:10,c:2,kit:30,rew:56000,sc:10,need:18},
+ {n:T("k357bde"),d:12,c:3,kit:40,rew:90000,sc:16,need:30},
+ {n:T("kc29b42"),d:15,c:3,kit:60,rew:160000,sc:30,need:45}
 ];
-const NAMES=['Алёна','Максим','Тимур','Света','Игорь','Нина'];
+const NAMES=[T("k169dd0"),T("ke6b1e5"),T("ke0f9d6"),T("ke29d70"),T("kc3e42c"),T("k0f11e5")];
 /* вопросы ЦУПа: [вопрос, верный, неверный×3, разбор] — 3 уровня по стыковкам */
 const QB=[[
- ['Какая планета ближе всех к Солнцу?','Меркурий','Венера','Земля','Марс','Меркурий — самая близкая к Солнцу и самая быстрая планета.'],
- ['Как называется естественный спутник Земли?','Луна','Фобос','Титан','Европа','Вокруг Земли обращается одна Луна.'],
- ['Кто первым полетел в космос?','Юрий Гагарин','Алексей Леонов','Нил Армстронг','Герман Титов','Юрий Гагарин, 12 апреля 1961 года, корабль «Восток».'],
- ['В каком году Гагарин полетел в космос?','1961','1957','1969','1975','1961 год. А в 1957-м запустили первый спутник.'],
- ['Как называется наша галактика?','Млечный Путь','Андромеда','Туманность Ориона','Большая Медведица','Солнце — одна из звёзд галактики Млечный Путь.'],
- ['Сколько планет в Солнечной системе?','8','7','9','10','Восемь: от Меркурия до Нептуна.'],
- ['Какую планету называют красной?','Марс','Венера','Юпитер','Сатурн','Марс красный из-за ржавчины (оксидов железа) на поверхности.'],
- ['Что происходит с предметами в невесомости?','Они парят','Падают вниз','Становятся тяжелее','Исчезают','Станция и всё в ней непрерывно падают вокруг Земли, поэтому всё парит.'],
- ['С какого космодрома стартовал Гагарин?','Байконур','Плесецк','Восточный','Канаверал','Байконур в Казахстане.'],
- ['Что находится в центре Солнечной системы?','Солнце','Земля','Юпитер','Луна','Солнце — звезда, вокруг неё обращаются все планеты.']
+ [T("kbbb678"),T("k1ac581"),T("k06583f"),T("k42ff10"),T("kbc667f"),T("k82f08f")],
+ [T("ka7e49c"),T("keafee5"),T("kdc284d"),T("kd08d62"),T("k7b9a5a"),T("k45b331")],
+ [T("ke19f5a"),T("k46919b"),T("k56ae47"),T("ka78af2"),T("k8ed49b"),T("k53060c")],
+ [T("k530b66"),'1961','1957','1969','1975',T("k2606cf")],
+ [T("kefe3bb"),T("k66951d"),T("k0981f1"),T("k7d4fa0"),T("ke19a05"),T("kdb8fa9")],
+ [T("kb4542b"),'8','7','9','10',T("k6621f7")],
+ [T("k97ab5e"),T("kbc667f"),T("k06583f"),T("k2f59e8"),T("k3575ca"),T("kd08ba8")],
+ [T("k80e557"),T("k9f95c4"),T("kf8d375"),T("kb71ddd"),T("k1f1a79"),T("kecccbe")],
+ [T("ka3ecc4"),T("k906974"),T("kc0997c"),T("k998ccc"),T("k3b1430"),T("keb0b23")],
+ [T("ke2cec4"),T("kdbf396"),T("k42ff10"),T("k2f59e8"),T("keafee5"),T("kedf405")]
 ],[
- ['Как назывался первый искусственный спутник Земли?','«Спутник-1»','«Луна-1»','«Восток-1»','«Прогресс»','Спутник-1 запустили 4 октября 1957 года.'],
- ['Кто первая женщина в космосе?','Валентина Терешкова','Светлана Савицкая','Елена Кондакова','Салли Райд','Терешкова полетела в 1963 году.'],
- ['Кто первым вышел в открытый космос?','Алексей Леонов','Юрий Гагарин','Герман Титов','Эдвин Олдрин','Леонов вышел в космос 18 марта 1965 года.'],
- ['Какая планета самая большая?','Юпитер','Сатурн','Земля','Нептун','Юпитер больше всех остальных планет вместе взятых.'],
- ['У какой планеты самые заметные кольца?','Сатурн','Марс','Меркурий','Венера','Кольца Сатурна из льда и камней видны даже в маленький телескоп.'],
- ['Почему на Земле день сменяется ночью?','Земля вращается вокруг своей оси','Земля обращается вокруг Солнца','Солнце гаснет ночью','Луна закрывает Солнце','Один оборот вокруг оси — сутки (24 часа).'],
- ['Кто первым ступил на Луну?','Нил Армстронг','Юрий Гагарин','Базз Олдрин','Алан Шепард','Нил Армстронг, 1969 год, «Аполлон-11».'],
- ['За какое время МКС облетает Землю?','Около 90 минут','Около суток','Около недели','Около 10 минут','Скорость около 8 км/с, один оборот — примерно 1,5 часа.'],
- ['Что такое комета?','Ледяное тело с хвостом','Маленькая планета','Звезда','Спутник','Вблизи Солнца лёд испаряется и образует хвост.'],
- ['Сколько длится год на Земле?','Около 365 суток','30 суток','100 суток','24 часа','Земля облетает Солнце примерно за 365 суток.']
+ [T("k95bb9a"),T("ka98587"),T("kdddf11"),T("k4a0df3"),T("k4e8cc2"),T("k6c191d")],
+ [T("k007e1c"),T("k3ced76"),T("k29ab4d"),T("k4af47f"),T("k7f8773"),T("kff37a6")],
+ [T("k1e113e"),T("k56ae47"),T("k46919b"),T("k8ed49b"),T("kfaeb5d"),T("kc50dc8")],
+ [T("k696d61"),T("k2f59e8"),T("k3575ca"),T("k42ff10"),T("k6c9378"),T("kb15ce8")],
+ [T("ke42b37"),T("k3575ca"),T("kbc667f"),T("k1ac581"),T("k06583f"),T("k91c7b6")],
+ [T("kdd36d3"),T("kd78aa8"),T("kf0766f"),T("kb15936"),T("ka4c834"),T("kcc5fdd")],
+ [T("k603779"),T("ka78af2"),T("k46919b"),T("kf2cc9e"),T("kbde6f4"),T("kf3bafe")],
+ [T("kb696b7"),T("kdd4f92"),T("kfad473"),T("k98f124"),T("k9eb8f3"),T("kb0249a")],
+ [T("k468966"),T("k28ada9"),T("kce46be"),T("k240fb1"),T("ka77dec"),T("kd45876")],
+ [T("k52d006"),T("kb59d06"),T("k4b6289"),T("k82904a"),T("ke14e41"),T("k4172b4")]
 ],[
- ['За сколько света от Солнца идёт до Земли?','Около 8 минут','1 секунду','1 час','1 сутки','Расстояние 150 млн км, скорость света 300 000 км/с: ≈ 500 секунд.'],
- ['Какая планета самая горячая?','Венера','Меркурий','Марс','Юпитер','На Венере плотная атмосфера, парниковый эффект — около 460 °C.'],
- ['Что такое созвездие?','Группа звёзд, образующая рисунок','Одна яркая звезда','Скопление планет','Вид метеора','Созвездия — «картинки» из звёзд: Большая Медведица, Орион.'],
- ['На какую сторону света показывает Полярная звезда?','На север','На юг','На восток','На запад','Она почти неподвижна на небе над Северным полюсом.'],
- ['Сколько восходов Солнца в сутки видит экипаж МКС?','Около 16','1','2','Около 100','24 ч × 60 = 1440 мин; 1440 ÷ 90 = 16 оборотов.'],
- ['Зачем космонавтам заниматься спортом?','В невесомости слабеют мышцы и кости','Чтобы согреться','Чтобы не уснуть','Чтобы весить больше','Без нагрузки мышцы и кости теряют силу, поэтому на станции спорт 2 часа в день.'],
- ['Что такое космический мусор?','Обломки спутников и ракет','Метеориты из пояса астероидов','Лунная пыль','Облака газа','Мелкий обломок летит быстро и опасен для станции.'],
- ['У какой планеты самая высокая гора-вулкан (Олимп)?','Марс','Венера','Земля','Юпитер','Гора Олимп на Марсе — около 22 км высотой.'],
- ['Сколько примерно длится лунный месяц (полный цикл фаз)?','Около 29–30 суток','Около 7 суток','Около 365 суток','Около 1 суток','Фазы Луны повторяются примерно каждые 29,5 суток.'],
- ['Что даёт космонавтам кислород на МКС?','Электролиз воды','Деревья на борту','Воздух из космоса','Лунный грунт','Электричество разделяет воду на кислород и водород.']
+ [T("kb2affc"),T("k6876e6"),T("k57c448"),T("ke5f168"),T("k0212c7"),T("k48b9bd")],
+ [T("k91133f"),T("k06583f"),T("k1ac581"),T("kbc667f"),T("k2f59e8"),T("k51d87a")],
+ [T("ke66676"),T("ke04fe0"),T("kbaacb4"),T("k590a64"),T("kb6eab6"),T("k49d065")],
+ [T("k1a3c76"),T("k54ae39"),T("k6de5e4"),T("k77f5ea"),T("ka1c5a9"),T("k3dbee8")],
+ [T("k22fa57"),T("kd36214"),'1','2',T("k7e237f"),T("kf3e93c")],
+ [T("k487485"),T("k79584e"),T("k0e4fd5"),T("kf27fe8"),T("kaaa4e0"),T("kcffbc4")],
+ [T("k06d0a3"),T("k8c02b8"),T("kbb926a"),T("k85fd1b"),T("k42f5b9"),T("kaaabf7")],
+ [T("k937b4d"),T("kbc667f"),T("k06583f"),T("k42ff10"),T("k2f59e8"),T("k45032b")],
+ [T("kfad8c4"),T("k1faa74"),T("k99c17f"),T("kb59d06"),T("k46d370"),T("k77a011")],
+ [T("k384afa"),T("k1ca6d1"),T("k54fc17"),T("k372f14"),T("ke951c1"),T("ka72459")]
 ]];
 
 /* ================= УТИЛИТЫ ================= */
@@ -168,23 +527,32 @@ const $=s=>document.querySelector(s);
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
-const fmt=(n,d=2)=>{const k=Math.pow(10,d);return String(Math.round(n*k)/k).replace('.',',');};
-const fm=n=>Math.round(n).toLocaleString('ru-RU')+' ₽';
+const fmt=(n,d=2)=>{const k=Math.pow(10,d);return String(Math.round(n*k)/k).replace('.',DS);};
+const fm=n=>Math.round(n).toLocaleString(LANG==='ru'?'ru-RU':'en-US')+' ₽';
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2400);}
 function lsGet(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 /* Слой платформы: Яндекс Игры SDK (на площадке подключается /sdk.js). Без SDK (сайт, артефакт, локально) — заглушки,
    игра играбельна полностью; ролик за награду без SDK имитируется (для просмотра). */
 const PF=(function(){
-  let ysdk=null,sdkOk=false,wantReady=false,readyDone=false,adBusy=false,hidden=false,apiPaused=false,gpOn=false,wantGp=false,lastAdAt=0;
-  const born=Date.now(),FIRST=120000,GAP=180000,TMO=4000,self={onPause(){}};
+  let ysdk=null,sdkOk=false,wantReady=false,readyDone=false,adBusy=false,hidden=false,apiPaused=false,gpOn=false,wantGp=false,lastAdAt=0,player=null,cloudOk=false,dirtyP=false;
+  const PKEY='kosmos-premium-v1';
+  const born=Date.now(),FIRST=120000,GAP=300000,TMO=4000,self={onPause(){}};
   const apply=()=>{if(!sdkOk||!readyDone)return;const on=wantGp&&!self.paused();if(on===gpOn)return;gpOn=on;try{const g=ysdk.features&&ysdk.features.GameplayAPI;if(g){on?g.start():g.stop();}}catch(e){}};
   const changed=()=>{apply();try{self.onPause(self.paused());}catch(e){}};
   const tryReady=()=>{if(readyDone||!wantReady||!sdkOk)return;readyDone=true;try{const l=ysdk.features&&ysdk.features.LoadingAPI;if(l)l.ready();}catch(e){}apply();};
   self.paused=()=>adBusy||hidden||apiPaused;
   self.setPlaying=on=>{wantGp=!!on;apply();};
   self.ready=()=>{wantReady=true;tryReady();};
+  const importCloud=d=>{try{const c=d&&typeof d.premium==='string'?d.premium:null;let l=null;try{l=localStorage.getItem(PKEY);}catch(e){}
+    cloudOk=true;if(!c&&!l)return;const m=window.Premium?Premium.mergeState(l,c):(c||l);try{localStorage.setItem(PKEY,m);}catch(e){}if(m!==c)dirtyP=true;}catch(e){}};
+  /* хранилище для Премиума: локально + облако игрока (целый снимок, подтверждение записи) */
+  self.store={get:()=>{try{return localStorage.getItem(PKEY);}catch(e){return null;}},
+    set:raw=>{try{localStorage.setItem(PKEY,raw);}catch(e){}dirtyP=true;},
+    save:()=>{if(!player||!cloudOk)return Promise.resolve(false);try{return Promise.resolve(player.setData({premium:self.store.get()},true)).then(()=>{dirtyP=false;return true;},()=>false);}catch(e){return Promise.resolve(false);}}};
+  self.sdk=()=>ysdk;self.pdirty=()=>dirtyP;
   self.hasSdk=()=>sdkOk;
+  self.lang=()=>{try{return sdkOk&&ysdk.environment&&ysdk.environment.i18n?String(ysdk.environment.i18n.lang||''):'';}catch(e){return '';}};
   self.init=()=>{
     try{document.addEventListener('visibilitychange',()=>{hidden=!!document.hidden;changed();});}catch(e){}
     if(!window.YaGames||!window.YaGames.init)return Promise.resolve();
@@ -194,22 +562,26 @@ const PF=(function(){
         ysdk=sdk;sdkOk=true;
         try{sdk.on('game_api_pause',()=>{apiPaused=true;changed();});sdk.on('game_api_resume',()=>{apiPaused=false;changed();});}catch(e){}
         tryReady();
+        return sdk.getPlayer({scopes:false}).then(p=>{player=p;return p.getData();}).then(importCloud,()=>{});
       }).then(()=>{clearTimeout(t);res();},()=>{clearTimeout(t);res();});
     });
   };
+  const gap=()=>(window.Premium&&Premium.config&&Premium.config.adGapMs)||GAP;
   const begin=()=>{adBusy=true;changed();},end=()=>{adBusy=false;changed();};
-  /* полноэкранная реклама: не раньше 2 мин после загрузки и не чаще раза в 3 мин; done вызывается один раз */
+  /* полноэкранная реклама: не раньше 2 мин после загрузки и не чаще раза в 5 мин; done вызывается один раз */
   self.interstitial=done=>{
     if(adBusy)return;
-    const now=Date.now(),at=lastAdAt?lastAdAt+GAP:born+FIRST;
+    if(window.Premium&&Premium.active()){done();return;}   /* Премиум: полноэкранной рекламы нет */
+    const now=Date.now(),at=lastAdAt?lastAdAt+gap():born+FIRST;
     if(!sdkOk||!ysdk.adv||!ysdk.adv.showFullscreenAdv||now<at){done();return;}
-    let fin=false;const e=shown=>{if(fin)return;fin=true;if(shown)lastAdAt=Date.now();end();done();};
+    let fin=false;const e=shown=>{if(fin)return;fin=true;if(shown){lastAdAt=Date.now();try{window.Premium&&Premium.noteFullscreen();}catch(x){}}end();done();};
     begin();
     try{ysdk.adv.showFullscreenAdv({callbacks:{onClose:e,onError:()=>e(false),onOffline:()=>e(false)}});}catch(x){e(false);}
   };
   /* ролик за награду: done(true) только если награда засчитана */
   self.rewarded=done=>{
-    if(!sdkOk){toast('Ролик (имитация: на площадке будет настоящий)…');begin();setTimeout(()=>{end();done(true);},900);return;}
+    if(window.Premium&&Premium.active()){done(true);return;}   /* Премиум: награда сразу, без ролика */
+    if(!sdkOk){toast(T("kd65c88"));begin();setTimeout(()=>{end();done(true);},900);return;}
     if(adBusy||!ysdk.adv||!ysdk.adv.showRewardedVideo){done(false);return;}
     let fin=false,got=false;const e=()=>{if(fin)return;fin=true;if(got)lastAdAt=Date.now();end();done(got);};
     begin();
@@ -236,7 +608,7 @@ function newState(){
     st:{o2:25.2,water:90,food:60,kit:20,spare:2,fuel:10,waste:0},
     regen:false,act:[],done:0,sci:0,capBonus:0,rush:false,debris:10,walkCd:0,flare:0,
     cart:emptyCart(),dock:true,quiz:null,event:null,log:[],warned:{},
-    goals:{g1:null,g2:null},stats:{ok:0,bad:0,earned:0},over:null};
+    rcDay:0,goals:{g1:null,g2:null},stats:{ok:0,bad:0,earned:0},over:null};
 }
 function save(){if(S)lsSet(SAVE_KEY,S);}
 const cnt=t=>S.mods.filter(m=>m.t===t&&!m.b).length;
@@ -258,7 +630,7 @@ function daysLeft(k){const nd=need();let d=nd[k];if(k==='food')d-=greenKg();retu
 const nextDock=()=>DOCKS.find(d=>d>S.day)||DAYS+1;
 const cycleIdx=()=>Math.max(0,DOCKS.indexOf(S.day));
 const starsOf=sc=>STAR_AT.filter(x=>sc>=x).length;
-function log(t){S.log.unshift('День '+S.day+': '+t);S.log.length=Math.min(S.log.length,40);}
+function log(t){S.log.unshift(T("k7178e4",[S.day,t]));S.log.length=Math.min(S.log.length,40);}
 
 /* ================= ДЕНЬ ================= */
 function breakRandom(filter){
@@ -276,39 +648,39 @@ function stepDay(){
   S.act.forEach((a,i)=>{if(i<labs&&!flare)a.left-=pw.sup*(pw.over?.5:1)*(S.health<30?.5:1);});
   const fin=S.act.filter(a=>a.left<=1e-9);S.act=S.act.filter(a=>a.left>1e-9);
   fin.forEach(a=>{const e=EXP[a.id];S.money+=e.rew;S.sci+=e.sc;S.done++;S.stats.earned+=e.rew;
-    news.push({h:'Опыт завершён',t:`«${e.n}»: +${fm(e.rew)} и ${e.sc} очк. науки.`});log(`опыт «${e.n}» завершён (+${fm(e.rew)})`);});
+    news.push({h:T("k7b7a15"),t:T("k6a7770",[e.n,fm(e.rew),e.sc])});log(T("k2e7a65",[e.n,fm(e.rew)]));});
   S.money-=n*SAL;
   S.walkCd=Math.max(0,S.walkCd-1);S.debris=Math.min(60,S.debris+.3);
   let dh=0;const why=[];
-  if(sh.includes('o2')){dh-=35;why.push('нет кислорода');}
-  if(sh.includes('water')){dh-=20;why.push('нет воды');}
-  if(sh.includes('food')){dh-=10;why.push('нет еды');}
-  if(pw.sup<.5){dh-=10;why.push('мало энергии');}
-  if(S.st.waste>250){dh-=5;why.push('много отходов');}
-  if(n>beds()){dh-=10;why.push('тесно: мест '+beds());}
+  if(sh.includes('o2')){dh-=35;why.push(T("kd5e3b1"));}
+  if(sh.includes('water')){dh-=20;why.push(T("k7d20c1"));}
+  if(sh.includes('food')){dh-=10;why.push(T("k4eab3b"));}
+  if(pw.sup<.5){dh-=10;why.push(T("k04153e"));}
+  if(S.st.waste>250){dh-=5;why.push(T("k618f08"));}
+  if(n>beds()){dh-=10;why.push(T("ke29907",[beds()]));}
   S.health=clamp(S.health+(dh<0?dh:4),0,100);
-  if(dh<0){news.push({h:'Здоровье экипажа падает',t:why.join(', ')+'. Здоровье: '+Math.round(S.health)+' %.',bad:1});log('здоровье −: '+why.join(', '));}
+  if(dh<0){news.push({h:T("k7ba58b"),t:T("k08e71c",[why.join(', '),Math.round(S.health)]),bad:1});log(T("k34d8be",[why.join(', ')]));}
   // случайные события
   const r=Math.random(),pB=pw.over?.08:.04,pD=.02+S.debris/1000,pF=.02;
-  if(r<pB){const m=breakRandom();if(m){news.push({h:'Поломка!',t:`Вышел из строя модуль «${MOD[m.t].n}». Ремонт: вкладка «Станция» (нужны запчасть и свободный космонавт${EXTERNAL.includes(m.t)?', а также шлюз':''}).`,bad:1});log('поломка: '+MOD[m.t].n);}}
+  if(r<pB){const m=breakRandom();if(m){news.push({h:T("k992694"),t:T("k979204",[MOD[m.t].n,EXTERNAL.includes(m.t)?T("k4e5fbc"):'']),bad:1});log(T("kff1c00",[MOD[m.t].n]));}}
   else if(r<pB+pD)S.event={t:'debris'};
-  else if(r<pB+pD+pF){S.flare=1;news.push({h:'Вспышка на Солнце',t:'Экипаж укрылся в защищённом отсеке. Завтра опыты не продвигаются.'});log('вспышка на Солнце');}
+  else if(r<pB+pD+pF){S.flare=1;news.push({h:T("k523c7b"),t:T("k8b5f2d")});log(T("k6a647f"));}
   S.day++;
   // предупреждения о запасах
   if(S.day<=DAYS)for(const k of['o2','water','food']){const dl=daysLeft(k);
-    if(dl<=3&&(S.warned[k]===undefined||S.day-S.warned[k]>=4)){S.warned[k]=S.day;news.push({h:'Запас на исходе',t:`${RES[k].n}: хватит ещё на ${fmt(dl,1)} дн. Следующая стыковка — на ${nextDock()}-й день.`,bad:1});}}
+    if(dl<=3&&(S.warned[k]===undefined||S.day-S.warned[k]>=4)){S.warned[k]=S.day;news.push({h:T("k79dded"),t:T("k26540c",[RES[k].n,fmt(dl,1),nextDock()]),bad:1});}}
   if(S.health<=0)S.over='health';else if(S.money<-20000)S.over='money';else if(S.day>DAYS)S.over='done';
-  else if(DOCKS.includes(S.day)){S.dock=true;S.money+=GRANT;S.quiz=null;S.capBonus=0;S.rush=false;news.push({h:'Стыковка!',t:`Грузовик «Прогресс» у станции. Получено финансирование ${fm(GRANT)}.`});log('стыковка, финансирование '+fm(GRANT));}
+  else if(DOCKS.includes(S.day)){S.dock=true;S.money+=GRANT;S.quiz=null;S.capBonus=0;S.rush=false;news.push({h:T("ka2ac23"),t:T("k510650",[fm(GRANT)])});log(T("kc554ca",[fm(GRANT)]));}
   save();return news;
 }
 function resolveEvent(c){
   const e=S.event;if(!e)return'';let t='';
   if(e.t==='debris'){
-    if(c==='move'&&S.st.fuel>=10){S.st.fuel-=10;t='Манёвр выполнен, облако обломков прошло мимо. Топлива −10 кг.';}
+    if(c==='move'&&S.st.fuel>=10){S.st.fuel-=10;t=T("ke5545c");}
     else{
       if(Math.random()<.4){const m=breakRandom(x=>EXTERNAL.includes(x.t))||breakRandom();
-        t=m?`Попадание! Сломан модуль «${MOD[m.t].n}».`:'Попаданий нет.';}
-      else t='Повезло: обломки прошли мимо.';
+        t=m?T("kfb144e",[MOD[m.t].n]):T("k8f1d9f");}
+      else t=T("k89c49d");
     }
     log(t);
   }
@@ -316,25 +688,25 @@ function resolveEvent(c){
 }
 function startExp(id){
   const e=EXP[id];
-  if(S.sci<e.need)return toast('Опыт откроется при '+e.need+' очк. науки');
-  if(S.act.length>=cnt('lab'))return toast('Нет свободной лаборатории');
-  if(freeCrew()<e.c)return toast('Нужно свободных космонавтов: '+e.c);
-  if(S.st.kit<e.kit)return toast('Мало расходников: нужно '+e.kit+' кг');
+  if(S.sci<e.need)return toast(T("kfbe8e2",[e.need]));
+  if(S.act.length>=cnt('lab'))return toast(T("k708a2d"));
+  if(freeCrew()<e.c)return toast(T("kaf6d47",[e.c]));
+  if(S.st.kit<e.kit)return toast(T("k69fdfd",[e.kit]));
   S.st.kit-=e.kit;S.act.push({id,left:e.d,c:e.c});save();render();
 }
 function repair(i){
   const m=S.mods[i];if(!m||!m.b)return;
-  if(EXTERNAL.includes(m.t)&&cnt('lock')<1)return toast('Ремонт снаружи: нужен рабочий шлюз');
-  if(S.st.spare<1)return toast('Нет запчастей — ждите груз');
-  if(freeCrew()<1)return toast('Все космонавты заняты опытами');
-  S.st.spare--;m.b=0;log('отремонтирован: '+MOD[m.t].n);toast('Отремонтировано: '+MOD[m.t].n);save();render();
+  if(EXTERNAL.includes(m.t)&&cnt('lock')<1)return toast(T("kde6517"));
+  if(S.st.spare<1)return toast(T("k7396f2"));
+  if(freeCrew()<1)return toast(T("kcb9094"));
+  S.st.spare--;m.b=0;log(T("k6040e8",[MOD[m.t].n]));toast(T("k2a19d0",[MOD[m.t].n]));save();render();
 }
 function doWalk(){
-  if(cnt('lock')<1)return toast('Нужен рабочий шлюз');
-  if(S.walkCd>0)return toast('Следующий выход через '+S.walkCd+' дн.');
-  if(freeCrew()<2)return toast('Нужно 2 свободных космонавта');
-  if(S.st.fuel<5)return toast('Нужно 5 кг топлива');
-  S.st.fuel-=5;S.debris=Math.max(0,S.debris-10);S.money+=4000;S.walkCd=3;log('выход в космос: уборка мусора +4 000 ₽');toast('Орбита очищена: риск −10, +4 000 ₽');save();render();
+  if(cnt('lock')<1)return toast(T("k0dcd9c"));
+  if(S.walkCd>0)return toast(T("kad29a2",[S.walkCd]));
+  if(freeCrew()<2)return toast(T("k4593ae"));
+  if(S.st.fuel<5)return toast(T("k2b275b"));
+  S.st.fuel-=5;S.debris=Math.max(0,S.debris-10);S.money+=4000;S.walkCd=3;log(T("k224bfd"));toast(T("kda3b53"));save();render();
 }
 
 /* ================= ЦУП, ЗАКАЗ ================= */
@@ -345,11 +717,11 @@ function cartInfo(){
   let add=0;BUY.forEach(t=>{const q=c.mods[t]||0;mass+=q*MOD[t].mass;cost+=q*MOD[t].cost;add+=q;});
   const cap=CAP+S.capBonus+(S.rush?100:0),slots=S.mods.length+add,bedsAfter=beds()+3*(c.mods.hab||0);
   const errs=[];
-  if(mass>cap)errs.push('Перегруз: '+fmt(mass,0)+' кг из '+cap);
-  if(cost>S.money)errs.push('Не хватает денег: нужно '+fm(cost));
-  if(slots>SLOTS)errs.push('Мест на станции: '+slots+' из '+SLOTS);
-  if(S.crew+c.crew>MAXCREW)errs.push('Максимум космонавтов — '+MAXCREW);
-  else if(S.crew+c.crew>bedsAfter)errs.push('Не хватает спальных мест ('+bedsAfter+')');
+  if(mass>cap)errs.push(T("ke47132",[fmt(mass,0),cap]));
+  if(cost>S.money)errs.push(T("kdbb313",[fm(cost)]));
+  if(slots>SLOTS)errs.push(T("k6080da",[slots,SLOTS]));
+  if(S.crew+c.crew>MAXCREW)errs.push(T("k8175df",[MAXCREW]));
+  else if(S.crew+c.crew>bedsAfter)errs.push(T("k8ea203",[bedsAfter]));
   return{mass,cost,cap,slots,errs,pct:mass/cap*100};
 }
 function cartAdd(k,d){
@@ -366,12 +738,12 @@ function projDays(k){ // на сколько дней хватит запаса 
   return d<=1e-9?99:(S.st[k]+c[k])/d;
 }
 function coachCart(){
-  if(S.coins<1)return toast('Нужна монета знаний');
+  if(S.coins<1)return toast(T("k2a5dfd"));
   S.coins--;const c=S.cart,h=nextDock()-S.day,crew=S.crew+c.crew,nd=needFor(crew,S.regen||c.regen>0);
   const up=(k,v)=>Math.max(0,Math.ceil((v-S.st[k])/RES[k].step)*RES[k].step);
   c.o2=up('o2',nd.o2*h);c.water=up('water',nd.water*h);
   c.food=up('food',Math.max(0,nd.food-(cnt('green')+c.mods.green)*GREEN_KG*power().sup)*h);
-  toast('ЦУП подставил припасы на '+h+' дн.');save();render();
+  toast(T("kd8e169",[h]));save();render();
 }
 function deliver(){
   const ci=cartInfo();if(ci.errs.length)return toast(ci.errs[0]);
@@ -381,42 +753,38 @@ function deliver(){
   BUY.forEach(t=>{for(let i=0;i<(c.mods[t]||0);i++)S.mods.push(mk(t));});
   S.crew=Math.min(MAXCREW,S.crew+c.crew);
   S.st.waste=0;S.capBonus=0;S.rush=false;S.cart=emptyCart();S.dock=false;S.quiz=null;
-  log('груз принят на '+fm(ci.cost));save();render();
-  modal(`<h2>Груз принят</h2><p>Масса ${fmt(ci.mass,0)} кг, оплачено ${fm(ci.cost)}. Отходы вывезены. Следующая стыковка — на ${nextDock()}-й день${nextDock()>DAYS?' (её не будет, финал на 90-й день)':''}.</p><button class="btn go" data-a="close">Работаем!</button>`);
+  log(T("k965c17",[fm(ci.cost)]));save();render();
+  modal(T("kc3d4b4",[fmt(ci.mass,0),fm(ci.cost),nextDock(),nextDock()>DAYS?T("k231981"):'']));
 }
 function goalsEval(){
   const L=[];
   if(S.day===31&&S.goals.g1===null){const ok=S.done>=3&&S.health>=70;S.goals.g1=ok;if(ok)S.money+=15000;
-    L.push(`Этап 1 (3 опыта, здоровье ≥ 70 %): ${ok?'выполнен, +15 000 ₽':'не выполнен'} (опытов ${S.done}, здоровье ${Math.round(S.health)} %).`);}
+    L.push(T("k7c522e",[ok?T("kee2291"):T("k95a092"),S.done,Math.round(S.health)]));}
   if(S.day===61&&S.goals.g2===null){const ok=S.sci>=25&&S.crew>=4;S.goals.g2=ok;if(ok)S.money+=25000;
-    L.push(`Этап 2 (25 очков науки, 4 космонавта): ${ok?'выполнен, +25 000 ₽':'не выполнен'} (очков ${S.sci}, космонавтов ${S.crew}).`);}
+    L.push(T("k4eb001",[ok?T("k29dc08"):T("k95a092"),S.sci,S.crew]));}
   return L;
 }
 function makeCalc(){
   const c=cycleIdx(),pw=power(),n=S.crew;
-  if(c===0)return{q:`На станции ${n} космонавта(ов). Один человек дышит 0,84 кг кислорода в сутки. Сколько кг кислорода нужно на 30 суток?`,ans:n*O2D*30,
-    sol:`${n} × 0,84 = ${fmt(n*O2D)} кг в сутки; ${fmt(n*O2D)} × 30 = ${fmt(n*O2D*30)} кг.`,u:'кг'};
+  if(c===0)return{q:T("k59e6c4",[n]),ans:n*O2D*30,
+    sol:T("ka033b6",[n,fmt(n*O2D),fmt(n*O2D),fmt(n*O2D*30)]),u:T("k59ddef")};
   if(c===1){
-    if(Math.random()<.5)return{q:`Станция потребляет ${pw.C} кВт. Ночь длится 45 минут (0,75 ч). Один аккумулятор хранит 3 кВт·ч. Сколько аккумуляторов нужно? (округли вверх)`,ans:Math.ceil(pw.C*NIGHT_H/BATT_KWH-1e-9),
-      sol:`${pw.C} × 0,75 = ${fmt(pw.batNeed)} кВт·ч за ночь; ${fmt(pw.batNeed)} ÷ 3 = ${fmt(pw.batNeed/3)} → округляем вверх: ${Math.ceil(pw.batNeed/3-1e-9)}.`,u:'шт'};
-    return{q:`Станция потребляет ${pw.C} кВт. Панель даёт 4 кВт, но светит только половину оборота. Сколько панелей нужно? (округли вверх)`,ans:Math.ceil(pw.C/2-1e-9),
-      sol:`Каждая панель в среднем даёт 4 ÷ 2 = 2 кВт; ${pw.C} ÷ 2 = ${fmt(pw.C/2)} → вверх: ${Math.ceil(pw.C/2-1e-9)}.`,u:'шт'};
+    if(Math.random()<.5)return{q:T("k3ea3e6",[pw.C]),ans:Math.ceil(pw.C*NIGHT_H/BATT_KWH-1e-9),
+      sol:T("k75ab12",[pw.C,fmt(pw.batNeed),fmt(pw.batNeed),fmt(pw.batNeed/3),Math.ceil(pw.batNeed/3-1e-9)]),u:T("ka5640e")};
+    return{q:T("k299617",[pw.C]),ans:Math.ceil(pw.C/2-1e-9),
+      sol:T("kcf4a2a",[pw.C,fmt(pw.C/2),Math.ceil(pw.C/2-1e-9)]),u:T("ka5640e")};
   }
   if(Math.random()<.5){const m=pick([300,600,750,900,1050,1200,1350]);
-    return{q:`Грузоподъёмность грузовика ${CAP} кг. Загрузили ${m} кг. Сколько процентов грузоподъёмности занято?`,ans:m/CAP*100,sol:`${m} ÷ ${CAP} = ${fmt(m/CAP,2)}; × 100 = ${fmt(m/CAP*100)} %.`,u:'%'};}
-  return{q:`Станция потребляет ${pw.C} кВт. Один радиатор отводит 10 кВт тепла. Сколько радиаторов нужно? (округли вверх)`,ans:Math.ceil(pw.C/RAD_KW-1e-9),
-    sol:`${pw.C} ÷ 10 = ${fmt(pw.C/10)} → округляем вверх: ${Math.ceil(pw.C/RAD_KW-1e-9)}.`,u:'шт'};
+    return{q:T("k857410",[CAP,m]),ans:m/CAP*100,sol:`${m} ÷ ${CAP} = ${fmt(m/CAP,2)}; × 100 = ${fmt(m/CAP*100)} %.`,u:'%'};}
+  return{q:T("k282c68",[pw.C]),ans:Math.ceil(pw.C/RAD_KW-1e-9),
+    sol:T("kcb40e1",[pw.C,fmt(pw.C/10),Math.ceil(pw.C/RAD_KW-1e-9)]),u:T("ka5640e")};
 }
 function dockStart(adDone){
   if(!adDone&&!S.quiz){PF.interstitial(()=>dockStart(true));return;}
   const gl=goalsEval();save();
   if(S.quiz&&S.quiz.done){tab='cargo';render();return;}
   const c=cycleIdx();
-  modal(`<h2>🚀 Стыковка ${c+1} из 3</h2>
-  <p>${S.day===1?'Начинается миссия! Вы командуете станцией 90 суток. Сначала — контроль ЦУПа, потом соберёте заказ для грузовика.':'Грузовик «Прогресс» у станции. Сначала — контроль ЦУПа.'}</p>
-  ${gl.map(x=>`<div class="box">${x}</div>`).join('')}
-  <p class="hint">3 вопроса по космосу и одна задача. Верные ответы увеличивают грузоподъёмность и дают монеты знаний.</p>
-  <button class="btn go" data-a="quizgo">К контролю ЦУПа</button>`);
+  modal(T("k7a0475",[c+1,S.day===1?T("kf84539"):T("k44a698"),gl.map(x=>`<div class="box">${x}</div>`).join('')]));
 }
 function quizGo(){
   const bank=QB[cycleIdx()];
@@ -430,21 +798,13 @@ function quizShow(){
     const q=QB[cycleIdx()][z.qs[z.i]];
     if(!z.opts)z.opts=shuffle([q[1],q[2],q[3],q[4]]);
     const picked=z.ans;
-    modal(`<span class="tag">Вопрос ${z.i+1} из 3 · астрономия</span><div class="q">${q[0]}</div>
-    ${z.opts.map((o,i)=>`<button class="opt ${picked!==null?(o===q[1]?'right':(i===picked?'wrong':'')):''}" data-a="ans" data-i="${i}" ${picked!==null?'disabled':''}>${o}</button>`).join('')}
-    ${picked!==null?`<div class="${z.opts[picked]===q[1]?'ok':'bad'}"><b>${z.opts[picked]===q[1]?'Верно! +50 кг к грузоподъёмности':'Не совсем.'}</b><br>${q[5]}</div><button class="btn go" data-a="qnext">Дальше</button>`:''}`);
+    modal(T("k5dbca3",[z.i+1,q[0],z.opts.map((o,i)=>`<button class="opt ${picked!==null?(o===q[1]?'right':(i===picked?'wrong':'')):''}" data-a="ans" data-i="${i}" ${picked!==null?'disabled':''}>${o}</button>`).join(''),picked!==null?T("kcba469",[z.opts[picked]===q[1]?'ok':'bad',z.opts[picked]===q[1]?T("k8d53bd"):T("kecbf28"),q[5]]):'']));
   }else if(z.stage==='c'){
     const c=z.calc;
-    modal(`<span class="tag">Расчёт ЦУПа</span><div class="q">${c.q}</div>
-    <div class="calcin" id="calcIn">${z.input||'&nbsp;'} <small>${c.u}</small></div>
-    <div class="pad">${['7','8','9','⌫','4','5','6',',','1','2','3','0'].map(k=>`<button class="btn alt" data-a="key" data-k="${k}">${k}</button>`).join('')}</div>
-    <button class="btn go" data-a="calcok">Ответить</button>`);
+    modal(T("k3f9df3",[c.q,z.input||'&nbsp;',c.u,['7','8','9','⌫','4','5','6',DS,'1','2','3','0'].map(k=>`<button class="btn alt" data-a="key" data-k="${k}">${k}</button>`).join('')]));
   }else{
     const c=z.calc,okc=z.calcRight;
-    modal(`<span class="tag">Итоги контроля</span>
-    <div class="${okc?'ok':'bad'}"><b>${okc?'Расчёт верный: +5 000 ₽ и ◎ +1':'Расчёт неверный.'}</b><br>${c.sol}</div>
-    <p>Верных ответов по космосу: <b>${z.right} из 3</b>. Грузоподъёмность грузовика: <b>${CAP} + ${z.right*50} = ${CAP+z.right*50} кг</b>.${z.right===3?' Все три верно: ◎ +1.':''}</p>
-    <button class="btn go" data-a="toorder">К заказу груза</button>`);
+    modal(T("k438464",[okc?'ok':'bad',okc?T("k5acce7"):T("k150128"),c.sol,z.right,CAP,z.right*50,CAP+z.right*50,z.right===3?T("kd1720b"):'']));
   }
 }
 function quizAnswer(i){
@@ -459,7 +819,7 @@ function quizNext(){
 }
 function calcOk(){
   const z=S.quiz,v=parseFloat((z.input||'').replace(',','.'));
-  if(isNaN(v))return toast('Введи число');
+  if(isNaN(v))return toast(T("k8a0fc2"));
   z.calcRight=Math.abs(v-z.calc.ans)<=.06;
   if(z.calcRight){S.money+=5000;S.coins++;S.stats.ok++;}else S.stats.bad++;
   S.capBonus=z.right*50;if(z.right===3)S.coins++;
@@ -476,71 +836,60 @@ function flow(){
   closeModal();render();
 }
 function newsModal(list){
-  modal(list.map(n=>`<div class="${n.bad?'bad':'ok'}"><b>${n.h}</b><br>${n.t}</div>`).join('')+'<button class="btn go" data-a="flow">Дальше</button>');
+  modal(list.map(n=>`<div class="${n.bad?'bad':'ok'}"><b>${n.h}</b><br>${n.t}</div>`).join('')+T("k813d28"));
 }
 function eventModal(){
   const e=S.event;
-  if(e.t==='debris')modal(`<h2>⚠️ Космический мусор</h2><p>ЦУП сообщает: облако обломков сближается со станцией. Что делаем?</p>
-  <button class="btn go" data-a="ev" data-c="move" ${S.st.fuel<10?'disabled':''}>Манёвр уклонения (топливо −10 кг; есть ${fmt(S.st.fuel,0)})</button>
-  <button class="btn red" data-a="ev" data-c="risk">Рискнуть (40 % — поломка внешнего модуля)</button>`);
+  if(e.t==='debris')modal(T("kc4f318",[S.st.fuel<10?'disabled':'',fmt(S.st.fuel,0)]));
 }
 function final(){
   PF.setPlaying(false);
   const sc=S.sci,st=starsOf(sc),best=lsGet(BEST_KEY)||0;if(sc>best)lsSet(BEST_KEY,sc);
-  const why={health:'Миссия прервана: экипаж эвакуирован из-за плохого самочувствия.',money:'Миссия прервана: финансирование прекращено (долг больше 20 000 ₽).',done:'Миссия завершена! 90 суток на орбите.'}[S.over];
+  const why={health:T("k12a043"),money:T("kd434f8"),done:T("k9ec50f")}[S.over];
   closeModal();
-  modal(`${IMGN.includes('final_win')?'<img class="cover" src="'+IMGSRC('final_win')+'" alt="">':''}<h2>Итог миссии</h2><p>${why}</p>
-  <div class="stars">${'★'.repeat(st)}${'☆'.repeat(3-st)}</div>
-  <div class="box"><div class="kv"><span>Очки науки</span><b>${sc}</b></div><div class="kv"><span>Опытов завершено</span><b>${S.done}</b></div><div class="kv"><span>Деньги</span><b>${fm(S.money)}</b></div><div class="kv"><span>Космонавтов</span><b>${S.crew}</b></div><div class="kv"><span>Верных ответов ЦУПа</span><b>${S.stats.ok}</b></div><div class="kv"><span>Рекорд науки</span><b>${Math.max(sc,best)}</b></div></div>
-  <p class="hint">Звёзды по очкам науки: ★ ${STAR_AT[0]}, ★★ ${STAR_AT[1]}, ★★★ ${STAR_AT[2]}.</p>
-  <button class="btn go" data-a="newgame">Играть снова</button>`);
+  modal(T("k7be9e0",[IMGN.includes('final_win')?'<img class="cover" src="'+IMGSRC('final_win')+'" alt="">':'',why,'★'.repeat(st),'☆'.repeat(3-st),sc,S.done,fm(S.money),S.crew,S.stats.ok,Math.max(sc,best),STAR_AT[0],STAR_AT[1],STAR_AT[2],premBtn()]));
   lsSet(SAVE_KEY,null);
+  try{Premium.maybeCard();}catch(e){}
 }
+let startShown=false;
+const PR=()=>!!(window.Premium&&Premium.active());
+const premBtn=()=>{if(!window.Premium||!(Premium.available()||Premium.active()))return '';return `<button class="btn alt sm" data-a="prem">${Premium.active()?PXT('starOn',Premium.daysLeft()):PXT('star')}</button>`;};
 function startCard(){
+  startShown=true;
   const sv=lsGet(SAVE_KEY);
-  modal(`${IMGN.includes('cover_start')?'<img class="cover" src="'+IMGSRC('cover_start')+'" alt="">':'<div style="font-size:64px;text-align:center">🛰️🚀🌍</div>'}
-  <h2 style="text-align:center">Космическая станция</h2>
-  <p>Командуй орбитальной станцией 90 суток: следи за воздухом, водой, едой и энергией, заказывай грузовики, ставь опыты и зарабатывай на науке.</p>
-  ${sv&&sv.day&&!sv.over?`<button class="btn go" data-a="cont">Продолжить (день ${Math.min(sv.day,DAYS)})</button><button class="btn alt" data-a="newgame">Новая миссия</button>`:`<button class="btn go" data-a="newgame">Начать миссию</button>`}
-  <button class="btn alt sm" data-a="rules">Правила</button>`);
+  modal(T("k30ae37",[IMGN.includes('cover_start')?'<img class="cover" src="'+IMGSRC('cover_start')+'" alt="">':'<div style="font-size:64px;text-align:center">🛰️🚀🌍</div>',sv&&sv.day&&!sv.over?T("k8ef162",[Math.min(sv.day,DAYS)]):T("kfc258a"),LANGBTN,premBtn()]));
 }
 function rulesCard(back){
-  modal(`<h2>Правила</h2>
-  <p><b>Цель:</b> набрать очки науки за 90 суток. Опыты приносят деньги и очки.</p>
-  <p><b>Каждые сутки</b> космонавт расходует 0,84 кг кислорода, 3 л воды и 2 кг еды. Грузовик приходит раз в 30 суток (дни 1, 31, 61) — заказ считай заранее!</p>
-  <p><b>Энергия:</b> панель даёт 4 кВт только на свету (45 мин из 90). Ночью станцию кормят аккумуляторы (3 кВт·ч каждый). Радиатор отводит 10 кВт тепла.</p>
-  <p><b>Ломается — чини:</b> нужны запчасть и свободный космонавт.</p>
-  <button class="btn go" data-a="${back}">Понятно</button>`);
+  modal(T("ke5555d",[back]));
 }
 function menuCard(){
-  modal(`<h2>Меню</h2><button class="btn go" data-a="close">Продолжить</button>
-  <button class="btn alt" data-a="reward">Ролик → ◎ +1 монета знаний</button>
-  <button class="btn alt" data-a="rules2">Правила</button>
-  <button class="btn red" data-a="newgame2">Начать заново</button>`);
+  modal(T("kf4f89b",[LANGBTN,premBtn()]));
+  if(PR()){const r=$('#card [data-a="reward"]');if(r)r.textContent=PXT('coinFree');}
+  try{Premium.maybeCard();}catch(e){}
 }
 
 /* ================= ОТРИСОВКА ИНТЕРФЕЙСА ================= */
-const TABS=[['st','🛰️','Станция'],['sup','📦','Запасы'],['sci','🔬','Наука'],['cargo','🚚','Груз'],['goal','🏆','Цели']];
+const TABS=[['st','🛰️',T("kf1df9e")],['sup','📦',T("ke4446a")],['sci','🔬',T("k0764b2")],['cargo','🚚',T("k515c1a")],['goal','🏆',T("kbe7810")]];
 function renderHud(){
-  $('#hDay').textContent='День '+Math.min(S.day,DAYS)+'/'+DAYS;
+  $('#hDay').textContent=T("kff1587",[Math.min(S.day,DAYS),DAYS]);
   $('#hMoney').textContent=fm(S.money);
   $('#hMoney').style.color=S.money<0?'#b8321f':'#1e6b2c';
   $('#hCoin').textContent='◎ '+S.coins;
   const pw=power(),gs=[];
-  const dg=(k,ic)=>{const d=daysLeft(k);gs.push(`<div class="g ${d<3?'bad':d<7?'warn':''}"><i>${ic}</i>${d>=99?'∞':fmt(d,0)+' дн.'}</div>`);};
+  const dg=(k,ic)=>{const d=daysLeft(k);gs.push(`<div class="g ${d<3?'bad':d<7?'warn':''}"><i>${ic}</i>${d>=99?'∞':T("kacb6d3",[fmt(d,0)])}</div>`);};
   dg('o2',ICO('o2','🫁'));dg('water',ICO('water','💧'));dg('food',ICO('food','🍎'));
   gs.push(`<div class="g ${pw.sup<.5?'bad':pw.sup<1?'warn':''}"><i>${ICO('power','⚡')}</i>${Math.round(pw.sup*100)} %</div>`);
   gs.push(`<div class="g ${pw.over?'bad':''}"><i>${ICO('heat','🌡️')}</i>${Math.round(pw.C/Math.max(1,pw.radCap)*100)} %</div>`);
   gs.push(`<div class="g ${S.health<40?'bad':S.health<75?'warn':''}"><i>${ICO('health','❤️')}</i>${Math.round(S.health)} %</div>`);
   $('#gauges').innerHTML=gs.join('');
-  $('#info').textContent=S.log[0]||'Добро пожаловать на борт!';
+  $('#info').textContent=S.log[0]||T("k3e1f8c");
   $('#tabs').innerHTML=TABS.map(t=>`<button class="tab ${tab===t[0]?'on':''}" data-a="tab" data-t="${t[0]}"><b>${t[1]}</b>${t[2]}</button>`).join('');
 }
 function renderFoot(){
   let h='';
   if(S.over)h='';
-  else if(S.dock)h=tab==='cargo'&&S.quiz&&S.quiz.done?`<button class="btn go" data-a="deliver">✔ Принять груз</button>`:`<button class="btn go" data-a="godock">${S.quiz&&S.quiz.done?'Заказ груза →':'К контролю ЦУПа'}</button>`;
-  else h=`<button class="btn go" data-a="day">День ▶</button><button class="btn alt" data-a="days5">5 дней ▶▶</button>`;
+  else if(S.dock)h=tab==='cargo'&&S.quiz&&S.quiz.done?T("k861bef"):`<button class="btn go" data-a="godock">${S.quiz&&S.quiz.done?T("kbb0e47"):T("k877c99")}</button>`;
+  else h=T("kcb80ae");
   $('#pfoot').innerHTML=h;
 }
 function render(){
@@ -548,90 +897,66 @@ function render(){
   renderHud();renderFoot();
   const f={st:viewStation,sup:viewSupply,sci:viewScience,cargo:viewCargo,goal:viewGoals}[tab];
   const el=$('#pcontent'),sc=el.scrollTop;el.innerHTML=f();el.scrollTop=sc;
+  if(PR()){const rb=el.querySelector('[data-a="rush"]');if(rb)rb.textContent=PXT('rushFree');}
 }
 function viewStation(){
-  const pw=power();let h=`<div class="head"><span>Станция</span><span>мест занято ${S.mods.length} из ${SLOTS}</span></div><div class="box">`;
+  const pw=power();let h=T("k2fdf90",[S.mods.length,SLOTS]);
   Object.keys(MOD).forEach(t=>{const a=tot(t);if(!a)return;const w=cnt(t);
-    h+=`<div class="kv"><span>${imgTag('mod_'+t,'ic','')}${MOD[t].n} ×${a}${w<a?` <span class="warn">(рабочих ${w})</span>`:''}</span><b>${MOD[t].info||'—'}</b></div>`;});
+    h+=`<div class="kv"><span>${imgTag('mod_'+t,'ic','')}${MOD[t].n} ×${a}${w<a?T("kf736c6",[w]):''}</span><b>${MOD[t].info||'—'}</b></div>`;});
   h+='</div>';
-  h+=`<div class="box"><b>${ICO('power','⚡')} Энергия за оборот (90 мин)</b>
-  <div class="kv"><span>Потребление C</span><b>${pw.C} кВт</b></div>
-  <div class="kv"><span>Выработка: ${pw.P} пан. × 4 кВт × 0,75 ч</span><b class="${pw.g<1?'warn':'good'}">${fmt(pw.genE)} кВт·ч</b></div>
-  <div class="kv"><span>Нужно за оборот: ${pw.C} × 1,5 ч</span><b>${fmt(pw.needE)} кВт·ч</b></div>
-  <div class="kv"><span>Ночью: ${pw.C} × 0,75 ч</span><b>${fmt(pw.batNeed)} кВт·ч</b></div>
-  <div class="kv"><span>Аккумуляторы: ${pw.B} × 3 кВт·ч</span><b class="${pw.b<1?'warn':'good'}">${fmt(pw.batCap)} кВт·ч</b></div>
-  <div class="hint">Обеспечено энергией: <b>${Math.round(pw.sup*100)} %</b>. ${pw.sup<1?'Лаборатория и оранжерея работают медленнее!':'Всё в порядке.'}</div></div>
-  <div class="box"><b>${ICO('heat','🌡️')} Тепло</b><div class="kv"><span>Нагрузка ${pw.C} кВт; радиаторы ${pw.R} × 10</span><b class="${pw.over?'warn':'good'}">${pw.radCap} кВт</b></div>
-  <div class="hint">${pw.over?'Перегрев! Опыты идут вдвое медленнее, поломки чаще.':'Охлаждения достаточно.'}</div></div>`;
+  h+=T("k83fc2f",[ICO('power','⚡'),pw.C,pw.P,pw.g<1?'warn':'good',fmt(pw.genE),pw.C,fmt(pw.needE),pw.C,fmt(pw.batNeed),pw.B,pw.b<1?'warn':'good',fmt(pw.batCap),Math.round(pw.sup*100),pw.sup<1?T("k4decf4"):T("k7f4fd4"),ICO('heat','🌡️'),pw.C,pw.R,pw.over?'warn':'good',pw.radCap,pw.over?T("k343217"):T("kcdd749")]);
   const br=S.mods.map((m,i)=>[m,i]).filter(x=>x[0].b);
-  if(br.length){h+='<div class="head warn">🔧 Неисправно</div>';
-    br.forEach(([m,i])=>{h+=`<div class="cart"><div class="nm"><b>${MOD[m.t].n}</b><small>запчастей: ${S.st.spare} · свободных космонавтов: ${freeCrew()}${EXTERNAL.includes(m.t)?' · нужен шлюз':''}</small></div><button class="btn sm red" data-a="repair" data-i="${i}">Починить</button></div>`;});}
+  if(br.length){h+=T("k3e20d0");
+    br.forEach(([m,i])=>{h+=T("k92d415",[MOD[m.t].n,S.st.spare,freeCrew(),EXTERNAL.includes(m.t)?T("k6078a4"):'',i]);});}
   return h;
 }
 function viewSupply(){
   const nd=need(),g=greenKg();
-  let h=`<div class="head"><span>Запасы</span><span>до стыковки: ${Math.max(0,nextDock()-S.day)} дн.</span></div><div class="box">`;
-  const row=(ic,n,st,u,perDay,dl)=>`<div class="kv"><span>${ic} ${n}: <b>${fmt(st,1)} ${u}</b>${perDay?` <small>(−${fmt(perDay)} в сутки)</small>`:''}</span><b class="${dl!==null&&dl<5?'warn':''}">${dl===null?'':(dl>=99?'∞':fmt(dl,1)+' дн.')}</b></div>`;
-  h+=row(ICO('o2','🫁'),'Кислород',S.st.o2,'кг',nd.o2,daysLeft('o2'));
-  h+=row(ICO('water','💧'),'Вода',S.st.water,'л',nd.water,daysLeft('water'));
-  h+=row(ICO('food','🍎'),'Еда',S.st.food,'кг',nd.food-g,daysLeft('food'));
-  h+=row('🧪','Расходники',S.st.kit,'кг',0,null);
-  h+=row('🔧','Запчасти',S.st.spare,'шт',0,null);
-  h+=row('⛽','Топливо',S.st.fuel,'кг',0,null);
-  h+=row('🗑️','Отходы',S.st.waste,'кг',0,null);
-  h+=`</div><div class="hint">${S.crew} × 0,84 = ${fmt(nd.o2)} кг кислорода в сутки. Вода: ${S.crew} × 3${S.regen?' × ½ (регенерация)':''} = ${fmt(nd.water)} л. Еда: ${S.crew} × 2 = ${S.crew*2} кг${g?`, оранжерея даёт ${fmt(g)} кг`:''}.</div>`;
-  h+=`<div class="head"><span>Экипаж</span><span>здоровье ${Math.round(S.health)} %</span></div><div class="bar ${S.health<40?'r':S.health<75?'y':''}"><div style="width:${S.health}%"></div></div>`;
+  let h=T("k4abd49",[Math.max(0,nextDock()-S.day)]);
+  const row=(ic,n,st,u,perDay,dl)=>`<div class="kv"><span>${ic} ${n}: <b>${fmt(st,1)} ${u}</b>${perDay?T("k360c4e",[fmt(perDay)]):''}</span><b class="${dl!==null&&dl<5?'warn':''}">${dl===null?'':(dl>=99?'∞':T("kacb6d3",[fmt(dl,1)]))}</b></div>`;
+  h+=row(ICO('o2','🫁'),T("k37bbf2"),S.st.o2,T("k59ddef"),nd.o2,daysLeft('o2'));
+  h+=row(ICO('water','💧'),T("k5ecbec"),S.st.water,T("k516cbe"),nd.water,daysLeft('water'));
+  h+=row(ICO('food','🍎'),T("k2af9ea"),S.st.food,T("k59ddef"),nd.food-g,daysLeft('food'));
+  h+=row('🧪',T("kf826ac"),S.st.kit,T("k59ddef"),0,null);
+  h+=row('🔧',T("kbddee6"),S.st.spare,T("ka5640e"),0,null);
+  h+=row('⛽',T("k1c00b8"),S.st.fuel,T("k59ddef"),0,null);
+  h+=row('🗑️',T("k3f2634"),S.st.waste,T("k59ddef"),0,null);
+  h+=T("k417b28",[S.crew,fmt(nd.o2),S.crew,S.regen?T("k2b0fd2"):'',fmt(nd.water),S.crew,S.crew*2,g?T("k81b765",[fmt(g)]):'']);
+  h+=T("k1133e5",[Math.round(S.health),S.health<40?'r':S.health<75?'y':'',S.health]);
   for(let i=0;i<S.crew;i++){
     const busy=S.act.reduce((a,x)=>{const s=a.s+x.c;return{s,id:a.id===null&&i<s?x.id:a.id};}, {s:0,id:null});
     // назначение: люди по порядку закрывают опыты
-    let acc=0,task='свободен';for(const x of S.act){if(i>=acc&&i<acc+x.c){task='🔬 '+EXP[x.id].n;break;}acc+=x.c;}
+    let acc=0,task=T("k2939e0");for(const x of S.act){if(i>=acc&&i<acc+x.c){task='🔬 '+EXP[x.id].n;break;}acc+=x.c;}
     h+=`<div class="cr">${imgTag('cosmo'+(i%4+1),'pic','<span class="pic">🧑‍🚀</span>')||''}<div class="grow"><b>${NAMES[i]}</b><br><small>${task}</small></div></div>`;
   }
-  h+=`<div class="hint">Спальных мест: ${beds()}. Зарплата: ${S.crew} × ${SAL} = ${fm(S.crew*SAL)} в сутки.</div>`;
+  h+=T("k82b6f3",[beds(),S.crew,SAL,fm(S.crew*SAL)]);
   return h;
 }
 function viewScience(){
   const labs=cnt('lab'),fc=freeCrew();
-  let h=`<div class="head"><span>Наука</span><span>очков: <b>${S.sci}</b> · опытов: ${S.done}</span></div>
-  <div class="hint">Лабораторий: ${labs} (занято ${S.act.length}) · свободных космонавтов: ${fc} · расходников: ${fmt(S.st.kit,0)} кг</div>`;
+  let h=T("kb8ea66",[S.sci,S.done,labs,S.act.length,fc,fmt(S.st.kit,0)]);
   S.act.forEach((a,i)=>{const e=EXP[a.id],p=clamp(100-a.left/e.d*100,0,100);
-    h+=`<div class="exp"><b>🔬 ${e.n}</b><div class="bar"><div style="width:${p}%"></div></div><small>осталось ≈ ${fmt(a.left,1)} дн. · ${a.c} чел. ${i>=labs?'<span class="warn">лаборатория неисправна</span>':''}</small></div>`;});
-  h+=`<div class="exp"><b>🧑‍🚀 Выход в космос: убрать мусор</b><small>шлюз, 2 космонавта, топливо 5 кг · +4 000 ₽ · риск столкновения сейчас ${fmt(S.debris/10+2,1)} % в сутки (−10 пунктов за выход)${S.walkCd?` · ещё ${S.walkCd} дн.`:''}</small><button class="btn sm alt" data-a="walk">Выйти</button></div>`;
-  h+='<div class="head">Эксперименты</div>';
+    h+=T("k924976",[e.n,p,fmt(a.left,1),a.c,i>=labs?T("k99729b"):'']);});
+  h+=T("k1d963a",[fmt(S.debris/10+2,1),S.walkCd?T("kdca0b4",[S.walkCd]):'']);
+  h+=T("kbcee70");
   EXP.forEach((e,i)=>{const lock=S.sci<e.need;
-    h+=`<div class="exp ${lock?'lock':''}"><b>${e.n}</b><small>${e.d} дн. · ${e.c} чел. · расходники ${e.kit} кг · награда ${fm(e.rew)} · ${e.sc} очк.${lock?` · откроется при ${e.need} очк.`:''}</small>${lock?'':`<button class="btn sm go" data-a="exp" data-i="${i}">Запустить</button>`}</div>`;});
+    h+=T("k9a65d7",[lock?'lock':'',e.n,e.d,e.c,e.kit,fm(e.rew),e.sc,lock?T("k28a52b",[e.need]):'',lock?'':T("ka2e3d9",[i])]);});
   return h;
 }
 function viewCargo(){
   const c=S.cart,ci=cartInfo();
-  let h=`<div class="head"><span>🚚 Заказ на грузовик</span><span>${S.dock?'<span class="good">грузовик у станции</span>':'придёт на '+nextDock()+'-й день'}</span></div>
-  <div class="box"><div class="kv"><span>Масса</span><b class="${ci.mass>ci.cap?'warn':''}">${fmt(ci.mass,0)} из ${ci.cap} кг (${fmt(ci.pct,0)} %)</b></div>
-  <div class="bar ${ci.mass>ci.cap?'r':''}"><div style="width:${Math.min(100,ci.pct)}%"></div></div>
-  <div class="kv"><span>Стоимость (запуск ${fm(LAUNCH)})</span><b class="${ci.cost>S.money?'warn':''}">${fm(ci.cost)}</b></div>
-  <div class="kv"><span>Деньги</span><b>${fm(S.money)}</b></div>${ci.errs.map(e=>`<div class="warn">⚠ ${e}</div>`).join('')}</div>
-  ${S.dock&&!S.rush?'<button class="btn alt sm" data-a="rush">📺 Срочный груз: +100 кг (ролик)</button>':S.dock?'<div class="good" style="text-align:center">Срочный груз: +100 кг к этому грузовику</div>':''}
-  <button class="btn alt sm" data-a="coach">◎ Помощь ЦУПа: припасы на ${Math.max(1,nextDock()-S.day)} дн. (−1 ◎)</button>
-  <div class="head">Припасы</div>`;
+  let h=T("k34f647",[S.dock?T("k5b6320"):T("k3446f6",[nextDock()]),ci.mass>ci.cap?'warn':'',fmt(ci.mass,0),ci.cap,fmt(ci.pct,0),ci.mass>ci.cap?'r':'',Math.min(100,ci.pct),fm(LAUNCH),ci.cost>S.money?'warn':'',fm(ci.cost),fm(S.money),ci.errs.map(e=>`<div class="warn">⚠ ${e}</div>`).join(''),S.dock&&!S.rush?T("k0b1dc2"):S.dock?T("kdab80d"):'',Math.max(1,nextDock()-S.day)]);
   RKEYS.forEach(k=>{const r=RES[k],pd=['o2','water','food'].includes(k)?projDays(k):null;
-    h+=`<div class="cart"><div class="nm"><b>${r.k?ICO(r.k,r.ic):r.ic} ${r.n}</b><small>${r.p} ₽/${r.u}${r.m!==1?`, ${r.m} кг/${r.u}`:''} · на складе ${fmt(S.st[k],0)}${pd!==null?` · хватит на <b class="${pd<nextDock()-S.day?'warn':'good'}">${pd>=99?'∞':fmt(pd,1)} дн.</b>`:''}</small></div>
-    <div class="step"><button class="btn" data-a="cart" data-k="${k}" data-d="-1">−</button><b>${c[k]}</b><button class="btn" data-a="cart" data-k="${k}" data-d="1">+</button></div></div>`;});
-  h+='<div class="head">Модули и улучшения</div>';
+    h+=T("k940a29",[r.k?ICO(r.k,r.ic):r.ic,r.n,r.p,r.u,r.m!==1?T("k707b87",[r.m,r.u]):'',fmt(S.st[k],0),pd!==null?T("k8c4edc",[pd<nextDock()-S.day?'warn':'good',pd>=99?'∞':fmt(pd,1)]):'',k,c[k],k]);});
+  h+=T("k8215c4");
   BUY.forEach(t=>{const m=MOD[t];
-    h+=`<div class="cart"><div class="nm"><b>${imgTag('mod_'+t,'ic','')}${m.n}</b><small>${fm(m.cost)} · ${m.mass} кг · ${m.pw?m.pw+' кВт · ':''}${m.info}</small></div>
-    <div class="step"><button class="btn" data-a="cart" data-k="${t}" data-d="-1">−</button><b>${c.mods[t]}</b><button class="btn" data-a="cart" data-k="${t}" data-d="1">+</button></div></div>`;});
-  h+=`<div class="cart"><div class="nm"><b>♻️ Регенерация воды</b><small>${fm(REGEN_COST)} · ${REGEN_MASS} кг · возвращает 50 % воды ${S.regen?'· <b class="good">уже стоит</b>':''}</small></div>
-    <div class="step"><button class="btn" data-a="cart" data-k="regen" data-d="-1">−</button><b>${c.regen}</b><button class="btn" data-a="cart" data-k="regen" data-d="1" ${S.regen?'disabled':''}>+</button></div></div>
-  <div class="cart"><div class="nm"><b>🧑‍🚀 Новый космонавт</b><small>${fm(CREW_COST)} · зарплата ${SAL} ₽/сут · сейчас ${S.crew}, мест ${beds()}</small></div>
-    <div class="step"><button class="btn" data-a="cart" data-k="crew" data-d="-1">−</button><b>${c.crew}</b><button class="btn" data-a="cart" data-k="crew" data-d="1">+</button></div></div>`;
+    h+=T("k69ee7d",[imgTag('mod_'+t,'ic',''),m.n,fm(m.cost),m.mass,m.pw?T("ke6c5da",[m.pw]):'',m.info,t,c.mods[t],t]);});
+  h+=T("k20f6a6",[fm(REGEN_COST),REGEN_MASS,S.regen?T("k1c40bc"):'',c.regen,S.regen?'disabled':'',fm(CREW_COST),SAL,S.crew,beds(),c.crew]);
   return h;
 }
 function viewGoals(){
   const g=S.goals,mark=v=>v===null?'⏳':v?'✅':'❌';
-  let h=`<div class="head"><span>Цели</span><span>очки науки: <b>${S.sci}</b></span></div>
-  <div class="box"><div class="kv"><span>${mark(g.g1)} День 31: 3 опыта, здоровье ≥ 70 %</span><b>+15 000 ₽</b></div><small>Сейчас: опытов ${S.done}, здоровье ${Math.round(S.health)} %</small></div>
-  <div class="box"><div class="kv"><span>${mark(g.g2)} День 61: 25 очков, 4 космонавта</span><b>+25 000 ₽</b></div><small>Сейчас: очков ${S.sci}, космонавтов ${S.crew}</small></div>
-  <div class="box"><div class="kv"><span>🏁 День 90: финал</span><b>★ ${STAR_AT[0]} · ★★ ${STAR_AT[1]} · ★★★ ${STAR_AT[2]}</b></div><small>Рекорд науки: ${lsGet(BEST_KEY)||0}</small></div>
-  <div class="head">Журнал</div><div class="box">${S.log.length?S.log.slice(0,15).map(x=>`<div class="hint">${x}</div>`).join(''):'<div class="hint">Пока пусто</div>'}</div>`;
+  let h=T("k958aaa",[S.sci,mark(g.g1),S.done,Math.round(S.health),mark(g.g2),S.sci,S.crew,STAR_AT[0],STAR_AT[1],STAR_AT[2],lsGet(BEST_KEY)||0,S.log.length?S.log.slice(0,15).map(x=>`<div class="hint">${x}</div>`).join(''):T("kdd19af")]);
   return h;
 }
 
@@ -685,7 +1010,7 @@ function draw(ts){
     // индикатор орбиты
     c.font='bold 22px sans-serif';c.fillStyle='#fff';c.textAlign='left';
     const mins=Math.floor((ph%.5)*90);
-    c.fillText((night?'🌙 Ночь':'☀️ Свет')+' · '+mins+' из 45 мин',10,CH-8);
+    c.fillText((night?T("k5d2ee4",[mins]):T("k0cf67e",[mins])),10,CH-8);
     c.textAlign='start';
   }
   requestAnimationFrame(draw);
@@ -719,30 +1044,38 @@ const ACT={
   quizgo(){quizGo();},
   ans(d){quizAnswer(+d.i);},
   qnext(){quizNext();},
-  key(d){const z=S.quiz;if(d.k==='⌫')z.input=z.input.slice(0,-1);else if(d.k===','){if(!z.input.includes(','))z.input+=z.input?',':'0,';}else if(z.input.length<7)z.input+=d.k;$('#calcIn').innerHTML=(z.input||'&nbsp;')+' <small>'+z.calc.u+'</small>';},
+  key(d){const z=S.quiz;if(d.k==='⌫')z.input=z.input.slice(0,-1);else if(d.k===DS){if(!z.input.includes(DS))z.input+=z.input?DS:'0'+DS;}else if(z.input.length<7)z.input+=d.k;$('#calcIn').innerHTML=(z.input||'&nbsp;')+' <small>'+z.calc.u+'</small>';},
   calcok(){calcOk();},
   toorder(){closeModal();tab='cargo';render();},
-  ev(d){const t=resolveEvent(d.c);render();modal(`<h2>Итог</h2><div class="ok">${t}</div><button class="btn go" data-a="flow">Дальше</button>`);},
-  newgame(){S=newState();lsSet(SAVE_KEY,S);tab='st';PF.setPlaying(true);render();flow();},
-  newgame2(){modal(`<h2>Начать заново?</h2><p>Текущий прогресс будет потерян.</p><button class="btn red" data-a="newgame">Да, заново</button><button class="btn alt" data-a="menu">Отмена</button>`);},
-  cont(){S=lsGet(SAVE_KEY);tab='st';PF.setPlaying(true);render();flow();},
+  ev(d){const t=resolveEvent(d.c);render();modal(T("k291055",[t]));},
+  newgame(){startShown=false;S=newState();lsSet(SAVE_KEY,S);tab='st';PF.setPlaying(true);render();flow();},
+  newgame2(){modal(T("ka4ff70"));},
+  cont(){startShown=false;S=lsGet(SAVE_KEY);tab='st';PF.setPlaying(true);render();flow();},
+  prem(){try{Premium.openShop();}catch(e){}},
+  lang(){try{if(S&&S.quiz&&!S.quiz.done)S.quiz=null;save();localStorage.setItem(LANG_KEY,LANG==='ru'?'en':'ru');}catch(e){}location.reload();},
   rules(){rulesCard('startback');},
   rules2(){rulesCard('menu');},
   startback(){startCard();},
   menu(){menuCard();},
-  rush(){PF.rewarded(ok=>{if(!ok)return toast('Ролик не засчитан');S.rush=true;save();render();toast('Срочный груз: +100 кг');});},
-  reward(){PF.rewarded(ok=>{if(!ok)return toast('Ролик не засчитан');S.coins++;save();renderHud();toast('◎ +1 монета знаний');});}
+  rush(){PF.rewarded(ok=>{if(!ok)return toast(T("k04a4ae"));S.rush=true;save();render();toast(T("kb2524d"));});},
+  reward(){const pr=PR();if(pr&&S.rcDay===S.day)return toast(PXT('coinDone'));PF.rewarded(ok=>{if(!ok)return toast(T("k04a4ae"));S.coins++;if(pr)S.rcDay=S.day;save();renderHud();toast(T("k0d71b4"));});}
 };
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
   const f=ACT[b.dataset.a];if(f)f(b.dataset);
 });
 $('#btnMenu').onclick=()=>{if(S)menuCard();};
-$('#hCoin').onclick=()=>{if(S)toast('Монеты знаний: подсказка ЦУПа в заказе груза (1 ◎)');};
+$('#hCoin').onclick=()=>{if(S)toast(T("kfac284"));};
 
 /* ================= СТАРТ ================= */
-window.__game={get S(){return S;},set S(v){S=v;},newState,stepDay,power,need,cartInfo,cartAdd,startExp,repair,doWalk,deliver,resolveEvent,goalsEval,projDays,daysLeft,freeCrew,mk,cnt,EXP,MOD,RES,EMPTY:emptyCart,starsOf,nextDock,makeCalc,render};
-PF.init().then(()=>{S=newState();render();requestAnimationFrame(draw);startCard();PF.ready();});
+
+document.documentElement.lang=LANG;document.title=T("ke291c3");
+$('#hCoin').setAttribute('aria-label',T("k94394b"));$('#btnMenu').setAttribute('aria-label',T("kdd904b"));
+PF.init().then(()=>{
+  try{Premium.init({sdk:PF.sdk(),lang:LANG,store:PF.store,texts:PREMIUM_TEXTS,config:{corner:false}}).then(()=>{if(PF.pdirty())PF.store.save();if(startShown&&!$('#ov').classList.contains('hidden'))startCard();});}catch(e){}
+  /* язык от платформы: если игрок сам язык не выбирал и платформа говорит другое — запомнить и перезагрузить один раз */
+  try{const pl=PF.lang().slice(0,2).toLowerCase();if(pl&&HASEN&&!localStorage.getItem(LANG_KEY)){const want=RU_FAM.includes(pl)?'ru':'en';localStorage.setItem(LANG_KEY,want);if(want!==LANG){location.reload();return;}}}catch(e){}
+  S=newState();render();requestAnimationFrame(draw);startCard();PF.ready();});
 </script>
 </body>
 </html>

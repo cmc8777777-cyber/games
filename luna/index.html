@@ -27,6 +27,8 @@ canvas{display:block;width:100%;aspect-ratio:375/200;background:#05070f}
 .card{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 8px}
 .av{width:42px;height:42px;border-radius:50%;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:24px;flex:none;overflow:hidden;border:2px solid var(--c,#4aa8ff)}
 .av img{width:100%;height:100%;object-fit:cover}
+.toast .evi{display:inline-block;width:40px;height:40px;margin:0 8px 0 0;vertical-align:middle}
+.evi{display:block;width:112px;height:112px;object-fit:contain;margin:0 auto 6px}
 .chip img.ic{width:16px;height:16px;vertical-align:-3px}
 .card .nm{flex:1;min-width:0;font-size:13px}
 .card .nm b{font-size:14px}
@@ -68,11 +70,14 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:4px 3px
 #menu .cover img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .small{font-size:12px;color:var(--dim)}
 .toast{position:absolute;left:10px;right:10px;top:50px;background:#1c2b5c;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;z-index:15;display:none}
+:root{--pm-paper:#16224a;--pm-paper2:#1c2b5c;--pm-ink:#e8eefc;--pm-gold:#f7b34a;--pm-red:#f7b34a;--pm-redink:#1a1205;--pm-muted:#9fb0dd;--pm-line:#2d3f7a}
+.pm-corner{opacity:.55}.pm-corner .pm-lbl{display:none}.pm-on #hud{padding-right:58px}
+html.inmenu .pm-corner{opacity:1}html.inmenu .pm-corner .pm-lbl{display:inline}
 </style></head>
 <body>
 <!-- YANDEX_SDK (сборка для площадки вставит сюда <script src="/sdk.js">) -->
 <div id="app">
- <div id="hud"><div>🌙 <b id="hcy">1/12</b></div><div id="phase">День<small>сутки 0/14</small></div><div>₵ <b id="hcr">0</b></div></div>
+ <div id="hud"><div>🌙 <b id="hcy">1/12</b></div><div id="phase">День<small>сутки 0/14</small></div><div>₵ <b id="hcr">0</b> <button id="hLang" style="min-height:26px;padding:1px 7px;font-size:11px;width:auto;margin-left:4px">RU</button></div></div>
  <div id="bar"><i></i></div>
  <canvas id="cv" width="750" height="400"></canvas>
  <div id="main"><div class="chips" id="chips"></div><div class="crew" id="crew"></div></div>
@@ -86,20 +91,350 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:4px 3px
  <div id="ov"><div id="sheet"></div></div>
  <div id="menu">
   <div class="cover" id="coverBox">🌕</div>
-  <h1>Лунная база</h1>
-  <p>14 суток дня, 14 суток ночи, −170°. Посчитай запасы — или база замёрзнет.</p>
+  <h1 id="mTitle">Лунная база</h1>
+  <p id="mDesc">14 суток дня, 14 суток ночи, −170°. Посчитай запасы — или база замёрзнет.</p>
   <button class="go" id="mNew">Новая игра</button>
   <button id="mCont" style="display:none">Продолжить</button>
   <button id="mHow">Как играть</button>
+  <button id="mLang" style="width:auto;min-height:34px;padding:4px 14px;font-size:12px">RU ▸ EN</button>
  </div>
 </div>
+<script>
+/* Премиум: общий модуль для браузерных игр на Яндекс Играх.
+   Платный Премиум на срок (30 дней или год), без автопродления: «используемая» покупка, срок считается по серверному
+   времени Яндекса и хранится в облачных данных игрока. Подробно: README.md рядом с этим файлом.
+   Модуль ничего не знает об игре: хранилище, звук и реклама подключаются через init() и несколько вызовов хозяина.
+   Без SDK, без покупок или без созданных товаров в консоли кнопка и карточки скрыты, игра работает как раньше. */
+window.Premium = (function () {
+  "use strict";
+  var DAY = 86400000;
+
+  /* ---- Настройки: все числа и товары в одном месте ---- */
+  var config = {
+    adGapMs: 5 * 60 * 1000,     // интервал полноэкранной рекламы; хозяин читает его при показе (решение владельца 8 ноября: 5 минут)
+    cardEvery: 3,               // карточка «Надоела реклама?» после каждой 3-й показанной полноэкранной рекламы
+    remindDays: 3,              // напоминание о конце Премиума за столько дней и меньше (раз в сутки)
+    pollMs: 60000,              // как часто сверять срок с серверным временем
+    tokensKeep: 20,             // сколько токенов последних покупок помнить
+    products: {                 // id товара в консоли Яндекса → срок
+      premium_30: { days: 30 },
+      premium_365: { days: 365 }
+    },
+    order: ["premium_30", "premium_365"],
+    corner: true,               // кнопка «Премиум» в углу экрана
+    zIndex: 50
+  };
+
+  /* ---- Тексты (временные, их заменит сессия «Тексты»). Подмена: Premium.init({ texts: { ru: {...}, en: {...} } }) ---- */
+  var TEXTS = {
+    ru: {
+      btn: "Премиум", btnOn: "Премиум · {0} д.", title: "Премиум",
+      activeUntil: "Активен до {0}. Осталось {1}.",
+      notActive: "Сейчас Премиум не включён.",
+      perks: ["Без полноэкранной рекламы и баннеров.", "Награды за ролики выдаются сразу, без просмотра.", "Правила и сложность игры не меняются: Премиум не помогает выигрывать."],
+      p30: "Премиум на 30 дней", p365: "Премиум на год",
+      validTo: "Будет действовать до {0}", buy: "Купить", extend: "Продлить",
+      note: "Один платёж, без автопродления: больше ничего не спишется. Если Премиум уже идёт, новый срок добавится к концу.",
+      close: "Закрыть", later: "Не сейчас",
+      adTitle: "Надоела реклама?", adText: "Премиум: без роликов и баннеров, 30 дней за {0}, не продлевается сам.", adMore: "Узнать про Премиум",
+      soonTitle: "Премиум скоро закончится", soonText: "Осталось {0}. Продлить?",
+      endTitle: "Премиум закончился", endText: "Реклама вернулась. Можно включить Премиум снова.",
+      busy: "Ждём подтверждения оплаты…", done: "Готово! Премиум активен до {0}.",
+      fail: "Покупка не прошла. Деньги не списаны.", saveFail: "Оплата принята, но срок пока не сохранился. Не закрывайте игру, мы повторим при следующем запуске.",
+      d1: "{0} день", d2: "{0} дня", d5: "{0} дней", free: "Ян", lang: "ru-RU"
+    },
+    en: {
+      btn: "Premium", btnOn: "Premium · {0} d", title: "Premium",
+      activeUntil: "Active until {0}. {1} left.",
+      notActive: "Premium is not active.",
+      perks: ["No full-screen ads or banners.", "Rewards for videos are given instantly, no watching.", "The rules and difficulty stay the same: Premium does not help you win."],
+      p30: "Premium for 30 days", p365: "Premium for a year",
+      validTo: "Will be active until {0}", buy: "Buy", extend: "Extend",
+      note: "One payment, no auto-renewal: nothing else will be charged. If Premium is already running, the new period is added to the end.",
+      close: "Close", later: "Not now",
+      adTitle: "Tired of ads?", adText: "Premium: no videos or banners, 30 days for {0}, does not renew by itself.", adMore: "About Premium",
+      soonTitle: "Premium ends soon", soonText: "{0} left. Extend?",
+      endTitle: "Premium has ended", endText: "Ads are back. You can turn Premium on again.",
+      busy: "Waiting for payment confirmation…", done: "Done! Premium is active until {0}.",
+      fail: "The purchase did not go through. You were not charged.", saveFail: "Payment accepted, but the period is not saved yet. Keep the game open, we will retry on the next start.",
+      d1: "{0} day", d2: "{0} days", d5: "{0} days", free: "Yan", lang: "en-GB"
+    }
+  };
+
+  /* ---- Состояние ---- */
+  var sdk = null, payments = null, store = null;
+  var lang = "ru", texts = TEXTS.ru;
+  var catalog = {};                   // id → описание товара из консоли
+  var st = blank();
+  var off = 0;                        // запасная поправка серверного времени, если serverTime() недоступен
+  var ready = false, canBuy = false, busy = false, chain = Promise.resolve();
+  var listeners = [], pollTimer = 0, lastActive = false;
+  var ui = { corner: null, ov: null, box: null, status: "", mode: "", style: null, lastFocus: null };
+
+  function blank() { return { until: 0, tokens: [], ads: 0, cardAt: 0, remindDay: 0, endShown: 0 }; }
+  function clean(o) {
+    var r = blank();
+    if (!o || typeof o !== "object") return r;
+    r.until = Math.max(0, Number(o.until) || 0);
+    r.tokens = Array.isArray(o.tokens) ? o.tokens.filter(function (t) { return typeof t === "string"; }).slice(-config.tokensKeep) : [];
+    r.ads = Math.max(0, Math.floor(Number(o.ads) || 0));
+    r.cardAt = Math.max(0, Math.floor(Number(o.cardAt) || 0));
+    r.remindDay = Math.max(0, Math.floor(Number(o.remindDay) || 0));
+    r.endShown = Math.max(0, Number(o.endShown) || 0);
+    return r;
+  }
+  function parse(raw) { try { return clean(typeof raw === "string" ? JSON.parse(raw) : raw); } catch (e) { return blank(); } }
+  /* Слияние двух снимков (облако и устройство): срок и счётчики берём большие, токены объединяем.
+     Хозяин вызывает при импорте облака, иначе срок мог бы пропасть при конфликте двух устройств. */
+  function mergeState(a, b) {
+    var x = parse(a), y = parse(b), r = blank(), seen = {};
+    r.until = Math.max(x.until, y.until); r.ads = Math.max(x.ads, y.ads); r.cardAt = Math.max(x.cardAt, y.cardAt);
+    r.remindDay = Math.max(x.remindDay, y.remindDay); r.endShown = Math.max(x.endShown, y.endShown);
+    y.tokens.concat(x.tokens).forEach(function (t) { if (!seen[t]) { seen[t] = 1; r.tokens.push(t); } });
+    r.tokens = r.tokens.slice(-config.tokensKeep);
+    return JSON.stringify(r);
+  }
+  function persist() { try { if (store && store.set) store.set(JSON.stringify(st)); } catch (e) {} }
+  function loadState() { try { st = parse(store && store.get ? store.get() : null); } catch (e) { st = blank(); } }
+
+  /* ---- Серверное время: часы устройства не используем ---- */
+  function now() {
+    if (sdk && typeof sdk.serverTime === "function") {
+      try { var t = sdk.serverTime(); if (typeof t === "number" && t > 0) { off = t - Date.now(); return t; } } catch (e) {}
+    }
+    return Date.now() + off;
+  }
+  function active() { return st.until > now(); }
+  function daysLeft() { var ms = st.until - now(); return ms > 0 ? Math.ceil(ms / DAY) : 0; }
+  function available() { return !!(ready && canBuy); }
+
+  /* ---- Утилиты текста ---- */
+  function fmt(s) { var a = arguments; return String(s).replace(/\{(\d)\}/g, function (m, i) { var v = a[Number(i) + 1]; return v == null ? "" : v; }); }
+  function tx(k) { var v = texts[k]; return v != null ? v : (TEXTS.ru[k] != null ? TEXTS.ru[k] : k); }
+  function plural(n) {
+    if (lang === "en") return fmt(n === 1 ? tx("d1") : tx("d2"), n);
+    var m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return fmt(tx("d1"), n);
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return fmt(tx("d2"), n);
+    return fmt(tx("d5"), n);
+  }
+  function dateStr(ms) {
+    try { return new Date(ms).toLocaleDateString(tx("lang"), { day: "numeric", month: "long", year: "numeric" }).replace(/\s*г\.$/, ""); }   // без «г.», чтобы в конце фразы не было «г..»
+    catch (e) { return new Date(ms).toISOString().slice(0, 10); }
+  }
+  function priceOf(id) { var c = catalog[id]; return c && c.price ? String(c.price) : ""; }
+  function dayIdx() { return Math.floor(now() / DAY); }
+  function emit() { var a = active(); lastActive = a; listeners.slice().forEach(function (f) { try { f(a); } catch (e) {} }); renderCorner(); if (ui.ov && ui.mode === "shop") renderShop(); }
+
+  /* ---- Покупка и начисление: запись в облако подтверждена, и только потом consumePurchase ---- */
+  function grant(p) {
+    var id = p && p.productID, tok = p && p.purchaseToken, prod = config.products[id];
+    if (!prod || !tok) return Promise.resolve(false);
+    if (st.tokens.indexOf(tok) < 0) {
+      var base = Math.max(now(), st.until);
+      st.until = base + prod.days * DAY;
+      st.tokens.push(tok); if (st.tokens.length > config.tokensKeep) st.tokens.shift();
+      persist();
+    }
+    return Promise.resolve(store && store.save ? store.save() : false).then(function (ok) {
+      if (!ok) { var e = new Error("save"); e.code = "save"; throw e; }
+      // срок уже сохранён: если закрыть покупку не вышло, её закроют при следующем запуске, второй раз срок не начислится
+      return Promise.resolve(payments.consumePurchase(tok)).then(function () {}, function () {});
+    }).then(function () { emit(); return true; });
+  }
+  function queue(f) { var r = chain.then(f, f); chain = r.then(function () {}, function () {}); return r; }
+  function checkPurchases() {
+    return queue(function () {
+      return payments.getPurchases().then(function (list) {
+        list = Array.isArray(list) ? list : (list && list.purchases) || [];
+        return list.reduce(function (p, item) { return p.then(function () { return grant(item).catch(function () {}); }); }, Promise.resolve());
+      });
+    }).catch(function () {}).then(function () { emit(); });
+  }
+  function buy(id) {
+    if (busy || !canBuy || !config.products[id]) return Promise.resolve(false);
+    busy = true; setStatus(tx("busy")); renderShop();
+    return queue(function () {
+      return payments.purchase({ id: id, developerPayload: "pm" }).then(function (p) {
+        return grant(p).then(function () { setStatus(fmt(tx("done"), dateStr(st.until))); return true; }, function (e) {
+          setStatus(e && e.code === "save" ? tx("saveFail") : tx("fail")); return false;
+        });
+      }, function () { setStatus(tx("fail")); return false; });
+    }).then(function (r) { busy = false; renderShop(); return r; }, function () { busy = false; renderShop(); return false; });
+  }
+
+  /* ---- Вызовы хозяина ---- */
+  function noteFullscreen() { st.ads++; persist(); }
+  /* Показать карточку на спокойном экране (меню, результат). Возвращает true, если карточка открыта. */
+  function maybeCard() {
+    if (!available() || ui.ov) return false;
+    if (active()) {
+      if (daysLeft() <= config.remindDays && st.remindDay !== dayIdx()) { st.remindDay = dayIdx(); persist(); openCard("soon"); return true; }
+      return false;
+    }
+    if (st.until > 0 && st.endShown !== st.until) { st.endShown = st.until; persist(); openCard("end"); return true; }
+    if (config.cardEvery > 0 && Math.floor(st.ads / config.cardEvery) > Math.floor(st.cardAt / config.cardEvery)) { st.cardAt = st.ads; persist(); openCard("ad"); return true; }
+    return false;
+  }
+
+  /* ---- Интерфейс ---- */
+  var CSS = ".pm-corner{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:max(12px,env(safe-area-inset-right,0px));z-index:var(--pm-z,50);display:inline-flex;align-items:center;gap:5px;" +
+    "min-height:40px;padding:0 12px;border-radius:20px;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:var(--pm-gold,#f2c14e);color:#2a2110;font:600 14px/1 var(--f-display,system-ui,sans-serif);letter-spacing:.02em;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.25)}" +
+    ".pm-corner[hidden]{display:none}.pm-corner.on{background:var(--pm-paper,var(--paper,#f4edd9));color:var(--pm-ink,var(--fg,#22304a))}" +
+    ".pm-corner:focus-visible,.pm-btn:focus-visible,.pm-x:focus-visible{outline:3px solid var(--pm-focus,var(--focus,#1d5cc0));outline-offset:2px}" +
+    ".pm-ov{position:fixed;inset:0;z-index:calc(var(--pm-z,50) + 10);display:grid;place-items:center;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));background:var(--pm-scrim,rgba(20,18,12,.5))}" +
+    ".pm-ov[hidden]{display:none}.pm-box{position:relative;box-sizing:border-box;width:100%;max-width:420px;max-height:calc(100% - 8px);overflow-y:auto;background:var(--pm-paper,var(--paper,#f4edd9));color:var(--pm-ink,var(--fg,#22304a));" +
+    "border:1.5px solid var(--pm-ink,var(--fg,#22304a));border-radius:12px;padding:18px 18px 16px;box-shadow:0 10px 34px rgba(0,0,0,.4);font:15px/1.4 var(--f-body,system-ui,sans-serif);-webkit-user-select:none;user-select:none}" +
+    ".pm-box h2{margin:0 36px 8px 0;font:600 22px/1.2 var(--f-display,system-ui,sans-serif);text-wrap:balance}.pm-box p{margin:0 0 10px}.pm-sub{color:var(--pm-muted,var(--muted,#615d4f));font-size:14px}" +
+    ".pm-x{position:absolute;top:8px;right:8px;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer}" +
+    ".pm-perks{margin:0 0 12px;padding-left:20px}.pm-perks li{margin:0 0 4px}" +
+    ".pm-prod{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:10px 12px;margin:0 0 10px;border:1.5px solid var(--pm-line,var(--line,#b9ab86));border-radius:10px;background:var(--pm-paper2,var(--paper-2,#ebe1c6))}" +
+    ".pm-prod b{font:600 17px/1.2 var(--f-display,system-ui,sans-serif)}.pm-prod .pm-price{font:600 17px/1 var(--f-display,system-ui,sans-serif);font-variant-numeric:tabular-nums;white-space:nowrap}" +
+    ".pm-prod .pm-sub{grid-column:1 / -1}.pm-btn{box-sizing:border-box;min-height:44px;padding:0 16px;border-radius:8px;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:transparent;color:inherit;font:600 16px/1 var(--f-display,system-ui,sans-serif);cursor:pointer}" +
+    ".pm-btn.main{background:var(--pm-red,var(--red,#b3352b));border-color:var(--pm-red,var(--red,#b3352b));color:var(--pm-redink,var(--red-ink,#fff7ea))}.pm-btn:disabled{opacity:.55;cursor:default}" +
+    ".pm-prod .pm-btn{grid-column:1 / -1;width:100%}.pm-row{display:flex;gap:10px;flex-wrap:wrap}.pm-row .pm-btn{flex:1 1 140px}" +
+    ".pm-status{min-height:20px;margin:6px 0 0;font-size:14px;font-style:italic}@media (prefers-reduced-motion:no-preference){.pm-box{animation:pmIn .2s ease-out}}@keyframes pmIn{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}";
+
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function ensureUi() {
+    if (ui.style) return;
+    ui.style = el("style"); ui.style.textContent = CSS; document.head.appendChild(ui.style);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && ui.ov) closeOv(); });
+  }
+  function renderCorner() {
+    if (!config.corner || typeof document === "undefined") return;
+    var show = ready && (canBuy || active());
+    try { document.documentElement.classList.toggle("pm-on", !!show); } catch (e) {}
+    if (!show) { if (ui.corner) ui.corner.hidden = true; return; }
+    ensureUi();
+    if (!ui.corner) {
+      ui.corner = el("button", "pm-corner"); ui.corner.type = "button"; ui.corner.id = "pmCorner";
+      ui.corner.addEventListener("click", function () { openShop(); });
+      document.body.appendChild(ui.corner);
+    }
+    var on = active();
+    ui.corner.hidden = false;
+    ui.corner.classList.toggle("on", on);
+    // звезда и подпись отдельными элементами: хозяин может скрыть подпись на тесном экране (.pm-lbl), кнопка остаётся звездой
+    ui.corner.textContent = "";
+    ui.corner.appendChild(el("span", "pm-st", "★"));
+    ui.corner.appendChild(el("span", "pm-lbl", on ? fmt(tx("btnOn"), daysLeft()) : tx("btn")));
+    ui.corner.setAttribute("aria-label", on ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("btn"));
+  }
+  function setStatus(s) { ui.status = s || ""; var n = ui.box && ui.box.querySelector(".pm-status"); if (n) n.textContent = ui.status; }
+  function mountOv() {
+    ensureUi(); closeOv(true);
+    ui.lastFocus = document.activeElement;
+    ui.ov = el("div", "pm-ov"); ui.ov.setAttribute("role", "dialog"); ui.ov.setAttribute("aria-modal", "true");
+    ui.box = el("div", "pm-box"); ui.ov.appendChild(ui.box);
+    ui.ov.addEventListener("click", function (e) { if (e.target === ui.ov) closeOv(); });
+    document.body.appendChild(ui.ov);
+  }
+  function closeOv(quiet) {
+    if (ui.ov && ui.ov.parentNode) ui.ov.parentNode.removeChild(ui.ov);
+    ui.ov = null; ui.box = null; ui.mode = ""; ui.status = "";
+    if (!quiet && ui.lastFocus && ui.lastFocus.focus) { try { ui.lastFocus.focus({ preventScroll: true }); } catch (e) {} }
+  }
+  function xBtn() { var b = el("button", "pm-x", "×"); b.type = "button"; b.setAttribute("aria-label", tx("close")); b.addEventListener("click", function () { closeOv(); }); return b; }
+  function productCard(id) {
+    var days = config.products[id].days, c = el("div", "pm-prod");
+    var base = Math.max(now(), st.until);
+    c.appendChild(el("b", "", id === "premium_365" ? tx("p365") : tx("p30")));
+    c.appendChild(el("span", "pm-price", priceOf(id) || ""));
+    c.appendChild(el("span", "pm-sub", fmt(tx("validTo"), dateStr(base + days * DAY))));
+    var b = el("button", "pm-btn main", active() ? tx("extend") : tx("buy")); b.type = "button"; b.disabled = busy; b.setAttribute("data-pm-buy", id);
+    b.addEventListener("click", function () { buy(id); });
+    c.appendChild(b);
+    return c;
+  }
+  function renderShop() {
+    if (!ui.box || ui.mode !== "shop") return;
+    var b = ui.box; b.textContent = "";
+    b.appendChild(xBtn());
+    var h = el("h2", "", tx("title")); h.id = "pmTitle"; b.appendChild(h);
+    ui.ov.setAttribute("aria-labelledby", "pmTitle");
+    b.appendChild(el("p", "", active() ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("notActive")));
+    var ul = el("ul", "pm-perks"); texts.perks.forEach(function (s) { ul.appendChild(el("li", "", s)); }); b.appendChild(ul);
+    config.order.forEach(function (id) { if (catalog[id]) b.appendChild(productCard(id)); });
+    b.appendChild(el("p", "pm-sub", tx("note")));
+    var s = el("p", "pm-status", ui.status); s.setAttribute("role", "status"); s.setAttribute("aria-live", "polite"); b.appendChild(s);
+  }
+  function openShop() {
+    if (!ready || (!canBuy && !active())) return;
+    mountOv(); ui.mode = "shop"; renderShop();
+    var f = ui.box.querySelector(".pm-prod .pm-btn") || ui.box.querySelector(".pm-x"); if (f) try { f.focus({ preventScroll: true }); } catch (e) {}
+  }
+  function openCard(kind) {
+    mountOv(); ui.mode = "card:" + kind;
+    var b = ui.box, p30 = priceOf("premium_30");
+    var title = kind === "ad" ? tx("adTitle") : kind === "soon" ? tx("soonTitle") : tx("endTitle");
+    var text = kind === "ad" ? fmt(tx("adText"), p30 || ("99 " + tx("free"))) : kind === "soon" ? fmt(tx("soonText"), plural(daysLeft())) : tx("endText");
+    b.appendChild(xBtn());
+    var h = el("h2", "", title); h.id = "pmTitle"; b.appendChild(h); ui.ov.setAttribute("aria-labelledby", "pmTitle");
+    b.appendChild(el("p", "", text));
+    var row = el("div", "pm-row");
+    var go = el("button", "pm-btn main", kind === "ad" ? tx("adMore") : (kind === "soon" ? tx("extend") : tx("buy"))); go.type = "button";
+    go.addEventListener("click", function () { openShop(); });
+    var no = el("button", "pm-btn", tx("later")); no.type = "button"; no.addEventListener("click", function () { closeOv(); });
+    row.appendChild(go); row.appendChild(no); b.appendChild(row);
+    try { no.focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  /* ---- Запуск ---- */
+  function setLang(l) {
+    lang = l === "en" ? "en" : "ru"; texts = Object.assign({}, TEXTS.ru, TEXTS[lang] || {});
+    renderCorner(); if (ui.ov) { if (ui.mode === "shop") renderShop(); else { var m = ui.mode.split(":")[1]; openCard(m); } }
+  }
+  function tick() {
+    var a = active();
+    if (a !== lastActive) emit(); else renderCorner();
+  }
+  function init(o) {
+    o = o || {};
+    if (o.config) Object.keys(o.config).forEach(function (k) { config[k] = o.config[k]; });
+    if (o.texts) Object.keys(o.texts).forEach(function (l) { TEXTS[l] = Object.assign(TEXTS[l] || {}, o.texts[l]); });
+    sdk = o.sdk || null; store = o.store || null;
+    setLang(o.lang || lang);
+    loadState();
+    ready = true; lastActive = active();
+    try { document.addEventListener("visibilitychange", function () { if (!document.hidden) tick(); }); } catch (e) {}
+    clearInterval(pollTimer); pollTimer = setInterval(tick, config.pollMs);
+    renderCorner();
+    if (!sdk || typeof sdk.getPayments !== "function") return Promise.resolve(false);
+    return sdk.getPayments({ signed: false }).then(function (pay) {
+      payments = pay;
+      return pay.getCatalog();
+    }).then(function (list) {
+      list = Array.isArray(list) ? list : [];
+      list.forEach(function (c) { if (c && config.products[c.id]) catalog[c.id] = c; });
+      canBuy = !!(store && store.save && config.order.some(function (id) { return catalog[id]; }));
+      renderCorner();
+      return canBuy ? checkPurchases().then(function () { return true; }) : false;
+    }).catch(function () { canBuy = false; renderCorner(); return false; });
+  }
+
+  return {
+    config: config,
+    init: init, setLang: setLang,
+    active: active, until: function () { return st.until; }, daysLeft: daysLeft, available: available,
+    noteFullscreen: noteFullscreen, maybeCard: maybeCard, openShop: openShop,
+    onChange: function (f) { if (typeof f === "function") listeners.push(f); },
+    mergeState: mergeState,
+    refresh: function () { return canBuy ? checkPurchases() : Promise.resolve(); },
+    _state: function () { return JSON.parse(JSON.stringify(st)); }
+  };
+})();
+
+</script>
+<script src="/sdk.js"></script>
 <script>
 /* Слой платформы: Яндекс Игры SDK, если есть; иначе заглушки. Ключи сохранения начинаются с lunabaza- */
 window.PF=(function(){
  "use strict";
  var ysdk=null,player=null,ok=false,cloudOk=false,gaveUp=false,mem={},timer=0,self={onPause:function(){}};
  var wantReady=false,readyDone=false,adBusy=false,tabHidden=false,apiPaused=false,gpOn=false,wantGp=false;
- var lastAdAt=0,bornAt=Date.now(),AD_FIRST_MS=120000,AD_GAP_MS=180000;
+ var lastAdAt=0,bornAt=Date.now(),AD_FIRST_MS=120000,AD_GAP_MS=300000,lang='ru';
+ function premiumOn(){try{return !!(window.Premium&&window.Premium.active())}catch(e){return false}}
  function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
  function lsDel(k){try{localStorage.removeItem(k)}catch(e){}}
  self.get=function(k){if(Object.prototype.hasOwnProperty.call(mem,k))return mem[k];try{return localStorage.getItem(k)}catch(e){return null}};
@@ -129,29 +464,35 @@ window.PF=(function(){
    var t=setTimeout(function(){gaveUp=true;res()},4000);
    window.YaGames.init().then(function(sdk){
     ysdk=sdk;ok=true;
+    try{lang=(sdk.environment&&sdk.environment.i18n&&sdk.environment.i18n.lang)||'ru'}catch(e){}
     try{sdk.on('game_api_pause',function(){apiPaused=true;changed()});sdk.on('game_api_resume',function(){apiPaused=false;changed()})}catch(e){}
     tryReady();
     return sdk.getPlayer({scopes:false}).then(function(p){player=p;return p.getData()}).then(function(d){
-     if(!gaveUp&&d&&d.d&&!self.get('lunabaza-save'))Object.keys(d.d).forEach(function(k){mem[k]=d.d[k];lsSet(k,d.d[k])});
+     if(!gaveUp&&d&&d.d){var PK='lunabaza-premium',cp=d.d[PK],lp=self.get(PK);if(!self.get('lunabaza-save'))Object.keys(d.d).forEach(function(k){mem[k]=d.d[k];lsSet(k,d.d[k])});if((cp||lp)&&window.Premium&&window.Premium.mergeState){var mg=window.Premium.mergeState(lp,cp);mem[PK]=mg;lsSet(PK,mg)}}
      cloudOk=true;
     },function(){});
    }).then(function(){clearTimeout(t);res()},function(){clearTimeout(t);res()});
   });
  };
  self.hasSdk=function(){return ok};
- /* реклама: полноэкранная не чаще раза в 3 минуты (первая не раньше чем через 2 минуты после загрузки) */
+ self.sdk=function(){return ysdk};
+ self.premium=premiumOn;
+ self.save=function(){clearTimeout(timer);timer=0;if(!player||!cloudOk)return Promise.resolve(false);try{return Promise.resolve(player.setData({v:1,d:mem},true)).then(function(){return true},function(){return false})}catch(e){return Promise.resolve(false)}};
+ self.lang=function(){return lang};
+ /* реклама: полноэкранная не чаще раза в 5 минут (первая не раньше чем через 2 минуты после загрузки) */
  function adBegin(){adBusy=true;changed()}
  function adEnd(){adBusy=false;changed()}
  self.interstitial=function(done){
   if(adBusy)return;
   var now=Date.now(),allowed=lastAdAt?lastAdAt+AD_GAP_MS:bornAt+AD_FIRST_MS;
-  if(!ok||!ysdk.adv||!ysdk.adv.showFullscreenAdv||now<allowed){done();return}
-  var fin=false;function end(shown){if(fin)return;fin=true;if(shown)lastAdAt=Date.now();adEnd();done()}
+  if(premiumOn()||!ok||!ysdk.adv||!ysdk.adv.showFullscreenAdv||now<allowed){done();return}
+  var fin=false;function end(shown){if(fin)return;fin=true;if(shown){lastAdAt=Date.now();try{if(window.Premium)window.Premium.noteFullscreen()}catch(e){}}adEnd();done()}
   adBegin();
   try{ysdk.adv.showFullscreenAdv({callbacks:{onClose:function(w){end(w)},onError:function(){end(false)},onOffline:function(){end(false)}}})}catch(e){end(false)}
  };
- self.canReward=function(){return !!(ok&&!adBusy&&ysdk.adv&&ysdk.adv.showRewardedVideo)};
+ self.canReward=function(){return !!(premiumOn()||ok&&!adBusy&&ysdk.adv&&ysdk.adv.showRewardedVideo)};
  self.rewarded=function(done){
+  if(premiumOn()){done(true);return}
   if(!self.canReward()){done(false);return}
   var fin=false,got=false;function end(){if(fin)return;fin=true;if(got)lastAdAt=Date.now();adEnd();done(got)}
   adBegin();
@@ -164,36 +505,40 @@ window.PF=(function(){
 (function(){
 'use strict';
 var $=function(id){return document.getElementById(id)};
-var RU=function(x){return String(Math.round(x*10)/10).replace('.',',')};
+var LANG='ru';
+function L(r,e){return LANG==='en'?e:r}
+var RU=function(x){var t=String(Math.round(x*10)/10);return LANG==='en'?t:t.replace('.',',')};
 function rnd(a,b){return a+Math.random()*(b-a)}
 function pick(a){return a[Math.floor(Math.random()*a.length)]}
 function r1(x){return Math.round(x*10)/10}
 
 /* ---------- Данные ---------- */
 var T={
- hab:{n:'Жилой',ic:'🏠',c:50,d:3,nt:5,col:'#e9e2d2',info:'3 места, +50 каждого запаса'},
- store:{n:'Склад',ic:'📦',c:30,d:1,nt:1,col:'#b7bcc9',info:'+100 каждого запаса'},
- power:{n:'Энергоблок',ic:'🔋',c:40,d:0,nt:0,col:'#3a78c8',info:'+40 кВт·ч батарея, +16 кВт·ч в сутки днём'},
- green:{n:'Теплица',ic:'🌱',c:60,d:4,nt:5,col:'#5cc86a',info:'+3 пайки и +2 кг O₂ в сутки, −2 л воды'},
- drill:{n:'Буровая',ic:'⛏',c:70,d:1,nt:1,col:'#d9a441',info:'60 кг реголита: 6 кг O₂ или 3 л воды; 6 кВт·ч'},
- recy:{n:'Рециклер',ic:'♻',c:60,d:2,nt:2,col:'#6fd4d0',info:'возвращает 50 % воды'}
+ hab:{n:'Жилой',ne:'Habitat',ic:'🏠',c:50,d:3,nt:5,col:'#e9e2d2',info:'3 места, +50 каждого запаса',ie:'3 beds, +50 of each supply'},
+ store:{n:'Склад',ne:'Storage',ic:'📦',c:30,d:1,nt:1,col:'#b7bcc9',info:'+100 каждого запаса',ie:'+100 of each supply'},
+ power:{n:'Энергоблок',ne:'Power Unit',ic:'🔋',c:40,d:0,nt:0,col:'#3a78c8',info:'+40 кВт·ч батарея, +16 кВт·ч в сутки днём',ie:'+40 kWh battery, +16 kWh per day in daylight'},
+ green:{n:'Теплица',ne:'Greenhouse',ic:'🌱',c:60,d:4,nt:5,col:'#5cc86a',info:'+3 пайки и +2 кг O₂ в сутки, −2 л воды',ie:'+3 rations and +2 kg O₂ per day, −2 L water'},
+ drill:{n:'Буровая',ne:'Drilling Rig',ic:'⛏',c:70,d:1,nt:1,col:'#d9a441',info:'60 кг реголита: 6 кг O₂ или 3 л воды; 6 кВт·ч',ie:'60 kg regolith: 6 kg O₂ or 3 L water; 6 kWh'},
+ recy:{n:'Рециклер',ne:'Water Recycler',ic:'♻',c:60,d:2,nt:2,col:'#6fd4d0',info:'возвращает 50 % воды',ie:'returns 50% of water'}
 };
+var TASKS_EN={rest:'😴 Rest',drillO:'⛏ Drill: oxygen',drillW:'⛏ Drill: water',repair:'🔧 Repair',roverA:'🚙 Near crater',roverB:'🚙 Far crater'};
 var TASKS={rest:'😴 Отдых',drillO:'⛏ Бур: кислород',drillW:'⛏ Бур: вода',repair:'🔧 Ремонт',roverA:'🚙 Ближний кратер',roverB:'🚙 Дальний кратер'};
 var CRATER={roverA:{km:80,steps:1,ice:30,name:'Ближний'},roverB:{km:180,steps:2,ice:90,name:'Дальний'}};
+var NAMES_EN=['Anya','Timur','Mira','Leo','Yana','Gleb'];
 var NAMES=['Аня','Тимур','Мира','Лёва','Яна','Глеб'],COLS=['#ff8fb1','#ffd166','#8be9a8','#a0c4ff','#ffb4e6','#caffbf'];
 var GOALS=[
- {t:'Первая ночь: доживи до рассвета',chk:function(){return true},b:30},
- {t:'Построй теплицу',chk:function(){return cnt('green')>0},b:40},
- {t:'Привези 60+ л льда за цикл',chk:function(){return S.st.ice>=60},b:40},
- {t:'Экипаж из 4 человек',chk:function(){return S.crew.length>=4},b:40},
- {t:'Воды после ночи не меньше 50 л',chk:function(){return S.res.water>=50},b:40},
- {t:'Метеоритный сезон: все модули целы',chk:function(){return !S.mods.some(function(m){return m.dmg})},b:50},
- {t:'Батареи на 200+ кВт·ч',chk:function(){return capE()>=200},b:50},
- {t:'Запас: 3+ запчасти',chk:function(){return S.res.parts>=3},b:50},
- {t:'Вспышка: никто не пострадал',chk:function(){return S.st.flareHurt===0},b:50},
- {t:'Экипаж 6, среднее здоровье 70+',chk:function(){return S.crew.length>=6&&avgHp()>=70},b:60},
- {t:'150 л льда за цикл',chk:function(){return S.st.ice>=150},b:60},
- {t:'Финал: пережить главную ночь',chk:function(){return true},b:100}
+ {t:'Первая ночь: доживи до рассвета',e:'First night: survive until sunrise',chk:function(){return true},b:30},
+ {t:'Построй теплицу',e:'Build a greenhouse',chk:function(){return cnt('green')>0},b:40},
+ {t:'Привези 60+ л льда за цикл',e:'Bring 60+ L of ice in one cycle',chk:function(){return S.st.ice>=60},b:40},
+ {t:'Экипаж из 4 человек',e:'A crew of 4',chk:function(){return S.crew.length>=4},b:40},
+ {t:'Воды после ночи не меньше 50 л',e:'At least 50 L of water after the night',chk:function(){return S.res.water>=50},b:40},
+ {t:'Метеоритный сезон: все модули целы',e:'Meteor season: keep all modules intact',chk:function(){return !S.mods.some(function(m){return m.dmg})},b:50},
+ {t:'Батареи на 200+ кВт·ч',e:'Battery capacity: 200+ kWh',chk:function(){return capE()>=200},b:50},
+ {t:'Запас: 3+ запчасти',e:'Stock: 3+ spare parts',chk:function(){return S.res.parts>=3},b:50},
+ {t:'Вспышка: никто не пострадал',e:'Solar flare: no one gets hurt',chk:function(){return S.st.flareHurt===0},b:50},
+ {t:'Экипаж 6, среднее здоровье 70+',e:'Crew of 6, average health 70+',chk:function(){return S.crew.length>=6&&avgHp()>=70},b:60},
+ {t:'150 л льда за цикл',e:'150 L of ice in one cycle',chk:function(){return S.st.ice>=150},b:60},
+ {t:'Финал: пережить главную ночь',e:'Final challenge: survive the last night',chk:function(){return true},b:100}
 ];
 var QS=[
 ['Сколько земных суток длится лунный день?',['7','14','28','365'],1,'Лунный день и ночь по 14 земных суток: вместе почти месяц.'],
@@ -231,15 +576,56 @@ var QS=[
 ['Сколько суток в 2 неделях?',['10','12','14','16'],2,'2 × 7 = 14 суток — как раз лунный день.']
 ];
 
+var QS_EN=[
+['How many Earth days does a lunar day last?',['7','14','28','365'],1,'Daylight and nighttime on the Moon each last about 14 Earth days. Together, they make almost one month.'],
+['How many days does the Moon take to orbit the Earth?',['≈ 1','≈ 7','≈ 27','≈ 365'],2,'The Moon takes about 27.3 days to orbit Earth. Its cycle of phases takes about 29.5 days.'],
+['Does the Moon have an atmosphere?',['Yes, like Earth','Almost none','Only over the seas','Yes, but without oxygen'],1,'The Moon has an extremely thin atmosphere. Its sky looks black, there is no wind, and sound cannot travel through the near-vacuum.'],
+['How many times weaker is the Moon’s gravity than Earth’s?',['2 times','6 times','10 times','100 times'],1,'About 6 times: a person would weigh 6 times less there.'],
+['Who was the first to step onto the Moon?',['Yuri Gagarin','Neil Armstrong','Alexei Leonov','Buzz Lightyear'],1,'Neil Armstrong, in 1969 (Apollo 11).'],
+['Who was the first person in space?',['Neil Armstrong','Gherman Titov','Yuri Gagarin','Valentina Tereshkova'],2,'Yuri Gagarin, on 12 April 1961.'],
+['How many planets are in the Solar System?',['7','8','9','10'],1,'Eight: from Mercury to Neptune.'],
+['Which planet is the largest?',['Earth','Saturn','Jupiter','Neptune'],2,'Jupiter is the largest planet. More than 1,300 Earths could fit inside it by volume.'],
+['Which planet is called the Red Planet?',['Venus','Mars','Jupiter','Mercury'],1,'Mars: its soil is rich in iron oxides, “rust”.'],
+['What is regolith?',['Lunar water','Lunar dust and rubble','Lunar gas','A crater'],1,'Regolith is the dust and small rocks on the Moon’s surface.'],
+['What are the lunar “seas”?',['Bodies of water','Dark plains of solidified lava','Craters with ice','Clouds'],1,'They are huge dark plains; there is no water in them.'],
+['The Moon is a…',['star','planet','satellite of Earth','comet'],2,'The Moon is Earth’s natural satellite.'],
+['How many minutes does sunlight take to reach Earth?',['≈ 8','≈ 80','≈ 1','≈ 800'],0,'About 8 minutes: the distance is ≈ 150 million km.'],
+['The distance to the Moon is about…',['38 thousand km','384 thousand km','3 million km','150 million km'],1,'About 384,000 km.'],
+['A rover drives 10 km/h. How many hours to cover 80 km?',['6','8','10','80'],1,'80 ÷ 10 = 8 hours.'],
+['The base uses 8 kWh a day. How much in 14 days?',['22','98','112','120'],2,'8 × 14 = 112 kWh.'],
+['The recycler returns half of the water. 40 L were drunk: how much comes back?',['10 L','20 L','30 L','40 L'],1,'Half of 40 is 20.'],
+['How many kilograms are in one tonne?',['10','100','1000','10,000'],2,'1 t = 1000 kg.'],
+['Which side of the Moon faces Earth?',['Different sides','The same side','Its north pole','No side'],1,'The Moon always shows the same side to Earth.'],
+['What causes the tides on Earth?',['Wind','The Moon','Mars','Currents'],1,'Tides are mainly caused by the Moon\'s gravity. The Sun\'s gravity also plays an important role.'],
+['When does a lunar eclipse happen?',['The Moon enters Earth’s shadow','The Sun goes out','The Moon gets closer to the Sun','Earth is in the Moon’s shadow'],0,'The Moon passes through Earth’s shadow.'],
+['The temperature on the Moon at night is about…',['+20 °C','0 °C','−170 °C','−20 °C'],2,'About −170 °C. With almost no atmosphere to hold in heat, the lunar surface gets extremely cold at night.'],
+['Which gas do people need to breathe?',['Nitrogen','Oxygen','Hydrogen','Helium'],1,'Oxygen. Scientists are developing ways to extract oxygen from lunar soil, but this is not yet done on a large scale.'],
+['Where is ice found on the Moon?',['On sunlit plains','In dark craters near the poles','Under the seas','Nowhere'],1,'In the permanent shadow of polar craters.'],
+['How many days does a lunar night last?',['7','14','28','1'],1,'About 14 Earth days.'],
+['New Moon is when the Moon is…',['fully visible','not visible','half visible','hidden by Earth'],1,'During a new moon, the side facing away from Earth is lit by the Sun, while the side facing Earth is mostly dark.'],
+['The first artificial satellite of Earth was launched in…',['1941','1957','1969','1991'],1,'Sputnik 1, on 4 October 1957.'],
+['How many hours are in 2 days?',['24','36','48','60'],2,'24 × 2 = 48 hours.'],
+['The Sun is a…',['planet','satellite','star','comet'],2,'The Sun is a star, the one nearest to Earth.'],
+['If 3 people need 7.5 L of water a day, how much does 1 person need?',['2 L','2.5 L','3 L','3.5 L'],1,'7.5 ÷ 3 = 2.5 L.'],
+['Which of these objects orbits the Earth?',['The ISS','Mars','Jupiter','The Sun'],0,'The ISS flies in orbit around the Earth.'],
+['What do plants in a greenhouse need to grow?',['Water, light, warmth','Only ice','Only dust','Nothing'],0,'Water, light, warmth and air (carbon dioxide).'],
+['How many days are in 2 weeks?',['10','12','14','16'],2,'2 × 7 = 14 days: about as long as daylight lasts on the Moon.']
+];
+
 /* ---------- Состояние ---------- */
 var S=null,busy=false,usedQ=[],art={};
-var ARTNAMES=['bg_moon','earth','rover','mod_hab','mod_store','mod_power','mod_green','mod_drill','mod_recy','astro_0','astro_1','astro_2','astro_3','cover','ic_energy','ic_o2','ic_water','ic_food','ic_parts','ic_temp'];
+var ARTNAMES=['bg_moon','earth','rover','mod_hab','mod_store','mod_power','mod_green','mod_drill','mod_recy','astro_0','astro_1','astro_2','astro_3','cover','crater_ice','ev_meteor','ev_break','ev_flare','ic_energy','ic_o2','ic_water','ic_food','ic_parts','ic_temp'];
 var ICN={'⚡':'ic_energy','🫁':'ic_o2','💧':'ic_water','🍲':'ic_food','🔧':'ic_parts','🌡':'ic_temp'};
+function EVI(n){return art[n]?'<img class="evi" src="img/'+n+'.webp" alt="">':''}
 function IC(e){var n=ICN[e];return n&&art[n]?'<img class="ic" src="img/'+n+'.webp" alt="">':e}
 /* картинки: список готовых файлов лежит в img/index.json (пустой список — всё рисуется кодом, запросов к несуществующим файлам нет) */
 fetch('img/index.json').then(function(r){return r.json()}).then(function(list){
  list.forEach(function(n){if(ARTNAMES.indexOf(n)<0)return;var im=new Image();im.onload=function(){art[n]=im;if(n==='cover')setCover();if(S){$('crew').dataset.sig='';if(n.indexOf('ic_')===0)try{refresh()}catch(e){}}};im.onerror=function(){};im.src='img/'+n+'.webp'});
 }).catch(function(){});
+function TN(k){return L(T[k].n,T[k].ne)}
+function TI(k){return L(T[k].info,T[k].ie)}
+function tk(k){return L(TASKS[k],TASKS_EN[k])}
+function cn(c){return L(NAMES[c.i],NAMES_EN[c.i])}
 function setCover(){var b=$('coverBox');if(art.cover){b.innerHTML='';b.appendChild(art.cover.cloneNode())}}
 
 function newState(){
@@ -294,7 +680,7 @@ function simDay(isDay){
   c.hp=Math.max(0,Math.min(100,c.hp+d));
   if(c.hp<=0)dead.push(c);
  });
- dead.forEach(function(c){S.crew.splice(S.crew.indexOf(c),1);log('☠ '+c.name+' погиб(ла)')});
+ dead.forEach(function(c){S.crew.splice(S.crew.indexOf(c),1);log('☠ '+cn(c)+L(' погиб(ла)',' has died'))});
  out.dead=dead.length;
  return out;
 }
@@ -307,7 +693,7 @@ function tryRepair(){
  var m=S.mods.filter(function(x){return x.dmg})[0];
  if(!m)return false;
  if(S.res.parts<1||S.energy<5)return false;
- S.res.parts--;S.energy-=5;m.dmg=false;log('🔧 '+T[m.t].n+' отремонтирован');return true;
+ S.res.parts--;S.energy-=5;m.dmg=false;log('🔧 '+TN(m.t)+L(' отремонтирован',' repaired'));return true;
 }
 function eventRoll(isDay){
  if(S.cycle===1)return null;
@@ -347,17 +733,17 @@ function doStep(){
   else if(c.task==='roverA'||c.task==='roverB'){
    var cr=CRATER[c.task];
    if(S.trip&&S.trip.who===c.i){}
-   else if(S.trip||S.step+cr.steps>7){c.task='rest';toast('Ровер сейчас не может выехать')}
+   else if(S.trip||S.step+cr.steps>7){c.task='rest';toast(L('Ровер сейчас не может выехать','The rover can\'t head out right now'))}
    else{
     var e=cr.km*0.1;
     if(S.energy>=e+12){S.energy-=e;S.trip={who:c.i,key:c.task,left:cr.steps}}
-    else{c.task='rest';toast('Мало энергии для рейса')}
+    else{c.task='rest';toast(L('Мало энергии для рейса','Not enough energy for the trip'))}
    }
   }
  });
  runDays(2,true,260,function(){
   if(S.trip){S.trip.left--;if(S.trip.left<=0){var cr=CRATER[S.trip.key];var add=Math.min(cr.ice,capR()-S.res.water);if(add<0)add=0;S.res.water=r1(S.res.water+add);S.st.ice+=cr.ice;
-   var who=S.crew.filter(function(c){return c.i===S.trip.who})[0];S.trip=null;log('🚙 Ровер привёз лёд: +'+RU(add)+' л воды')}}
+   var who=S.crew.filter(function(c){return c.i===S.trip.who})[0];S.trip=null;log(L('🚙 Ровер привёз лёд: +'+RU(add)+' л воды','🚙 The rover returned with ice: +'+RU(add)+' L of water'));if(art.crater_ice)toast('',EVI('crater_ice')+L('Лёд из кратера: +'+RU(add)+' л','Crater ice: +'+RU(add)+' L'))}}
   S.step++;
   busy=false;
   if(S.step>=7){S.phase='prep';save();refresh();nightPrep()}
@@ -370,13 +756,13 @@ function lockUI(b){['bMod','bShop','bCalc','bGo'].forEach(function(i){$(i).disab
 function nightPrep(){
  lockUI(false);
  var nd=needs(),st=stocks(),rows='';
- [['energy','⚡ Энергия','кВт·ч'],['water','💧 Вода','л'],['o2','🫁 Кислород','кг'],['food','🍲 Еда','пайков']].forEach(function(r){
+ [['energy',L('⚡ Энергия','⚡ Energy'),L('кВт·ч','kWh')],['water',L('💧 Вода','💧 Water'),L('л','L')],['o2',L('🫁 Кислород','🫁 Oxygen'),L('кг','kg')],['food',L('🍲 Еда','🍲 Food'),L('пайков','rations')]].forEach(function(r){
   var solved=S.calc[r[0]];
-  rows+='<div class="row"><span class="l">'+r[1]+'</span>'+(solved?(st[r[0]]>=nd[r[0]]?'<span class="tag ok">хватит ('+RU(st[r[0]])+' из '+RU(nd[r[0]])+')</span>':'<span class="tag bad">не хватает '+RU(nd[r[0]]-st[r[0]])+' '+r[2]+'</span>'):'<span class="tag w">не рассчитано</span>')+'</div>';
+  rows+='<div class="row"><span class="l">'+r[1]+'</span>'+(solved?(st[r[0]]>=nd[r[0]]?'<span class="tag ok">'+L('хватит (','enough (')+RU(st[r[0]])+L(' из ',' of ')+RU(nd[r[0]])+')</span>':'<span class="tag bad">'+L('не хватает ','short by ')+RU(nd[r[0]]-st[r[0]])+' '+r[2]+'</span>'):'<span class="tag w">'+L('не рассчитано','not calculated')+'</span>')+'</div>';
  });
  var dr=drillOps(false).length;
- modal('Заход Солнца!','<p>Через мгновение начнётся ночь: <b>14 суток</b>, снаружи −170°, панели не дают энергии. Запасы можно ещё пополнить в «Закупках» и «Модулях», расчёт — в «📐 Расчёт».</p>'+(dr?'<p class="tag w">⚠ Бур работает: ещё +6 кВт·ч в сутки на каждый (за ночь +'+dr*84+'). Можно отправить оператора отдыхать.</p>':'')+rows,
-  [{t:'📐 Расчёт',f:function(){closeModal();calcModal(true)}},{t:'🌙 Начать ночь',c:'go',f:function(){closeModal();startNight()}}]);
+ modal(L('Заход Солнца!','Sunset!'),L('<p>Через мгновение начнётся ночь: <b>14 суток</b>, снаружи −170°, панели не дают энергии. Запасы можно ещё пополнить в «Закупках» и «Модулях», расчёт — в «📐 Расчёт».</p>','<p>The night is about to begin! It will last <b>14 days</b>. Outside, it\'s −170 °C, and the solar panels produce no power. You can still restock in “Supplies” and “Modules”; do the maths in “📐 Calc”.</p>')+(dr?'<p class="tag w">'+L('⚠ Бур работает: ещё +6 кВт·ч в сутки на каждый (за ночь +'+dr*84+'). Можно отправить оператора отдыхать.','⚠ Drills are running: each one uses an extra 6 kWh per day (+'+dr*84+' over the night). You can send the operator to rest.')+'</p>':'')+rows,
+  [{t:L('📐 Расчёт','📐 Calculate'),f:function(){closeModal();calcModal(true)}},{t:L('🌙 Начать ночь','🌙 Start the night'),c:'go',f:function(){closeModal();startNight()}}]);
 }
 function startNight(){
  S.phase='night';S.day=0;S.warned={};busy=true;lockUI(true);S.crew.forEach(function(c){if(c.task==='roverA'||c.task==='roverB')c.task='rest'});
@@ -389,20 +775,20 @@ function dawn(){
  var g=GOALS[S.cycle-1],ok=g.chk();
  if(ok)S.credits+=g.b;
  var lowest=S.crew.reduce(function(a,c){return Math.min(a,c.hp)},100);
- var html='<p>Рассвет! Ночь пережили <b>'+S.crew.length+'</b> из экипажа. Самое низкое здоровье: '+Math.round(lowest)+'.</p>'+
-  '<p>Цель цикла: <b>'+g.t+'</b> — '+(ok?'<span class="tag ok">выполнена +'+g.b+' ₵</span>':'<span class="tag bad">не выполнена</span>')+'</p>';
- if(S.cycle>=12){S.phase='end';modal('Финал',html,[{t:'Дальше',c:'go',f:function(){closeModal();finale()}}]);return}
+ var html=L('<p>Рассвет! Ночь пережили <b>'+S.crew.length+'</b> из экипажа. Самое низкое здоровье: '+Math.round(lowest)+'.</p>','<p>Sunrise! <b>'+S.crew.length+'</b> crew members survived the night. Lowest health: '+Math.round(lowest)+'.</p>')+
+  '<p>'+L('Цель цикла: ','Cycle goal: ')+'<b>'+L(g.t,g.e)+'</b> — '+(ok?'<span class="tag ok">'+L('выполнена +','completed +')+g.b+' ₵</span>':'<span class="tag bad">'+L('не выполнена','not completed')+'</span>')+'</p>';
+ if(S.cycle>=12){S.phase='end';modal(L('Финал','Finale'),html,[{t:L('Дальше','Next'),c:'go',f:function(){closeModal();finale()}}]);return}
  PF.interstitial(function(){
-  modal('Рассвет, цикл '+S.cycle,html,[{t:'📡 Связь с Землёй',c:'go',f:function(){closeModal();earthCall(2)}}]);
+  modal(L('Рассвет, цикл ','Dawn, cycle ')+S.cycle,html,[{t:L('📡 Связь с Землёй','📡 Contact Earth'),c:'go',f:function(){closeModal();earthCall(2)}}]);
  });
 }
 function earthCall(n){
  if(n<=0){nextCycle();return}
  var free=[];QS.forEach(function(_,i){if(usedQ.indexOf(i)<0)free.push(i)});if(!free.length){usedQ=[];QS.forEach(function(_,i){free.push(i)})}
  var idx=pick(free);usedQ.push(idx);
- var q=QS[idx];
- var h='<p>📡 <b>Центр управления:</b> '+q[0]+'</p><div class="q" id="qa"></div><div id="qres"></div>';
- modal('Связь с Землёй',h,[]);
+ var q=(LANG==='en'?QS_EN:QS)[idx];
+ var h='<p>📡 <b>'+L('Центр управления:','Mission Control:')+'</b> '+q[0]+'</p><div class="q" id="qa"></div><div id="qres"></div>';
+ modal(L('Связь с Землёй','Contact with Earth'),h,[]);
  var box=$('qa');
  q[1].forEach(function(a,i){
   var b=document.createElement('button');b.textContent=a;
@@ -411,7 +797,7 @@ function earthCall(n){
    var right=i===q[2];b.classList.add(right?'right':'wrong');
    if(!right)box.children[q[2]].classList.add('right');
    if(right)S.credits+=10;
-   $('qres').innerHTML='<p>'+(right?'<span class="tag ok">Верно! +10 ₵</span> ':'<span class="tag bad">Не совсем.</span> ')+q[3]+'</p><div class="btns"><button class="go" id="qn">Дальше</button></div>';
+   $('qres').innerHTML='<p>'+(right?'<span class="tag ok">'+L('Верно! +10 ₵','Correct! +10 ₵')+'</span> ':'<span class="tag bad">'+L('Не совсем.','Not quite.')+'</span> ')+q[3]+'</p><div class="btns"><button class="go" id="qn">'+L('Дальше','Next')+'</button></div>';
    $('qn').onclick=function(){closeModal();earthCall(n-1)};
    refresh();
   };
@@ -422,8 +808,8 @@ function nextCycle(){
  S.cycle++;S.phase='day';S.step=0;S.day=0;S.calc={};S.st={ice:0,flareHurt:0};
  var target=3+(S.cycle>=4?1:0)+(S.cycle>=7?1:0)+(S.cycle>=10?1:0),msg='';
  while(S.crew.length<target){
-  if(beds()>S.crew.length){var i=S.crew.length;var used=S.crew.map(function(c){return c.i});var id=0;while(used.indexOf(id)>=0)id++;S.crew.push(mkCrew(id));msg+='Прилетел(а) '+NAMES[id]+'. '}
-  else{msg+='Земля задержала новичка: нет свободной койки (нужен ещё жилой модуль). ';break}
+  if(beds()>S.crew.length){var i=S.crew.length;var used=S.crew.map(function(c){return c.i});var id=0;while(used.indexOf(id)>=0)id++;S.crew.push(mkCrew(id));msg+=L('Прилетел(а) '+NAMES[id]+'. ',NAMES_EN[id]+' has arrived. ')}
+  else{msg+=L('Земля задержала новичка: нет свободной койки (нужен ещё жилой модуль). ','Earth held back a newcomer: no free bed (build another habitat). ');break}
  }
  var grant=S.cycle>=4?60:40;
  S.credits+=grant;
@@ -431,43 +817,43 @@ function nextCycle(){
  S.res.food=r1(Math.min(cap,S.res.food+30));S.res.o2=r1(Math.min(cap,S.res.o2+20));S.res.water=r1(Math.min(cap,S.res.water+40));S.res.parts+=2;
  busy=false;lockUI(false);refresh();save();
  var g=GOALS[S.cycle-1];
- modal('Цикл '+S.cycle+' из 12',
-  '<p>'+msg+'</p><p>Контейнер с Земли: 30 пайков, 20 кг O₂, 40 л воды, 2 запчасти, грант '+grant+' ₵ (всё, что влезло в склады).</p><p>🎯 Цель: <b>'+g.t+'</b> (+'+g.b+' ₵)</p>'+(S.cycle===12?'<p>⚠ Главная ночь: события вдвое чаще.</p>':''),
-  [{t:'К работе',c:'go',f:function(){closeModal()}}]);
+ modal(L('Цикл '+S.cycle+' из 12','Cycle '+S.cycle+' of 12'),
+  '<p>'+msg+'</p><p>'+L('Контейнер с Земли: 30 пайков, 20 кг O₂, 40 л воды, 2 запчасти, грант '+grant+' ₵ (всё, что влезло в склады).','Supply container from Earth: 30 rations, 20 kg O₂, 40 L water, 2 spare parts, a grant of '+grant+' ₵ (whatever fits in storage).')+'</p><p>🎯 '+L('Цель: ','Goal: ')+'<b>'+L(g.t,g.e)+'</b> (+'+g.b+' ₵)</p>'+(S.cycle===12?'<p>'+L('⚠ Главная ночь: события вдвое чаще.','⚠ Final night: events happen twice as often.')+'</p>':''),
+  [{t:L('К работе','Get to work'),c:'go',f:function(){closeModal();try{Premium.maybeCard()}catch(e){}}}]);
 }
 function finale(){
  var alive=S.crew.length,stars=S.stars;
- var rank=alive>=5&&stars>=30?'Командир базы':alive>=4?'Старший инженер':'Выживший';
+ var rank=alive>=5&&stars>=30?L('Командир базы','Base Commander'):alive>=4?L('Старший инженер','Senior Engineer'):L('Выживший','Survivor');
  PF.del('lunabaza-save');
- modal('🌕 12 циклов позади!','<p>База «Селена» выдержала 12 лунных ночей.</p><p>Живы: <b>'+alive+'</b> из экипажа · Звёзд точности: <b>'+stars+'</b> · ₵: <b>'+S.credits+'</b></p><p>Звание: <b>'+rank+'</b></p>',[{t:'В меню',c:'go',f:function(){closeModal();showMenu()}}]);
+ modal(L('🌕 12 циклов позади!','🌕 12 Cycles Complete!'),L('<p>База «Селена» выдержала 12 лунных ночей.</p><p>Живы: <b>'+alive+'</b> из экипажа · Звёзд точности: <b>'+stars+'</b> · ₵: <b>'+S.credits+'</b></p><p>Звание: <b>'+rank+'</b></p>','<p>Base “Selena” survived 12 lunar nights.</p><p>Alive: <b>'+alive+'</b> · Accuracy Stars: <b>'+stars+'</b> · ₵: <b>'+S.credits+'</b></p><p>Rank: <b>'+rank+'</b></p>'),[{t:L('В меню','Menu'),c:'go',f:function(){closeModal();showMenu()}}]);
 }
 function gameOver(){
  S.phase='over';busy=false;PF.del('lunabaza-save');
- modal('Миссия провалена','<p>На базе осталось меньше двух человек. Земля отзывает экспедицию.</p><p class="small">Цикл '+S.cycle+'. Главное — считать ночной запас заранее.</p>',[{t:'В меню',c:'go',f:function(){closeModal();showMenu()}}]);
+ modal(L('Миссия провалена','Mission Failed'),L('<p>На базе осталось меньше двух человек. Земля отзывает экспедицию.</p><p class="small">Цикл '+S.cycle+'. Главное — считать ночной запас заранее.</p>','<p>Fewer than two people are left on the base. Earth recalls the expedition.</p><p class="small">Cycle '+S.cycle+'. Remember to calculate the supplies you need for the night ahead of time.</p>'),[{t:L('В меню','Menu'),c:'go',f:function(){closeModal();showMenu()}}]);
 }
 
 
 function warnNeed(o){
  if(!S.warned)S.warned={};
  var list=[];
- if(o.lack.indexOf('кислород')>=0&&!S.warned.o2){S.warned.o2=1;list.push('кислород')}
- if(o.lack.indexOf('вода')>=0&&!S.warned.w){S.warned.w=1;list.push('вода')}
- if(o.lack.indexOf('еда')>=0&&!S.warned.f){S.warned.f=1;list.push('еда')}
- if(!o.powered&&!S.warned.e){S.warned.e=1;list.push('энергия (батареи пусты, в базе холодает)')}
+ if(o.lack.indexOf('кислород')>=0&&!S.warned.o2){S.warned.o2=1;list.push(L('кислород','oxygen'))}
+ if(o.lack.indexOf('вода')>=0&&!S.warned.w){S.warned.w=1;list.push(L('вода','water'))}
+ if(o.lack.indexOf('еда')>=0&&!S.warned.f){S.warned.f=1;list.push(L('еда','food'))}
+ if(!o.powered&&!S.warned.e){S.warned.e=1;list.push(L('энергия (батареи пусты, в базе холодает)','energy (batteries empty, the base is getting cold)'))}
  return list.length?list:null;
 }
 function alertShortage(list,after){
- modal('⚠ Запас закончился!','<p>Не хватает: <b>'+list.join(', ')+'</b>. Экипаж страдает. Срочно закажи с Земли (дорого, но спасает жизни).</p>',
-  [{t:'📦 Закупки',c:'go',f:function(){shopModal(after)}}].concat(PF.canReward()?[{t:'🎬 Аварийная батарея (ролик, +20 кВт·ч)',c:'go',f:function(){PF.rewarded(function(got){if(got){S.res.cells+=20;refresh();toast('🔋 +20 кВт·ч в аварийные ячейки')}else toast('Ролик не показан')});return false}}]:[],[{t:'Дальше',f:function(){closeModal();after()}}]));
+ modal(L('⚠ Запас закончился!','⚠ Supplies Have Run Out!'),L('<p>Не хватает: <b>'+list.join(', ')+'</b>. Экипаж страдает. Срочно закажи с Земли (дорого, но спасает жизни).</p>','<p>Short of: <b>'+list.join(', ')+'</b>. The crew is in trouble. Order supplies from Earth now (expensive, but it can save lives).</p>'),
+  [{t:L('📦 Закупки','📦 Supplies'),c:'go',f:function(){shopModal(after)}}].concat(PF.canReward()?[{t:PF.premium()?L('🔋 Аварийная батарея (+20 кВт·ч)','🔋 Emergency battery (+20 kWh)'):L('🎬 Аварийная батарея (ролик, +20 кВт·ч)','🎬 Emergency battery (video, +20 kWh)'),c:'go',f:function(){PF.rewarded(function(got){if(got){S.res.cells+=20;refresh();toast(L('🔋 +20 кВт·ч в аварийные ячейки','🔋 Added 20 kWh to emergency power cells'))}else toast(L('Ролик не показан','The video was not shown'))});return false}}]:[],[{t:L('Дальше','Next'),f:function(){closeModal();after()}}]));
 }
 
 /* ---------- События ---------- */
 function showEvent(ev,isDay,cont){
  if(ev==='flare'){
   var out=S.trip||S.crew.some(function(c){return c.task==='repair'});
-  modal('☀ Солнечная вспышка!','<p>Земля предупреждает: поток частиц. Те, кто снаружи ('+(out?'ровер идёт в рейс':'сейчас никого')+'), получат дозу радиации.</p>',
-   [{t:'🛡 Укрыться (рейс +1 шаг)',f:function(){closeModal();if(S.trip)S.trip.left++;cont()}},
-    {t:'Работать дальше',f:function(){closeModal();if(S.trip){var w=S.crew.filter(function(c){return c.i===S.trip.who})[0];if(w){w.hp=Math.max(1,w.hp-30);S.st.flareHurt++;log('☢ '+w.name+' получил(а) дозу')}}cont()}}]);
+  modal(L('☀ Солнечная вспышка!','☀ Solar flare!'),L(EVI('ev_flare')+'<p>Земля предупреждает: поток частиц. Те, кто снаружи ('+(out?'ровер идёт в рейс':'сейчас никого')+'), получат дозу радиации.</p>',EVI('ev_flare')+'<p>Earth warns: a stream of particles. Anyone outside ('+(out?'the rover is on a trip':'nobody right now')+') will get a dose of radiation.</p>'),
+   [{t:L('🛡 Укрыться (рейс +1 шаг)','🛡 Take shelter (trip +1 step)'),f:function(){closeModal();if(S.trip)S.trip.left++;cont()}},
+    {t:L('Работать дальше','Keep working'),f:function(){closeModal();if(S.trip){var w=S.crew.filter(function(c){return c.i===S.trip.who})[0];if(w){w.hp=Math.max(1,w.hp-30);S.st.flareHurt++;log('☢ '+cn(w)+L(' получил(а) дозу',' was exposed to radiation'))}}cont()}}]);
   return;
  }
  var cands=ev==='meteor'?S.mods.filter(function(m){return !m.dmg}):S.mods.filter(function(m){return !m.dmg&&(m.t==='drill'||m.t==='green'||m.t==='recy'||m.t==='power')});
@@ -476,10 +862,10 @@ function showEvent(ev,isDay,cont){
  if(ev==='meteor')S.res.o2=Math.max(0,r1(S.res.o2-5));
  refresh();
  var can=S.res.parts>=1&&S.energy>=5;
- modal(ev==='meteor'?'☄ Метеорит!':'⚠ Поломка',
-  '<p>'+(ev==='meteor'?'Микрометеорит попал в модуль «':'Отказало оборудование: «')+T[m.t].n+'». Он не работает'+(ev==='meteor'?', утечка 5 кг кислорода':'')+'.</p><p class="small">Ремонт: 1 запчасть и 5 кВт·ч. Запчастей: '+S.res.parts+'.</p>',
-  [{t:can?'🔧 Ремонт':'🔧 Нет ресурсов',c:can?'go':'',f:function(){if(!can)return false;tryRepair();closeModal();refresh();cont()}},
-   {t:'Отложить',f:function(){closeModal();cont()}}]);
+ modal(ev==='meteor'?L('☄ Метеорит!','☄ Meteoroid Impact!'):L('⚠ Поломка','⚠ Breakdown'),
+  L(EVI(ev==='meteor'?'ev_meteor':'ev_break')+'<p>'+(ev==='meteor'?'Микрометеорит попал в модуль «':'Отказало оборудование: «')+T[m.t].n+'». Он не работает'+(ev==='meteor'?', утечка 5 кг кислорода':'')+'.</p><p class="small">Ремонт: 1 запчасть и 5 кВт·ч. Запчастей: '+S.res.parts+'.</p>',EVI(ev==='meteor'?'ev_meteor':'ev_break')+'<p>'+(ev==='meteor'?'A micrometeoroid hit the module “':'Equipment failure: “')+T[m.t].ne+'”. It is no longer working'+(ev==='meteor'?', 5 kg of oxygen leaked':'')+'.</p><p class="small">Repair: 1 spare part and 5 kWh. Spare parts: '+S.res.parts+'.</p>'),
+  [{t:can?L('🔧 Ремонт','🔧 Repair'):L('🔧 Нет ресурсов','🔧 No resources'),c:can?'go':'',f:function(){if(!can)return false;tryRepair();closeModal();refresh();cont()}},
+   {t:L('Отложить','Later'),f:function(){closeModal();cont()}}]);
 }
 
 /* ---------- Окна ---------- */
@@ -492,37 +878,39 @@ function modal(title,body,btns){
 }
 function closeModal(){$('ov').classList.remove('on');gp()}
 function gp(){try{PF.setPlaying(!!S&&S.phase!=='over'&&S.phase!=='end'&&!$('ov').classList.contains('on')&&$('menu').style.display==='none')}catch(e){}}
-function toast(m){var t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(function(){t.style.display='none'},2200)}
+function toast(m,h){var t=$('toast');if(h)t.innerHTML=h;else t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(function(){t.style.display='none'},2200)}
 
 function modsModal(){
- var h='<table><tr><th>Модуль</th><th>День</th><th>Ночь</th><th></th></tr>';
- S.mods.forEach(function(m,i){h+='<tr><td>'+T[m.t].ic+' '+T[m.t].n+'</td><td>'+T[m.t].d+'</td><td>'+T[m.t].nt+'</td><td>'+(m.dmg?'<span class="tag bad">сломан</span>':'<span class="tag ok">ок</span>')+'</td></tr>'});
- h+='</table><p class="small">Расход в кВт·ч в сутки. Батарея: '+capE()+' кВт·ч, мест: '+beds()+', запасы до '+capR()+'.</p><h2 style="margin-top:12px">Построить</h2>';
+ var h='<table><tr><th>'+L('Модуль','Module')+'</th><th>'+L('День','Day')+'</th><th>'+L('Ночь','Night')+'</th><th></th></tr>';
+ S.mods.forEach(function(m,i){h+='<tr><td>'+T[m.t].ic+' '+TN(m.t)+'</td><td>'+T[m.t].d+'</td><td>'+T[m.t].nt+'</td><td>'+(m.dmg?'<span class="tag bad">'+L('сломан','broken')+'</span>':'<span class="tag ok">ok</span>')+'</td></tr>'});
+ h+='</table><p class="small">'+L('Расход в кВт·ч в сутки. Батарея: '+capE()+' кВт·ч, мест: '+beds()+', запасы до '+capR()+'.','Usage in kWh per day. Battery: '+capE()+' kWh, beds: '+beds()+', storage up to '+capR()+'.')+'</p><h2 style="margin-top:12px">'+L('Построить','Build')+'</h2>';
  Object.keys(T).forEach(function(k){
-  h+='<div class="row"><span class="l">'+T[k].ic+' <b>'+T[k].n+'</b> <span class="small">'+T[k].info+'</span></span><button data-b="'+k+'" '+(S.credits<T[k].c||S.mods.length>=12?'disabled':'')+'>'+T[k].c+' ₵</button></div>';
+  h+='<div class="row"><span class="l">'+T[k].ic+' <b>'+TN(k)+'</b> <span class="small">'+TI(k)+'</span></span><button data-b="'+k+'" '+(S.credits<T[k].c||S.mods.length>=12?'disabled':'')+'>'+T[k].c+' ₵</button></div>';
  });
- modal('Модули базы',h,[{t:'Закрыть',f:function(){closeModal()}}]);
- document.querySelectorAll('#sheet [data-b]').forEach(function(b){b.onclick=function(){var k=b.dataset.b;if(S.credits<T[k].c)return;S.credits-=T[k].c;S.mods.push({t:k});log('Построен модуль: '+T[k].n);refresh();save();modsModal()}});
+ modal(L('Модули базы','Base modules'),h,[{t:L('Закрыть','Close'),f:function(){closeModal()}}]);
+ document.querySelectorAll('#sheet [data-b]').forEach(function(b){b.onclick=function(){var k=b.dataset.b;if(S.credits<T[k].c)return;S.credits-=T[k].c;S.mods.push({t:k});log(L('Построен модуль: ','Module built: ')+TN(k));refresh();save();modsModal()}});
 }
 function shopModal(cb){
- var items=[['⚙ Аварийные ячейки','+10 кВт·ч',10,function(){S.res.cells+=10}],['🫁 Кислород','+10 кг',10,function(){S.res.o2=r1(Math.min(capR(),S.res.o2+10))}],['💧 Вода','+20 л',10,function(){S.res.water=r1(Math.min(capR(),S.res.water+20))}],['🍲 Еда','+10 пайков',10,function(){S.res.food=r1(Math.min(capR(),S.res.food+10))}],['🔧 Запчасть','+1 шт',10,function(){S.res.parts++}]];
- var h='<p class="small">Дорогая доставка с Земли. Склад вмещает не больше '+capR()+' каждого запаса; аварийные ячейки сгорают, когда батареи пусты.</p>';
+ var items=[[L('⚙ Аварийные ячейки','⚙ Emergency cells'),L('+10 кВт·ч','+10 kWh'),10,function(){S.res.cells+=10}],[L('🫁 Кислород','🫁 Oxygen'),L('+10 кг','+10 kg'),10,function(){S.res.o2=r1(Math.min(capR(),S.res.o2+10))}],[L('💧 Вода','💧 Water'),L('+20 л','+20 L'),10,function(){S.res.water=r1(Math.min(capR(),S.res.water+20))}],[L('🍲 Еда','🍲 Food'),L('+10 пайков','+10 rations'),10,function(){S.res.food=r1(Math.min(capR(),S.res.food+10))}],[L('🔧 Запчасть','🔧 Spare part'),L('+1 шт','+1 pc'),10,function(){S.res.parts++}]];
+ var h='<p class="small">'+L('Дорогая доставка с Земли. Склад вмещает не больше '+capR()+' каждого запаса; аварийные ячейки сгорают, когда батареи пусты.','Expensive delivery from Earth. Storage holds at most '+capR()+' of each supply; emergency power cells are used up when the batteries run out.')+'</p>';
  items.forEach(function(it,i){h+='<div class="row"><span class="l">'+it[0]+' <span class="small">'+it[1]+'</span></span><button data-s="'+i+'" '+(S.credits<it[2]?'disabled':'')+'>'+it[2]+' ₵</button></div>'});
- modal('Закупки с Земли',h,[{t:cb?'Продолжить':'Закрыть',c:cb?'go':'',f:function(){closeModal();if(cb)cb()}}]);
+ modal(L('Закупки с Земли','Supplies from Earth'),h,[{t:cb?L('Продолжить','Continue'):L('Закрыть','Close'),c:cb?'go':'',f:function(){closeModal();if(cb)cb()}}]);
  document.querySelectorAll('#sheet [data-s]').forEach(function(b){b.onclick=function(){var it=items[+b.dataset.s];if(S.credits<it[2])return;S.credits-=it[2];it[3]();refresh();save();shopModal(cb)}});
 }
-var CALCROWS=[['energy','⚡ Энергия','кВт·ч','Сложи ночной расход всех модулей и умножи на 14.'],['water','💧 Вода','л','Люди × 2,5 л × 14. Рециклер возвращает половину.'],['o2','🫁 Кислород','кг','Люди × 1 кг × 14.'],['food','🍲 Еда','пайков','Люди × 1 × 14.']];
+var CALCROWS_RU=[['energy','⚡ Энергия','кВт·ч','Сложи ночной расход всех модулей и умножи на 14.'],['water','💧 Вода','л','Люди × 2,5 л × 14. Рециклер возвращает половину.'],['o2','🫁 Кислород','кг','Люди × 1 кг × 14.'],['food','🍲 Еда','пайков','Люди × 1 × 14.']];
+var CALCROWS_EN=[['energy','⚡ Energy','kWh','Add up the night usage of all modules and multiply by 14.'],['water','💧 Water','L','Crew members × 2.5 L × 14. The recycler recovers half the water.'],['o2','🫁 Oxygen','kg','People × 1 kg × 14.'],['food','🍲 Food','rations','People × 1 × 14.']];
 function calcModal(fromPrep){
+ var CALCROWS=LANG==='en'?CALCROWS_EN:CALCROWS_RU;
  var nd=needs(),st=stocks();
  var nightList=S.mods.map(function(m){return T[m.t].ic+T[m.t].nt}).join(' ');
- var h='<p class="small">Ночь = 14 суток. В «Модулях» расход за ночь: <b>'+nightList+'</b> кВт·ч в сутки (число рядом со значком). Экипаж: <b>'+S.crew.length+'</b>. Рециклер: '+(recyF()<1?'есть':'нет')+'. Работающий бур добавляет +6 кВт·ч в сутки (в расчёт не входит).</p>';
+ var h='<p class="small">'+L('Ночь = 14 суток. В «Модулях» расход за ночь: <b>'+nightList+'</b> кВт·ч в сутки (число рядом со значком). Экипаж: <b>'+S.crew.length+'</b>. Рециклер: '+(recyF()<1?'есть':'нет')+'. Работающий бур добавляет +6 кВт·ч в сутки (в расчёт не входит).','Night = 14 days. Night usage per module (see “Modules”): <b>'+nightList+'</b> kWh per day (the number next to the icon). Crew: <b>'+S.crew.length+'</b>. Recycler installed: '+(recyF()<1?'yes':'no')+'. A running drill adds +6 kWh per day (not included in the calculation).')+'</p>';
  CALCROWS.forEach(function(r){
   var k=r[0];
-  h+='<div class="row"><span class="l"><b>'+r[1]+'</b><br><span class="small">запас '+RU(st[k])+' '+r[2]+(k==='energy'?' (ёмкость '+capE()+')':'')+'</span></span>'+
-   'нужно <input type="text" inputmode="decimal" id="n_'+k+'"> не хватает <input type="text" inputmode="decimal" id="d_'+k+'"> <button data-c="'+k+'" style="min-height:40px">✔</button></div><div class="small" id="h_'+k+'">'+(S.calc[k]?'<span class="tag ok">посчитано</span>':'')+'</div>';
+  h+='<div class="row"><span class="l"><b>'+r[1]+'</b><br><span class="small">'+L('запас ','available: ')+RU(st[k])+' '+r[2]+(k==='energy'?L(' (ёмкость ',' (capacity ')+capE()+')':'')+'</span></span>'+
+   L('нужно ','need ')+'<input type="text" inputmode="decimal" id="n_'+k+'"> '+L('не хватает ','short by ')+'<input type="text" inputmode="decimal" id="d_'+k+'"> <button data-c="'+k+'" style="min-height:40px">✔</button></div><div class="small" id="h_'+k+'">'+(S.calc[k]?'<span class="tag ok">'+L('посчитано','done')+'</span>':'')+'</div>';
  });
- h+='<p class="small">⭐ Звёзд точности: '+S.stars+'. Верный расчёт: +5 ₵ и звезда (раз за цикл на каждый ресурс).</p>';
- modal('📐 Расчёт ночи',h,[{t:'Закрыть',f:function(){closeModal();if(fromPrep&&S.phase==='prep')nightPrep()}}]);
+ h+='<p class="small">'+L('⭐ Звёзд точности: '+S.stars+'. Верный расчёт: +5 ₵ и звезда (раз за цикл на каждый ресурс).','⭐ Accuracy Stars: '+S.stars+'. A correct calculation: +5 ₵ and a star (once per cycle for each resource).')+'</p>';
+ modal(L('📐 Расчёт ночи','📐 Night calculation'),h,[{t:L('Закрыть','Close'),f:function(){closeModal();if(fromPrep&&S.phase==='prep')nightPrep()}}]);
  document.querySelectorAll('#sheet [data-c]').forEach(function(b){b.onclick=function(){
   var k=b.dataset.c,nn=parseFloat(($('n_'+k).value||'').replace(',','.')),dd=parseFloat(($('d_'+k).value||'').replace(',','.'));
   var nd2=needs(),st2=stocks(),need=nd2[k],def=Math.max(0,r1(need-st2[k]));
@@ -531,12 +919,12 @@ function calcModal(fromPrep){
   var hint=$('h_'+k);
   if(okN&&okD){
    if(!S.calc[k]){S.calc[k]=true;S.stars++;S.credits+=5;refresh();save()}
-   hint.innerHTML='<span class="tag ok">Верно! '+(def>0?'Не хватает '+RU(def)+' '+CALCROWS.filter(function(r){return r[0]===k})[0][2]:'Запаса хватает')+'</span>';
-  }else hint.innerHTML='<span class="tag bad">Пока нет.</span> '+CALCROWS.filter(function(r){return r[0]===k})[0][3]+' «Не хватает» = нужно − запас.';
+   hint.innerHTML='<span class="tag ok">'+L('Верно! ','Correct! ')+(def>0?L('Не хватает ','Short by ')+RU(def)+' '+CALCROWS.filter(function(r){return r[0]===k})[0][2]:L('Запаса хватает','Supply is enough'))+'</span>';
+  }else hint.innerHTML='<span class="tag bad">'+L('Пока нет.','Not yet.')+'</span> '+CALCROWS.filter(function(r){return r[0]===k})[0][3]+L(' «Не хватает» = нужно − запас.',' Amount missing = amount needed − amount available.');
  }});
 }
 function howModal(){
- modal('Как играть','<p>🌞 <b>День</b> — 14 суток, 7 шагов по 2 суток. Назначь задачи экипажу и жми «Дальше».</p><p>🌙 <b>Ночь</b> — 14 суток без солнца: батареи, кислород, вода и еда должны <b>заранее</b> лежать на складе.</p><p>📐 <b>Расчёт</b>: посчитай, сколько нужно на ночь и чего не хватает, — и закрой нехватку (лёд ровером, бур, закупки, новые энергоблоки).</p><p>📡 После рассвета Земля задаёт вопросы — верный ответ даёт ₵.</p><p>Цель: пережить 12 лунных ночей.</p>',[{t:'Понятно',c:'go',f:function(){closeModal()}}]);
+ modal(L('Как играть','How to play'),L('<p>🌞 <b>День</b> — 14 суток, 7 шагов по 2 суток. Назначь задачи экипажу и жми «Дальше».</p><p>🌙 <b>Ночь</b> — 14 суток без солнца: батареи, кислород, вода и еда должны <b>заранее</b> лежать на складе.</p><p>📐 <b>Расчёт</b>: посчитай, сколько нужно на ночь и чего не хватает, — и закрой нехватку (лёд ровером, бур, закупки, новые энергоблоки).</p><p>📡 После рассвета Земля задаёт вопросы — верный ответ даёт ₵.</p><p>Цель: пережить 12 лунных ночей.</p>','<p>🌞 <b>Day</b> — 14 days, 7 steps of 2 days. Give the crew tasks and press “Next”.</p><p>🌙 <b>Night</b> — 14 days without the Sun: batteries, oxygen, water and food must be in storage <b>in advance</b>.</p><p>📐 <b>Calculate</b>: calculate how many supplies you need for the night and what you\'re missing. Get more supplies by sending out the rover for ice, using the drill, ordering supplies, or building new power units.</p><p>📡 After sunrise, Mission Control asks questions. Each correct answer earns credits (₵).</p><p>Goal: survive 12 lunar nights.</p>'),[{t:L('Понятно','Got it'),c:'go',f:function(){closeModal()}}]);
 }
 
 /* ---------- Интерфейс ---------- */
@@ -545,23 +933,23 @@ function refresh(){
  $('hcy').textContent=S.cycle+'/12';$('hcr').textContent=S.credits;
  var isN=S.phase==='night';
  var ph=$('phase');
- if(isN)ph.innerHTML='🌙 Ночь −170°<small>сутки '+S.day+'/14</small>';
- else if(S.phase==='prep')ph.innerHTML='🌇 Закат<small>до ночи</small>';
- else ph.innerHTML='☀ День +120°<small>сутки '+S.step*2+'/14 · шаг '+(S.step+1)+'/7</small>';
+ if(isN)ph.innerHTML=L('🌙 Ночь −170°<small>сутки ','🌙 Night −170 °C<small>day ')+S.day+'/14</small>';
+ else if(S.phase==='prep')ph.innerHTML=L('🌇 Закат<small>до ночи</small>','🌇 Sunset<small>before the night</small>');
+ else ph.innerHTML=L('☀ День +120°<small>сутки ','☀ Day +120 °C<small>day ')+S.step*2+'/14 · '+L('шаг ','step ')+(S.step+1)+'/7</small>';
  var pr=isN?S.day/14:(S.phase==='prep'?1:S.step/7);
  $('bar').className=isN?'n':'';$('bar').firstChild.style.width=(pr*100)+'%';
  var nd=needs(),st=stocks(),R=S.res;
  function chip(ic,v,sub,low,pct){return '<div class="chip'+(low?' low':'')+'">'+IC(ic)+' <b>'+v+'</b><em>'+sub+'</em>'+(pct!=null?'<i style="width:'+Math.min(100,pct*100)+'%"></i>':'')+'</div>'}
  $('chips').innerHTML=
-  chip('⚡',RU(S.energy),'из '+capE()+' кВт·ч',S.energy<useNight()*3,capE()?S.energy/capE():0)+
-  chip('🫁',RU(R.o2),'кг · '+S.crew.length+'/сут',R.o2<S.crew.length*3,R.o2/capR())+
-  chip('💧',RU(R.water),'л · '+RU(S.crew.length*2.5*recyF())+'/сут',R.water<S.crew.length*8,R.water/capR())+
-  chip('🍲',RU(R.food),'пайков · '+S.crew.length+'/сут',R.food<S.crew.length*3,R.food/capR())+
-  chip('🔧',R.parts,'запчастей · ячейки '+R.cells,R.parts<1)+
-  chip('🌡',Math.round(S.temp)+'°','в базе',S.temp<10);
+  chip('⚡',RU(S.energy),L('из ','of ')+capE()+L(' кВт·ч',' kWh'),S.energy<useNight()*3,capE()?S.energy/capE():0)+
+  chip('🫁',RU(R.o2),L('кг · ','kg · ')+S.crew.length+L('/сут','/day'),R.o2<S.crew.length*3,R.o2/capR())+
+  chip('💧',RU(R.water),L('л · ','L · ')+RU(S.crew.length*2.5*recyF())+L('/сут','/day'),R.water<S.crew.length*8,R.water/capR())+
+  chip('🍲',RU(R.food),L('пайков · ','rations · ')+S.crew.length+L('/сут','/day'),R.food<S.crew.length*3,R.food/capR())+
+  chip('🔧',R.parts,L('запчастей · ячейки ','spares · cells ')+R.cells,R.parts<1)+
+  chip('🌡',Math.round(S.temp)+'°',L('в базе','in the base'),S.temp<10);
  renderCrew();
  $('bCalc').classList.toggle('pulse',(S.step>=3||S.phase==='prep')&&S.phase!=='night'&&!(S.calc.energy&&S.calc.water&&S.calc.o2&&S.calc.food));
- $('bGo').textContent=S.phase==='night'?'🌙 …':'Дальше ▶';
+ $('bGo').textContent=S.phase==='night'?'🌙 …':L('Дальше ▶','Next ▶');
 }
 function renderCrew(){
  var box=$('crew'),isN=S.phase==='night';
@@ -573,19 +961,19 @@ function renderCrew(){
  S.crew.forEach(function(c){
   var d=document.createElement('div');d.className='card';
   var a=art['astro_'+(c.i%4)];
-  d.innerHTML='<div class="av" style="--c:'+COLS[c.i]+'">'+(a?'':'🧑‍🚀')+'</div><div class="nm"><b>'+c.name+'</b><div class="hp"><i style="width:'+c.hp+'%"></i></div></div>';
+  d.innerHTML='<div class="av" style="--c:'+COLS[c.i]+'">'+(a?'':'🧑‍🚀')+'</div><div class="nm"><b>'+cn(c)+'</b><div class="hp"><i style="width:'+c.hp+'%"></i></div></div>';
   if(a)d.firstChild.appendChild(a.cloneNode());
   var sel=document.createElement('select');
   Object.keys(TASKS).forEach(function(k){
    if(isN&&(k==='roverA'||k==='roverB'))return;
-   var o=document.createElement('option');o.value=k;o.textContent=TASKS[k]+(CRATER[k]?' '+CRATER[k].km+' км':'');if(c.task===k)o.selected=true;sel.appendChild(o);
+   var o=document.createElement('option');o.value=k;o.textContent=tk(k)+(CRATER[k]?' '+CRATER[k].km+L(' км',' km'):'');if(c.task===k)o.selected=true;sel.appendChild(o);
   });
   sel.disabled=busy;
   sel.onchange=function(){c.task=sel.value;save()};
   d.appendChild(sel);box.appendChild(d);
  });
 }
-function sig(){return S.crew.map(function(c){return c.i+c.task}).join('|')+S.phase+busy}
+function sig(){return S.crew.map(function(c){return c.i+c.task}).join('|')+S.phase+busy+LANG}
 
 /* ---------- Сцена ---------- */
 var cv=$('cv'),cx=cv.getContext('2d'),STARS=[];
@@ -610,7 +998,7 @@ function drawScene(t){
  S.mods.forEach(function(m,i){drawMod(m,SLOT[i]||SLOT[11],night,t,i)});
  /* ровер и люди */
  var ry=170;
- if(S.trip){cx.fillStyle='#ffd166';cx.font='11px sans-serif';cx.fillText('🚙 ровер в рейсе…',270,ry)}
+ if(S.trip){cx.fillStyle='#ffd166';cx.font='11px sans-serif';cx.fillText(L('🚙 ровер в рейсе…','🚙 rover on a trip…'),270,ry)}
  else if(art.rover)cx.drawImage(art.rover,298,ry-26,40,30);
  else{cx.fillStyle='#d8dbe2';cx.fillRect(300,ry-8,34,10);cx.fillStyle='#4aa8ff';cx.fillRect(316,ry-14,14,7);cx.fillStyle='#222';cx.beginPath();cx.arc(306,ry+3,4,0,7);cx.arc(328,ry+3,4,0,7);cx.fill()}
  S.crew.forEach(function(c,i){
@@ -647,12 +1035,30 @@ function opsActive(){return S&&S.crew.some(function(c){return c.task==='drillO'|
 function loop(t){if(!document.hidden)drawScene(t);requestAnimationFrame(loop)}
 
 /* ---------- Запуск ---------- */
-function showMenu(){S=null;busy=false;$('menu').style.display='flex';gp();try{$('mCont').style.display=PF.get('lunabaza-save')?'':'none'}catch(e){}}
+function showMenu(){S=null;busy=false;$('menu').style.display='flex';document.documentElement.classList.add('inmenu');gp();try{Premium.maybeCard()}catch(e){}try{$('mCont').style.display=PF.get('lunabaza-save')?'':'none'}catch(e){}}
 function startGame(){
- $('menu').style.display='none';busy=false;closeModal();
+ $('menu').style.display='none';document.documentElement.classList.remove('inmenu');busy=false;closeModal();
  $('crew').dataset.sig='';refresh();lockUI(false);
- modal('Цель — 12 ночей','<p>Ты командуешь базой «Селена». <b>Первая ночь</b> уже через 14 суток. Назначь экипаж: бур даёт кислород, ровер возит лёд (воду), а в «Модулях» построй всё, что нужно для выживания. Не забудь про <b>📐 Расчёт</b>!</p>',[{t:'Поехали',c:'go',f:function(){closeModal()}}]);
+ modal(L('Цель — 12 ночей','Goal — 12 nights'),L('<p>Ты командуешь базой «Селена». <b>Первая ночь</b> уже через 14 суток. Назначь экипаж: бур даёт кислород, ровер возит лёд (воду), а в «Модулях» построй всё, что нужно для выживания. Не забудь про <b>📐 Расчёт</b>!</p>','<p>You command base “Selena”. The <b>first night</b> is only 14 days away. Assign the crew: the drill makes oxygen, the rover hauls ice (water), and in “Modules” build everything you need to survive. Do not forget <b>📐 Calculate</b>!</p>'),[{t:L('Поехали','Let’s go'),c:'go',f:function(){closeModal()}}]);
 }
+function applyLang(){
+ document.documentElement.lang=LANG;document.title=L('Лунная база','Moon Base');
+ $('mTitle').textContent=L('Лунная база','Moon Base');
+ $('mDesc').textContent=L('14 суток дня, 14 суток ночи, −170°. Посчитай запасы — или база замёрзнет.','14 days of daylight, 14 days of night, −170°. Calculate your supplies, or the base will freeze.');
+ $('mNew').textContent=L('Новая игра','New game');$('mCont').textContent=L('Продолжить','Continue');$('mHow').textContent=L('Как играть','How to play');
+ $('bMod').textContent=L('🏗 Модули','🏗 Modules');$('bShop').textContent=L('📦 Закупки','📦 Supplies');$('bCalc').textContent=L('📐 Расчёт','📐 Calculate');
+ $('mLang').textContent=LANG==='en'?'EN ▸ RU':'RU ▸ EN';$('hLang').textContent=LANG.toUpperCase();
+ if(S){$('crew').dataset.sig='';refresh()}else{$('phase').innerHTML=L('День<small>сутки 0/14</small>','Day<small>day 0/14</small>');$('bGo').textContent=L('Дальше ▶','Next ▶')}
+}
+function setLang(l){LANG=l;try{PF.put('lunabaza-lang',l)}catch(e){}try{Premium.setLang(l)}catch(e){}applyLang()}
+function toggleLang(){setLang(LANG==='en'?'ru':'en')}
+function initLang(){
+ var saved=null;try{saved=PF.get('lunabaza-lang')}catch(e){}
+ if(saved==='en'||saved==='ru'){LANG=saved}
+ else{var pl=String(PF.hasSdk()?PF.lang():(navigator.language||'ru')).toLowerCase().slice(0,2);LANG=['ru','be','kk','uk','uz'].indexOf(pl)>=0?'ru':'en'}
+ applyLang();
+}
+$('mLang').onclick=toggleLang;$('hLang').onclick=function(){if(!$('ov').classList.contains('on'))toggleLang()};
 $('mNew').onclick=function(){S=newState();usedQ=[];S.credits+=0;startGame()};
 $('mCont').onclick=function(){try{S=JSON.parse(PF.get('lunabaza-save'));S.trip=S.trip||null;startGame();if(S.phase==='prep'){nightPrep()}}catch(e){S=newState();startGame()}};
 $('mHow').onclick=howModal;
@@ -660,8 +1066,25 @@ $('bMod').onclick=function(){if(S&&!busy)modsModal()};
 $('bShop').onclick=function(){if(S&&!busy)shopModal()};
 $('bCalc').onclick=function(){if(S&&!busy)calcModal(false)};
 $('bGo').onclick=doStep;
-window.__game={get S(){return S},doStep:doStep,simDay:simDay,needs:needs,stocks:stocks,T:T,QS:QS,newState:function(){S=newState();return S},refresh:refresh,startGame:startGame};
-PF.init().then(function(){showMenu();requestAnimationFrame(loop);PF.ready()});
+var PMTX={ru:{btn:'Премиум',title:'Премиум',
+ perks:['Без полноэкранной рекламы.','Награды за ролики выдаются сразу, без просмотра.','Подсказки и правила игры остаются прежними.'],
+ p30:'Премиум на 30 дней',p365:'Премиум на год',
+ note:'Оплата один раз. Автопродления и повторных списаний нет. Если Премиум уже идёт, новый срок добавится к концу.',
+ adTitle:'Надоела реклама?',adText:'Строй лунную базу и готовься к долгой ночи без рекламных пауз! Премиум убирает полноэкранную рекламу, а награды за ролики выдаёт сразу.',adMore:'Узнать про Премиум',
+ soonTitle:'Премиум скоро закончится',soonText:'Осталось {0} без рекламных пауз на Луне. Премиум закончится сам, без списаний. Его можно купить снова.',
+ endTitle:'Премиум закончился',endText:'Полноэкранная реклама вернулась, а для наград снова нужно смотреть ролики. Лунная база ждёт новых открытий!',
+ buy:'Купить Премиум',extend:'Продлить',later:'Не сейчас'},
+ en:{btn:'Premium',title:'Premium',
+ perks:['No full-screen ads.','Video rewards are given instantly, no watching.','Hints and game rules stay the same.'],
+ p30:'30-Day Premium',p365:'1-Year Premium',
+ note:'One-time payment. No automatic renewal or recurring charges. If Premium is already running, the new period is added to the end.',
+ adTitle:'Tired of ads?',adText:'Build your Moon base and prepare for the long lunar night without ad breaks! Premium removes full-screen ads and gives video rewards instantly.',adMore:'Learn About Premium',
+ soonTitle:'Premium Is Ending Soon',soonText:'{0} left without ad breaks on the Moon. Premium ends automatically with no further charges. You can buy it again if you like.',
+ endTitle:'Premium Has Ended',endText:'Full-screen ads are back, and video rewards require watching ads again. Your Moon base is ready for more discoveries!',
+ buy:'Buy Premium',extend:'Renew',later:'Not Now'}};
+PF.init().then(function(){initLang();showMenu();requestAnimationFrame(loop);PF.ready();
+ try{Premium.init({sdk:PF.sdk(),lang:LANG,texts:PMTX,store:{get:function(){return PF.get('lunabaza-premium')},set:function(r){PF.put('lunabaza-premium',r)},save:PF.save}}).then(function(){try{Premium.maybeCard()}catch(e){}})}catch(e){}
+});
 })();
 </script>
 </body></html>

@@ -20,6 +20,12 @@
   color-scheme:dark;
 }
 html,body{height:100%;overflow:hidden}
+/* Премиум (src/premium.js): неоновые цвета вместо бумажных, кнопка в углу скрыта во время езды */
+:root{--pm-paper:#17112f;--pm-paper2:rgba(255,255,255,.06);--pm-ink:#f5f0ff;--pm-gold:#ffcf4a;--pm-red:#ff2e88;--pm-redink:#fff;--pm-muted:#a59dcc;--pm-line:rgba(236,228,255,.22);--pm-focus:#29e3ff;--pm-scrim:rgba(6,4,18,.72);--pm-z:60}
+.pm-corner{top:var(--gt)!important;right:var(--gr)!important}
+.nb-drive .pm-corner{display:none!important}
+.pm-on #garage .ghead{padding-right:170px}
+@media (max-width:640px){.pm-corner .pm-lbl{display:none}.pm-on #garage .ghead{padding-right:56px}}
 body{margin:0;background:var(--ink);color:var(--text);font-family:var(--f-body);font-size:14px;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;touch-action:none}
 #app{position:fixed;inset:0;overflow:hidden;background:var(--ink)}
 #gl{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -239,6 +245,7 @@ kbd{font-family:var(--f-mono);font-size:12px;background:rgba(255,255,255,.1);bor
 }
 @media (prefers-reduced-motion:reduce){#banner.show{animation:none}}
 </style>
+<script src="/sdk.js"></script>
 </head>
 <body>
 
@@ -260,7 +267,7 @@ kbd{font-family:var(--f-mono);font-size:12px;background:rgba(255,255,255,.1);bor
     <div class="tc" id="hCenter"></div>
     <div class="tr">
       <canvas id="mini" width="340" height="340" aria-label="Мини-карта, нажмите для полной карты"></canvas>
-      <div class="heat glass" id="hHeat" hidden style="padding:4px 8px"><span class="lbl">Жар</span><i></i><i></i><i></i><i></i><i></i><b id="hHeatM">×1</b></div>
+      <div class="heat glass" id="hHeat" hidden style="padding:4px 8px"><span class="lbl">Патруль</span><i></i><i></i><i></i><i></i><i></i><b id="hHeatM">×1</b></div>
       <div id="gpsTxt" hidden></div>
     </div>
     <div class="speedo glass" style="padding:8px 12px 10px">
@@ -287,10 +294,10 @@ kbd{font-family:var(--f-mono);font-size:12px;background:rgba(255,255,255,.1);bor
       <h1 class="logo"><span class="l1">НЕОН</span><span class="l2">БЭЙ</span></h1>
       <p class="tag">Днём город платит за победы, ночью за риск.</p>
       <div class="dn">
-        <div style="--c:var(--sun)"><b>ДЕНЬ</b><p>Легальные гонки. Победы приносят деньги на машины и тюнинг. Полиция не трогает.</p></div>
-        <div style="--c:var(--pink)"><b>НОЧЬ</b><p>Уличные гонки за репутацию. Каждая победа поднимает жар. Довези REP до гаража: при аресте теряешь половину.</p></div>
+        <div style="--c:var(--sun)"><b>ДЕНЬ</b><p>Гонки на трассах города. Победы приносят деньги на машины и тюнинг. Полиция не трогает.</p></div>
+        <div style="--c:var(--pink)"><b>НОЧЬ</b><p>Ночные гонки за репутацию. Каждая победа привлекает внимание патруля. Довези REP до гаража: если патруль остановит, теряешь половину.</p></div>
       </div>
-      <div class="row"><button class="btn primary" id="btnStart">В гараж</button></div>
+      <div class="row"><button class="btn primary" id="btnStart">В гараж</button><button class="btn small langBtn" id="tLang" type="button">🌐 RU / EN</button></div>
       <div class="save" id="saveLine"></div>
       <div class="keys" id="keysLine"><kbd>W A S D</kbd> или стрелки · <kbd>Пробел</kbd> дрифт · <kbd>Shift</kbd> нитро · <kbd>F</kbd> прыжок · <kbd>E</kbd> старт · <kbd>M</kbd> карта · <kbd>C</kbd> камера · <kbd>R</kbd> на дорогу · <kbd>Esc</kbd> пауза</div>
     </div>
@@ -329,6 +336,7 @@ kbd{font-family:var(--f-mono);font-size:12px;background:rgba(255,255,255,.1);bor
         <button class="btn" id="pCam">Камера</button>
         <button class="btn" id="pSound">Звук: вкл</button>
         <button class="btn" id="pGfx">Графика: высокая</button>
+        <button class="btn langBtn" id="pLang" type="button">🌐 RU / EN</button>
       </div>
       <div class="row"><button class="btn" id="pReset">Вернуть на дорогу</button><button class="btn" id="pQuit" hidden>Покинуть гонку</button></div>
       <p class="keys" id="pKeys"></p>
@@ -370,6 +378,301 @@ kbd{font-family:var(--f-mono);font-size:12px;background:rgba(255,255,255,.1);bor
 <script src="vendor/three-r128/examples/js/postprocessing/RenderPass.js"></script>
 <script src="vendor/three-r128/examples/js/postprocessing/ShaderPass.js"></script>
 <script src="vendor/three-r128/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script>
+/*@I18N-BEGIN@*/
+/* Неон-Бэй — язык интерфейса (ru / en).
+   Ключ перевода = русская строка как в коде. TR('Гараж') → 'Garage' в английской версии.
+   Язык выбирается при загрузке, порядок:
+     1) выбор игрока в паузе (save.lang в localStorage);
+     2) подсказка от Yandex Games SDK с прошлого запуска (neonbay.lang.auto);
+     3) параметр ?lang= в адресе (Яндекс Игры его передают);
+     4) язык браузера.
+   После ответа SDK game.js сверяет язык с ysdk.environment.i18n.lang и при расхождении
+   перезагружает страницу один раз (требование Яндекса 2.14: автоопределение через SDK).
+   Смена языка в игре — тоже перезагрузка: строки машин, гонок и заданий собираются при старте. */
+(function () {
+  var RU_LIKE = /^(ru|uk|be|kk|uz|ky|tg|hy|az|ka|tt|ba|cv|sah|mo)/;
+  function map(code) { return RU_LIKE.test(String(code || '').toLowerCase()) ? 'ru' : 'en'; }
+  function detect() {
+    try {
+      var s = JSON.parse(localStorage.getItem('neonbay.save.v1') || 'null');
+      if (s && (s.lang === 'ru' || s.lang === 'en')) return { lang: s.lang, manual: true };
+    } catch (e) {}
+    try {
+      var a = localStorage.getItem('neonbay.lang.auto');
+      if (a === 'ru' || a === 'en') return { lang: a, manual: false };
+    } catch (e) {}
+    var q = (location.search.match(/[?&]lang=([a-zA-Z-]{2,5})/) || [])[1];
+    if (q) return { lang: map(q), manual: false };
+    return { lang: map(navigator.language || navigator.userLanguage || 'ru'), manual: false };
+  }
+  var d = detect();
+
+  var EN = {
+    /* ---------- машины (game.js CARS) ---------- */
+    'Корса ST': 'Corsa ST', 'Компактное купе · надёжная база': 'Compact coupe · solid base',
+    'Искра S': 'Iskra S', 'Лёгкий хэтчбек · лучше в поворотах': 'Light hatchback · better in corners',
+    'Вента GT': 'Venta GT', 'Спортивный хэтчбек · сбалансированный': 'Sport hatchback · balanced',
+    'Ястреб RS': 'Hawk RS', 'Спортивный седан · быстрее на прямой': 'Sport sedan · faster on straights',
+    'Буран SS': 'Buran SS', 'Масл-кар · мощный разгон': 'Muscle car · strong acceleration',
+    'Гроза R': 'Groza R', 'Ралли-купе · цепкое и вёрткое': 'Rally coupe · grippy and nimble',
+    'Ривьера SR': 'Riviera SR', 'Спорткар · сбалансированный': 'Sports car · balanced',
+    'Бриз GT': 'Breeze GT', 'Родстер без крыши · лёгкий и резкий': 'Convertible roadster · light and responsive',
+    'Сапсан RS': 'Sapsan RS', 'Трековая машина · держит дорогу': 'Track car · excellent grip',
+    'Шквал TS': 'Squall TS', 'Тюнинг-купе · создан для дрифта': 'Tuner coupe · built for drifting',
+    'Фантом X': 'Phantom X', 'Суперкар · сбалансированный': 'Supercar · balanced',
+    'Гарпия V10': 'Harpy V10', 'Клиновидный суперкар · мощнее на прямой': 'Wedge-shaped supercar · faster on straights',
+    'Вихрь V12': 'Vortex V12', 'Гран-туризмо · быстрый и устойчивый': 'Grand tourer · fast and stable',
+    'Нева E': 'Neva E', 'Электрический GT · бешеный разгон': 'Electric GT · incredible acceleration',
+    'Комета R': 'Comet R', 'Гиперкар · мощь и скорость': 'Hypercar · power and speed',
+    'Эфир XR': 'Ether XR', 'Трековый гиперкар · лучшая управляемость': 'Track hypercar · best handling',
+    'Монолит Zero': 'Monolith Zero', 'Прототип · максимальная мощь': 'Prototype · maximum power',
+    'Орбита One': 'Orbita One', 'Стримлайнер · очень высокая скорость': 'Streamliner · very high top speed',
+    'Тайга RX': 'Taiga RX', 'Раллийное купе 4×4 · цепкое на любом покрытии': 'Rally coupe 4×4 · grips on any surface',
+    'Амур GT': 'Amur GT', 'Ретро-GT · мощный V8': 'Retro GT · powerful V8',
+    'Торо V12': 'Toro V12', 'Гран-туризмо · тяговитый и быстрый': 'Grand tourer · torquey and fast',
+    'Сьерра RS': 'Sierra RS', 'Трековое купе · острое в поворотах': 'Track coupe · sharp in corners',
+    'Бриса E': 'Brisa E', 'Электрический родстер · мгновенный разгон': 'Electric roadster · instant acceleration',
+    'Коста S': 'Costa S', 'Спорткар побережья · сбалансированный': 'Coastal sports car · balanced',
+    'Аврора V8': 'Aurora V8', 'Суперкар · мощь и баланс': 'Supercar · power and balance',
+    'Центурион': 'Centurion', 'Клиновидный суперкар · быстрее на прямой': 'Wedge supercar · faster on straights',
+    'Эклат GT': 'Eclat GT', 'Люксовый GT · быстрый и устойчивый': 'Luxury GT · fast and stable',
+    'Мистраль R': 'Mistral R', 'Гиперкар · лёгкий и злой': 'Hypercar · light and fierce',
+    'Райдзин RS': 'Raijin RS', 'Тюнинг-купе · король дрифта': 'Tuner coupe · drift king',
+    'Казэ R': 'Kaze R', 'Дюна X': 'Dune X', 'Гиперкар пустыни · бешеная мощь': 'Desert hypercar · incredible power',
+    'Зенит One': 'Zenith One', 'Прототип · самая высокая скорость в игре': 'Prototype · highest top speed in the game',
+    /* ---------- тюнинг ---------- */
+    'Двигатель': 'Engine', 'Выше максималка и разгон': 'Higher top speed and acceleration',
+    'Подвеска': 'Suspension', 'Точнее руль, лучше сцепление': 'Sharper steering, better grip',
+    'Нитро': 'Nitro', 'Сильнее и дольше ускорение': 'Stronger, longer boost',
+    /* ---------- звания ---------- */
+    'Новичок': 'Rookie', 'Уличный гонщик': 'Street Racer', 'Профи': 'Pro', 'Мастер руля': 'Master Driver',
+    'Король трассы': 'King of the Road', 'Элита': 'Elite', 'Чемпион': 'Champion', 'Звезда залива': 'Bay Star',
+    'Икона': 'Icon', 'Легенда': 'Legend', 'Легенда Неон-Бэя': 'Neon Bay Legend',
+    /* ---------- гонки, сделанные вручную ---------- */
+    'Прибрежный спринт': 'Coastal Sprint', 'Кольцо даунтауна': 'Downtown Ring', 'Портовый марафон': 'Harbor Marathon',
+    'Гран-при залива': 'Bay Grand Prix', 'Бульвар заката': 'Sunset Boulevard', 'Восьмёрка порта': 'Port Figure Eight',
+    'Большое кольцо': 'Grand Loop', 'Кубок Неон-Бэя': 'Neon Bay Cup', 'Финал сезона': 'Season Finale',
+    'Гонка чемпионов': 'Race of Champions', 'Скоростной бульвар': 'Speed Boulevard', 'Кубок побережья': 'Coast Cup',
+    'Гран-при небоскрёбов': 'Skyline Grand Prix', 'Марафон Неон-Бэя': 'Neon Bay Marathon', 'Кольцо королей': 'Ring of Kings',
+    'Финал легенд': 'Legends Final', 'Неоновая миля': 'Neon Mile', 'Полночный круг': 'Midnight Loop',
+    'Полный газ': 'Full Throttle', 'Тоннель огней': 'Tunnel of Lights', 'Король ночи': 'King of the Night',
+    'Чёрный квадрат': 'Black Square', 'Шторм на набережной': 'Waterfront Storm', 'Последний заезд': 'Last Run',
+    'Ночной экспресс': 'Night Express', 'Неоновый шторм': 'Neon Storm', 'Полночь в даунтауне': 'Midnight Downtown',
+    'Красная зона': 'Red Zone', 'Охота на рекорд': 'Record Hunt', 'Последняя легенда': 'Last Legend',
+    'Первый заезд': 'First Run',
+    /* ---------- генератор названий гонок (в английском порядок «место + тип») ---------- */
+    'залива': 'Bay', 'порта': 'Port', 'набережной': 'Waterfront', 'даунтауна': 'Downtown', 'бульвара': 'Boulevard',
+    'маяка': 'Lighthouse', 'пальм': 'Palms', 'заката': 'Sunset', 'небоскрёбов': 'Skyline', 'лагуны': 'Lagoon',
+    'пирса': 'Pier', 'рифа': 'Reef', 'мостов': 'Bridges', 'океана': 'Ocean', 'дюн': 'Dunes', 'гавани': 'Harbor',
+    'ривьеры': 'Riviera', 'кварталов': 'Blocks', 'площадей': 'Plazas', 'Неон-Бэя': 'Neon Bay', 'рассвета': 'Dawn',
+    'прибоя': 'Surf', 'эстакад': 'Overpass', 'доков': 'Docks', 'колонн': 'Colonnade',
+    'Кольцо': 'Ring', 'Гран-при': 'Grand Prix', 'Кубок': 'Cup', 'Трофей': 'Trophy', 'Круг': 'Loop',
+    'Спринт': 'Sprint', 'Марафон': 'Marathon', 'Рывок': 'Dash', 'Заезд': 'Run', 'Приз': 'Prize', 'Этап': 'Stage',
+    'Неоновый': 'Neon', 'Полуночный': 'Midnight', 'Тёмный': 'Dark', 'Огненный': 'Fiery', 'Призрачный': 'Phantom',
+    'Ночной': 'Night', 'Лунный': 'Lunar', 'Багровый': 'Crimson', 'Электрический': 'Electric', 'Дикий': 'Wild',
+    'Звёздный': 'Starry', 'Туманный': 'Misty',
+    'круг': 'Loop', 'вызов': 'Challenge', 'вираж': 'Turn', 'контур': 'Circuit', 'спринт': 'Sprint', 'рывок': 'Dash',
+    'заезд': 'Run', 'шторм': 'Storm', 'маршрут': 'Route', 'полёт': 'Flight', 'форсаж': 'Boost', 'прорыв': 'Breakout',
+    /* ---------- города ---------- */
+    'Майами': 'Miami', 'Москва': 'Moscow', 'Санкт-Петербург': 'St. Petersburg', 'Комсомольск-на-Амуре': 'Komsomolsk-on-Amur',
+    'Мадрид': 'Madrid', 'Барселона': 'Barcelona', 'Рим': 'Rome', 'Париж': 'Paris', 'Токио': 'Tokyo', 'Дубай': 'Dubai',
+    /* ---------- соперники и стиль ---------- */
+    'Вайпер': 'Viper', 'Солти': 'Salty', 'Кобра': 'Cobra', 'Мираж': 'Mirage', 'Ласт': 'Last', 'Шторм': 'Storm',
+    'Рика': 'Rika', 'Дизель': 'Diesel',
+    'Глянец': 'Gloss', 'Металлик': 'Metallic', 'Матовый': 'Matte', 'Перламутр': 'Pearlescent', 'Хром': 'Chrome',
+    'Стандарт': 'Standard', 'Спорт': 'Sport', 'Сетка': 'Mesh', 'Турбина': 'Turbine', 'Аэро': 'Aero',
+    'Закат': 'Sunset', 'Кислота': 'Acid', 'Жемчуг': 'Pearl', 'Песок': 'Sand', 'Фуксия': 'Fuchsia', 'Электрик': 'Electric Blue',
+    'Без подсветки': 'No underglow',
+    /* ---------- что открывается на уровне ---------- */
+    'Звание: ': 'Rank: ', 'Город: ': 'City: ', 'Машина: ': 'Car: ',
+    'гонка': 'race', 'гонки': 'races', 'гонок': 'races', ' днём, ': ' by day, ', ' ночью': ' at night',
+    'Покрытие: ': 'Finish: ', 'Диски: ': 'Rims: ', 'Подсветка: новый цвет': 'Underglow: new color',
+    'Краска: эксклюзивный цвет': 'Paint: exclusive color', 'Тюнинг: ступень ': 'Tuning: stage ', 'Бонус $': 'Bonus $',
+    /* ---------- задания ---------- */
+    'Выиграй ': 'Win ', 'дневную гонку': 'day race', 'дневные гонки': 'day races', 'дневных гонок': 'day races',
+    'ночную гонку': 'night race', 'ночные гонки': 'night races', 'ночных гонок': 'night races',
+    'Займи призовое место (1–3) в ': 'Finish in the top 3 in ', 'гонке': 'race', 'гонках': 'races',
+    'Проедь ': 'Drive ', 'гонку': 'race', 'Уйди от полиции ': 'Escape the police ', 'раз': 'time', 'раза': 'times',
+    'Довези REP до гаража ': 'Bank REP at the garage ', 'Подними внимание патруля до ': 'Raise patrol attention to ',
+    'Сделай ': 'Make ', 'прыжок': 'jump', 'прыжка': 'jumps', 'прыжков': 'jumps',
+    'Жми нитро ': 'Use nitro for ', ' секунд': ' seconds', 'Дрифтуй ': 'Drift ', ' км': ' km',
+    'Заработай $': 'Earn $', ' в гонках': ' in races',
+    '×2 денег на ': '×2 money for ', ' мин': ' min', 'краска «': 'paint "',
+    'Задание выполнено: ': 'Task complete: ', '. Награда ждёт в гараже → «Задания».': '. Your reward is waiting in the garage → "Tasks".',
+    'Зайди в игру ': 'Play ', ' раза за день': ' times today',
+    'Задания': 'Tasks', ' ч ': ' h ', 'Ежедневный вход': 'Daily login', 'серия': 'streak', 'краска': 'paint', 'День': 'Day',
+    'дней': 'days', 'дня': 'days', 'день': 'day',
+    'Заходи каждый день: на 7-й день — эксклюзивная краска. Пропустишь день — серия начнётся заново.': 'Log in every day: day 7 gives an exclusive paint. Miss a day and the streak starts over.',
+    'Активен бонус ×2 денег за гонки: ещё': '×2 race money bonus active:', 'мин.': 'min left.',
+    'Награда:': 'Reward:', 'Награда: ': 'Reward: ', 'Задания на сегодня': "Today's tasks", 'новые через': 'new in',
+    '🎁 Сундук дня: выполни все': '🎁 Daily chest: complete all', 'задания': 'tasks', 'Внутри:': 'Inside:',
+    'Задания недели': 'Weekly tasks', 'обновятся в понедельник': 'refresh on Monday',
+    'За каждое задание недели — большая награда и эксклюзивная краска.': 'Each weekly task gives a big reward and an exclusive paint.',
+    'Твои эксклюзивные краски': 'Your exclusive paints', 'Они уже есть во вкладке «Стиль».': 'They are already in the "Style" tab.',
+    'Новый уровень ': 'New level ', 'За задания: ': 'For tasks: ', ', за задания': ', for tasks',
+    'Забрать': 'Claim', 'Открыть': 'Open',
+    '<button class="btn small primary" data-act="qchest">Открыть</button>': '<button class="btn small primary" data-act="qchest">Open</button>',
+    '<button class="btn small primary" data-act="qlogin">Забрать</button>': '<button class="btn small primary" data-act="qlogin">Claim</button>',
+    /* ---------- графика ---------- */
+    'высокая': 'high', 'средняя': 'medium', 'низкая': 'low', 'Графика: ': 'Graphics: ',
+    'Графика понижена до уровня «': 'Graphics set to "', '», чтобы игра шла плавно. Поменять можно в паузе.': '" for smoother gameplay. You can change this in the pause menu.',
+    /* ---------- гараж на карте ---------- */
+    'ГАРАЖ': 'GARAGE', 'сохраняет REP': 'saves REP', 'НЕОН-БЭЙ · ГАРАЖ': 'NEON BAY · GARAGE', 'к': 'k',
+    'Гараж': 'Garage', 'машины · тюнинг · сохранить REP': 'cars · tuning · save REP', 'нужен уровень ': 'needs level ',
+    /* ---------- погоня ---------- */
+    'полиция злее': 'police get tougher', 'блокпосты и шипы': 'roadblocks and spike strips', 'вертолёт': 'helicopter',
+    'полиция на пределе': 'maximum police alert',
+    'ШИНЫ СДУЛИСЬ': 'FLAT TIRES', '4 секунды едешь медленнее': 'you slow down for 4 seconds',
+    'ВЕРТОЛЁТ': 'HELICOPTER', 'пока он над тобой, оторваться нельзя': "you can't escape while it's overhead",
+    'ВЕРТОЛЁТ УЛЕТЕЛ': 'HELICOPTER GONE', 'на дозаправку · уходи!': 'off to refuel · get away!',
+    'ПОГОНЯ': 'CHASE', 'оторвись от полиции': 'lose the police', 'УШЁЛ': 'ESCAPED', ' REP за ночь': ' REP tonight',
+    'ОСТАНОВЛЕН ПАТРУЛЁМ': 'STOPPED BY PATROL', 'штраф $': 'fine $', ' · засчитано ': ' · earned ', ' REP из ': ' REP of ',
+    'ПАТРУЛЬ ': 'PATROL ', ' · ВЕРТОЛЁТ ': ' · HELICOPTER ', 'ПОГОНЯ ·': 'CHASE ·', 'Остановка': 'Stop', 'Отрыв': 'Escape',
+    /* ---------- гонка и результат ---------- */
+    'круги: ': 'laps: ', 'круги': 'laps', 'ГАЗ!': 'GO!', 'Ты': 'You', ' (×2 бонус)': ' (×2 bonus)',
+    'Деньги уже на счету. Потрать их в гараже.': 'The money is in your account. Spend it in the garage.',
+    'Внимание патруля ': 'Patrol attention ', '. REP не сохранён, пока ты не доедешь до гаража.': '. REP is not saved until you reach the garage.',
+    ' Полиция уже едет.': ' The police are on their way.',
+    'Деньги уже на счету. Дальше — гараж: там машины и тюнинг. Голубая линия покажет дорогу.': 'The money is in your account. Next stop: the garage, with cars and tuning. The blue line shows the way.',
+    ' место из 4': ' of 4', ' (×2 за рекламу)': ' (×2 for an ad)', ' REP за ночь (×2 за рекламу)': ' REP tonight (×2 for an ad)',
+    'ТЕПЕРЬ В ГАРАЖ': 'NOW TO THE GARAGE', 'голубая линия ведёт к гаражу · въедь в голубой круг': 'the blue line leads to the garage · drive into the blue circle',
+    'круг ': 'lap ', 'точка ': 'checkpoint ', 'м': 'm', ' м': ' m', 'до цели ': 'to destination ',
+    'Езжай через ворота до финиша.': 'Drive through the gates to the finish.',
+    'W или ↑ — газ, A/D — руль, Shift — нитро.': 'W or ↑ to accelerate, A/D to steer, Shift for nitro.',
+    'Жми «ГАЗ» справа, руль — кнопки слева. «НИТРО» — ускорение.': 'Hold "GAS" on the right, steer with the buttons on the left. "NITRO" boosts.',
+    /* ---------- уведомления в гараже ---------- */
+    'машины ': 'cars ', 'машина ': 'car ', ' и ': ' and ', 'новая гонка': 'new race', 'новые гонки': 'new races', 'новых гонок': 'new races',
+    'новые варианты стиля': 'new style options', 'новая ступень тюнинга': 'new tuning stage', 'бонус $': 'bonus $',
+    'Уровень ': 'Level ', ' (максимум)': ' (max)', ' · гонки ': ' · races ',
+    'Ночь сохранена: ': 'Night saved: ', '<br>Новый уровень ': '<br>New level ', '! Открыто: ': '! Unlocked: ',
+    '. Подробно во вкладке «Уровни».': '. Details in the "Levels" tab.',
+    'Остановлен патрулём. Штраф $': 'Stopped by patrol. Fine $',
+    ' REP за ночь спасён рекламой: засчитано +': " Tonight's REP saved by the ad: +",
+    ' Засчитана половина REP за ночь: +': " Half of tonight's REP counted: +", ', потеряно ': ', lost ',
+    '<br><button class="btn small primary" id="gRescue" style="margin-top:8px">▶ Вернуть ': '<br><button class="btn small primary" id="gRescue" style="margin-top:8px">▶ Get back ',
+    ' REP за рекламу</button>': ' REP with an ad</button>',
+    'Новый город: <b>': 'New city: <b>',
+    '</b>! Гонки твоего уровня теперь здесь. Старые города можно выбрать во вкладке «Города».': '</b>! Races of your level are here now. Earlier cities are in the "Cities" tab.',
+    /* ---------- вкладки гаража ---------- */
+    '<span class="sub" style="color:var(--cyan)">Твоя</span>': '<span class="sub" style="color:var(--cyan)">Yours</span>',
+    '<span class="sub" style="color:var(--cyan)">Ты здесь</span>': '<span class="sub" style="color:var(--cyan)">You are here</span>',
+    '<span class="sub" style="color:var(--ok)">Открыт ✓</span>': '<span class="sub" style="color:var(--ok)">Unlocked ✓</span>',
+    '<span class="sub" style="color:var(--ok)">Получено ✓</span>': '<span class="sub" style="color:var(--ok)">Claimed ✓</span>',
+    '<span class="sub">Максимум</span>': '<span class="sub">Max</span>', '<span class="sub">Скоро</span>': '<span class="sub">Soon</span>',
+    '<span class="tg">Старт</span>': '<span class="tg">Start</span>',
+    'Твоя': 'Yours', 'Ты здесь': 'You are here', 'Открыт ✓': 'Unlocked ✓', 'Получено ✓': 'Claimed ✓', 'Максимум': 'Max', 'Скоро': 'Soon',
+    'Выбрать': 'Select', 'Уровень': 'Level', 'Купить $': 'Buy $', '· ур.': '· lvl', 'Скорость': 'Speed', 'км/ч': 'km/h',
+    'Разгон': 'Acceleration', 'с': 's', ' с': ' s', 'Управление': 'Handling', 'Тюнинг для:': 'Tuning for:', 'Цвет кузова': 'Body color',
+    'Покрытие': 'Finish', 'Диски': 'Rims', 'Подсветка днища': 'Underglow', 'Подсветка': 'Underglow', 'Подсветка ': 'Underglow ',
+    'Смотреть': 'View', 'Смотришь': 'Viewing', 'Цвет': 'Color', 'Цвет дисков': 'Rim color', 'Краска': 'Paint',
+    'Эксклюзивный цвет': 'Exclusive color', 'Эксклюзив': 'Exclusive', 'Ступень': 'Stage', 'ур.': 'lvl', 'ур. ': 'lvl ', ' · ур. ': ' · lvl ',
+    ': ур.': ': lvl', 'Закрыт': 'Locked', ' · закрыт': ' · locked', 'Открыт': 'Unlocked', 'Войти': 'Enter',
+    'Каждые 10 уровней открывается новый город. Гонки твоего уровня можно проезжать в любом открытом городе.': 'A new city unlocks every 10 levels. You can enter races for your level in any unlocked city.',
+    'Уровни': 'Levels', 'Всего': 'In total', 'уровней и': 'levels and',
+    'гонок: на каждом уровне 10 своих (5 днём, 5 ночью). REP зарабатывается ночью и сохраняется в гараже. За каждый новый уровень — денежный бонус. Чем выше уровень, тем быстрее соперники и больше награды.': 'races: each level has 10 races (5 during the day and 5 at night). Earn REP at night and save it at the garage. Each new level gives you a cash bonus. Higher levels bring faster opponents and bigger rewards.',
+    ': выиграно': ': won', 'из': 'of', 'Классические гонки (награда по твоему уровню)': 'Classic races (reward scales with your level)',
+    /* ---------- выезд, заставка, пауза ---------- */
+    'ДЕНЬ': 'DAY', 'НОЧЬ': 'NIGHT', 'деньги дают за гонки · следуй за голубой линией': 'races pay cash · follow the blue line',
+    'дождь · ': 'rain · ', 'гонки за REP · полиция на улицах': 'races for REP · police on the streets',
+    ' Голубая линия на мини-карте ведёт к гонке «': ' The blue line on the minimap leads to the race "',
+    '»': '"', '».': '".',
+    /* Премиум (v28) */
+    '★ Удвоить награду · Премиум ': '★ Double the reward · Premium ', ' (×2, Премиум)': ' (×2, Premium)', ' REP за ночь (×2, Премиум)': ' REP tonight (×2, Premium)',
+    '<br><button class="btn small primary" id="gRescue" style="margin-top:8px">★ Вернуть ': '<br><button class="btn small primary" id="gRescue" style="margin-top:8px">★ Get back ', ' REP · Премиум ': ' REP · Premium ',
+    ' Линия ведёт к гонке «': ' The line leads to the race "', '». Въедь в жёлтый круг и нажми «Старт».': '". Drive into the yellow circle and press "Start".',
+    ' REP сохраняется только в гараже.': ' REP is saved only in the garage.', 'Деньги дают только за дневные гонки.': 'Only day races pay cash.',
+    'Ночью дают REP, а не деньги.': 'At night you earn REP, not money.',
+    'Кнопки на экране: руль слева, педали справа. Газ и тормоз вместе дают управляемый занос. «Прыжок» перелетает через машины, раз в 3 секунды.': 'On-screen controls: steer on the left, accelerate and brake on the right. Hold gas and brake together for a controlled drift. Use "Jump" to leap over cars once every 3 seconds.',
+    '<kbd>W A S D</kbd> или стрелки · <kbd>Пробел</kbd> дрифт · <kbd>Shift</kbd> нитро · <kbd>F</kbd> прыжок · <kbd>E</kbd> старт · <kbd>M</kbd> карта · <kbd>C</kbd> камера · <kbd>R</kbd> на дорогу': '<kbd>W A S D</kbd> or arrows · <kbd>Space</kbd> drift · <kbd>Shift</kbd> nitro · <kbd>F</kbd> jump · <kbd>E</kbd> start · <kbd>M</kbd> map · <kbd>C</kbd> camera · <kbd>R</kbd> back to road',
+    'Управление кнопками на экране. Удобнее держать телефон горизонтально.': 'Use the on-screen controls. For the best experience, hold your phone horizontally.',
+    'Сохранено: $': 'Saved: $', ' REP · уровень ': ' REP · level ', ', уровень ': ', level ',
+    'Незавершённая ночь: +': 'Unfinished night: +', ' REP. Нажми «В гараж», чтобы засчитать.': ' REP. Press "To garage" to bank it.',
+    'Прогресс хранится в твоём аккаунте.': 'Progress is saved to your account.', 'Прогресс хранится в этом браузере.': 'Progress is saved in this browser.',
+    'Поехать!': "Let's go!", 'Поехать': "Let's go", 'В гараж': 'To garage',
+    'Звук: ': 'Sound: ', 'вкл': 'on', 'выкл': 'off',
+    'Гараж закрыт, пока за тобой погоня': 'The garage is closed during a chase', 'Гараж: сохранить ': 'Garage: save ',
+    'сохранить REP за ночь': "save tonight's REP", 'Гараж: машины и тюнинг': 'Garage: cars and tuning', 'машины и тюнинг': 'cars and tuning',
+    ': нужен уровень ': ': needs level ', 'Сначала оторвись от полиции': 'Lose the police first', 'Старт': 'Start',
+    /* ---------- shell.html ---------- */
+    'Неон-Бэй': 'Neon Bay', 'Не удалось запустить 3D.': "Couldn't start the 3D game.",
+    'Откройте страницу в свежем Chrome, Safari или Firefox с включённым WebGL.': 'Open this page in the latest version of Chrome, Safari, or Firefox with WebGL enabled.',
+    'Пауза': 'Pause', 'ур. 1': 'lvl 1', 'ночь +': 'night +', 'Мини-карта, нажмите для полной карты': 'Minimap, tap for the full map',
+    'Патруль': 'Patrol', 'передача': 'gear', 'ПРЫЖОК · F': 'JUMP · F', 'Влево': 'Left', 'Вправо': 'Right',
+    'ПРЫЖОК': 'JUMP', 'НИТРО': 'NITRO', 'ДРИФТ': 'DRIFT', 'ТОРМОЗ': 'BRAKE', 'ГАЗ': 'GAS', 'НЕОН': 'NEON', 'БЭЙ': 'BAY',
+    'Днём город платит за победы, ночью за риск.': 'By day the city pays for wins, by night for risk.',
+    'Гонки на трассах города. Победы приносят деньги на машины и тюнинг. Полиция не трогает.': 'Races on city tracks. Wins bring money for cars and tuning. The police leave you alone.',
+    'Ночные гонки за репутацию. Каждая победа привлекает внимание патруля. Довези REP до гаража: если патруль остановит, теряешь половину.': 'Race at night to earn reputation. Every win draws the patrol\'s attention. Get your REP back to the garage. If the patrol stops you, you lose half.',
+    'или стрелки ·': 'or arrows ·', 'Пробел': 'Space', 'дрифт ·': 'drift ·', 'нитро ·': 'nitro ·', 'прыжок ·': 'jump ·',
+    'старт ·': 'start ·', 'карта ·': 'map ·', 'камера ·': 'camera ·', 'на дорогу ·': 'back to road ·', 'пауза': 'pause',
+    'Уровень 1': 'Level 1', 'Машины': 'Cars', 'Тюнинг': 'Tuning', 'Стиль': 'Style', 'Города': 'Cities',
+    'Выехать днём': 'Drive during the day', 'Выехать ночью': 'Drive at night', 'Продолжить': 'Continue', 'Карта': 'Map', 'Камера': 'Camera',
+    'Звук: вкл': 'Sound: on', 'Графика: высокая': 'Graphics: high', 'Вернуть на дорогу': 'Return to road', 'Покинуть гонку': 'Leave race',
+    'Сбросить прогресс': 'Reset progress', 'Удалить деньги, REP и машины?': 'Delete money, REP and cars?', 'Да, сбросить': 'Yes, reset',
+    'Нет': 'No', 'Гонка': 'Race', '1 место': '1st place', '▶ Удвоить награду за рекламу': '▶ Double the reward with an ad',
+    'Выбери точку, и навигатор проложит путь.': 'Choose a destination to get directions.', 'Закрыть': 'Close',
+    /* ---------- рекламные щиты Майами (city.js) ---------- */
+    'НЕОН-БЭЙ': 'NEON BAY', 'НЕОН FM': 'NEON FM', '101.7 · ВСЮ НОЧЬ': '101.7 · ALL NIGHT', 'ЛАГУНА': 'LAGOON',
+    'ОТЕЛЬ НА ПЛЯЖЕ': 'BEACH HOTEL', 'ТУРБО': 'TURBO', 'ШИНЫ · ДИСКИ · ТЮНИНГ': 'TIRES · RIMS · TUNING', 'КОКОС': 'COCO',
+    'ХОЛОДНЫЙ СОК': 'COLD JUICE', 'КИНО': 'CINEMA', 'ПРЕМЬЕРА': 'PREMIERE', 'КАТОК': 'RINK', 'РОЛИКИ': 'SKATES',
+    'ЛЕТО': 'SUMMER', 'МОРОЖЕНОЕ': 'ICE CREAM', 'АВТО': 'AUTO', 'ШОУ · СУББОТА': 'SHOW · SATURDAY'
+  };
+
+  var miss = {};
+  var TR = function (s) {
+    if (d.lang !== 'en') return s;
+    var t = EN[s];
+    if (t === undefined) { miss[s] = 1; return s; }
+    return t;
+  };
+  TR.lang = d.lang;
+  TR.en = d.lang === 'en';
+  TR.manual = d.manual;
+  TR.map = map;
+  TR.miss = function () { return Object.keys(miss); };
+  /* Перевод статичной разметки (shell.html): текстовые узлы и aria-label/title, ключ — текст без лишних пробелов. */
+  TR.dom = function (root) {
+    if (!TR.en) return;
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), n, list = [];
+    while ((n = w.nextNode())) list.push(n);
+    for (var i = 0; i < list.length; i++) {
+      var v = list[i].nodeValue, k = v.replace(/\s+/g, ' ').trim();
+      if (!k || !/[А-Яа-яЁё]/.test(k)) continue;
+      var p = list[i].parentNode;
+      if (p && (p.nodeName === 'SCRIPT' || p.nodeName === 'STYLE')) continue;
+      var t = EN[k];
+      if (t === undefined) { miss[k] = 1; continue; }
+      var lead = v.match(/^\s*/)[0], tail = v.match(/\s*$/)[0];
+      list[i].nodeValue = lead + t + tail;
+    }
+    var els = root.querySelectorAll('[aria-label],[title]');
+    for (var j = 0; j < els.length; j++) {
+      ['aria-label', 'title'].forEach(function (a) {
+        var v = els[j].getAttribute(a);
+        if (v && /[А-Яа-яЁё]/.test(v)) { var t = EN[v.trim()]; if (t !== undefined) els[j].setAttribute(a, t); else miss[v.trim()] = 1; }
+      });
+    }
+  };
+  /* Смена языка: запоминаем выбор в сохранении и перезагружаем страницу. */
+  TR.set = function (lang, manual) {
+    try {
+      if (manual) {
+        var s = JSON.parse(localStorage.getItem('neonbay.save.v1') || 'null') || {};
+        s.lang = lang;
+        localStorage.setItem('neonbay.save.v1', JSON.stringify(s));
+      } else {
+        localStorage.setItem('neonbay.lang.auto', lang);
+      }
+    } catch (e) {}
+  };
+  window.TR = TR;
+  try {
+    document.documentElement.lang = d.lang;
+    if (TR.en) { document.title = 'Neon Bay'; TR.dom(document.body); }
+  } catch (e) {}
+})();
+/*@I18N-END@*/
+</script>
 <script>
 /*@CARS-BEGIN@*/
 /* Неон-Бэй — procedural car models.
@@ -3767,7 +4070,7 @@ function mural(kind){const g=CV.a;const W=P1,H=P1;
   else{const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#2a1250');gr.addColorStop(.55,'#ff5e7e');gr.addColorStop(1,'#ffcf6a');g.fillStyle=gr;g.fillRect(0,0,W,H);
     g.fillStyle='#ffe9a8';g.beginPath();g.arc(W*.5,H*.62,W*.18,0,TAU);g.fill();for(let i=0;i<6;i++){g.fillStyle='#2a1250';g.fillRect(0,H*(.6+i*.045),W,H*.012);}
     g.fillStyle='#14082a';g.fillRect(0,H*.82,W,H*.18);for(const px of[.18,.82]){g.fillRect(W*px,H*.4,W*.02,H*.45);for(let k=0;k<6;k++){g.beginPath();g.ellipse(W*px+Math.cos(k)*W*.06,H*.4+Math.sin(k)*H*.02,W*.08,H*.02,k,0,TAU);g.fill();}}
-    g.font='900 '+(W*.13|0)+'px "Arial Black",Arial,sans-serif';g.textAlign='center';g.fillStyle='#29e3ff';g.fillText('НЕОН-БЭЙ',W/2,H*.3);}
+    g.font='900 '+(W*.13|0)+'px "Arial Black",Arial,sans-serif';g.textAlign='center';g.fillStyle='#29e3ff';g.fillText(window.TR?window.TR('НЕОН-БЭЙ'):'НЕОН-БЭЙ',W/2,H*.3);}
   R(0,0,TW,TH,{k:0,r:.85,m:0,h:.5,l:0,s:0});NOISE('a',10);NOISE('h',10);}
 tile('MURAL_A',12,8,null,()=>mural(0));
 tile('ZINC',2,2,null,()=>{R(0,0,TW,TH,{a:'#8f969c',k:0,r:.42,m:.55,h:.5,l:0,s:0});GRIME(.1,.02,[2,5,12]);for(let x=0;x<2;x+=.4){R(x,0,.04,TH,{a:'#a9b0b6',h:.66});R(x+.04,0,.02,TH,{a:'#6e757b',h:.45});}RAIN(0,2,2,5,1.6,.06);});
@@ -3830,7 +4133,7 @@ const adCanvas=document.createElement('canvas');adCanvas.width=adCanvas.height=A
 (function drawAds(){const g=adCanvas.getContext('2d'),U=AW/1024;const F=(px)=>'900 '+Math.round(px*U)+'px "Arial Black",Arial,sans-serif';
   const bb=(i,fn)=>{const x=(i%2)*512*U,y=Math.floor(i/2)*256*U;g.save();g.translate(x,y);g.beginPath();g.rect(0,0,512*U,256*U);g.clip();fn(512*U,256*U);g.restore();};
   const ps=(i,fn)=>{const x=i*256*U,y=512*U;g.save();g.translate(x,y);g.beginPath();g.rect(0,0,256*U,512*U);g.clip();fn(256*U,512*U);g.restore();};
-  const txt=(s,x,y,px,c,glow)=>{g.font=F(px);g.textAlign='center';g.textBaseline='middle';g.shadowColor=glow||'transparent';g.shadowBlur=glow?14*U:0;g.fillStyle=c;g.fillText(s,x,y);g.shadowBlur=0;};
+  const txt=(s,x,y,px,c,glow)=>{if(window.TR)s=window.TR(s);g.font=F(px);g.textAlign='center';g.textBaseline='middle';g.shadowColor=glow||'transparent';g.shadowBlur=glow?14*U:0;g.fillStyle=c;g.fillText(s,x,y);g.shadowBlur=0;};
   bb(0,(w,h)=>{const gr=g.createLinearGradient(0,0,w,h);gr.addColorStop(0,'#1b0b3a');gr.addColorStop(1,'#4a1563');g.fillStyle=gr;g.fillRect(0,0,w,h);g.strokeStyle='#29e3ff';g.lineWidth=5*U;
     for(let k=0;k<3;k++){g.beginPath();for(let x=0;x<=w;x+=8)g.lineTo(x,h*.78+Math.sin(x/40+k)*10*U+k*10*U);g.stroke();}txt('НЕОН FM',w/2,h*.36,92,'#ff2e88','#ff2e88');txt('101.7 · ВСЮ НОЧЬ',w/2,h*.62,34,'#ffffff');});
   bb(1,(w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#ff8a3d');gr.addColorStop(.6,'#ff4f7b');gr.addColorStop(1,'#6b2a7a');g.fillStyle=gr;g.fillRect(0,0,w,h);
@@ -3841,7 +4144,7 @@ const adCanvas=document.createElement('canvas');adCanvas.width=adCanvas.height=A
     txt('КОКОС',w*.62,h*.38,84,'#ffffff');txt('ХОЛОДНЫЙ СОК',w*.62,h*.66,32,'#ffe66d');});
   ps(0,(w,h)=>{g.fillStyle='#120a24';g.fillRect(0,0,w,h);g.fillStyle='#ffcf3e';g.beginPath();for(let k=0;k<10;k++){const a=k/10*TAU-Math.PI/2,r=k%2?w*.16:w*.38;g.lineTo(w/2+Math.cos(a)*r,h*.36+Math.sin(a)*r);}g.fill();txt('КИНО',w/2,h*.72,64,'#ffffff');txt('ПРЕМЬЕРА',w/2,h*.84,26,'#ffcf3e');});
   ps(1,(w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#3a0a5a');gr.addColorStop(1,'#ff2e88');g.fillStyle=gr;g.fillRect(0,0,w,h);g.fillStyle='#d8d8e8';g.beginPath();g.arc(w/2,h*.33,w*.3,0,TAU);g.fill();
-    g.strokeStyle='#8a8aa8';g.lineWidth=3*U;for(let k=-3;k<=3;k++){g.beginPath();g.moveTo(w/2+k*w*.08,h*.33-w*.3);g.lineTo(w/2+k*w*.08,h*.33+w*.3);g.stroke();}txt('ДИСКО',w/2,h*.7,56,'#ffffff','#29e3ff');txt('24/7',w/2,h*.83,44,'#29e3ff');});
+    g.strokeStyle='#8a8aa8';g.lineWidth=3*U;for(let k=-3;k<=3;k++){g.beginPath();g.moveTo(w/2+k*w*.08,h*.33-w*.3);g.lineTo(w/2+k*w*.08,h*.33+w*.3);g.stroke();}txt('КАТОК',w/2,h*.7,56,'#ffffff','#29e3ff');txt('РОЛИКИ',w/2,h*.83,36,'#29e3ff');});
   ps(2,(w,h)=>{g.fillStyle='#29c4e3';g.fillRect(0,0,w,h);g.fillStyle='#ffe0ea';g.beginPath();g.arc(w/2,h*.3,w*.22,0,TAU);g.fill();g.fillStyle='#e8b070';g.beginPath();g.moveTo(w*.32,h*.36);g.lineTo(w*.68,h*.36);g.lineTo(w/2,h*.6);g.fill();txt('ЛЕТО',w/2,h*.74,64,'#ffffff');txt('МОРОЖЕНОЕ',w/2,h*.86,24,'#14335a');});
   ps(3,(w,h)=>{g.fillStyle='#1a1a20';g.fillRect(0,0,w,h);g.fillStyle='#ff4d5e';g.beginPath();g.moveTo(w*.1,h*.42);g.lineTo(w*.3,h*.32);g.lineTo(w*.68,h*.31);g.lineTo(w*.9,h*.4);g.lineTo(w*.9,h*.46);g.lineTo(w*.1,h*.47);g.fill();
     g.fillStyle='#000';for(const x of[.26,.74]){g.beginPath();g.arc(w*x,h*.47,w*.07,0,TAU);g.fill();}txt('АВТО',w/2,h*.68,62,'#ffffff');txt('ШОУ · СУББОТА',w/2,h*.8,24,'#ff4d5e');});
@@ -4827,7 +5130,7 @@ return {towerTops:TOPS,signs:SIGNS,setTime:setTime,update:update,dispose:dispose
    BUILT-IN THEMES
    ===================================================================== */
 registerTheme('miami',function(A){return {
-  info:{name:'Майами',lineColor:'#f5c518',signWords:['MOTEL','HOTEL','DINER','SURF','CAFE','CUBANO','TACOS','CLUB','PIZZA','24/7','LIQUOR','BAR'],trees:'palm',coast:'ocean',snow:false}
+  info:{name:'Майами',lineColor:'#f5c518',signWords:['MOTEL','HOTEL','DINER','SURF','CAFE','CUBANO','TACOS','BEACH','PIZZA','24/7','JUICE','ICE CREAM'],trees:'palm',coast:'ocean',snow:false}
 };});
 /* ---------------------------------------------------------------------
    Shared theme library (tile painters + block layouts), used by several cities
@@ -4928,7 +5231,7 @@ registerTheme('moscow',function(A){
     const gum={x0:b[0]+2,x1:b[2]-2,z0:b[3]-20,z1:b[3]-2,front:[1,2,3],cc:-1,party:[]};if(gum.z0>cz+26)A.lowMid(gum,'senate',3,{shop:true,tint:'#efe4cf'});
     for(let k=0;k<8;k++)A.tree(A.rr(b[0]+4,b[2]-4),A.rr(b[1]+4,cz-26),A.rr(.9,1.1));}
   return {
-    info:{name:'Москва',lineColor:'#f2f2f2',signWords:['АПТЕКА','ПРОДУКТЫ','КАФЕ','ГАСТРОНОМ','МЕТРО','ЦВЕТЫ','КНИГИ','БАР','ШАУРМА','ТЕАТР','ОБУВЬ','ГУМ'],trees:'birch',coast:'river',snow:false},
+    info:{name:'Москва',lineColor:'#f2f2f2',signWords:['АПТЕКА','ПРОДУКТЫ','КАФЕ','ГАСТРОНОМ','МЕТРО','ЦВЕТЫ','КНИГИ','ПЕКАРНЯ','ШАУРМА','ТЕАТР','ОБУВЬ','ГУМ'],trees:'birch',coast:'river',snow:false},
     tree:'linden',props:{hydrant:false,news:false,umbrella:false},
     pal:{stalin:['#e8d3a6','#e2c592','#ead9b8','#d9c7a8','#e5cfa0','#dccbb0','#d6b98d','#e8d8c0'],panel:['#f2f1ec','#e6e5e0','#dcdcd8','#e9e3d6','#d6dade','#ece9e2'],
       khrush:['#ffffff','#f1ede6','#e6dccc','#d79b84','#cf8f7a'],kremlin:['#f0d98f'],white:['#ffffff']},
@@ -4980,7 +5283,7 @@ registerTheme('spb',function(A){
     const lots=[L,{x0:cx-24,x1:cx+24,z0:cz-12,z1:cz+36}];A.courtyard(c,lots,{trees:8,grass:2});}
   const HI=A.HI;
   return {
-    info:{name:'Санкт-Петербург',lineColor:'#f2f2f2',signWords:['ПЫШКИ','КОФЕ','АПТЕКА','БУЛОЧНАЯ','ТЕАТР','КНИГИ','БАР','ПРОДУКТЫ','МЕТРО','НЕВА','ЛАВКА','ДОМ КНИГИ'],trees:'linden',coast:'river',snow:false},
+    info:{name:'Санкт-Петербург',lineColor:'#f2f2f2',signWords:['ПЫШКИ','КОФЕ','АПТЕКА','БУЛОЧНАЯ','ТЕАТР','КНИГИ','ПАРК','ПРОДУКТЫ','МЕТРО','НЕВА','ЛАВКА','ДОМ КНИГИ'],trees:'linden',coast:'river',snow:false},
     tree:'linden',props:{hydrant:false,news:false,umbrella:false},
     pal:{spb:['#e9cf8e','#efd9a0','#a9c7a7','#b8cfd8','#e7c0b5','#d9b48a','#c9d3b3','#ead7c4','#d8c4dd','#f0dfb4','#e8b9a0','#9fb9c8'],white:['#ffffff'],adm:['#efd9a0']},
     tiles:function(A){TP.CLASSIC(A,false);TP.CLASSIC(A,true);TP.RUSTIC(A);TP.PALACE(A);TP.PANEL(A);},
@@ -5083,7 +5386,7 @@ registerTheme('madrid',function(A){
     for(const sx of[-1,1])for(const sz of[-1,1]){A.tower(cx+sx*24,cz+sz*24,26,26,H[i],.3,{ut:U[i],crown:K[i],round:i===1});i++;}
     A.courtyard(c,[{x0:cx-40,x1:cx+40,z0:cz-40,z1:cz+40}],{trees:6,cars:4});}
   return {
-    info:{name:'Мадрид',lineColor:'#f2f2f2',signWords:['FARMACIA','CAFÉ','TAPAS','BAR','HOTEL','CINE','TEATRO','METRO','MERCADO','CHURROS','VINOS','PANADERÍA'],trees:'plane',coast:'river',snow:false},
+    info:{name:'Мадрид',lineColor:'#f2f2f2',signWords:['FARMACIA','CAFÉ','TAPAS','HELADOS','HOTEL','CINE','TEATRO','METRO','MERCADO','CHURROS','FRUTAS','PANADERÍA'],trees:'plane',coast:'river',snow:false},
     tree:'plane',props:{news:true,umbrella:true},lite:true,
     pal:{madrid:['#efe2c8','#e8d2b0','#f3e9d6','#e2c49e','#d9b48f','#f0dcc0','#e7c8a8','#dcc6a2'],gv:['#ece2cf','#e6d9c2','#f2ebdc','#ddd0b8']},
     tiles:function(A){TP.CLASSIC(A,false);TP.CLASSIC(A,true);TP.RUSTIC(A);TP2.MAD(A);},
@@ -5115,7 +5418,7 @@ registerTheme('barcelona',function(A){
     const lots=A.perimeter(c,{cmin:18,cmax:22,wmin:16,wmax:24,dmin:14,dmax:16,gap:.2,sides:[0,2]});A.resolveParty(lots);for(const L of lots)A.lowMid(L,'eix',A.ri(5,7),{chamfer:8});
     A.courtyard(c,lots.concat([{x0:cx-20,x1:cx+20,z0:cz-20,z1:cz+20}]),{trees:6,grass:1});}
   return {
-    info:{name:'Барселона',lineColor:'#f2f2f2',signWords:['BOTIGA','FARMÀCIA','CAFÈ','TAPES','BAR','HOTEL','MERCAT','FORN','VERMUT','PAELLA','GELATS','CAVA'],trees:'plane',coast:'ocean',snow:false},
+    info:{name:'Барселона',lineColor:'#f2f2f2',signWords:['BOTIGA','FARMÀCIA','CAFÈ','TAPES','PARC','HOTEL','MERCAT','FORN','PASTISSERIA','PAELLA','GELATS','JOGUINES'],trees:'plane',coast:'ocean',snow:false},
     tree:'plane',props:{news:true,umbrella:true},
     pal:{eix:['#e9d7bd','#e3c7a6','#efe0c9','#d9b994','#f0d9c2','#cfb08c','#e6cbb3','#dcc3a5']},
     tiles:function(A){TP.CLASSIC(A,true);TP.RUSTIC(A);TP2.EIX(A);},
@@ -5153,7 +5456,7 @@ registerTheme('rome',function(A){
       A.COLS(cx-12,cz-5.8,cx-6,cz-5.8,.3,17.5,.5,2,'#efe6d2');A.COLS(cx+6,cz-5.8,cx+12,cz-5.8,.3,17.5,.5,2,'#efe6d2');
       A.S('GOLD','#ffffff',7);A.BOX(cx-4,26,cz-1.5,cx+4,28.5,cz+1.5,31,1);A.courtyard(c2,[{x0:cx-15,x1:cx+15,z0:cz-7,z1:cz+7}],{trees:8,grass:2});}});}
   return {
-    info:{name:'Рим',lineColor:'#f2f2f2',signWords:['TRATTORIA','PIZZERIA','GELATO','CAFFÈ','FARMACIA','BAR','OSTERIA','VINO','ALBERGO','TABACCHI','FORNO','ENOTECA'],trees:'pine',coast:'river',snow:false},
+    info:{name:'Рим',lineColor:'#f2f2f2',signWords:['TRATTORIA','PIZZERIA','GELATO','CAFFÈ','FARMACIA','PIAZZA','OSTERIA','FRUTTA','ALBERGO','GIOCATTOLI','FORNO','PASTICCERIA'],trees:'pine',coast:'river',snow:false},
     tree:'pine',props:{news:true,umbrella:true},
     pal:{roma:['#d99a4e','#c8743f','#e3b36a','#b5583a','#e6c38a','#d4874c','#c9a06a','#e0a96e','#d8b08a']},
     tiles:function(A){TP.RUSTIC(A);TP.CLASSIC(A,false);TP2.ROMA(A);TP2.COLOS(A);},
@@ -5188,7 +5491,7 @@ registerTheme('paris',function(A){
     A.tower(cx-20,cz-20,28,24,A.rr(120,200),.3,{ut:A.pk(['CW_BLUE','CW_SILV','CW_DARK']),crown:A.pk(['slant','steps','lantern'])});A.tower(cx+22,cz+20,24,24,A.rr(90,170),.3,{ut:A.pk(['CW_TEAL','CW_SILV','CW_FIN']),crown:A.pk(['spire','heli','steps'])});
     A.courtyard(c,[{x0:cx-36,x1:cx-4,z0:cz-34,z1:cz-6},{x0:cx+8,x1:cx+36,z0:cz+6,z1:cz+34}],{trees:6,grass:2});}
   return {
-    info:{name:'Париж',lineColor:'#f2f2f2',signWords:['BOULANGERIE','CAFÉ','BISTROT','PHARMACIE','HÔTEL','CINÉMA','MÉTRO','TABAC','BRASSERIE','CRÊPES','PÂTISSERIE','LIBRAIRIE'],trees:'plane',coast:'river',snow:false},
+    info:{name:'Париж',lineColor:'#f2f2f2',signWords:['BOULANGERIE','CAFÉ','BISTROT','PHARMACIE','HÔTEL','CINÉMA','MÉTRO','JOUETS','CHOCOLATERIE','CRÊPES','PÂTISSERIE','LIBRAIRIE'],trees:'plane',coast:'river',snow:false},
     tree:'plane',glow:'#ffb347',props:{news:true,umbrella:true},lite:true,
     pal:{hauss:['#e9dfcc','#e5d8c0','#efe6d6','#ddd0b8','#f1e9da','#e3d6bf']},
     tiles:function(A){TP.RUSTIC(A);TP.CLASSIC(A,true);TP2.HAUSS(A);},
@@ -5221,7 +5524,7 @@ registerTheme('tokyo',function(A){
     A.S('METAL','#c9a34a',7);A.CYL(px,y,pz,.25,7,6,true,.08);
     for(let k=0;k<14;k++){const x=A.rr(b[0]+3,b[2]-3),z=A.rr(b[1]+3,b[3]-3);if(Math.hypot(x-px,z-pz)>10&&Math.abs(x-cx)>8)A.tree(x,z,A.rr(.8,1.1));}}
   return {
-    info:{name:'Токио',lineColor:'#f2f2f2',signWords:['ラーメン','カラオケ','薬','寿司','居酒屋','ゲーム','コンビニ','焼肉','カフェ','ホテル','パチンコ','うどん'],trees:'sakura',coast:'bay',snow:false},
+    info:{name:'Токио',lineColor:'#f2f2f2',signWords:['ラーメン','カラオケ','薬','寿司','団子','ゲーム','コンビニ','焼肉','カフェ','ホテル','おもちゃ','うどん'],trees:'sakura',coast:'bay',snow:false},
     tree:'sakura',glow:'#ff8a3a',props:{hydrant:false,umbrella:false},lite:true,
     pal:{tk:['#d8d6d0','#cfcac2','#e4e2dc','#bfb8ad','#d9d2c4','#c4c8cc'],tk2:['#a99a88','#b8a48e','#9c8f80','#c2b29c']},
     tiles:function(A){TP2.TOKYO(A);},
@@ -5406,7 +5709,9 @@ window.NBFlora={make:make,kinds:['palm','birch','linden','plane','pine','sakura'
      * полноэкранная реклама в логической паузе (въезд в гараж), не чаще AD_GAP_MS;
      * ролики за награду (×2 за гонку, «спасти REP» при аресте);
      * пауза игры и звука на время рекламы и по событию game_api_pause;
-     * облачное сохранение: player.getData/setData, ключ "save", побеждает более новый save.ts.
+     * облачное сохранение: player.getData/setData, ключ "save", побеждает более новый save.ts;
+     * Премиум (src/premium.js): при Premium.active() полноэкранной нет, интервал — Premium.config.adGapMs,
+       saveNow() — запись с подтверждением для покупок, serverTime() — серверные сутки для лимита «×2».
    Без SDK (сайт, GitHub Pages, claude.ai, локально) все вызовы — заглушки, игра работает как раньше.
    Образец — kugosvetka/src/data/platform.js.
    ===================================================================== */
@@ -5415,8 +5720,11 @@ window.NBPlat=(function(){
 var ysdk=null,player=null,sdkOk=false,cloudOk=false,gaveUp=false;
 var wantReady=false,readyDone=false,adBusy=false,tabHidden=false,apiPaused=false,gpOn=false,wantGp=false;
 var bornAt=Date.now(),lastAdAt=0;
-var AD_FIRST_MS=180000,AD_GAP_MS=210000;      // первая полноэкранная не раньше 3 мин после загрузки, дальше не чаще раза в 3,5 мин
+var AD_FIRST_MS=180000,AD_GAP_MS=300000;      // первая полноэкранная не раньше 3 мин после загрузки, дальше не чаще раза в 5 мин (решение владельца 8.11)
 var INIT_TIMEOUT_MS=4000,SYNC_DELAY_MS=2500;
+/* интервал берём из общего модуля Премиума (одно место для всех игр), запасной — AD_GAP_MS */
+function adGap(){try{return(window.Premium&&window.Premium.config&&window.Premium.config.adGapMs)||AD_GAP_MS;}catch(e){return AD_GAP_MS;}}
+function premiumOn(){try{return !!(window.Premium&&window.Premium.active());}catch(e){return false;}}
 var pendingSave=null,syncTimer=0;
 var self={onPause:function(){}};
 
@@ -5433,6 +5741,11 @@ function flush(now){clearTimeout(syncTimer);syncTimer=0;if(!pendingSave||!player
 /* копия сохранения уходит в облако с задержкой (частые persist() склеиваются) */
 self.put=function(save){if(!player||!cloudOk)return;try{pendingSave=JSON.parse(JSON.stringify(save));}catch(e){return;}if(!syncTimer)syncTimer=setTimeout(function(){flush(false);},SYNC_DELAY_MS);};
 self.hasCloud=function(){return !!(player&&cloudOk);};
+/* запись с подтверждением (нужна Премиуму: сначала срок в облаке, потом consumePurchase) -> Promise<true/false> */
+self.saveNow=function(save){clearTimeout(syncTimer);syncTimer=0;pendingSave=null;if(!player||!cloudOk)return Promise.resolve(false);
+  var d;try{d=JSON.parse(JSON.stringify(save));}catch(e){return Promise.resolve(false);}
+  try{return Promise.resolve(player.setData({save:d},true)).then(function(){return true;},function(){if(!pendingSave)pendingSave=d;return false;});}
+  catch(e){if(!pendingSave)pendingSave=d;return Promise.resolve(false);}};
 function onVis(){tabHidden=!!document.hidden;if(tabHidden)flush(true);changed();}
 
 /* ---- загрузка ---- */
@@ -5457,6 +5770,9 @@ self.init=function(){
   });
 };
 self.hasSdk=function(){return sdkOk;};
+self.sdk=function(){return ysdk;};
+/* серверное время Яндекса (часы устройства только без SDK) */
+self.serverTime=function(){try{if(ysdk&&typeof ysdk.serverTime==='function'){var t=ysdk.serverTime();if(typeof t==='number'&&t>0)return t;}}catch(e){}return Date.now();};
 self.lang=function(){try{return(ysdk&&ysdk.environment&&ysdk.environment.i18n&&ysdk.environment.i18n.lang)||'ru';}catch(e){return'ru';}};
 
 /* ---- реклама ---- */
@@ -5465,9 +5781,10 @@ function adEnd(){adBusy=false;changed();}
 /* полноэкранная в логической паузе; done() вызывается ровно один раз (сразу, если рекламы не будет) */
 self.interstitial=function(done){done=done||function(){};
   if(adBusy){done();return;}
-  var now=Date.now(),allowedAt=lastAdAt?lastAdAt+AD_GAP_MS:bornAt+AD_FIRST_MS;
+  if(premiumOn()){done();return;}   // с Премиумом полноэкранной рекламы нет
+  var now=Date.now(),allowedAt=lastAdAt?lastAdAt+adGap():bornAt+AD_FIRST_MS;
   if(!sdkOk||!ysdk.adv||!ysdk.adv.showFullscreenAdv||now<allowedAt){done();return;}
-  var fin=false;function end(shown){if(fin)return;fin=true;if(shown)lastAdAt=Date.now();adEnd();done();}
+  var fin=false;function end(shown){if(fin)return;fin=true;if(shown){lastAdAt=Date.now();try{if(window.Premium)window.Premium.noteFullscreen();}catch(e){}}adEnd();done();}
   adBegin();
   try{ysdk.adv.showFullscreenAdv({callbacks:{onClose:function(w){end(w!==false);},onError:function(){end(false);},onOffline:function(){end(false);}}});}catch(e){end(false);}
 };
@@ -5482,6 +5799,334 @@ self.rewarded=function(done){
 return self;
 })();
 /*@PLATFORM-END@*/
+</script>
+<script>
+/*@PREMIUM-BEGIN@*/
+/* Премиум: общий модуль для браузерных игр на Яндекс Играх.
+   Платный Премиум на срок (30 дней или год), без автопродления: «используемая» покупка, срок считается по серверному
+   времени Яндекса и хранится в облачных данных игрока. Подробно: README.md рядом с этим файлом.
+   Модуль ничего не знает об игре: хранилище, звук и реклама подключаются через init() и несколько вызовов хозяина.
+   Без SDK, без покупок или без созданных товаров в консоли кнопка и карточки скрыты, игра работает как раньше. */
+window.Premium = (function () {
+  "use strict";
+  var DAY = 86400000;
+
+  /* ---- Настройки: все числа и товары в одном месте ---- */
+  var config = {
+    adGapMs: 5 * 60 * 1000,     // интервал полноэкранной рекламы; хозяин читает его при показе (решение владельца 8 ноября: 5 минут)
+    cardEvery: 3,               // карточка «Надоела реклама?» после каждой 3-й показанной полноэкранной рекламы
+    remindDays: 3,              // напоминание о конце Премиума за столько дней и меньше (раз в сутки)
+    pollMs: 60000,              // как часто сверять срок с серверным временем
+    tokensKeep: 20,             // сколько токенов последних покупок помнить
+    products: {                 // id товара в консоли Яндекса → срок
+      premium_30: { days: 30 },
+      premium_365: { days: 365 }
+    },
+    order: ["premium_30", "premium_365"],
+    corner: true,               // кнопка «Премиум» в углу экрана
+    zIndex: 50
+  };
+
+  /* ---- Тексты (временные, их заменит сессия «Тексты»). Подмена: Premium.init({ texts: { ru: {...}, en: {...} } }) ---- */
+  var TEXTS = {
+    ru: {
+      btn: "Премиум", btnOn: "Премиум · {0} д.", title: "Премиум",
+      activeUntil: "Активен до {0}. Осталось {1}.",
+      notActive: "Сейчас Премиум не включён.",
+      perks: ["Без полноэкранной рекламы и баннеров.", "Награды за ролики выдаются сразу, без просмотра.", "Правила и сложность игры не меняются: Премиум не помогает выигрывать."],
+      p30: "Премиум на 30 дней", p365: "Премиум на год",
+      validTo: "Будет действовать до {0}", buy: "Купить", extend: "Продлить",
+      note: "Один платёж, без автопродления: больше ничего не спишется. Если Премиум уже идёт, новый срок добавится к концу.",
+      close: "Закрыть", later: "Не сейчас",
+      adTitle: "Надоела реклама?", adText: "Премиум: без роликов и баннеров, 30 дней за {0}, не продлевается сам.", adMore: "Узнать про Премиум",
+      soonTitle: "Премиум скоро закончится", soonText: "Осталось {0}. Продлить?",
+      endTitle: "Премиум закончился", endText: "Реклама вернулась. Можно включить Премиум снова.",
+      busy: "Ждём подтверждения оплаты…", done: "Готово! Премиум активен до {0}.",
+      fail: "Покупка не прошла. Деньги не списаны.", saveFail: "Оплата принята, но срок пока не сохранился. Не закрывайте игру, мы повторим при следующем запуске.",
+      d1: "{0} день", d2: "{0} дня", d5: "{0} дней", free: "Ян", lang: "ru-RU"
+    },
+    en: {
+      btn: "Premium", btnOn: "Premium · {0} d", title: "Premium",
+      activeUntil: "Active until {0}. {1} left.",
+      notActive: "Premium is not active.",
+      perks: ["No full-screen ads or banners.", "Rewards for videos are given instantly, no watching.", "The rules and difficulty stay the same: Premium does not help you win."],
+      p30: "Premium for 30 days", p365: "Premium for a year",
+      validTo: "Will be active until {0}", buy: "Buy", extend: "Extend",
+      note: "One payment, no auto-renewal: nothing else will be charged. If Premium is already running, the new period is added to the end.",
+      close: "Close", later: "Not now",
+      adTitle: "Tired of ads?", adText: "Premium: no videos or banners, 30 days for {0}, does not renew by itself.", adMore: "About Premium",
+      soonTitle: "Premium ends soon", soonText: "{0} left. Extend?",
+      endTitle: "Premium has ended", endText: "Ads are back. You can turn Premium on again.",
+      busy: "Waiting for payment confirmation…", done: "Done! Premium is active until {0}.",
+      fail: "The purchase did not go through. You were not charged.", saveFail: "Payment accepted, but the period is not saved yet. Keep the game open, we will retry on the next start.",
+      d1: "{0} day", d2: "{0} days", d5: "{0} days", free: "Yan", lang: "en-GB"
+    }
+  };
+
+  /* ---- Состояние ---- */
+  var sdk = null, payments = null, store = null;
+  var lang = "ru", texts = TEXTS.ru;
+  var catalog = {};                   // id → описание товара из консоли
+  var st = blank();
+  var off = 0;                        // запасная поправка серверного времени, если serverTime() недоступен
+  var ready = false, canBuy = false, busy = false, chain = Promise.resolve();
+  var listeners = [], pollTimer = 0, lastActive = false;
+  var ui = { corner: null, ov: null, box: null, status: "", mode: "", style: null, lastFocus: null };
+
+  function blank() { return { until: 0, tokens: [], ads: 0, cardAt: 0, remindDay: 0, endShown: 0 }; }
+  function clean(o) {
+    var r = blank();
+    if (!o || typeof o !== "object") return r;
+    r.until = Math.max(0, Number(o.until) || 0);
+    r.tokens = Array.isArray(o.tokens) ? o.tokens.filter(function (t) { return typeof t === "string"; }).slice(-config.tokensKeep) : [];
+    r.ads = Math.max(0, Math.floor(Number(o.ads) || 0));
+    r.cardAt = Math.max(0, Math.floor(Number(o.cardAt) || 0));
+    r.remindDay = Math.max(0, Math.floor(Number(o.remindDay) || 0));
+    r.endShown = Math.max(0, Number(o.endShown) || 0);
+    return r;
+  }
+  function parse(raw) { try { return clean(typeof raw === "string" ? JSON.parse(raw) : raw); } catch (e) { return blank(); } }
+  /* Слияние двух снимков (облако и устройство): срок и счётчики берём большие, токены объединяем.
+     Хозяин вызывает при импорте облака, иначе срок мог бы пропасть при конфликте двух устройств. */
+  function mergeState(a, b) {
+    var x = parse(a), y = parse(b), r = blank(), seen = {};
+    r.until = Math.max(x.until, y.until); r.ads = Math.max(x.ads, y.ads); r.cardAt = Math.max(x.cardAt, y.cardAt);
+    r.remindDay = Math.max(x.remindDay, y.remindDay); r.endShown = Math.max(x.endShown, y.endShown);
+    y.tokens.concat(x.tokens).forEach(function (t) { if (!seen[t]) { seen[t] = 1; r.tokens.push(t); } });
+    r.tokens = r.tokens.slice(-config.tokensKeep);
+    return JSON.stringify(r);
+  }
+  function persist() { try { if (store && store.set) store.set(JSON.stringify(st)); } catch (e) {} }
+  function loadState() { try { st = parse(store && store.get ? store.get() : null); } catch (e) { st = blank(); } }
+
+  /* ---- Серверное время: часы устройства не используем ---- */
+  function now() {
+    if (sdk && typeof sdk.serverTime === "function") {
+      try { var t = sdk.serverTime(); if (typeof t === "number" && t > 0) { off = t - Date.now(); return t; } } catch (e) {}
+    }
+    return Date.now() + off;
+  }
+  function active() { return st.until > now(); }
+  function daysLeft() { var ms = st.until - now(); return ms > 0 ? Math.ceil(ms / DAY) : 0; }
+  function available() { return !!(ready && canBuy); }
+
+  /* ---- Утилиты текста ---- */
+  function fmt(s) { var a = arguments; return String(s).replace(/\{(\d)\}/g, function (m, i) { var v = a[Number(i) + 1]; return v == null ? "" : v; }); }
+  function tx(k) { var v = texts[k]; return v != null ? v : (TEXTS.ru[k] != null ? TEXTS.ru[k] : k); }
+  function plural(n) {
+    if (lang === "en") return fmt(n === 1 ? tx("d1") : tx("d2"), n);
+    var m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return fmt(tx("d1"), n);
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return fmt(tx("d2"), n);
+    return fmt(tx("d5"), n);
+  }
+  function dateStr(ms) {
+    try { return new Date(ms).toLocaleDateString(tx("lang"), { day: "numeric", month: "long", year: "numeric" }).replace(/\s*г\.$/, ""); }   // без «г.», чтобы в конце фразы не было «г..»
+    catch (e) { return new Date(ms).toISOString().slice(0, 10); }
+  }
+  function priceOf(id) { var c = catalog[id]; return c && c.price ? String(c.price) : ""; }
+  function dayIdx() { return Math.floor(now() / DAY); }
+  function emit() { var a = active(); lastActive = a; listeners.slice().forEach(function (f) { try { f(a); } catch (e) {} }); renderCorner(); if (ui.ov && ui.mode === "shop") renderShop(); }
+
+  /* ---- Покупка и начисление: запись в облако подтверждена, и только потом consumePurchase ---- */
+  function grant(p) {
+    var id = p && p.productID, tok = p && p.purchaseToken, prod = config.products[id];
+    if (!prod || !tok) return Promise.resolve(false);
+    if (st.tokens.indexOf(tok) < 0) {
+      var base = Math.max(now(), st.until);
+      st.until = base + prod.days * DAY;
+      st.tokens.push(tok); if (st.tokens.length > config.tokensKeep) st.tokens.shift();
+      persist();
+    }
+    return Promise.resolve(store && store.save ? store.save() : false).then(function (ok) {
+      if (!ok) { var e = new Error("save"); e.code = "save"; throw e; }
+      // срок уже сохранён: если закрыть покупку не вышло, её закроют при следующем запуске, второй раз срок не начислится
+      return Promise.resolve(payments.consumePurchase(tok)).then(function () {}, function () {});
+    }).then(function () { emit(); return true; });
+  }
+  function queue(f) { var r = chain.then(f, f); chain = r.then(function () {}, function () {}); return r; }
+  function checkPurchases() {
+    return queue(function () {
+      return payments.getPurchases().then(function (list) {
+        list = Array.isArray(list) ? list : (list && list.purchases) || [];
+        return list.reduce(function (p, item) { return p.then(function () { return grant(item).catch(function () {}); }); }, Promise.resolve());
+      });
+    }).catch(function () {}).then(function () { emit(); });
+  }
+  function buy(id) {
+    if (busy || !canBuy || !config.products[id]) return Promise.resolve(false);
+    busy = true; setStatus(tx("busy")); renderShop();
+    return queue(function () {
+      return payments.purchase({ id: id, developerPayload: "pm" }).then(function (p) {
+        return grant(p).then(function () { setStatus(fmt(tx("done"), dateStr(st.until))); return true; }, function (e) {
+          setStatus(e && e.code === "save" ? tx("saveFail") : tx("fail")); return false;
+        });
+      }, function () { setStatus(tx("fail")); return false; });
+    }).then(function (r) { busy = false; renderShop(); return r; }, function () { busy = false; renderShop(); return false; });
+  }
+
+  /* ---- Вызовы хозяина ---- */
+  function noteFullscreen() { st.ads++; persist(); }
+  /* Показать карточку на спокойном экране (меню, результат). Возвращает true, если карточка открыта. */
+  function maybeCard() {
+    if (!available() || ui.ov) return false;
+    if (active()) {
+      if (daysLeft() <= config.remindDays && st.remindDay !== dayIdx()) { st.remindDay = dayIdx(); persist(); openCard("soon"); return true; }
+      return false;
+    }
+    if (st.until > 0 && st.endShown !== st.until) { st.endShown = st.until; persist(); openCard("end"); return true; }
+    if (config.cardEvery > 0 && Math.floor(st.ads / config.cardEvery) > Math.floor(st.cardAt / config.cardEvery)) { st.cardAt = st.ads; persist(); openCard("ad"); return true; }
+    return false;
+  }
+
+  /* ---- Интерфейс ---- */
+  var CSS = ".pm-corner{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:max(12px,env(safe-area-inset-right,0px));z-index:var(--pm-z,50);display:inline-flex;align-items:center;gap:5px;" +
+    "min-height:40px;padding:0 12px;border-radius:20px;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:var(--pm-gold,#f2c14e);color:#2a2110;font:600 14px/1 var(--f-display,system-ui,sans-serif);letter-spacing:.02em;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.25)}" +
+    ".pm-corner[hidden]{display:none}.pm-corner.on{background:var(--pm-paper,var(--paper,#f4edd9));color:var(--pm-ink,var(--fg,#22304a))}" +
+    ".pm-corner:focus-visible,.pm-btn:focus-visible,.pm-x:focus-visible{outline:3px solid var(--pm-focus,var(--focus,#1d5cc0));outline-offset:2px}" +
+    ".pm-ov{position:fixed;inset:0;z-index:calc(var(--pm-z,50) + 10);display:grid;place-items:center;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));background:var(--pm-scrim,rgba(20,18,12,.5))}" +
+    ".pm-ov[hidden]{display:none}.pm-box{position:relative;box-sizing:border-box;width:100%;max-width:420px;max-height:calc(100% - 8px);overflow-y:auto;background:var(--pm-paper,var(--paper,#f4edd9));color:var(--pm-ink,var(--fg,#22304a));" +
+    "border:1.5px solid var(--pm-ink,var(--fg,#22304a));border-radius:12px;padding:18px 18px 16px;box-shadow:0 10px 34px rgba(0,0,0,.4);font:15px/1.4 var(--f-body,system-ui,sans-serif);-webkit-user-select:none;user-select:none}" +
+    ".pm-box h2{margin:0 36px 8px 0;font:600 22px/1.2 var(--f-display,system-ui,sans-serif);text-wrap:balance}.pm-box p{margin:0 0 10px}.pm-sub{color:var(--pm-muted,var(--muted,#615d4f));font-size:14px}" +
+    ".pm-x{position:absolute;top:8px;right:8px;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer}" +
+    ".pm-perks{margin:0 0 12px;padding-left:20px}.pm-perks li{margin:0 0 4px}" +
+    ".pm-prod{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:10px 12px;margin:0 0 10px;border:1.5px solid var(--pm-line,var(--line,#b9ab86));border-radius:10px;background:var(--pm-paper2,var(--paper-2,#ebe1c6))}" +
+    ".pm-prod b{font:600 17px/1.2 var(--f-display,system-ui,sans-serif)}.pm-prod .pm-price{font:600 17px/1 var(--f-display,system-ui,sans-serif);font-variant-numeric:tabular-nums;white-space:nowrap}" +
+    ".pm-prod .pm-sub{grid-column:1 / -1}.pm-btn{box-sizing:border-box;min-height:44px;padding:0 16px;border-radius:8px;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:transparent;color:inherit;font:600 16px/1 var(--f-display,system-ui,sans-serif);cursor:pointer}" +
+    ".pm-btn.main{background:var(--pm-red,var(--red,#b3352b));border-color:var(--pm-red,var(--red,#b3352b));color:var(--pm-redink,var(--red-ink,#fff7ea))}.pm-btn:disabled{opacity:.55;cursor:default}" +
+    ".pm-prod .pm-btn{grid-column:1 / -1;width:100%}.pm-row{display:flex;gap:10px;flex-wrap:wrap}.pm-row .pm-btn{flex:1 1 140px}" +
+    ".pm-status{min-height:20px;margin:6px 0 0;font-size:14px;font-style:italic}@media (prefers-reduced-motion:no-preference){.pm-box{animation:pmIn .2s ease-out}}@keyframes pmIn{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}";
+
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function ensureUi() {
+    if (ui.style) return;
+    ui.style = el("style"); ui.style.textContent = CSS; document.head.appendChild(ui.style);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && ui.ov) closeOv(); });
+  }
+  function renderCorner() {
+    if (!config.corner || typeof document === "undefined") return;
+    var show = ready && (canBuy || active());
+    try { document.documentElement.classList.toggle("pm-on", !!show); } catch (e) {}
+    if (!show) { if (ui.corner) ui.corner.hidden = true; return; }
+    ensureUi();
+    if (!ui.corner) {
+      ui.corner = el("button", "pm-corner"); ui.corner.type = "button"; ui.corner.id = "pmCorner";
+      ui.corner.addEventListener("click", function () { openShop(); });
+      document.body.appendChild(ui.corner);
+    }
+    var on = active();
+    ui.corner.hidden = false;
+    ui.corner.classList.toggle("on", on);
+    // звезда и подпись отдельными элементами: хозяин может скрыть подпись на тесном экране (.pm-lbl), кнопка остаётся звездой
+    ui.corner.textContent = "";
+    ui.corner.appendChild(el("span", "pm-st", "★"));
+    ui.corner.appendChild(el("span", "pm-lbl", on ? fmt(tx("btnOn"), daysLeft()) : tx("btn")));
+    ui.corner.setAttribute("aria-label", on ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("btn"));
+  }
+  function setStatus(s) { ui.status = s || ""; var n = ui.box && ui.box.querySelector(".pm-status"); if (n) n.textContent = ui.status; }
+  function mountOv() {
+    ensureUi(); closeOv(true);
+    ui.lastFocus = document.activeElement;
+    ui.ov = el("div", "pm-ov"); ui.ov.setAttribute("role", "dialog"); ui.ov.setAttribute("aria-modal", "true");
+    ui.box = el("div", "pm-box"); ui.ov.appendChild(ui.box);
+    ui.ov.addEventListener("click", function (e) { if (e.target === ui.ov) closeOv(); });
+    document.body.appendChild(ui.ov);
+  }
+  function closeOv(quiet) {
+    if (ui.ov && ui.ov.parentNode) ui.ov.parentNode.removeChild(ui.ov);
+    ui.ov = null; ui.box = null; ui.mode = ""; ui.status = "";
+    if (!quiet && ui.lastFocus && ui.lastFocus.focus) { try { ui.lastFocus.focus({ preventScroll: true }); } catch (e) {} }
+  }
+  function xBtn() { var b = el("button", "pm-x", "×"); b.type = "button"; b.setAttribute("aria-label", tx("close")); b.addEventListener("click", function () { closeOv(); }); return b; }
+  function productCard(id) {
+    var days = config.products[id].days, c = el("div", "pm-prod");
+    var base = Math.max(now(), st.until);
+    c.appendChild(el("b", "", id === "premium_365" ? tx("p365") : tx("p30")));
+    c.appendChild(el("span", "pm-price", priceOf(id) || ""));
+    c.appendChild(el("span", "pm-sub", fmt(tx("validTo"), dateStr(base + days * DAY))));
+    var b = el("button", "pm-btn main", active() ? tx("extend") : tx("buy")); b.type = "button"; b.disabled = busy; b.setAttribute("data-pm-buy", id);
+    b.addEventListener("click", function () { buy(id); });
+    c.appendChild(b);
+    return c;
+  }
+  function renderShop() {
+    if (!ui.box || ui.mode !== "shop") return;
+    var b = ui.box; b.textContent = "";
+    b.appendChild(xBtn());
+    var h = el("h2", "", tx("title")); h.id = "pmTitle"; b.appendChild(h);
+    ui.ov.setAttribute("aria-labelledby", "pmTitle");
+    b.appendChild(el("p", "", active() ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("notActive")));
+    var ul = el("ul", "pm-perks"); texts.perks.forEach(function (s) { ul.appendChild(el("li", "", s)); }); b.appendChild(ul);
+    config.order.forEach(function (id) { if (catalog[id]) b.appendChild(productCard(id)); });
+    b.appendChild(el("p", "pm-sub", tx("note")));
+    var s = el("p", "pm-status", ui.status); s.setAttribute("role", "status"); s.setAttribute("aria-live", "polite"); b.appendChild(s);
+  }
+  function openShop() {
+    if (!ready || (!canBuy && !active())) return;
+    mountOv(); ui.mode = "shop"; renderShop();
+    var f = ui.box.querySelector(".pm-prod .pm-btn") || ui.box.querySelector(".pm-x"); if (f) try { f.focus({ preventScroll: true }); } catch (e) {}
+  }
+  function openCard(kind) {
+    mountOv(); ui.mode = "card:" + kind;
+    var b = ui.box, p30 = priceOf("premium_30");
+    var title = kind === "ad" ? tx("adTitle") : kind === "soon" ? tx("soonTitle") : tx("endTitle");
+    var text = kind === "ad" ? fmt(tx("adText"), p30 || ("99 " + tx("free"))) : kind === "soon" ? fmt(tx("soonText"), plural(daysLeft())) : tx("endText");
+    b.appendChild(xBtn());
+    var h = el("h2", "", title); h.id = "pmTitle"; b.appendChild(h); ui.ov.setAttribute("aria-labelledby", "pmTitle");
+    b.appendChild(el("p", "", text));
+    var row = el("div", "pm-row");
+    var go = el("button", "pm-btn main", kind === "ad" ? tx("adMore") : (kind === "soon" ? tx("extend") : tx("buy"))); go.type = "button";
+    go.addEventListener("click", function () { openShop(); });
+    var no = el("button", "pm-btn", tx("later")); no.type = "button"; no.addEventListener("click", function () { closeOv(); });
+    row.appendChild(go); row.appendChild(no); b.appendChild(row);
+    try { no.focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  /* ---- Запуск ---- */
+  function setLang(l) {
+    lang = l === "en" ? "en" : "ru"; texts = Object.assign({}, TEXTS.ru, TEXTS[lang] || {});
+    renderCorner(); if (ui.ov) { if (ui.mode === "shop") renderShop(); else { var m = ui.mode.split(":")[1]; openCard(m); } }
+  }
+  function tick() {
+    var a = active();
+    if (a !== lastActive) emit(); else renderCorner();
+  }
+  function init(o) {
+    o = o || {};
+    if (o.config) Object.keys(o.config).forEach(function (k) { config[k] = o.config[k]; });
+    if (o.texts) Object.keys(o.texts).forEach(function (l) { TEXTS[l] = Object.assign(TEXTS[l] || {}, o.texts[l]); });
+    sdk = o.sdk || null; store = o.store || null;
+    setLang(o.lang || lang);
+    loadState();
+    ready = true; lastActive = active();
+    try { document.addEventListener("visibilitychange", function () { if (!document.hidden) tick(); }); } catch (e) {}
+    clearInterval(pollTimer); pollTimer = setInterval(tick, config.pollMs);
+    renderCorner();
+    if (!sdk || typeof sdk.getPayments !== "function") return Promise.resolve(false);
+    return sdk.getPayments({ signed: false }).then(function (pay) {
+      payments = pay;
+      return pay.getCatalog();
+    }).then(function (list) {
+      list = Array.isArray(list) ? list : [];
+      list.forEach(function (c) { if (c && config.products[c.id]) catalog[c.id] = c; });
+      canBuy = !!(store && store.save && config.order.some(function (id) { return catalog[id]; }));
+      renderCorner();
+      return canBuy ? checkPurchases().then(function () { return true; }) : false;
+    }).catch(function () { canBuy = false; renderCorner(); return false; });
+  }
+
+  return {
+    config: config,
+    init: init, setLang: setLang,
+    active: active, until: function () { return st.until; }, daysLeft: daysLeft, available: available,
+    noteFullscreen: noteFullscreen, maybeCard: maybeCard, openShop: openShop,
+    onChange: function (f) { if (typeof f === "function") listeners.push(f); },
+    mergeState: mergeState,
+    refresh: function () { return canBuy ? checkPurchases() : Promise.resolve(); },
+    _state: function () { return JSON.parse(JSON.stringify(st)); }
+  };
+})();
+/*@PREMIUM-END@*/
 </script>
 <script>
 (function(){
@@ -5540,7 +6185,8 @@ let SEED=20261021;
 const srand=()=>{SEED=(SEED*16807)%2147483647;return (SEED-1)/2147483646;};
 const spick=a=>a[Math.floor(srand()*a.length)];
 const pick=a=>a[Math.floor(Math.random()*a.length)];
-const fmt=n=>Math.round(n).toLocaleString('ru-RU');
+const TR=window.TR||(s=>s);
+const fmt=n=>Math.round(n).toLocaleString(TR.en?'en-US':'ru-RU');
 const dist2=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 const C=h=>new T.Color(h).convertSRGBToLinear();
 const isTouch=('ontouchstart' in window)||(window.matchMedia&&matchMedia('(pointer:coarse)').matches);
@@ -5588,48 +6234,48 @@ const nearestNode=(x,z)=>[clamp(Math.round(x/CELL),0,N),clamp(Math.round(z/CELL)
 
 /* ---------- game data ---------- */
 const CARS=[
-  {id:'corsa',name:'Корса ST',tag:'Компактное купе · надёжная база',lvl:1,price:0,top:56,accel:11,handling:2.2,grip:6.4,color:'#ffb23e'},
-  {id:'iskra',name:'Искра S',tag:'Лёгкий хэтчбек · лучше в поворотах',lvl:1,price:6000,top:53,accel:11.8,handling:2.45,grip:6.9,color:'#3dffa8'},
-  {id:'venta',name:'Вента GT',tag:'Спортивный хэтчбек · сбалансированный',lvl:2,price:18000,top:61,accel:12.5,handling:2.3,grip:6.9,color:'#29e3ff'},
-  {id:'yastreb',name:'Ястреб RS',tag:'Спортивный седан · быстрее на прямой',lvl:2,price:21000,top:63,accel:13.2,handling:2.15,grip:6.6,color:'#2b2f3a'},
-  {id:'buran',name:'Буран SS',tag:'Масл-кар · мощный разгон',lvl:3,price:32000,top:66,accel:14.5,handling:2.22,grip:6.8,color:'#ff4d5e'},
-  {id:'groza',name:'Гроза R',tag:'Ралли-купе · цепкое и вёрткое',lvl:3,price:30000,top:63,accel:14,handling:2.55,grip:7.6,color:'#eceaf5'},
-  {id:'riviera',name:'Ривьера SR',tag:'Спорткар · сбалансированный',lvl:4,price:50000,top:69,accel:15,handling:2.45,grip:7.5,color:'#ff2e88'},
-  {id:'briz',name:'Бриз GT',tag:'Родстер без крыши · лёгкий и резкий',lvl:4,price:47000,top:67,accel:15.6,handling:2.6,grip:7.8,color:'#ff4d5e'},
-  {id:'sapsan',name:'Сапсан RS',tag:'Трековая машина · держит дорогу',lvl:5,price:70000,top:71,accel:16,handling:2.6,grip:8.2,color:'#3dffa8'},
-  {id:'shkval',name:'Шквал TS',tag:'Тюнинг-купе · создан для дрифта',lvl:5,price:66000,top:72,accel:16.4,handling:2.5,grip:7.0,color:'#b04bff'},
-  {id:'phantom',name:'Фантом X',tag:'Суперкар · сбалансированный',lvl:6,price:95000,top:76,accel:17.5,handling:2.55,grip:8.0,color:'#eceaf5'},
-  {id:'garpiya',name:'Гарпия V10',tag:'Клиновидный суперкар · мощнее на прямой',lvl:6,price:102000,top:78,accel:18,handling:2.45,grip:7.8,color:'#f5e663'},
-  {id:'vihr',name:'Вихрь V12',tag:'Гран-туризмо · быстрый и устойчивый',lvl:7,price:125000,top:80,accel:18.5,handling:2.55,grip:8.2,color:'#2a6bff'},
-  {id:'neva',name:'Нева E',tag:'Электрический GT · бешеный разгон',lvl:7,price:120000,top:77,accel:21,handling:2.6,grip:8.3,color:'#29e3ff'},
-  {id:'kometa',name:'Комета R',tag:'Гиперкар · мощь и скорость',lvl:8,price:165000,top:85,accel:20,handling:2.65,grip:8.6,color:'#b04bff'},
-  {id:'efir',name:'Эфир XR',tag:'Трековый гиперкар · лучшая управляемость',lvl:8,price:172000,top:82,accel:20.5,handling:2.85,grip:9.2,color:'#ff6a3d'},
-  {id:'monolit',name:'Монолит Zero',tag:'Прототип · максимальная мощь',lvl:9,price:220000,top:90,accel:22,handling:2.75,grip:9.0,color:'#1c1c26'},
-  {id:'orbita',name:'Орбита One',tag:'Стримлайнер · очень высокая скорость',lvl:9,price:240000,top:95,accel:21,handling:2.6,grip:8.6,color:'#eceaf5'},
-  {id:'tayga',name:'Тайга RX',tag:'Раллийное купе 4×4 · цепкое на любом покрытии',lvl:32,price:300000,top:86,accel:21,handling:2.75,grip:9.4,color:'#c8d2d8'},
-  {id:'amur',name:'Амур GT',tag:'Ретро-GT · мощный V8',lvl:36,price:348000,top:91,accel:21.5,handling:2.5,grip:8.6,color:'#7a1e2a'},
-  {id:'toro',name:'Торо V12',tag:'Гран-туризмо · тяговитый и быстрый',lvl:42,price:436000,top:93,accel:22,handling:2.6,grip:8.9,color:'#d4502a'},
-  {id:'sierra',name:'Сьерра RS',tag:'Трековое купе · острое в поворотах',lvl:46,price:506000,top:92,accel:22.5,handling:2.9,grip:9.6,color:'#f2f2f2'},
-  {id:'brisa',name:'Бриса E',tag:'Электрический родстер · мгновенный разгон',lvl:52,price:633000,top:92,accel:25,handling:2.75,grip:9.2,color:'#1fb5a8'},
-  {id:'costa',name:'Коста S',tag:'Спорткар побережья · сбалансированный',lvl:56,price:734000,top:95,accel:23,handling:2.7,grip:9.1,color:'#ffb23e'},
-  {id:'aurora',name:'Аврора V8',tag:'Суперкар · мощь и баланс',lvl:62,price:918000,top:96,accel:24,handling:2.8,grip:9.4,color:'#c4161c'},
-  {id:'centurion',name:'Центурион',tag:'Клиновидный суперкар · быстрее на прямой',lvl:66,price:1066000,top:97,accel:24.5,handling:2.75,grip:9.5,color:'#f5e663'},
-  {id:'eclat',name:'Эклат GT',tag:'Люксовый GT · быстрый и устойчивый',lvl:72,price:1334000,top:98,accel:25,handling:2.85,grip:9.6,color:'#2a4c8f'},
-  {id:'mistral',name:'Мистраль R',tag:'Гиперкар · лёгкий и злой',lvl:76,price:1548000,top:99,accel:25.5,handling:2.8,grip:9.6,color:'#eceaf5'},
-  {id:'raijin',name:'Райдзин RS',tag:'Тюнинг-купе · король дрифта',lvl:82,price:1936000,top:99,accel:26,handling:2.95,grip:9.9,color:'#b04bff'},
-  {id:'kaze',name:'Казэ R',tag:'Трековый гиперкар · лучшая управляемость',lvl:86,price:2248000,top:100,accel:26,handling:3.0,grip:10,color:'#29e3ff'},
-  {id:'dyuna',name:'Дюна X',tag:'Гиперкар пустыни · бешеная мощь',lvl:92,price:2812000,top:101,accel:27,handling:2.9,grip:9.8,color:'#d9b56a'},
-  {id:'zenit',name:'Зенит One',tag:'Прототип · самая высокая скорость в игре',lvl:96,price:3264000,top:103,accel:28,handling:2.95,grip:10,color:'#1c1c26'}
+  {id:'corsa',name:TR('Корса ST'),tag:TR('Компактное купе · надёжная база'),lvl:1,price:0,top:56,accel:11,handling:2.2,grip:6.4,color:'#ffb23e'},
+  {id:'iskra',name:TR('Искра S'),tag:TR('Лёгкий хэтчбек · лучше в поворотах'),lvl:1,price:6000,top:53,accel:11.8,handling:2.45,grip:6.9,color:'#3dffa8'},
+  {id:'venta',name:TR('Вента GT'),tag:TR('Спортивный хэтчбек · сбалансированный'),lvl:2,price:18000,top:61,accel:12.5,handling:2.3,grip:6.9,color:'#29e3ff'},
+  {id:'yastreb',name:TR('Ястреб RS'),tag:TR('Спортивный седан · быстрее на прямой'),lvl:2,price:21000,top:63,accel:13.2,handling:2.15,grip:6.6,color:'#2b2f3a'},
+  {id:'buran',name:TR('Буран SS'),tag:TR('Масл-кар · мощный разгон'),lvl:3,price:32000,top:66,accel:14.5,handling:2.22,grip:6.8,color:'#ff4d5e'},
+  {id:'groza',name:TR('Гроза R'),tag:TR('Ралли-купе · цепкое и вёрткое'),lvl:3,price:30000,top:63,accel:14,handling:2.55,grip:7.6,color:'#eceaf5'},
+  {id:'riviera',name:TR('Ривьера SR'),tag:TR('Спорткар · сбалансированный'),lvl:4,price:50000,top:69,accel:15,handling:2.45,grip:7.5,color:'#ff2e88'},
+  {id:'briz',name:TR('Бриз GT'),tag:TR('Родстер без крыши · лёгкий и резкий'),lvl:4,price:47000,top:67,accel:15.6,handling:2.6,grip:7.8,color:'#ff4d5e'},
+  {id:'sapsan',name:TR('Сапсан RS'),tag:TR('Трековая машина · держит дорогу'),lvl:5,price:70000,top:71,accel:16,handling:2.6,grip:8.2,color:'#3dffa8'},
+  {id:'shkval',name:TR('Шквал TS'),tag:TR('Тюнинг-купе · создан для дрифта'),lvl:5,price:66000,top:72,accel:16.4,handling:2.5,grip:7.0,color:'#b04bff'},
+  {id:'phantom',name:TR('Фантом X'),tag:TR('Суперкар · сбалансированный'),lvl:6,price:95000,top:76,accel:17.5,handling:2.55,grip:8.0,color:'#eceaf5'},
+  {id:'garpiya',name:TR('Гарпия V10'),tag:TR('Клиновидный суперкар · мощнее на прямой'),lvl:6,price:102000,top:78,accel:18,handling:2.45,grip:7.8,color:'#f5e663'},
+  {id:'vihr',name:TR('Вихрь V12'),tag:TR('Гран-туризмо · быстрый и устойчивый'),lvl:7,price:125000,top:80,accel:18.5,handling:2.55,grip:8.2,color:'#2a6bff'},
+  {id:'neva',name:TR('Нева E'),tag:TR('Электрический GT · бешеный разгон'),lvl:7,price:120000,top:77,accel:21,handling:2.6,grip:8.3,color:'#29e3ff'},
+  {id:'kometa',name:TR('Комета R'),tag:TR('Гиперкар · мощь и скорость'),lvl:8,price:165000,top:85,accel:20,handling:2.65,grip:8.6,color:'#b04bff'},
+  {id:'efir',name:TR('Эфир XR'),tag:TR('Трековый гиперкар · лучшая управляемость'),lvl:8,price:172000,top:82,accel:20.5,handling:2.85,grip:9.2,color:'#ff6a3d'},
+  {id:'monolit',name:TR('Монолит Zero'),tag:TR('Прототип · максимальная мощь'),lvl:9,price:220000,top:90,accel:22,handling:2.75,grip:9.0,color:'#1c1c26'},
+  {id:'orbita',name:TR('Орбита One'),tag:TR('Стримлайнер · очень высокая скорость'),lvl:9,price:240000,top:95,accel:21,handling:2.6,grip:8.6,color:'#eceaf5'},
+  {id:'tayga',name:TR('Тайга RX'),tag:TR('Раллийное купе 4×4 · цепкое на любом покрытии'),lvl:32,price:300000,top:86,accel:21,handling:2.75,grip:9.4,color:'#c8d2d8'},
+  {id:'amur',name:TR('Амур GT'),tag:TR('Ретро-GT · мощный V8'),lvl:36,price:348000,top:91,accel:21.5,handling:2.5,grip:8.6,color:'#7a1e2a'},
+  {id:'toro',name:TR('Торо V12'),tag:TR('Гран-туризмо · тяговитый и быстрый'),lvl:42,price:436000,top:93,accel:22,handling:2.6,grip:8.9,color:'#d4502a'},
+  {id:'sierra',name:TR('Сьерра RS'),tag:TR('Трековое купе · острое в поворотах'),lvl:46,price:506000,top:92,accel:22.5,handling:2.9,grip:9.6,color:'#f2f2f2'},
+  {id:'brisa',name:TR('Бриса E'),tag:TR('Электрический родстер · мгновенный разгон'),lvl:52,price:633000,top:92,accel:25,handling:2.75,grip:9.2,color:'#1fb5a8'},
+  {id:'costa',name:TR('Коста S'),tag:TR('Спорткар побережья · сбалансированный'),lvl:56,price:734000,top:95,accel:23,handling:2.7,grip:9.1,color:'#ffb23e'},
+  {id:'aurora',name:TR('Аврора V8'),tag:TR('Суперкар · мощь и баланс'),lvl:62,price:918000,top:96,accel:24,handling:2.8,grip:9.4,color:'#c4161c'},
+  {id:'centurion',name:TR('Центурион'),tag:TR('Клиновидный суперкар · быстрее на прямой'),lvl:66,price:1066000,top:97,accel:24.5,handling:2.75,grip:9.5,color:'#f5e663'},
+  {id:'eclat',name:TR('Эклат GT'),tag:TR('Люксовый GT · быстрый и устойчивый'),lvl:72,price:1334000,top:98,accel:25,handling:2.85,grip:9.6,color:'#2a4c8f'},
+  {id:'mistral',name:TR('Мистраль R'),tag:TR('Гиперкар · лёгкий и злой'),lvl:76,price:1548000,top:99,accel:25.5,handling:2.8,grip:9.6,color:'#eceaf5'},
+  {id:'raijin',name:TR('Райдзин RS'),tag:TR('Тюнинг-купе · король дрифта'),lvl:82,price:1936000,top:99,accel:26,handling:2.95,grip:9.9,color:'#b04bff'},
+  {id:'kaze',name:TR('Казэ R'),tag:TR('Трековый гиперкар · лучшая управляемость'),lvl:86,price:2248000,top:100,accel:26,handling:3.0,grip:10,color:'#29e3ff'},
+  {id:'dyuna',name:TR('Дюна X'),tag:TR('Гиперкар пустыни · бешеная мощь'),lvl:92,price:2812000,top:101,accel:27,handling:2.9,grip:9.8,color:'#d9b56a'},
+  {id:'zenit',name:TR('Зенит One'),tag:TR('Прототип · самая высокая скорость в игре'),lvl:96,price:3264000,top:103,accel:28,handling:2.95,grip:10,color:'#1c1c26'}
 ];
 CARS.forEach(c=>c.tier=c.lvl-1);
 const MODEL_FALLBACK={tayga:'groza',amur:'buran',toro:'vihr',sierra:'sapsan',brisa:'briz',costa:'riviera',aurora:'phantom',centurion:'garpiya',eclat:'vihr',mistral:'kometa',raijin:'shkval',kaze:'efir',dyuna:'monolit',zenit:'orbita',iskra:'corsa',yastreb:'venta',groza:'buran',briz:'riviera',shkval:'sapsan',garpiya:'phantom',neva:'vihr',efir:'kometa',orbita:'monolit'};
 const carById=id=>CARS.find(c=>c.id===id)||CARS[0];
-const UPG=[{k:'eng',name:'Двигатель',d:'Выше максималка и разгон'},{k:'sus',name:'Подвеска',d:'Точнее руль, лучше сцепление'},{k:'nos',name:'Нитро',d:'Сильнее и дольше ускорение'}];
+const UPG=[{k:'eng',name:TR('Двигатель'),d:TR('Выше максималка и разгон')},{k:'sus',name:TR('Подвеска'),d:TR('Точнее руль, лучше сцепление')},{k:'nos',name:TR('Нитро'),d:TR('Сильнее и дольше ускорение')}];
 /* progression: 100 levels × 10 races (5 day + 5 night) = 1000 races. Every event scales with the player's level */
 const MAXLVL=100;
 const LEVELS=[0];{let acc=0;for(let L=1;L<MAXLVL;L++){acc+=Math.round((1100+330*(L-1))*2.08*Math.min(5.5,1.5+.2*L)/100)*100;LEVELS.push(acc);}}
 const levelOf=r=>{let l=0;for(const t of LEVELS)if(r>=t)l++;return l;};
-const RANKS=[{lvl:1,n:'Новичок'},{lvl:10,n:'Уличный гонщик'},{lvl:20,n:'Профи'},{lvl:30,n:'Мастер руля'},{lvl:40,n:'Король трассы'},{lvl:50,n:'Элита'},{lvl:60,n:'Чемпион'},{lvl:70,n:'Звезда залива'},{lvl:80,n:'Икона'},{lvl:90,n:'Легенда'},{lvl:100,n:'Легенда Неон-Бэя'}];
+const RANKS=[{lvl:1,n:TR('Новичок')},{lvl:10,n:TR('Уличный гонщик')},{lvl:20,n:TR('Профи')},{lvl:30,n:TR('Мастер руля')},{lvl:40,n:TR('Король трассы')},{lvl:50,n:TR('Элита')},{lvl:60,n:TR('Чемпион')},{lvl:70,n:TR('Звезда залива')},{lvl:80,n:TR('Икона')},{lvl:90,n:TR('Легенда')},{lvl:100,n:TR('Легенда Неон-Бэя')}];
 const rankOf=L=>{let r=RANKS[0];for(const x of RANKS)if(L>=x.lvl)r=x;return r;};
 const levelBonus=L=>L<2?0:Math.round((2000+600*(L-1))/100)*100;
 // upgrades: 10 steps per part; step n needs player level UPG_LVL[n-1]
@@ -5638,45 +6284,45 @@ const upA=l=>Math.min(l,3),upB=l=>Math.max(0,l-3);
 const engTop=l=>3.5*upA(l)+1.6*upB(l);
 const HEATM=[1,1,1.5,2,2.5,3];
 const EVENTS=[
-  {id:'d1',time:'day',type:'sprint',name:'Прибрежный спринт',lvl:1,route:[[5,0],[8,0],[8,5],[6,5],[6,8]]},
-  {id:'d2',time:'day',type:'circuit',laps:2,name:'Кольцо даунтауна',lvl:1,route:[[3,3],[5,3],[5,5],[3,5]]},
-  {id:'d3',time:'day',type:'sprint',name:'Портовый марафон',lvl:2,route:[[0,8],[0,3],[2,3],[2,0],[7,0],[7,2],[8,2]]},
-  {id:'d4',time:'day',type:'circuit',laps:2,name:'Гран-при залива',lvl:3,route:[[1,1],[4,1],[4,2],[7,2],[7,6],[2,6],[2,4],[1,4]]},
-  {id:'d5',time:'day',type:'sprint',name:'Бульвар заката',lvl:4,route:[[4,8],[4,5],[7,5],[7,3],[5,3],[5,0]]},
-  {id:'d6',time:'day',type:'circuit',laps:2,name:'Восьмёрка порта',lvl:5,route:[[6,1],[8,1],[8,4],[6,4]]},
-  {id:'d7',time:'day',type:'circuit',laps:1,name:'Большое кольцо',lvl:6,route:[[2,2],[8,2],[8,8],[2,8]]},
-  {id:'d8',time:'day',type:'circuit',laps:2,name:'Кубок Неон-Бэя',lvl:7,route:[[3,1],[6,1],[6,4],[8,4],[8,7],[3,7]]},
-  {id:'d9',time:'day',type:'sprint',name:'Финал сезона',lvl:8,route:[[7,8],[7,6],[2,6],[2,1],[5,1],[5,4],[8,4]]},
-  {id:'d10',time:'day',type:'circuit',laps:2,name:'Гонка чемпионов',lvl:9,route:[[0,2],[5,2],[5,7],[0,7]]},
-  {id:'d11',time:'day',type:'sprint',name:'Скоростной бульвар',lvl:35,route:[[8,3],[8,0],[4,0],[4,8],[0,8]]},
-  {id:'d12',time:'day',type:'circuit',laps:2,name:'Кубок побережья',lvl:45,route:[[2,5],[8,5],[8,8],[2,8]]},
-  {id:'d13',time:'day',type:'circuit',laps:3,name:'Гран-при небоскрёбов',lvl:55,route:[[6,3],[6,5],[3,5],[3,3]]},
-  {id:'d14',time:'day',type:'sprint',name:'Марафон Неон-Бэя',lvl:65,route:[[4,6],[0,6],[0,0],[8,0],[8,8],[5,8]]},
-  {id:'d15',time:'day',type:'circuit',laps:2,name:'Кольцо королей',lvl:75,route:[[7,1],[7,7],[1,7],[1,1]]},
-  {id:'d16',time:'day',type:'sprint',name:'Финал легенд',lvl:88,route:[[1,8],[1,4],[5,4],[5,1],[8,1],[8,6],[3,6]]},
-  {id:'n1',time:'night',type:'sprint',name:'Неоновая миля',lvl:1,route:[[2,7],[6,7],[6,4],[8,4],[8,1]]},
-  {id:'n2',time:'night',type:'circuit',laps:2,name:'Полночный круг',lvl:2,route:[[4,4],[7,4],[7,7],[4,7]]},
-  {id:'n3',time:'night',type:'sprint',name:'Без тормозов',lvl:3,route:[[0,0],[0,6],[3,6],[3,2],[6,2],[6,0],[8,0]]},
-  {id:'n4',time:'night',type:'sprint',name:'Тоннель огней',lvl:4,route:[[5,8],[5,6],[8,6],[8,3],[4,3],[4,0]]},
-  {id:'n5',time:'night',type:'circuit',laps:2,name:'Король ночи',lvl:5,route:[[1,2],[6,2],[6,6],[3,6],[3,8],[1,8]]},
-  {id:'n6',time:'night',type:'circuit',laps:2,name:'Чёрный квадрат',lvl:6,route:[[2,1],[5,1],[5,5],[2,5]]},
-  {id:'n7',time:'night',type:'sprint',name:'Шторм на набережной',lvl:7,route:[[3,0],[8,0],[8,8],[6,8]]},
-  {id:'n8',time:'night',type:'circuit',laps:2,name:'Легенда Неон-Бэя',lvl:8,route:[[0,3],[3,3],[3,0],[7,0],[7,5],[0,5]]},
-  {id:'n9',time:'night',type:'sprint',name:'Последний заезд',lvl:9,route:[[8,7],[1,7],[1,0],[6,0],[6,3]]},
-  {id:'n10',time:'night',type:'circuit',laps:2,name:'Ночной экспресс',lvl:35,route:[[5,5],[8,5],[8,2],[5,2]]},
-  {id:'n11',time:'night',type:'sprint',name:'Неоновый шторм',lvl:45,route:[[3,8],[3,4],[7,4],[7,0],[1,0],[1,3]]},
-  {id:'n12',time:'night',type:'circuit',laps:3,name:'Полночь в даунтауне',lvl:55,route:[[6,7],[6,4],[3,4],[3,7]]},
-  {id:'n13',time:'night',type:'sprint',name:'Красная зона',lvl:65,route:[[8,5],[4,5],[4,1],[0,1],[0,7],[6,7]]},
-  {id:'n14',time:'night',type:'circuit',laps:2,name:'Охота на рекорд',lvl:75,route:[[2,3],[2,0],[6,0],[6,6],[2,6]]},
-  {id:'n15',time:'night',type:'sprint',name:'Последняя легенда',lvl:88,route:[[4,2],[8,2],[8,8],[0,8],[0,4],[3,4]]}
+  {id:'d1',time:'day',type:'sprint',name:TR('Прибрежный спринт'),lvl:1,route:[[5,0],[8,0],[8,5],[6,5],[6,8]]},
+  {id:'d2',time:'day',type:'circuit',laps:2,name:TR('Кольцо даунтауна'),lvl:1,route:[[3,3],[5,3],[5,5],[3,5]]},
+  {id:'d3',time:'day',type:'sprint',name:TR('Портовый марафон'),lvl:2,route:[[0,8],[0,3],[2,3],[2,0],[7,0],[7,2],[8,2]]},
+  {id:'d4',time:'day',type:'circuit',laps:2,name:TR('Гран-при залива'),lvl:3,route:[[1,1],[4,1],[4,2],[7,2],[7,6],[2,6],[2,4],[1,4]]},
+  {id:'d5',time:'day',type:'sprint',name:TR('Бульвар заката'),lvl:4,route:[[4,8],[4,5],[7,5],[7,3],[5,3],[5,0]]},
+  {id:'d6',time:'day',type:'circuit',laps:2,name:TR('Восьмёрка порта'),lvl:5,route:[[6,1],[8,1],[8,4],[6,4]]},
+  {id:'d7',time:'day',type:'circuit',laps:1,name:TR('Большое кольцо'),lvl:6,route:[[2,2],[8,2],[8,8],[2,8]]},
+  {id:'d8',time:'day',type:'circuit',laps:2,name:TR('Кубок Неон-Бэя'),lvl:7,route:[[3,1],[6,1],[6,4],[8,4],[8,7],[3,7]]},
+  {id:'d9',time:'day',type:'sprint',name:TR('Финал сезона'),lvl:8,route:[[7,8],[7,6],[2,6],[2,1],[5,1],[5,4],[8,4]]},
+  {id:'d10',time:'day',type:'circuit',laps:2,name:TR('Гонка чемпионов'),lvl:9,route:[[0,2],[5,2],[5,7],[0,7]]},
+  {id:'d11',time:'day',type:'sprint',name:TR('Скоростной бульвар'),lvl:35,route:[[8,3],[8,0],[4,0],[4,8],[0,8]]},
+  {id:'d12',time:'day',type:'circuit',laps:2,name:TR('Кубок побережья'),lvl:45,route:[[2,5],[8,5],[8,8],[2,8]]},
+  {id:'d13',time:'day',type:'circuit',laps:3,name:TR('Гран-при небоскрёбов'),lvl:55,route:[[6,3],[6,5],[3,5],[3,3]]},
+  {id:'d14',time:'day',type:'sprint',name:TR('Марафон Неон-Бэя'),lvl:65,route:[[4,6],[0,6],[0,0],[8,0],[8,8],[5,8]]},
+  {id:'d15',time:'day',type:'circuit',laps:2,name:TR('Кольцо королей'),lvl:75,route:[[7,1],[7,7],[1,7],[1,1]]},
+  {id:'d16',time:'day',type:'sprint',name:TR('Финал легенд'),lvl:88,route:[[1,8],[1,4],[5,4],[5,1],[8,1],[8,6],[3,6]]},
+  {id:'n1',time:'night',type:'sprint',name:TR('Неоновая миля'),lvl:1,route:[[2,7],[6,7],[6,4],[8,4],[8,1]]},
+  {id:'n2',time:'night',type:'circuit',laps:2,name:TR('Полночный круг'),lvl:2,route:[[4,4],[7,4],[7,7],[4,7]]},
+  {id:'n3',time:'night',type:'sprint',name:TR('Полный газ'),lvl:3,route:[[0,0],[0,6],[3,6],[3,2],[6,2],[6,0],[8,0]]},
+  {id:'n4',time:'night',type:'sprint',name:TR('Тоннель огней'),lvl:4,route:[[5,8],[5,6],[8,6],[8,3],[4,3],[4,0]]},
+  {id:'n5',time:'night',type:'circuit',laps:2,name:TR('Король ночи'),lvl:5,route:[[1,2],[6,2],[6,6],[3,6],[3,8],[1,8]]},
+  {id:'n6',time:'night',type:'circuit',laps:2,name:TR('Чёрный квадрат'),lvl:6,route:[[2,1],[5,1],[5,5],[2,5]]},
+  {id:'n7',time:'night',type:'sprint',name:TR('Шторм на набережной'),lvl:7,route:[[3,0],[8,0],[8,8],[6,8]]},
+  {id:'n8',time:'night',type:'circuit',laps:2,name:TR('Легенда Неон-Бэя'),lvl:8,route:[[0,3],[3,3],[3,0],[7,0],[7,5],[0,5]]},
+  {id:'n9',time:'night',type:'sprint',name:TR('Последний заезд'),lvl:9,route:[[8,7],[1,7],[1,0],[6,0],[6,3]]},
+  {id:'n10',time:'night',type:'circuit',laps:2,name:TR('Ночной экспресс'),lvl:35,route:[[5,5],[8,5],[8,2],[5,2]]},
+  {id:'n11',time:'night',type:'sprint',name:TR('Неоновый шторм'),lvl:45,route:[[3,8],[3,4],[7,4],[7,0],[1,0],[1,3]]},
+  {id:'n12',time:'night',type:'circuit',laps:3,name:TR('Полночь в даунтауне'),lvl:55,route:[[6,7],[6,4],[3,4],[3,7]]},
+  {id:'n13',time:'night',type:'sprint',name:TR('Красная зона'),lvl:65,route:[[8,5],[4,5],[4,1],[0,1],[0,7],[6,7]]},
+  {id:'n14',time:'night',type:'circuit',laps:2,name:TR('Охота на рекорд'),lvl:75,route:[[2,3],[2,0],[6,0],[6,6],[2,6]]},
+  {id:'n15',time:'night',type:'sprint',name:TR('Последняя легенда'),lvl:88,route:[[4,2],[8,2],[8,8],[0,8],[0,4],[3,4]]}
 ];
 // fill every level up to 5 day + 5 night races with generated ones (deterministic: same city of races for everyone)
 (function genRaces(){
   let sd=777001;const R=()=>{sd=(sd*16807)%2147483647;return (sd-1)/2147483646;};const ri=(a,b)=>a+Math.floor(R()*(b-a+1));const rp=a=>a[Math.floor(R()*a.length)];
-  const PL=['залива','порта','набережной','даунтауна','бульвара','маяка','пальм','заката','небоскрёбов','лагуны','пирса','рифа','мостов','океана','дюн','гавани','ривьеры','кварталов','площадей','Неон-Бэя','рассвета','прибоя','эстакад','доков','колонн'];
-  const DC=['Кольцо','Гран-при','Кубок','Трофей','Круг'],DS=['Спринт','Марафон','Рывок','Заезд','Приз','Этап'];
-  const NA=['Неоновый','Полуночный','Тёмный','Огненный','Призрачный','Ночной','Лунный','Багровый','Электрический','Дикий','Звёздный','Туманный'];
-  const NC=['круг','вызов','вираж','контур'],NS=['спринт','рывок','заезд','шторм','маршрут','рейд','форсаж','прорыв'];
+  const PL=[TR('залива'),TR('порта'),TR('набережной'),TR('даунтауна'),TR('бульвара'),TR('маяка'),TR('пальм'),TR('заката'),TR('небоскрёбов'),TR('лагуны'),TR('пирса'),TR('рифа'),TR('мостов'),TR('океана'),TR('дюн'),TR('гавани'),TR('ривьеры'),TR('кварталов'),TR('площадей'),TR('Неон-Бэя'),TR('рассвета'),TR('прибоя'),TR('эстакад'),TR('доков'),TR('колонн')];
+  const DC=[TR('Кольцо'),TR('Гран-при'),TR('Кубок'),TR('Трофей'),TR('Круг')],DS=[TR('Спринт'),TR('Марафон'),TR('Рывок'),TR('Заезд'),TR('Приз'),TR('Этап')];
+  const NA=[TR('Неоновый'),TR('Полуночный'),TR('Тёмный'),TR('Огненный'),TR('Призрачный'),TR('Ночной'),TR('Лунный'),TR('Багровый'),TR('Электрический'),TR('Дикий'),TR('Звёздный'),TR('Туманный')];
+  const NC=[TR('круг'),TR('вызов'),TR('вираж'),TR('контур')],NS=[TR('спринт'),TR('рывок'),TR('заезд'),TR('шторм'),TR('маршрут'),TR('полёт'),TR('форсаж'),TR('прорыв')];
   const names=new Set(EVENTS.map(e=>e.name)),ROM=['','','II','III','IV','V','VI','VII','VIII','IX','X'];
   const uniq=n=>{if(!names.has(n)){names.add(n);return n;}for(let k=2;k<ROM.length;k++){const m=n+' '+ROM[k];if(!names.has(m)){names.add(m);return m;}}let k=11;while(names.has(n+' '+k))k++;names.add(n+' '+k);return n+' '+k;};
   const inb=(i,j)=>i>=0&&j>=0&&i<=N&&j<=N,DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
@@ -5703,30 +6349,30 @@ const EVENTS=[
       const isC=(k+L)%2===0,target=1500+L*30;let route,laps=1;
       if(isC){laps=L<15?2:L<50?(R()<.5?2:3):3;route=circuit(st,target/laps*1.15);}else route=sprint(st,target);
       if(!route)continue;usedS.add(st.join(','));
-      const name=time==='day'?(isC?rp(DC):rp(DS))+' '+rp(PL):rp(NA)+' '+(isC?rp(NC):rp(NS));
+      const name=time==='day'?((a,b)=>TR.en?b+' '+a:a+' '+b)(isC?rp(DC):rp(DS),rp(PL)):rp(NA)+' '+(isC?rp(NC):rp(NS));
       const ev={id:'g'+L+(time==='day'?'d':'n')+k,time,type:isC?'circuit':'sprint',name:uniq(name),lvl:L,route};if(isC)ev.laps=laps;
       EVENTS.push(ev);k++;}
   }
 })();
 /* ten cities, one per 10 levels. tod: sky/light overrides; coast: ocean|river|bay; trees: boulevard & park trees */
 const CITIES=[
-  {id:'miami',name:'Майами',lvl:1,line:'y',trees:'palm',coast:'ocean',water:'#1f6f93',words:['МОТЕЛЬ','КОРАЛЛ','ДИСКО','24/7','НЕОН','БАР','ОТЕЛЬ','ПАЛЬМА','КЛУБ','ШИНЫ','АВТО','КИНО','ЛАГУНА','РЕТРО','ПИЦЦА','ЗАЛИВ','МАЯК','ДАЙВ','ТАКО','ЛУНА']},
-  {id:'moscow',river:['0,2','1,2','2,2','2,3','3,3','4,3','5,3','5,4','6,4','7,4'],name:'Москва',lvl:11,line:'w',trees:'linden',coast:'river',water:'#2d4650',words:['АПТЕКА','КАФЕ','ПРОДУКТЫ','МЕТРО','КИНО','ТЕАТР','БАНК','ГУМ','ЦВЕТЫ','24 ЧАСА','РЕСТОРАН','КНИГИ','ОБУВЬ','СПОРТ','ПИЦЦА','ШАУРМА','ОПТИКА','ГОСТИНИЦА','ФОТО','БАР'],
+  {id:'miami',name:TR('Майами'),lvl:1,line:'y',trees:'palm',coast:'ocean',water:'#1f6f93',words:['МОТЕЛЬ','КОРАЛЛ','ПЛЯЖ','24/7','НЕОН','СЁРФ','ОТЕЛЬ','ПАЛЬМА','ЙОГУРТ','ШИНЫ','АВТО','КИНО','ЛАГУНА','РЕТРО','ПИЦЦА','ЗАЛИВ','МАЯК','ДАЙВ','ТАКО','ЛУНА']},
+  {id:'moscow',river:['0,2','1,2','2,2','2,3','3,3','4,3','5,3','5,4','6,4','7,4'],name:TR('Москва'),lvl:11,line:'w',trees:'linden',coast:'river',water:'#2d4650',words:['АПТЕКА','КАФЕ','ПРОДУКТЫ','МЕТРО','КИНО','ТЕАТР','БАНК','ГУМ','ЦВЕТЫ','24 ЧАСА','РЕСТОРАН','КНИГИ','ОБУВЬ','СПОРТ','ПИЦЦА','ШАУРМА','ОПТИКА','ГОСТИНИЦА','ФОТО','ПЕКАРНЯ'],
    tod:{day:{top:'#3f78c4',mid:'#e2e8f0',bot:'#c9c6c0',fog:'#d9dde3',sc:'#fff3e2'},night:{mid:'#2c2458',fog:'#241c40',bot:'#141028'}}},
-  {id:'spb',river:['0,2','1,2','2,2','3,2','4,2','5,2','6,2','7,2','3,3','3,4','3,5','3,6','3,7'],name:'Санкт-Петербург',lvl:21,line:'w',trees:'linden',coast:'river',water:'#33505c',words:['ДОМ КНИГИ','КОФЕЙНЯ','ПЫШКИ','ЭРМИТАЖ','МЕТРО','АПТЕКА','БУЛОЧНАЯ','ТЕАТР','РЮМОЧНАЯ','ГАЛЕРЕЯ','ЛАВКА','МУЗЕЙ','КИНО','ЧАЙ','ОТЕЛЬ','БАР','НЕВА','МОСТ','ЦВЕТЫ','ХЛЕБ'],
+  {id:'spb',river:['0,2','1,2','2,2','3,2','4,2','5,2','6,2','7,2','3,3','3,4','3,5','3,6','3,7'],name:TR('Санкт-Петербург'),lvl:21,line:'w',trees:'linden',coast:'river',water:'#33505c',words:['ДОМ КНИГИ','КОФЕЙНЯ','ПЫШКИ','ЭРМИТАЖ','МЕТРО','АПТЕКА','БУЛОЧНАЯ','ТЕАТР','ПЕЛЬМЕННАЯ','ГАЛЕРЕЯ','ЛАВКА','МУЗЕЙ','КИНО','ЧАЙ','ОТЕЛЬ','ПАРК','НЕВА','МОСТ','ЦВЕТЫ','ХЛЕБ'],
    tod:{day:{top:'#5d86b8',mid:'#e9edf2',bot:'#cfd2d4',fog:'#e0e4ea',si:1.9,sc:'#f6f2ea'},night:{top:'#0a0a26',mid:'#3a2c62',fog:'#2a2246'}}},
-  {id:'komsomolsk',name:'Комсомольск-на-Амуре',lvl:31,line:'w',trees:'birch',coast:'river',water:'#40525c',snow:true,words:['ГАСТРОНОМ','ПРОДУКТЫ','АПТЕКА','УНИВЕРМАГ','СТОЛОВАЯ','КИНО','АМУР','ДОМ БЫТА','СБЕРКАССА','ПОЧТА','ХЛЕБ','МОЛОКО','ТКАНИ','ПАРИКМАХЕРСКАЯ','СПОРТ','КНИГИ','ФОТО','ЧАСЫ','ГОСТИНИЦА','КАФЕ'],
+  {id:'komsomolsk',name:TR('Комсомольск-на-Амуре'),lvl:31,line:'w',trees:'birch',coast:'river',water:'#40525c',snow:true,words:['ГАСТРОНОМ','ПРОДУКТЫ','АПТЕКА','УНИВЕРМАГ','СТОЛОВАЯ','КИНО','АМУР','ДОМ БЫТА','СБЕРКАССА','ПОЧТА','ХЛЕБ','МОЛОКО','ТКАНИ','ПАРИКМАХЕРСКАЯ','СПОРТ','КНИГИ','ФОТО','ЧАСЫ','ГОСТИНИЦА','КАФЕ'],
    tod:{day:{top:'#8ea4bd',mid:'#e5e9ee',bot:'#dde2e8',fog:'#e3e7ec',hs:'#e8eef8',hg:'#b8bcc4',hi:.9,sc:'#f2f5ff',si:1.3,exp:1.05,clouds:'#f4f6fa',cloudO:.95},night:{top:'#04081c',mid:'#1c2a4c',bot:'#141c30',fog:'#1a243a',hs:'#7d8cc0'}}},
-  {id:'madrid',name:'Мадрид',lvl:41,line:'w',trees:'plane',coast:'river',water:'#3e5650',words:['FARMACIA','CAFÉ','TAPAS','BAR','HOTEL','CINE','TEATRO','METRO','LIBRERÍA','MERCADO','PANADERÍA','CERVEZA','JAMÓN','MODA','BANCO','CHURROS','VINOS','TIENDA','ZAPATOS','PIZZA'],
+  {id:'madrid',name:TR('Мадрид'),lvl:41,line:'w',trees:'plane',coast:'river',water:'#3e5650',words:['FARMACIA','CAFÉ','TAPAS','HELADOS','HOTEL','CINE','TEATRO','METRO','LIBRERÍA','MERCADO','PANADERÍA','FRUTAS','JAMÓN','MODA','BANCO','CHURROS','JUGUETES','TIENDA','ZAPATOS','PIZZA'],
    tod:{day:{top:'#2c6fd0',mid:'#ffe2c0',bot:'#e0c6a2',fog:'#f2dcc2',sc:'#fff0d8',si:2.4}}},
-  {id:'barcelona',corner:'chamfer',name:'Барселона',lvl:51,line:'w',trees:'plane',coast:'ocean',water:'#1e7590',words:['BOTIGA','FARMÀCIA','CAFÈ','TAPES','BAR','HOTEL','PLATJA','MERCAT','FORN','PEIX','VERMUT','CINEMA','MODA','LLIBRES','METRO','PAELLA','CAVA','GELATS','ROBA','FLORS']},
-  {id:'rome',river:['4,0','4,1','4,2','5,2','5,3','5,4','5,5','5,6','5,7'],name:'Рим',lvl:61,line:'w',trees:'pine',coast:'river',water:'#4b5e44',words:['TRATTORIA','PIZZERIA','GELATO','CAFFÈ','FARMACIA','BAR','OSTERIA','VINO','ALBERGO','CINEMA','TABACCHI','PASTA','BIRRA','FORNO','LIBRI','MODA','TEATRO','ENOTECA','PANINI','METRO'],
+  {id:'barcelona',corner:'chamfer',name:TR('Барселона'),lvl:51,line:'w',trees:'plane',coast:'ocean',water:'#1e7590',words:['BOTIGA','FARMÀCIA','CAFÈ','TAPES','PARC','HOTEL','PLATJA','MERCAT','FORN','PEIX','PASTISSERIA','CINEMA','MODA','LLIBRES','METRO','PAELLA','JOGUINES','GELATS','ROBA','FLORS']},
+  {id:'rome',river:['4,0','4,1','4,2','5,2','5,3','5,4','5,5','5,6','5,7'],name:TR('Рим'),lvl:61,line:'w',trees:'pine',coast:'river',water:'#4b5e44',words:['TRATTORIA','PIZZERIA','GELATO','CAFFÈ','FARMACIA','PIAZZA','OSTERIA','FRUTTA','ALBERGO','CINEMA','GIOCATTOLI','PASTA','FIORI','FORNO','LIBRI','MODA','TEATRO','PASTICCERIA','PANINI','METRO'],
    tod:{day:{top:'#3b7acc',mid:'#ffd9a6',bot:'#e2c39b',fog:'#f0d3ae',sc:'#ffe9c8'}}},
-  {id:'paris',river:['0,1','1,1','2,1','2,2','3,2','3,3','4,3','5,3','5,2','6,2','7,2'],name:'Париж',lvl:71,line:'w',trees:'plane',coast:'river',water:'#3a5560',words:['BOULANGERIE','CAFÉ','BISTROT','PHARMACIE','HÔTEL','CINÉMA','MÉTRO','TABAC','FROMAGERIE','LIBRAIRIE','BRASSERIE','CRÊPES','VINS','PÂTISSERIE','MODE','FLEURS','THÉÂTRE','BAR','OPÉRA','GALERIE'],
+  {id:'paris',river:['0,1','1,1','2,1','2,2','3,2','3,3','4,3','5,3','5,2','6,2','7,2'],name:TR('Париж'),lvl:71,line:'w',trees:'plane',coast:'river',water:'#3a5560',words:['BOULANGERIE','CAFÉ','BISTROT','PHARMACIE','HÔTEL','CINÉMA','MÉTRO','JOUETS','FROMAGERIE','LIBRAIRIE','CHOCOLATERIE','CRÊPES','GLACES','PÂTISSERIE','MODE','FLEURS','THÉÂTRE','MARCHÉ','OPÉRA','GALERIE'],
    tod:{day:{top:'#6a90c4',mid:'#efe5d8',bot:'#d6cdc2',fog:'#e7ded2',si:2},night:{mid:'#33285a',fog:'#26203f'}}},
-  {id:'tokyo',river:['6,0','6,1','6,2','7,2','2,5','3,5','4,5','5,5','6,5','7,5'],name:'Токио',lvl:81,line:'w',trees:'sakura',coast:'bay',water:'#22404e',words:['ラーメン','カラオケ','薬','寿司','居酒屋','ゲーム','コンビニ','焼肉','カフェ','ホテル','パチンコ','本','うどん','喫茶','電気','花','酒','銭湯','映画','バー'],
+  {id:'tokyo',river:['6,0','6,1','6,2','7,2','2,5','3,5','4,5','5,5','6,5','7,5'],name:TR('Токио'),lvl:81,line:'w',trees:'sakura',coast:'bay',water:'#22404e',words:['ラーメン','カラオケ','薬','寿司','団子','ゲーム','コンビニ','焼肉','カフェ','ホテル','おもちゃ','本','うどん','喫茶','電気','花','茶','銭湯','映画','公園'],
    tod:{night:{top:'#060420',mid:'#3c1c6e',bot:'#1a0c30',fog:'#2b1650',neon:2.6}}},
-  {id:'dubai',river:['5,4','6,4','5,5','6,5','7,4'],name:'Дубай',lvl:91,line:'w',trees:'palm',coast:'ocean',water:'#2696aa',words:['SOUQ','CAFE','GOLD','HOTEL','MALL','شاي','سوق','قهوة','مطعم','DESERT','MARINA','SPA','EXCHANGE','PERFUME','FALAFEL','BAKERY','LOUNGE','KARAK','SHAWARMA','JEWEL'],
+  {id:'dubai',river:['5,4','6,4','5,5','6,5','7,4'],name:TR('Дубай'),lvl:91,line:'w',trees:'palm',coast:'ocean',water:'#2696aa',words:['SOUQ','CAFE','GOLD','HOTEL','MALL','شاي','سوق','قهوة','مطعم','DESERT','MARINA','SPA','EXCHANGE','PERFUME','FALAFEL','BAKERY','DATES','KARAK','SHAWARMA','JEWEL'],
    tod:{day:{top:'#5a8fca',mid:'#f4dcb0',bot:'#e7c999',fog:'#eed8b2',sc:'#fff0d4',si:2.5,exp:1.02}}}
 ];
 const cityForLevel=L=>{let c=CITIES[0];for(const x of CITIES)if(L>=x.lvl)c=x;return c;};
@@ -5755,11 +6401,11 @@ EVENTS.forEach(ev=>{
   Object.defineProperty(ev,'rep',{get(){return Math.max(ev.base||0,Math.round((1100+330*(ev.tier-1))*ev.rmod/10)*10);}});
   Object.defineProperty(ev,'ai',{get(){const T=ev.tier;return (.87+.08*(T-1)/99)*expTop(T);}});
 });
-const RIVALS=[{n:'Вайпер',c:'#3dffa8'},{n:'Солти',c:'#ffcf3e'},{n:'Кобра',c:'#b04bff'},{n:'Мираж',c:'#ff6a3d'},{n:'Ласт',c:'#2a6bff'},{n:'Шторм',c:'#eceaf5'},{n:'Рика',c:'#ff2e88'},{n:'Дизель',c:'#1c1c26'}];
+const RIVALS=[{n:TR('Вайпер'),c:'#3dffa8'},{n:TR('Солти'),c:'#ffcf3e'},{n:TR('Кобра'),c:'#b04bff'},{n:TR('Мираж'),c:'#ff6a3d'},{n:TR('Ласт'),c:'#2a6bff'},{n:TR('Шторм'),c:'#eceaf5'},{n:TR('Рика'),c:'#ff2e88'},{n:TR('Дизель'),c:'#1c1c26'}];
 const PAINTS=['#ffb23e','#29e3ff','#ff2e88','#eceaf5','#1c1c26','#3dffa8','#b04bff','#ff4d5e','#2a6bff','#f5e663','#8a8f99','#0f5c4a'];
 const PAINTS_X=[{c:'#c6ff1a',lvl:35},{c:'#ff7a00',lvl:55},{c:'#8fd8ff',lvl:62},{c:'#d4af37',lvl:78},{c:'#9b111e',lvl:85},{c:'#00ffd0',lvl:95}];
-const FINISHES=[{id:'gloss',name:'Глянец',lvl:1},{id:'metallic',name:'Металлик',lvl:2},{id:'matte',name:'Матовый',lvl:3},{id:'pearl',name:'Перламутр',lvl:5},{id:'chrome',name:'Хром',lvl:7}];
-const RIMS=[{name:'Стандарт',lvl:1},{name:'Спорт',lvl:2},{name:'Сетка',lvl:4},{name:'Турбина',lvl:6},{name:'Аэро',lvl:8}];
+const FINISHES=[{id:'gloss',name:TR('Глянец'),lvl:1},{id:'metallic',name:TR('Металлик'),lvl:2},{id:'matte',name:TR('Матовый'),lvl:3},{id:'pearl',name:TR('Перламутр'),lvl:5},{id:'chrome',name:TR('Хром'),lvl:7}];
+const RIMS=[{name:TR('Стандарт'),lvl:1},{name:TR('Спорт'),lvl:2},{name:TR('Сетка'),lvl:4},{name:TR('Турбина'),lvl:6},{name:TR('Аэро'),lvl:8}];
 const RIMCOL=['#c9ced6','#1d1f24','#d4a548','#b8733f','#f2f2f2','#ff2e88'];
 const GLOWS=[{c:'#ff2e88',lvl:1},{c:'#29e3ff',lvl:1},{c:'#b04bff',lvl:2},{c:'#3dffa8',lvl:3},{c:'#ffcf3e',lvl:5},{c:'#ffffff',lvl:7},{c:'#ff6a3d',lvl:40},{c:'off',lvl:1}];
 const TRAFFIC_MODELS=['sedan','sedan','hatch','suv','van','pickup','taxi'];
@@ -5780,8 +6426,37 @@ function migrateSave(d,raw){if(!raw||typeof raw!=='object')return d;if(!(raw.v>=
 function loadSave(){let s=null;try{s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');}catch(e){}const d=JSON.parse(JSON.stringify(DEF));if(s&&typeof s==='object'&&s.owned&&s.owned.corsa){Object.assign(d,s);migrateSave(d,s);}if(!d.style)d.style={};if(!d.colors)d.colors={};if(!CARS.find(c=>c.id===d.car))d.car='corsa';return d;}
 let save=loadSave();
 /* площадка (src/platform.js): Яндекс Игры SDK или заглушки; если модуль не загрузился — свои заглушки */
-const PLAT=window.NBPlat&&typeof window.NBPlat.init==='function'?window.NBPlat:{init:()=>Promise.resolve(null),ready(){},setPlaying(){},paused:()=>false,put(){},hasCloud:()=>false,hasSdk:()=>false,interstitial(d){if(d)d();},canReward:()=>false,rewarded(d){d(false);},onPause(){}};
+const PLAT=window.NBPlat&&typeof window.NBPlat.init==='function'?window.NBPlat:{init:()=>Promise.resolve(null),ready(){},setPlaying(){},paused:()=>false,put(){},hasCloud:()=>false,hasSdk:()=>false,interstitial(d){if(d)d();},canReward:()=>false,rewarded(d){d(false);},onPause(){},saveNow:()=>Promise.resolve(false),sdk:()=>null,serverTime:()=>Date.now()};
 function persist(){save.ts=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}cloudQueue();PLAT.put(save);}
+/* ---------- Премиум (общий модуль src/premium.js) ----------
+   С Премиумом нет полноэкранной рекламы (проверка в PLAT.interstitial). «×2 за гонку» и «Вернуть REP» без ролика —
+   вместе не больше PM_FREE раз за московские сутки по серверному времени; счётчик save.pmFree уходит в облако с сохранением.
+   Дальше — обычный ролик. Деньги и REP не продаются, Премиум их не даёт. */
+const PM=window.Premium||null,PM_FREE=5;let lastPmMode='';
+function pmOn(){try{return !!(PM&&PM.active());}catch(e){return false;}}
+function pmDay(){return Math.floor((PLAT.serverTime()+3*3600e3)/864e5);}
+function pmLeft(){const c=save.pmFree,d=pmDay();return Math.max(0,PM_FREE-(c&&c.d===d?c.n:0));}
+function pmFreeNow(){return pmOn()&&pmLeft()>0;}
+function canGetReward(){return pmFreeNow()||PLAT.canReward();}
+/* награда: с Премиумом сразу (в пределах лимита), иначе ролик; done(got) */
+function getReward(done){if(pmFreeNow()){const d=pmDay();if(!save.pmFree||save.pmFree.d!==d)save.pmFree={d,n:0};save.pmFree.n++;persist();done(true);return;}PLAT.rewarded(done);}
+function pmCard(){try{if(PM)PM.maybeCard();}catch(e){}}
+/* тексты из C:\Claude\ИГРЫ\publish\texts\neon-bay\premium.md (8.11.2026); баннера в игре нет — о нём не пишем, добавлен лимит 5 в сутки */
+const PM_TEXTS={
+  ru:{p30:'Премиум на 30 дней',p365:'Премиум на год',
+    perks:['Полноэкранная реклама отключается.','«×2 за гонку» и «Вернуть REP» — сразу, без ролика, до 5 раз в сутки (дальше по ролику, как обычно).','Деньги, REP и сложность не меняются: Премиум не помогает выигрывать.'],
+    note:'Оплата один раз. Премиум действует 30 дней или год — в зависимости от выбранного товара. Автопродления и повторных списаний нет. Если Премиум уже идёт, новый срок добавится к концу.',
+    adTitle:'Надоела реклама?',adText:'Гоняй по Неон-Бэй без рекламных пауз! Премиум убирает полноэкранную рекламу, а награды за ролики выдаёт без просмотра.',adMore:'Узнать про Премиум',later:'Не сейчас',
+    soonTitle:'Премиум скоро закончится',soonText:'Осталось {0}. Автопродления и повторных списаний нет. Если захочешь гонять без рекламы дальше, его можно купить снова.',extend:'Продлить',
+    endTitle:'Премиум закончился',endText:'Полноэкранная реклама снова показывается, для наград снова нужно смотреть ролики. Гонки продолжаются!'},
+  en:{p30:'30-Day Premium',p365:'1-Year Premium',
+    perks:['Full-screen ads are disabled.','"×2 per race" and "Get REP back" are instant, no video, up to 5 times a day (after that, with a video as usual).','Money, REP and difficulty stay the same: Premium does not help you win.'],
+    note:'One-time payment. Premium lasts 30 days or 1 year, depending on your purchase. No automatic renewal or recurring charges. If Premium is already active, the new period is added to the end.',
+    adTitle:'Tired of ads?',adText:'Race through Neon Bay without ad breaks! Premium removes full-screen ads and gives video rewards without making you watch.',adMore:'Learn About Premium',later:'Not Now',
+    soonTitle:'Premium Is Ending Soon',soonText:'{0} left. There is no automatic renewal or recurring charge. If you\'d like to keep racing without ads, you can buy it again.',extend:'Renew',
+    endTitle:'Premium Has Ended',endText:'Full-screen ads are back, and rewards need a video again. The races go on!'}};
+/* слияние счётчика при конфликте облака: за одни сутки берём больший */
+function pmMergeFree(a,b){if(!a)return b||null;if(!b)return a;if(a.d!==b.d)return a.d>b.d?a:b;return{d:a.d,n:Math.max(a.n||0,b.n||0)};}
 /* account save: per-viewer document in the artifact's store; localStorage stays as a fast local copy */
 const cloud={ref:null,busy:false,pending:false,timer:0,state:'local'};
 function cloudQueue(){if(!cloud.ref)return;cloud.pending=true;clearTimeout(cloud.timer);cloud.timer=setTimeout(cloudFlush,1200);}
@@ -5802,32 +6477,32 @@ function carStats(id){const c=carById(id);const u=save.owned[id]||{eng:0,sus:0,n
   return{top:c.top+engTop(u.eng),accel:c.accel*(1+0.09*upA(u.eng)+0.035*upB(u.eng)),handling:c.handling+0.07*upA(u.sus)+0.025*upB(u.sus),grip:c.grip+0.45*upA(u.sus)+0.15*upB(u.sus),nosPow:1+0.18*upA(u.nos)+0.05*upB(u.nos),nosDrain:0.26/(1+0.3*upA(u.nos)+0.08*upB(u.nos))};}
 const upgPrice=(car,l)=>Math.round((3500+800*(car.lvl-1))*(.25+.2*l)/100)*100;
 function unlocksAt(L){const u=[];
-  for(const r of RANKS)if(r.lvl===L&&L>1)u.push({t:'rank',s:'Звание: '+r.n,c:'#ffcf3e'});
-  for(const c of CITIES)if(c.lvl===L&&L>1)u.push({t:'city',s:'Город: '+c.name,c:'var(--cyan)'});
-  for(const c of CARS)if(c.lvl===L)u.push({t:'car',s:'Машина: '+c.name,c:'var(--cyan)'});
-  {const es=lvlEvents(L),d=es.filter(e=>e.time==='day').length,n=es.length-d;if(es.length)u.push({t:'races',n:es.length,s:es.length+' '+plural(es.length,'гонка','гонки','гонок')+': '+d+' днём, '+n+' ночью',c:'var(--pink)'});}
-  for(const f of FINISHES)if(f.lvl===L&&L>1)u.push({t:'style',s:'Покрытие: '+f.name,c:'#b04bff'});
-  for(const r of RIMS)if(r.lvl===L&&L>1)u.push({t:'style',s:'Диски: '+r.name,c:'#b04bff'});
-  for(const g of GLOWS)if(g.lvl===L&&L>1)u.push({t:'style',s:'Подсветка: новый цвет',c:'#b04bff'});
-  for(const q of PAINTS_X)if(q.lvl===L)u.push({t:'style',s:'Краска: эксклюзивный цвет',c:'#b04bff'});
-  UPG_LVL.forEach((q,i)=>{if(q===L&&L>1)u.push({t:'tune',s:'Тюнинг: ступень '+(i+1),c:'#3dffa8'});});
-  if(L>1)u.push({t:'bonus',s:'Бонус $'+fmt(levelBonus(L)),c:'var(--sun)'});
+  for(const r of RANKS)if(r.lvl===L&&L>1)u.push({t:'rank',s:TR('Звание: ')+r.n,c:'#ffcf3e'});
+  for(const c of CITIES)if(c.lvl===L&&L>1)u.push({t:'city',s:TR('Город: ')+c.name,c:'var(--cyan)'});
+  for(const c of CARS)if(c.lvl===L)u.push({t:'car',s:TR('Машина: ')+c.name,c:'var(--cyan)'});
+  {const es=lvlEvents(L),d=es.filter(e=>e.time==='day').length,n=es.length-d;if(es.length)u.push({t:'races',n:es.length,s:es.length+' '+plural(es.length,TR('гонка'),TR('гонки'),TR('гонок'))+': '+d+TR(' днём, ')+n+TR(' ночью'),c:'var(--pink)'});}
+  for(const f of FINISHES)if(f.lvl===L&&L>1)u.push({t:'style',s:TR('Покрытие: ')+f.name,c:'#b04bff'});
+  for(const r of RIMS)if(r.lvl===L&&L>1)u.push({t:'style',s:TR('Диски: ')+r.name,c:'#b04bff'});
+  for(const g of GLOWS)if(g.lvl===L&&L>1)u.push({t:'style',s:TR('Подсветка: новый цвет'),c:'#b04bff'});
+  for(const q of PAINTS_X)if(q.lvl===L)u.push({t:'style',s:TR('Краска: эксклюзивный цвет'),c:'#b04bff'});
+  UPG_LVL.forEach((q,i)=>{if(q===L&&L>1)u.push({t:'tune',s:TR('Тюнинг: ступень ')+(i+1),c:'#3dffa8'});});
+  if(L>1)u.push({t:'bonus',s:TR('Бонус $')+fmt(levelBonus(L)),c:'var(--sun)'});
   return u;}
 /* ---------- tasks: daily tasks, login streak, visits per day, weekly tasks, chest, ×2 booster ---------- */
-const QPAINTS=[{c:'#ff9500',n:'Закат'},{c:'#7cfc00',n:'Кислота'},{c:'#e8e8f0',n:'Жемчуг'},{c:'#c0a060',n:'Шампань'},{c:'#ff4fd8',n:'Фуксия'},{c:'#1b3dff',n:'Электрик'}];
+const QPAINTS=[{c:'#ff9500',n:TR('Закат')},{c:'#7cfc00',n:TR('Кислота')},{c:'#e8e8f0',n:TR('Жемчуг')},{c:'#c0a060',n:TR('Песок')},{c:'#ff4fd8',n:TR('Фуксия')},{c:'#1b3dff',n:TR('Электрик')}];
 const QT={
-  winDay:{t:n=>'Выиграй '+n+' '+plural(n,'дневную гонку','дневные гонки','дневных гонок'),n:[1,2,3],w:1},
-  winNight:{t:n=>'Выиграй '+n+' '+plural(n,'ночную гонку','ночные гонки','ночных гонок'),n:[1,2],w:1.2},
-  podium:{t:n=>'Займи призовое место (1–3) в '+n+' '+plural(n,'гонке','гонках','гонках'),n:[2,3,4],w:1},
-  race:{t:n=>'Проедь '+n+' '+plural(n,'гонку','гонки','гонок'),n:[3,4,5],w:.9},
-  escape:{t:n=>'Уйди от полиции '+n+' '+plural(n,'раз','раза','раз'),n:[1,2],w:1.3},
-  bank:{t:n=>'Довези REP до гаража '+n+' '+plural(n,'раз','раза','раз'),n:[1,2],w:1.1},
-  heat:{t:n=>'Подними жар до '+n,n:[3,4],w:1.2,max:true},
-  jump:{t:n=>'Сделай '+n+' '+plural(n,'прыжок','прыжка','прыжков'),n:[5,10,15],w:.7},
-  nitro:{t:n=>'Жми нитро '+n+' секунд',n:[20,40,60],w:.7},
-  drift:{t:n=>'Дрифтуй '+n+' секунд',n:[10,20,30],w:.8},
-  km:{t:n=>'Проедь '+n+' км',n:[5,10,15],w:.8},
-  money:{t:n=>'Заработай $'+fmt(n)+' в гонках',n:[1,2,3],w:1,money:true}
+  winDay:{t:n=>TR('Выиграй ')+n+' '+plural(n,TR('дневную гонку'),TR('дневные гонки'),TR('дневных гонок')),n:[1,2,3],w:1},
+  winNight:{t:n=>TR('Выиграй ')+n+' '+plural(n,TR('ночную гонку'),TR('ночные гонки'),TR('ночных гонок')),n:[1,2],w:1.2},
+  podium:{t:n=>TR('Займи призовое место (1–3) в ')+n+' '+plural(n,TR('гонке'),TR('гонках'),TR('гонках')),n:[2,3,4],w:1},
+  race:{t:n=>TR('Проедь ')+n+' '+plural(n,TR('гонку'),TR('гонки'),TR('гонок')),n:[3,4,5],w:.9},
+  escape:{t:n=>TR('Уйди от полиции ')+n+' '+plural(n,TR('раз'),TR('раза'),TR('раз')),n:[1,2],w:1.3},
+  bank:{t:n=>TR('Довези REP до гаража ')+n+' '+plural(n,TR('раз'),TR('раза'),TR('раз')),n:[1,2],w:1.1},
+  heat:{t:n=>TR('Подними внимание патруля до ')+n,n:[3,4],w:1.2,max:true},
+  jump:{t:n=>TR('Сделай ')+n+' '+plural(n,TR('прыжок'),TR('прыжка'),TR('прыжков')),n:[5,10,15],w:.7},
+  nitro:{t:n=>TR('Жми нитро ')+n+TR(' секунд'),n:[20,40,60],w:.7},
+  drift:{t:n=>TR('Дрифтуй ')+n+TR(' секунд'),n:[10,20,30],w:.8},
+  km:{t:n=>TR('Проедь ')+n+TR(' км'),n:[5,10,15],w:.8},
+  money:{t:n=>TR('Заработай $')+fmt(n)+TR(' в гонках'),n:[1,2,3],w:1,money:true}
 };
 const QW=[{k:'winDay',n:12},{k:'winNight',n:8},{k:'escape',n:6},{k:'km',n:60},{k:'podium',n:20},{k:'jump',n:60}];
 const dayKey=d=>{d=d||new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();};
@@ -5847,7 +6522,7 @@ function qEnsure(){if(!save.q||typeof save.q!=='object')save.q={};const Q=save.q
   if(!Q.paints)Q.paints=[];return ch;}
 const LOGIN=[{t:'$',k:1},{t:'$',k:1.5},{t:'REP',k:1},{t:'$',k:2.5},{t:'boost',k:15},{t:'$',k:4},{t:'paint',k:1}];
 function loginPrize(i){const p=LOGIN[i],L={};if(p.t==='$')L.m=Math.round(qBase()*p.k/50)*50;if(p.t==='REP')L.r=qRep()*3;if(p.t==='boost')L.b=p.k;if(p.t==='paint')L.paint=1;return L;}
-function prizeText(P){const a=[];if(P.m)a.push('$'+fmt(P.m));if(P.r)a.push(fmt(P.r)+' REP');if(P.b)a.push('×2 денег на '+P.b+' мин');if(P.paint){const nx=QPAINTS.find(q=>!save.q.paints.includes(q.c));a.push(nx?'краска «'+nx.n+'»':'$'+fmt(qBase()*3));}return a.join(' + ');}
+function prizeText(P){const a=[];if(P.m)a.push('$'+fmt(P.m));if(P.r)a.push(fmt(P.r)+' REP');if(P.b)a.push(TR('×2 денег на ')+P.b+TR(' мин'));if(P.paint){const nx=QPAINTS.find(q=>!save.q.paints.includes(q.c));a.push(nx?TR('краска «')+nx.n+TR('»'):'$'+fmt(qBase()*3));}return a.join(' + ');}
 function givePrize(P){const before=levelOf(save.rep);if(P.m)save.money+=P.m;if(P.r)save.rep+=P.r;
   if(P.b){const now=Date.now();save.q.boost=Math.max(save.q.boost||0,now)+P.b*60000;}
   if(P.paint){const nx=QPAINTS.find(q=>!save.q.paints.includes(q.c));if(nx)save.q.paints.push(nx.c);else save.money+=qBase()*3;}
@@ -5859,39 +6534,39 @@ function qProg(k,v,set){if(!save.q||!save.q.list)return;let done=[];
   for(const L of[save.q.list,save.q.wl||[]])for(const q of L){if(q.k!==k||q.p>=q.n)continue;const d=QT[k]||{};const old=q.p;
     if(k==='visit')q.p=Math.min(q.n,save.q.visits||0);else if(d.max)q.p=Math.min(q.n,Math.max(q.p,v));else q.p=Math.min(q.n,q.p+v);
     if(q.p>=q.n&&old<q.n)done.push(q);}
-  qDirty=true;for(const q of done){toast('Задание выполнено: '+qTitle(q)+'. Награда ждёт в гараже → «Задания».');persist();qDirty=false;}
+  qDirty=true;for(const q of done){toast(TR('Задание выполнено: ')+qTitle(q)+TR('. Награда ждёт в гараже → «Задания».'));persist();qDirty=false;}
   updateQBadge();}
-function qTitle(q){return q.k==='visit'?'Зайди в игру '+q.n+' раза за день':QT[q.k].t(q.n);}
+function qTitle(q){return q.k==='visit'?TR('Зайди в игру ')+q.n+TR(' раза за день'):QT[q.k].t(q.n);}
 function qClaimable(){if(!save.q||!save.q.list)return 0;let n=save.q.lc?0:1;for(const q of save.q.list.concat(save.q.wl||[]))if(q.p>=q.n&&!q.c)n++;if(!save.q.chest&&save.q.list.every(q=>q.p>=q.n))n++;return n;}
-function updateQBadge(){const t=document.querySelector('#garage .tab[data-tab="tasks"]');if(!t)return;const n=qClaimable();t.innerHTML='Задания'+(n?'<span class="qbadge">'+n+'</span>':'');}
+function updateQBadge(){const t=document.querySelector('#garage .tab[data-tab="tasks"]');if(!t)return;const n=qClaimable();t.innerHTML=TR('Задания')+(n?'<span class="qbadge">'+n+'</span>':'');}
 function qTick(dt,b,inp){if(!save.q||state.mode!=='drive')return;const v=Math.abs(b.vF||0);
   qAcc.km+=v*dt/1000;if(b.nosOn)qAcc.nitro+=dt;if(inp.hand&&v>9)qAcc.drift+=dt;
   qSaveT-=dt;if(qSaveT<=0){qSaveT=2;if(qAcc.km>.05){qProg('km',qAcc.km);qAcc.km=0;}if(qAcc.nitro>.5){qProg('nitro',qAcc.nitro);qAcc.nitro=0;}if(qAcc.drift>.5){qProg('drift',qAcc.drift);qAcc.drift=0;}if(qDirty){qDirty=false;persist();}}}
 const qAcc={km:0,nitro:0,drift:0};
-function qTimeLeft(){const n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1),s=Math.max(0,(m-n)/1000);return Math.floor(s/3600)+' ч '+Math.floor(s%3600/60)+' мин';}
+function qTimeLeft(){const n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),n.getDate()+1),s=Math.max(0,(m-n)/1000);return Math.floor(s/3600)+TR(' ч ')+Math.floor(s%3600/60)+TR(' мин');}
 function renderTasks(){qEnsure();const Q=save.q;let h='';
   const si=((Q.streak||1)-1)%7;
-  h+=`<div class="qsec"><div class="qh">Ежедневный вход<span>серия ${Q.streak||1} ${plural(Q.streak||1,'день','дня','дней')}</span></div><div class="qdays">`;
-  for(let i=0;i<7;i++){const P=loginPrize(i),st=i<si?'past':i===si?(Q.lc?'got':'now'):'next';const lab=LOGIN[i].t==='$'?'$'+shortN(P.m):LOGIN[i].t==='REP'?shortN(P.r)+' REP':LOGIN[i].t==='boost'?'×2 $':'краска';
-    h+=`<div class="qd ${st}"><b>День ${i+1}</b><span>${lab}</span>${st==='now'?'<button class="btn small primary" data-act="qlogin">Забрать</button>':st==='got'||st==='past'?'<i>✓</i>':''}</div>`;}
-  h+=`</div><p class="qnote">Заходи каждый день: на 7-й день — эксклюзивная краска. Пропустишь день — серия начнётся заново.</p></div>`;
-  if(boostOn())h+=`<div class="notice" style="--c:var(--sun)">Активен бонус ×2 денег за гонки: ещё ${Math.ceil((Q.boost-Date.now())/60000)} мин.</div>`;
+  h+=`<div class="qsec"><div class="qh">${TR('Ежедневный вход')}<span>${TR('серия')} ${Q.streak||1} ${plural(Q.streak||1,TR('день'),TR('дня'),TR('дней'))}</span></div><div class="qdays">`;
+  for(let i=0;i<7;i++){const P=loginPrize(i),st=i<si?'past':i===si?(Q.lc?'got':'now'):'next';const lab=LOGIN[i].t==='$'?'$'+shortN(P.m):LOGIN[i].t==='REP'?shortN(P.r)+' REP':LOGIN[i].t==='boost'?'×2 $':TR('краска');
+    h+=`<div class="qd ${st}"><b>${TR('День')} ${i+1}</b><span>${lab}</span>${st==='now'?TR('<button class="btn small primary" data-act="qlogin">Забрать</button>'):st==='got'||st==='past'?'<i>✓</i>':''}</div>`;}
+  h+=`</div><p class="qnote">${TR('Заходи каждый день: на 7-й день — эксклюзивная краска. Пропустишь день — серия начнётся заново.')}</p></div>`;
+  if(boostOn())h+=`<div class="notice" style="--c:var(--sun)">${TR('Активен бонус ×2 денег за гонки: ещё')} ${Math.ceil((Q.boost-Date.now())/60000)} ${TR('мин.')}</div>`;
   const row=(q,i,w)=>{const done=q.p>=q.n,pct=Math.round(Math.min(1,q.p/q.n)*100),val=q.k==='km'||q.k==='nitro'||q.k==='drift'?(q.k==='km'?q.p.toFixed(1):Math.floor(q.p)):q.k==='money'?'$'+fmt(q.p):Math.floor(q.p);
-    return `<div class="qrow${done?' done':''}"><div class="qt">${esc(qTitle(q))}</div><div class="qa">${q.c?'<span class="sub" style="color:var(--ok)">Получено ✓</span>':done?`<button class="btn small primary" data-act="${w?'qweek':'qday'}" data-i="${i}">Забрать</button>`:`<span class="sub">${val} / ${q.k==='money'?'$'+fmt(q.n):q.n}</span>`}</div>
-      <div class="qbar"><i style="width:${pct}%"></i></div><div class="qp">Награда: ${prizeText({m:q.m,r:q.r})}</div></div>`;};
-  h+=`<div class="qsec"><div class="qh">Задания на сегодня<span>новые через ${qTimeLeft()}</span></div>`;Q.list.forEach((q,i)=>h+=row(q,i,false));
+    return `<div class="qrow${done?' done':''}"><div class="qt">${esc(qTitle(q))}</div><div class="qa">${q.c?TR('<span class="sub" style="color:var(--ok)">Получено ✓</span>'):done?`<button class="btn small primary" data-act="${w?'qweek':'qday'}" data-i="${i}">${TR('Забрать')}</button>`:`<span class="sub">${val} / ${q.k==='money'?'$'+fmt(q.n):q.n}</span>`}</div>
+      <div class="qbar"><i style="width:${pct}%"></i></div><div class="qp">${TR('Награда:')} ${prizeText({m:q.m,r:q.r})}</div></div>`;};
+  h+=`<div class="qsec"><div class="qh">${TR('Задания на сегодня')}<span>${TR('новые через')} ${qTimeLeft()}</span></div>`;Q.list.forEach((q,i)=>h+=row(q,i,false));
   const all=Q.list.every(q=>q.p>=q.n),chestP={m:qBase()*3,r:qRep()*2,b:15};
-  h+=`<div class="qrow chest${all?' done':''}"><div class="qt">🎁 Сундук дня: выполни все ${Q.list.length} задания</div><div class="qa">${Q.chest?'<span class="sub" style="color:var(--ok)">Открыт ✓</span>':all?'<button class="btn small primary" data-act="qchest">Открыть</button>':`<span class="sub">${Q.list.filter(q=>q.p>=q.n).length} / ${Q.list.length}</span>`}</div><div class="qp">Внутри: ${prizeText(chestP)}</div></div></div>`;
-  h+=`<div class="qsec"><div class="qh">Задания недели<span>обновятся в понедельник</span></div>`;(Q.wl||[]).forEach((q,i)=>h+=row(q,i,true));
-  h+=`<p class="qnote">За каждое задание недели — большая награда и эксклюзивная краска.</p></div>`;
-  if(Q.paints.length)h+=`<div class="qsec"><div class="qh">Твои эксклюзивные краски</div><div class="sws">${Q.paints.map(c=>`<span class="sw" style="background:${c}" title="${esc((QPAINTS.find(q=>q.c===c)||{}).n||'')}"></span>`).join('')}</div><p class="qnote">Они уже есть во вкладке «Стиль».</p></div>`;
+  h+=`<div class="qrow chest${all?' done':''}"><div class="qt">${TR('🎁 Сундук дня: выполни все')} ${Q.list.length} ${TR('задания')}</div><div class="qa">${Q.chest?TR('<span class="sub" style="color:var(--ok)">Открыт ✓</span>'):all?TR('<button class="btn small primary" data-act="qchest">Открыть</button>'):`<span class="sub">${Q.list.filter(q=>q.p>=q.n).length} / ${Q.list.length}</span>`}</div><div class="qp">${TR('Внутри:')} ${prizeText(chestP)}</div></div></div>`;
+  h+=`<div class="qsec"><div class="qh">${TR('Задания недели')}<span>${TR('обновятся в понедельник')}</span></div>`;(Q.wl||[]).forEach((q,i)=>h+=row(q,i,true));
+  h+=`<p class="qnote">${TR('За каждое задание недели — большая награда и эксклюзивная краска.')}</p></div>`;
+  if(Q.paints.length)h+=`<div class="qsec"><div class="qh">${TR('Твои эксклюзивные краски')}</div><div class="sws">${Q.paints.map(c=>`<span class="sw" style="background:${c}" title="${esc((QPAINTS.find(q=>q.c===c)||{}).n||'')}"></span>`).join('')}</div><p class="qnote">${TR('Они уже есть во вкладке «Стиль».')}</p></div>`;
   return h;}
 function qAct(act,i){const Q=save.q;let up=0;
   if(act==='qlogin'&&!Q.lc){Q.lc=1;up=givePrize(loginPrize(((Q.streak||1)-1)%7));}
   if(act==='qday'){const q=Q.list[i];if(q&&q.p>=q.n&&!q.c){q.c=1;up=givePrize({m:q.m,r:q.r});}}
   if(act==='qweek'){const q=(Q.wl||[])[i];if(q&&q.p>=q.n&&!q.c){q.c=1;up=givePrize({m:q.m,r:q.r,paint:1});}}
   if(act==='qchest'&&!Q.chest&&Q.list.every(q=>q.p>=q.n)){Q.chest=1;up=givePrize({m:qBase()*3,r:qRep()*2,b:15});}
-  if(up){refreshMarkers();toast('Новый уровень '+up+'!');}
+  if(up){refreshMarkers();toast(TR('Новый уровень ')+up+'!');}
   persist();renderGarage();updateQBadge();}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&save&&save.q){if(qEnsure())persist();qVisit();updateQBadge();}});
 
@@ -5899,9 +6574,9 @@ function grantLevels(before,after){let b=0;for(let L=before+1;L<=after;L++)b+=le
 
 /* ---------- graphics quality ---------- */
 const GFX={
-  high:{name:'высокая',pr:1.75,bloom:true,shadow:2048,shadowR:85,rain:1400,traffic:18,streaks:true},
-  med:{name:'средняя',pr:1.25,bloom:true,shadow:1024,shadowR:60,rain:700,traffic:12,streaks:true},
-  low:{name:'низкая',pr:1,bloom:false,shadow:0,shadowR:0,rain:0,traffic:10,streaks:false}
+  high:{name:TR('высокая'),pr:1.75,bloom:true,shadow:2048,shadowR:85,rain:1400,traffic:18,streaks:true},
+  med:{name:TR('средняя'),pr:1.25,bloom:true,shadow:1024,shadowR:60,rain:700,traffic:12,streaks:true},
+  low:{name:TR('низкая'),pr:1,bloom:false,shadow:0,shadowR:0,rain:0,traffic:10,streaks:false}
 };
 if(!GFX[save.gfx])save.gfx=isTouch?'med':'high';
 let gfx=GFX[save.gfx];
@@ -6453,11 +7128,11 @@ function buildCitySigns(){
 function buildSigns(){
   buildCitySigns();signsBuilt=true;
   const g=nodePos(...GARAGE);
-  const tex=textCanvas(512,160,[{text:'ГАРАЖ',size:78,weight:900,font:UF,y:72,color:'#fff',glow:28},{text:'сохраняет REP',size:26,weight:800,font:MF,y:128,color:'#29e3ff'}],'#29e3ff',true);
+  const tex=textCanvas(512,160,[{text:TR('ГАРАЖ'),size:78,weight:900,font:UF,y:72,color:'#fff',glow:28},{text:TR('сохраняет REP'),size:26,weight:800,font:MF,y:128,color:'#29e3ff'}],'#29e3ff',true);
   const mat=new T.MeshBasicMaterial({map:tex,transparent:true,side:T.DoubleSide});signMats.push(mat);
   const bb=new T.Mesh(new T.PlaneGeometry(13,4),mat);bb.position.set(g.x+HALF+4,9,g.z-HALF-4);bb.rotation.y=-Math.PI/4;scene.add(bb);
   const pole=new T.Mesh(new T.CylinderGeometry(.2,.2,8,8),new T.MeshStandardMaterial({color:C('#333344'),metalness:.6,roughness:.4}));pole.position.set(g.x+HALF+4,4,g.z-HALF-4);pole.castShadow=true;scene.add(pole);
-  {const st=textCanvas(1024,200,[{text:'НЕОН-БЭЙ · ГАРАЖ',size:96,weight:900,font:UF,y:100,color:'#fff',glow:30}],'#ff2e88',false);
+  {const st=textCanvas(1024,200,[{text:TR('НЕОН-БЭЙ · ГАРАЖ'),size:96,weight:900,font:UF,y:100,color:'#fff',glow:30}],'#ff2e88',false);
    const sm=new T.Mesh(new T.PlaneGeometry(16,3.1),new T.MeshBasicMaterial({map:st,transparent:true,color:new T.Color(1.6,1.6,1.6)}));sm.position.set(-14,6.2,-14);sm.lookAt(SHOW.x,6.2,SHOW.z);sm.position.add(new T.Vector3(SHOW.x,0,SHOW.z));sm.lookAt(SHOW.x,6.2,SHOW.z);showroom.attach(sm);}
   setTime(state.time);
 }
@@ -6473,11 +7148,11 @@ function drawBadge(g,x,y,r,type,locked){
   else{g.fillStyle=ink;g.beginPath();g.moveTo(-r*.66,-r*.04);g.lineTo(0,-r*.62);g.lineTo(r*.66,-r*.04);g.closePath();g.fill();g.fillRect(-r*.52,-r*.06,r*1.04,r*.68);g.fillStyle=col;for(let i=0;i<3;i++)g.fillRect(-r*.36,r*.07+i*r*.18,r*.72,r*.08);}
   g.restore();
 }
-const shortN=n=>n>=1000?(Math.round(n/100)/10).toString().replace('.',',')+'к':String(n);
+const shortN=n=>n>=1000?(Math.round(n/100)/10).toString().replace('.',TR.en?'.':',')+TR('к'):String(n);
 const badgeCache={};
 function badgeURL(type,locked){const k=type+(locked?1:0);if(!badgeCache[k]){const c=document.createElement('canvas');c.width=c.height=56;drawBadge(c.getContext('2d'),28,28,24,type,locked);badgeCache[k]=c.toDataURL();}return badgeCache[k];}
 function labelTex(m){const ev=m.ev;const locked=ev&&levelOf(save.rep)<ev.lvl;
-  const l1=ev?ev.name:'Гараж';const l2=!ev?'машины · тюнинг · сохранить REP':locked?'нужен уровень '+ev.lvl:(save.won&&save.won[ev.id]?'✓ ':'')+(ev.time==='day'?'$'+fmt(ev.reward):fmt(ev.rep)+' REP');
+  const l1=ev?ev.name:TR('Гараж');const l2=!ev?TR('машины · тюнинг · сохранить REP'):locked?TR('нужен уровень ')+ev.lvl:(save.won&&save.won[ev.id]?'✓ ':'')+(ev.time==='day'?'$'+fmt(ev.reward):fmt(ev.rep)+' REP');
   return canvasTex(640,150,(g,w)=>{g.textAlign='left';g.textBaseline='middle';
     let fs=44;g.font='900 '+fs+'px '+UF;const mw=g.measureText(l1).width;if(mw>w-170){fs=Math.floor(fs*(w-170)/mw);g.font='900 '+fs+'px '+UF;}
     g.font='800 36px '+MF;const w2=g.measureText(l2).width;g.font='900 '+fs+'px '+UF;const pw=Math.min(w-8,150+Math.max(Math.min(mw,w-170),w2)+24);
@@ -6959,7 +7634,7 @@ function copControl(c,dt){
   return{gas,brake,steer,hand,nos:chase&&state.heat>=3&&Math.abs(diff)<.2&&dP>70};
 }
 const evadeNeed=()=>6+state.heat*2;
-const HEAT_NOTE=['','','полиция злее','блокпосты и шипы','вертолёт','полиция на пределе'];
+const HEAT_NOTE=['','',TR('полиция злее'),TR('блокпосты и шипы'),TR('вертолёт'),TR('полиция на пределе')];
 /* roadblocks with spike strips (heat 3+) */
 const roadblocks=[];let rbTimer=6;
 const spikeMat=new T.MeshStandardMaterial({vertexColors:true,metalness:.6,roughness:.4});
@@ -6990,7 +7665,7 @@ function updateRoadblocks(dt){
     const past=(P.x-rb.x)*rb.dx+(P.z-rb.z)*rb.dz;
     if(rb.t>50||past>140||(!pursuit.active&&rb.t>3)||Math.hypot(P.x-rb.x,P.z-rb.z)>600){removeRoadblock(i);continue;}
     if(!P.air){const rx=P.x-rb.sx,rz=P.z-rb.sz,al=rx*rb.dx+rz*rb.dz,la=rx*rb.px+rz*rb.pz;
-      if(Math.abs(al)<1.3&&Math.abs(la)<5.3){if(!(state.spikeT>0)){banner('ШИНЫ ПРОБИТЫ','4 секунды едешь медленнее','#ffb23e',1400);sfx('hit',14);state.shake=Math.min(1,state.shake+.5);}state.spikeT=4;}}
+      if(Math.abs(al)<1.3&&Math.abs(la)<5.3){if(!(state.spikeT>0)){banner(TR('ШИНЫ СДУЛИСЬ'),TR('4 секунды едешь медленнее'),'#ffb23e',1400);}state.spikeT=4;}}
   }
 }
 /* helicopter (heat 4+) */
@@ -7014,9 +7689,9 @@ function updateHeli(dt){
   heli.cd=Math.max(0,heli.cd-dt);const P=player.body;
   if(!heli.on&&pursuit.active&&state.heat>=4&&heli.cd<=0&&state.time==='night'){
     heli.on=true;heli.leaving=false;heli.fuel=20;const a=Math.random()*Math.PI*2;heli.x=P.x+Math.cos(a)*320;heli.z=P.z+Math.sin(a)*320;heli.y=80;
-    banner('ВЕРТОЛЁТ','пока он над тобой, оторваться нельзя','#29e3ff',2200);}
+    banner(TR('ВЕРТОЛЁТ'),TR('пока он над тобой, оторваться нельзя'),'#29e3ff',2200);}
   if(!heli.on){heliMesh.visible=false;heliBeam.visible=false;heliL.intensity=0;return;}
-  if(!heli.leaving){heli.fuel-=dt;if(heli.fuel<=0||!pursuit.active){heli.leaving=true;heli.cd=35;if(pursuit.active)banner('ВЕРТОЛЁТ УЛЕТЕЛ','на дозаправку · уходи!','#29e3ff',2000);}}
+  if(!heli.leaving){heli.fuel-=dt;if(heli.fuel<=0||!pursuit.active){heli.leaving=true;heli.cd=35;if(pursuit.active)banner(TR('ВЕРТОЛЁТ УЛЕТЕЛ'),TR('на дозаправку · уходи!'),'#29e3ff',2000);}}
   let tx,ty,tz;
   if(heli.leaving){tx=heli.x+Math.sin(heli.h)*400;tz=heli.z+Math.cos(heli.h)*400;ty=140;}
   else{tx=P.x+Math.sin(P.h)*24;tz=P.z+Math.cos(P.h)*24;ty=34;}
@@ -7031,16 +7706,16 @@ function updateHeli(dt){
   if(heli.leaving&&Math.hypot(heli.x-P.x,heli.z-P.z)>520){heli.on=false;}
 }
 function clearHeli(){heli.on=false;heli.leaving=false;heli.cd=0;heliMesh.visible=false;heliBeam.visible=false;heliL.intensity=0;}
-function startPursuit(){if(pursuit.active)return;pursuit.active=true;pursuit.bust=0;pursuit.evade=0;pursuit.time=0;pursuit.age=0;for(const c of cops)c.state='chase';banner('ПОГОНЯ','оторвись от полиции','#ff4d5e',2200);}
+function startPursuit(){if(pursuit.active)return;pursuit.active=true;pursuit.bust=0;pursuit.evade=0;pursuit.time=0;pursuit.age=0;for(const c of cops)c.state='chase';banner(TR('ПОГОНЯ'),TR('оторвись от полиции'),'#ff4d5e',2200);}
 function saveNight(){save.night=state.nightRep>0?{rep:Math.round(state.nightRep),heat:state.heat}:null;persist();}
 const lvlF=()=>1+levelOf(save.rep)/20;
-function escape(){qProg('escape',1);if(heli.on&&!heli.leaving){heli.leaving=true;heli.cd=35;}const r=Math.round(400*state.heat*lvlF());state.nightRep+=r;saveNight();pursuit.active=false;pursuit.immune=9;pursuit.bust=0;pursuit.evade=0;for(const c of cops)c.state='patrol';banner('УШЁЛ','+'+fmt(r)+' REP за ночь','#29e3ff',2600);}
+function escape(){qProg('escape',1);if(heli.on&&!heli.leaving){heli.leaving=true;heli.cd=35;}const r=Math.round(400*state.heat*lvlF());state.nightRep+=r;saveNight();pursuit.active=false;pursuit.immune=9;pursuit.bust=0;pursuit.evade=0;for(const c of cops)c.state='patrol';banner(TR('УШЁЛ'),'+'+fmt(r)+TR(' REP за ночь'),'#29e3ff',2600);}
 function busted(){
   const fine=Math.min(Math.round(save.money*.04*state.heat/50)*50,Math.round(600*state.heat*(1+levelOf(save.rep)/25)/50)*50),night=Math.round(state.nightRep),kept=Math.round(night*.5),lost=night-kept;
   const before=levelOf(save.rep);save.money-=fine;save.rep+=kept;state.nightRep=0;save.night=null;persist();pursuit.active=false;
   const after=levelOf(save.rep),un=[];for(let L=before+1;L<=after;L++)un.push(...unlocksAt(L));if(grantLevels(before,after))persist();
   if(state.race)endRace();
-  banner('ПОЙМАН','штраф $'+fmt(fine)+(night>0?' · засчитано '+fmt(kept)+' REP из '+fmt(night):''),'#ff4d5e',2600);
+  banner(TR('ОСТАНОВЛЕН ПАТРУЛЁМ'),TR('штраф $')+fmt(fine)+(night>0?TR(' · засчитано ')+fmt(kept)+TR(' REP из ')+fmt(night):''),'#ff4d5e',2600);
   state.mode='busted';
   setTimeout(()=>{openGarage({kind:'busted',fine,lost,kept,up:after>before?after:0,un});},2300);
 }
@@ -7057,7 +7732,7 @@ function updatePolice(dt){
     return;
   }
   pursuit.time+=dt;state.nightRep+=dt*6*state.heat*lvlF();
-  if(pursuit.time>45&&state.heat<5){state.heat++;qProg('heat',state.heat);pursuit.time=0;banner('ЖАР '+state.heat,HEAT_NOTE[state.heat]||'полиция злее','#ffb23e',1800);}
+  if(pursuit.time>45&&state.heat<5){state.heat++;qProg('heat',state.heat);pursuit.time=0;banner(TR('ПАТРУЛЬ ')+state.heat,HEAT_NOTE[state.heat]||TR('полиция злее'),'#ffb23e',1800);}
   let seen=false,near=false;
   for(const c of cops){const d=dist2(c.body,P);if(d<70||(d<230&&los(c.body,P)))seen=true;if(d<13)near=true;}
   pursuit.age+=dt;if(pursuit.age<4)seen=true;if(heli.on&&!heli.leaving)seen=true;
@@ -7087,7 +7762,7 @@ function startRace(ev){
     a.car=makeCar(model,{color:r.c,finish:pick(['gloss','metallic','pearl']),rimStyle:Math.floor(Math.random()*5)},'ai');return a;});
   state.race={ev,seq,cum,k:0,t:0,count:ev.count||3.6,lastBeep:4,ais,finished:[],pProg:0};
   state.gps=null;gate.visible=true;updateGates();snapCam();
-  banner(ev.name,ev.type==='circuit'?'круги: '+ev.laps:'спринт','#fff',1600);
+  banner(ev.name,ev.type==='circuit'?TR('круги: ')+ev.laps:TR('спринт'),'#fff',1600);
 }
 function updateGates(){const r=state.race;if(!r){gate.visible=gate2.visible=false;return;}
   const set=(g,k)=>{if(k>=r.seq.length){g.visible=false;return;}const p=r.seq[k],q=k>0?r.seq[k-1]:nodePos(...r.ev.route[0]);g.visible=true;g.position.set(p.x,.2,p.z);g.rotation.set(0,Math.atan2(p.x-q.x,p.z-q.z),0);};
@@ -7120,7 +7795,7 @@ function updateAI(r,a,dt){
 function updateRace(dt){
   const r=state.race;if(!r)return;
   if(r.count>0){r.count-=dt;const n=Math.ceil(r.count);if(n<r.lastBeep&&n>0){r.lastBeep=n;banner(String(n),'','#fff',700);sfx('beep',520);}
-    if(r.count<=0){banner('ГАЗ!','','#3dffa8',900);sfx('beep',1040);}
+    if(r.count<=0){banner(TR('ГАЗ!'),'','#3dffa8',900);sfx('beep',1040);}
     for(const a of r.ais)syncCar(a.car,a.x,a.z,a.h,0,0,0,dt);return;}
   r.t+=dt;
   const P=player.body;
@@ -7132,19 +7807,20 @@ function finishRace(){
   const r=state.race,ev=r.ev;r.pDone=true;
   const place=1+r.finished.length,mult=[1,.6,.35,.15][place-1];if(place===1){if(!save.won)save.won={};save.won[ev.id]=1;}
   const rest=r.ais.filter(a=>!a.done).sort((a,b)=>b.prog-a.prog);
-  const order=[...r.finished.map(a=>({n:a.name,t:a.time})),{n:'Ты',t:r.t,me:true},...rest.map(a=>({n:a.name,t:null}))];
+  const order=[...r.finished.map(a=>({n:a.name,t:a.time})),{n:TR('Ты'),t:r.t,me:true},...rest.map(a=>({n:a.name,t:null}))];
   let reward='',note='';
-  if(ev.time==='day'){const bx=boostOn()?2:1,cash=Math.round(ev.reward*mult*bx/50)*50;save.money+=cash;persist();reward='+$'+fmt(cash)+(bx>1?' (×2 бонус)':'');note='Деньги уже на счету. Потрать их в гараже.';qProg('money',cash);state.prize={day:true,amt:cash,used:false};}
-  else{const rep=Math.round(ev.rep*mult/10)*10;state.nightRep+=rep;state.prize={day:false,amt:rep,used:false};const before=state.heat;state.heat=Math.min(5,state.heat+1);saveNight();reward='+'+fmt(rep)+' REP за ночь';
-    note='Жар '+before+' → '+state.heat+(HEAT_NOTE[state.heat]&&state.heat>=3?' ('+HEAT_NOTE[state.heat]+')':'')+'. REP не сохранён, пока ты не доедешь до гаража.'+(state.heat>=3?' Полиция уже едет.':'');}
-  if(ev===TUT_EV){save.tut=1;persist();state.tutDone=true;note='Деньги уже на счету. Дальше — гараж: там машины и тюнинг. Голубая линия покажет дорогу.';}
+  if(ev.time==='day'){const bx=boostOn()?2:1,cash=Math.round(ev.reward*mult*bx/50)*50;save.money+=cash;persist();reward='+$'+fmt(cash)+(bx>1?TR(' (×2 бонус)'):'');note=TR('Деньги уже на счету. Потрать их в гараже.');qProg('money',cash);state.prize={day:true,amt:cash,used:false};}
+  else{const rep=Math.round(ev.rep*mult/10)*10;state.nightRep+=rep;state.prize={day:false,amt:rep,used:false};const before=state.heat;state.heat=Math.min(5,state.heat+1);saveNight();reward='+'+fmt(rep)+TR(' REP за ночь');
+    note=TR('Внимание патруля ')+before+' → '+state.heat+(HEAT_NOTE[state.heat]&&state.heat>=3?' ('+HEAT_NOTE[state.heat]+')':'')+TR('. REP не сохранён, пока ты не доедешь до гаража.')+(state.heat>=3?TR(' Полиция уже едет.'):'');}
+  if(ev===TUT_EV){save.tut=1;persist();state.tutDone=true;note=TR('Деньги уже на счету. Дальше — гараж: там машины и тюнинг. Голубая линия покажет дорогу.');}
   qProg('race',1);if(place<=3)qProg('podium',1);if(place===1)qProg(ev.time==='day'?'winDay':'winNight',1);if(ev.time==='night')qProg('heat',state.heat);
   endRace();
   const ft=t=>{const m=Math.floor(t/60),s=(t%60).toFixed(1).padStart(4,'0');return m+':'+s;};
-  $('#rName').textContent=ev.name;$('#rPlace').textContent=place+' место из 4';
+  $('#rName').textContent=ev.name;$('#rPlace').textContent=place+TR(' место из 4');
   $('#rList').innerHTML=order.map((o,i)=>`<div class="pl${o.me?' me':''}"><span>${i+1}</span><span>${o.n}</span><span>${o.t!=null?ft(o.t):'—'}</span></div>`).join('');
   $('#rReward').textContent=reward;$('#rReward').style.color=ev.time==='day'?'var(--sun)':'var(--pink)';$('#rNote').textContent=note;
-  $('#rX2Row').hidden=!(PLAT.canReward()&&state.prize&&state.prize.amt>0);$('#rX2').disabled=false;
+  $('#rX2Row').hidden=!(canGetReward()&&state.prize&&state.prize.amt>0);$('#rX2').disabled=false;
+  $('#rX2').textContent=pmFreeNow()?TR('★ Удвоить награду · Премиум ')+pmLeft()+'/'+PM_FREE:TR('▶ Удвоить награду за рекламу');
   state.mode='result';showOnly('result');
 }
 function endRace(){const r=state.race;if(!r)return;for(const a of r.ais)removeCar(a.car);state.race=null;updateGates();}
@@ -7165,64 +7841,65 @@ function openGarage(info){
   state.ginfo=info||null;state.mode='garage';if(info&&info.up)state.gTab='levels';else if(!state.qShown&&qClaimable()>0){state.qShown=true;state.gTab='tasks';}
   {const want=bestCity(levelOf(save.rep)),wi=CITIES.indexOf(want);if(wi>(save.cityMax||0)){save.cityMax=wi;persist();switchCity(want.id);state.ginfo=Object.assign({},state.ginfo||{},{newCity:want.name});state.gTab='cities';}}
   showOnly('garage');renderGarage();refreshMarkers();
-  if(fromMode==='drive'||fromMode==='pause')PLAT.interstitial();   // полноэкранная реклама только при въезде в гараж с улицы (логическая пауза)
+  if(fromMode==='drive'||fromMode==='pause')PLAT.interstitial(()=>{if(state.mode==='garage')setTimeout(()=>{if(state.mode==='garage')pmCard();},500);});   // полноэкранная реклама только при въезде в гараж с улицы (логическая пауза); после неё — карточка Премиума, если пора
 }
-const plural=(n,a,b,c)=>{const m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c;};
-function sumUn(un){const cars=un.filter(u=>u.t==='car').map(u=>u.s.replace('Машина: ',''));const races=un.filter(u=>u.t==='races').reduce((a,u)=>a+u.n,0);
-  return[cars.length?(cars.length>1?'машины ':'машина ')+cars.join(' и '):'',races?races+' '+plural(races,'новая гонка','новые гонки','новых гонок'):'',un.some(u=>u.t==='style')?'новые варианты стиля':'',un.some(u=>u.t==='tune')?'новая ступень тюнинга':'',(()=>{const r=un.filter(u=>u.t==='rank').pop();return r?r.s.toLowerCase():'';})(),(()=>{const b=un.filter(u=>u.t==='bonus').reduce((a,u)=>a+Number(u.s.replace(/\D/g,'')),0);return b?'бонус $'+fmt(b):'';})()].filter(Boolean).join(', ');}
+const plural=(n,a,b,c)=>{if(TR.en)return n===1?a:b;const m=n%10,h=n%100;return m===1&&h!==11?a:m>=2&&m<=4&&(h<12||h>14)?b:c;};
+function sumUn(un){const cars=un.filter(u=>u.t==='car').map(u=>u.s.replace(TR('Машина: '),''));const races=un.filter(u=>u.t==='races').reduce((a,u)=>a+u.n,0);
+  return[cars.length?(cars.length>1?TR('машины '):TR('машина '))+cars.join(TR(' и ')):'',races?races+' '+plural(races,TR('новая гонка'),TR('новые гонки'),TR('новых гонок')):'',un.some(u=>u.t==='style')?TR('новые варианты стиля'):'',un.some(u=>u.t==='tune')?TR('новая ступень тюнинга'):'',(()=>{const r=un.filter(u=>u.t==='rank').pop();return r?r.s.toLowerCase():'';})(),(()=>{const b=un.filter(u=>u.t==='bonus').reduce((a,u)=>a+Number(u.s.replace(/\D/g,'')),0);return b?TR('бонус $')+fmt(b):'';})()].filter(Boolean).join(', ');}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function renderGarage(){
   const lvl=levelOf(save.rep),next=LEVELS[lvl]??null,prev=LEVELS[lvl-1];
-  $('#gMoney').textContent='$'+fmt(save.money);{const es=lvlEvents(lvl),w=es.filter(e=>save.won&&save.won[e.id]).length;$('#gLvl').textContent='Уровень '+lvl+' · '+rankOf(lvl).n+(lvl>=MAXLVL?' (максимум)':'')+' · '+CUR_CITY.name+' · гонки '+w+'/'+es.length;}
+  $('#gMoney').textContent='$'+fmt(save.money);{const es=lvlEvents(lvl),w=es.filter(e=>save.won&&save.won[e.id]).length;$('#gLvl').textContent=TR('Уровень ')+lvl+' · '+rankOf(lvl).n+(lvl>=MAXLVL?TR(' (максимум)'):'')+' · '+CUR_CITY.name+TR(' · гонки ')+w+'/'+es.length;}
   $('#gRep').textContent=fmt(save.rep)+(next?' / '+fmt(next):'')+' REP';
   $('#gLvlBar').style.width=(next?clamp((save.rep-prev)/(next-prev),0,1)*100:100)+'%';
   const gi=state.ginfo,nt=$('#gNotice');
-  if(gi&&gi.kind==='bank'){nt.hidden=false;nt.className='notice';nt.style.setProperty('--c','var(--ok)');nt.innerHTML='Ночь сохранена: '+fmt(gi.raw)+' REP × '+gi.mult+' = '+fmt(gi.gained)+' REP.'+(gi.up?'<br>Новый уровень '+gi.up+'! Открыто: '+esc(sumUn(gi.un))+'. Подробно во вкладке «Уровни».':'');}
+  if(gi&&gi.kind==='bank'){nt.hidden=false;nt.className='notice';nt.style.setProperty('--c','var(--ok)');nt.innerHTML=TR('Ночь сохранена: ')+fmt(gi.raw)+' REP × '+gi.mult+' = '+fmt(gi.gained)+' REP.'+(gi.up?TR('<br>Новый уровень ')+gi.up+TR('! Открыто: ')+esc(sumUn(gi.un))+TR('. Подробно во вкладке «Уровни».'):'');}
   else if(gi&&gi.kind==='busted'){nt.hidden=false;nt.className='notice';nt.style.setProperty('--c','var(--danger)');
-    nt.innerHTML='Арест. Штраф $'+fmt(gi.fine)+'.'+(gi.rescued?' REP за ночь спасён рекламой: засчитано +'+fmt(gi.kept)+'.':gi.kept>0?' Засчитана половина REP за ночь: +'+fmt(gi.kept)+', потеряно '+fmt(gi.lost)+'.':'')+(gi.up?'<br>Новый уровень '+gi.up+'! Открыто: '+esc(sumUn(gi.un))+'.':'')
-      +(!gi.rescued&&gi.lost>0&&PLAT.canReward()?'<br><button class="btn small primary" id="gRescue" style="margin-top:8px">▶ Вернуть '+fmt(gi.lost)+' REP за рекламу</button>':'');
-    const rb=$('#gRescue');if(rb)rb.onclick=()=>{rb.disabled=true;PLAT.rewarded(got=>{rb.disabled=false;if(!got||gi.rescued)return;
+    nt.innerHTML=TR('Остановлен патрулём. Штраф $')+fmt(gi.fine)+'.'+(gi.rescued?TR(' REP за ночь спасён рекламой: засчитано +')+fmt(gi.kept)+'.':gi.kept>0?TR(' Засчитана половина REP за ночь: +')+fmt(gi.kept)+TR(', потеряно ')+fmt(gi.lost)+'.':'')+(gi.up?TR('<br>Новый уровень ')+gi.up+TR('! Открыто: ')+esc(sumUn(gi.un))+'.':'')
+      +(!gi.rescued&&gi.lost>0&&canGetReward()?(pmFreeNow()?TR('<br><button class="btn small primary" id="gRescue" style="margin-top:8px">★ Вернуть ')+fmt(gi.lost)+TR(' REP · Премиум ')+pmLeft()+'/'+PM_FREE+'</button>'
+        :TR('<br><button class="btn small primary" id="gRescue" style="margin-top:8px">▶ Вернуть ')+fmt(gi.lost)+TR(' REP за рекламу</button>')):'');
+    const rb=$('#gRescue');if(rb)rb.onclick=()=>{rb.disabled=true;getReward(got=>{rb.disabled=false;if(!got||gi.rescued)return;
       const before=levelOf(save.rep);save.rep+=gi.lost;const after=levelOf(save.rep);grantLevels(before,after);persist();
       gi.rescued=true;gi.kept+=gi.lost;gi.lost=0;if(after>before){gi.up=after;gi.un=[];for(let L=before+1;L<=after;L++)gi.un.push(...unlocksAt(L));}
       sfx('beep',1040);renderGarage();refreshMarkers();});};}
   else nt.hidden=true;
-  if(gi&&gi.newCity){if(nt.hidden){nt.hidden=false;nt.className='notice';nt.style.setProperty('--c','var(--cyan)');nt.innerHTML='';}nt.innerHTML+=(nt.innerHTML?'<br>':'')+'Новый город: <b>'+esc(gi.newCity)+'</b>! Гонки твоего уровня теперь здесь. Старые города можно выбрать во вкладке «Города».';}
+  if(gi&&gi.newCity){if(nt.hidden){nt.hidden=false;nt.className='notice';nt.style.setProperty('--c','var(--cyan)');nt.innerHTML='';}nt.innerHTML+=(nt.innerHTML?'<br>':'')+TR('Новый город: <b>')+esc(gi.newCity)+TR('</b>! Гонки твоего уровня теперь здесь. Старые города можно выбрать во вкладке «Города».');}
   document.querySelectorAll('#garage .tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===state.gTab));
   let h='';
   if(state.gTab==='cars'){
-    let lastL=0;for(const c of CARS){if(c.lvl!==lastL){lastL=c.lvl;h+=`<div class="sub" style="margin-top:8px;color:${lvl>=c.lvl?'var(--cyan)':'var(--muted)'}">Уровень ${c.lvl}${lvl>=c.lvl?'':' · закрыт'}</div>`;}const own=!!save.owned[c.id],cur=save.car===c.id,locked=lvl<c.lvl,st=carStats(c.id);
-      let act;if(cur)act='<span class="sub" style="color:var(--cyan)">Твоя</span>';else if(own)act=`<button class="btn small primary" data-act="sel" data-id="${c.id}">Выбрать</button>`;
-      else if(locked)act=`<span class="sub">Уровень ${c.lvl}</span>`;else act=`<button class="btn small ${save.money>=c.price?'primary':''}" data-act="buy" data-id="${c.id}" ${save.money<c.price?'disabled':''}>Купить $${fmt(c.price)}</button>`;
-      const view=cur?'':`<button class="btn small" data-act="view" data-id="${c.id}">${state.preview===c.id?'Смотришь':'Смотреть'}</button>`;
+    let lastL=0;for(const c of CARS){if(c.lvl!==lastL){lastL=c.lvl;h+=`<div class="sub" style="margin-top:8px;color:${lvl>=c.lvl?'var(--cyan)':'var(--muted)'}">${TR('Уровень')} ${c.lvl}${lvl>=c.lvl?'':TR(' · закрыт')}</div>`;}const own=!!save.owned[c.id],cur=save.car===c.id,locked=lvl<c.lvl,st=carStats(c.id);
+      let act;if(cur)act=TR('<span class="sub" style="color:var(--cyan)">Твоя</span>');else if(own)act=`<button class="btn small primary" data-act="sel" data-id="${c.id}">${TR('Выбрать')}</button>`;
+      else if(locked)act=`<span class="sub">${TR('Уровень')} ${c.lvl}</span>`;else act=`<button class="btn small ${save.money>=c.price?'primary':''}" data-act="buy" data-id="${c.id}" ${save.money<c.price?'disabled':''}>${TR('Купить $')}${fmt(c.price)}</button>`;
+      const view=cur?'':`<button class="btn small" data-act="view" data-id="${c.id}">${state.preview===c.id?TR('Смотришь'):TR('Смотреть')}</button>`;
       const zero=(27.8/(st.accel*.82)).toFixed(1);
-      h+=`<div class="gcar${cur?' cur':''}${locked?' locked':''}${state.preview===c.id?' prev':''}"><div class="nm">${c.name}</div><div class="acts">${view}${act}</div><div class="tagl">${c.tag} · ур. ${c.lvl}${c.price&&!own?' · $'+fmt(c.price):''}</div><div class="stats">
-      <span>Скорость</span><div class="b"><i style="width:${clamp((st.top-45)/75,0,1)*100}%"></i></div><span>${Math.round(st.top*3.6)} км/ч</span>
-      <span>Разгон</span><div class="b"><i style="width:${clamp((st.accel-8)/26,0,1)*100}%"></i></div><span>0–100 ${zero} с</span>
-      <span>Управление</span><div class="b"><i style="width:${clamp((st.handling-2)/1.3,0,1)*100}%"></i></div><span>${Math.round(st.handling*40)}</span></div></div>`;}
+      h+=`<div class="gcar${cur?' cur':''}${locked?' locked':''}${state.preview===c.id?' prev':''}"><div class="nm">${c.name}</div><div class="acts">${view}${act}</div><div class="tagl">${c.tag} ${TR('· ур.')} ${c.lvl}${c.price&&!own?' · $'+fmt(c.price):''}</div><div class="stats">
+      <span>${TR('Скорость')}</span><div class="b"><i style="width:${clamp((st.top-45)/75,0,1)*100}%"></i></div><span>${Math.round(st.top*3.6)} ${TR('км/ч')}</span>
+      <span>${TR('Разгон')}</span><div class="b"><i style="width:${clamp((st.accel-8)/26,0,1)*100}%"></i></div><span>0–100 ${zero} ${TR('с')}</span>
+      <span>${TR('Управление')}</span><div class="b"><i style="width:${clamp((st.handling-2)/1.3,0,1)*100}%"></i></div><span>${Math.round(st.handling*40)}</span></div></div>`;}
   }else if(state.gTab==='tune'){
     const c=carById(save.car),u=save.owned[c.id];
-    h+=`<p>Тюнинг для: <b style="color:var(--text)">${c.name}</b></p>`;
+    h+=`<p>${TR('Тюнинг для:')} <b style="color:var(--text)">${c.name}</b></p>`;
     for(const g of UPG){const l=u[g.k],max=l>=UPG_MAX,price=upgPrice(c,l),need=max?0:UPG_LVL[l],gated=lvl<need;
       h+=`<div class="upg"><div class="nm">${g.name} <span class="sub">${l}/${UPG_MAX}</span></div><div class="pips p10">${Array.from({length:UPG_MAX},(_,i)=>`<i class="${i<l?'on':''}${UPG_LVL[i]>lvl?' lk':''}"></i>`).join('')}</div><div class="d">${g.d}</div>
-      <div>${max?'<span class="sub">Максимум</span>':gated?`<span class="sub">Ступень ${l+1}: ур. ${need}</span>`:`<button class="btn small ${save.money>=price?'primary':''}" data-act="upg" data-k="${g.k}" ${save.money<price?'disabled':''}>$${fmt(price)}</button>`}</div></div>`;}
+      <div>${max?TR('<span class="sub">Максимум</span>'):gated?`<span class="sub">${TR('Ступень')} ${l+1}${TR(': ур.')} ${need}</span>`:`<button class="btn small ${save.money>=price?'primary':''}" data-act="upg" data-k="${g.k}" ${save.money<price?'disabled':''}>$${fmt(price)}</button>`}</div></div>`;}
   }else if(state.gTab==='style'){
     const c=carById(save.car),st=styleOf(c.id);
-    h+=`<div class="sub">Цвет кузова</div><div class="sws">${PAINTS.map(p=>`<button class="sw${p===st.color?' on':''}" style="background:${p}" data-act="paint" data-c="${p}" aria-label="Цвет ${p}"></button>`).join('')}${PAINTS_X.map(q=>`<button class="sw${q.c===st.color?' on':''}" style="background:${q.c}" data-act="paint" data-c="${q.c}" ${lvl<q.lvl?'disabled':''} title="${lvl<q.lvl?'Уровень '+q.lvl:'Эксклюзив'}" aria-label="Эксклюзивный цвет ${q.c}${lvl<q.lvl?', уровень '+q.lvl:''}"></button>`).join('')}${QPAINTS.map(q=>{const own=save.q&&save.q.paints&&save.q.paints.includes(q.c);return `<button class="sw${q.c===st.color?' on':''}" style="background:${q.c}" data-act="paint" data-c="${q.c}" ${own?'':'disabled'} title="${own?'Награда: '+q.n:'За задания: '+q.n}" aria-label="Краска ${q.n}${own?'':', за задания'}"></button>`;}).join('')}</div>
-    <div class="sub" style="margin-top:8px">Покрытие</div><div class="opt">${FINISHES.map(f=>`<button class="pill${f.id===st.finish?' on':''}" data-act="finish" data-c="${f.id}" ${lvl<f.lvl?'disabled':''}>${f.name}${lvl<f.lvl?' · ур. '+f.lvl:''}</button>`).join('')}</div>
-    <div class="sub" style="margin-top:8px">Диски</div><div class="opt">${RIMS.map((r,i)=>`<button class="pill${i===st.rim?' on':''}" data-act="rim" data-c="${i}" ${lvl<r.lvl?'disabled':''}>${r.name}${lvl<r.lvl?' · ур. '+r.lvl:''}</button>`).join('')}</div>
-    <div class="sws" style="margin-top:4px">${RIMCOL.map(p=>`<button class="sw${p===st.rimColor?' on':''}" style="background:${p};width:28px;height:28px" data-act="rimc" data-c="${p}" aria-label="Цвет дисков ${p}"></button>`).join('')}</div>
-    <div class="sub" style="margin-top:8px">Подсветка днища</div><div class="sws">${GLOWS.map(g=>`<button class="sw${g.c===save.glow?' on':''}${g.c==='off'?' off':''}" style="${g.c!=='off'?'background:'+g.c:''}" data-act="glow" data-c="${g.c}" ${lvl<g.lvl?'disabled':''} aria-label="${g.c==='off'?'Без подсветки':'Подсветка '+g.c}"></button>`).join('')}</div>`;
+    h+=`<div class="sub">${TR('Цвет кузова')}</div><div class="sws">${PAINTS.map(p=>`<button class="sw${p===st.color?' on':''}" style="background:${p}" data-act="paint" data-c="${p}" aria-label="${TR('Цвет')} ${p}"></button>`).join('')}${PAINTS_X.map(q=>`<button class="sw${q.c===st.color?' on':''}" style="background:${q.c}" data-act="paint" data-c="${q.c}" ${lvl<q.lvl?'disabled':''} title="${lvl<q.lvl?TR('Уровень ')+q.lvl:TR('Эксклюзив')}" aria-label="${TR('Эксклюзивный цвет')} ${q.c}${lvl<q.lvl?TR(', уровень ')+q.lvl:''}"></button>`).join('')}${QPAINTS.map(q=>{const own=save.q&&save.q.paints&&save.q.paints.includes(q.c);return `<button class="sw${q.c===st.color?' on':''}" style="background:${q.c}" data-act="paint" data-c="${q.c}" ${own?'':'disabled'} title="${own?TR('Награда: ')+q.n:TR('За задания: ')+q.n}" aria-label="${TR('Краска')} ${q.n}${own?'':TR(', за задания')}"></button>`;}).join('')}</div>
+    <div class="sub" style="margin-top:8px">${TR('Покрытие')}</div><div class="opt">${FINISHES.map(f=>`<button class="pill${f.id===st.finish?' on':''}" data-act="finish" data-c="${f.id}" ${lvl<f.lvl?'disabled':''}>${f.name}${lvl<f.lvl?TR(' · ур. ')+f.lvl:''}</button>`).join('')}</div>
+    <div class="sub" style="margin-top:8px">${TR('Диски')}</div><div class="opt">${RIMS.map((r,i)=>`<button class="pill${i===st.rim?' on':''}" data-act="rim" data-c="${i}" ${lvl<r.lvl?'disabled':''}>${r.name}${lvl<r.lvl?TR(' · ур. ')+r.lvl:''}</button>`).join('')}</div>
+    <div class="sws" style="margin-top:4px">${RIMCOL.map(p=>`<button class="sw${p===st.rimColor?' on':''}" style="background:${p};width:28px;height:28px" data-act="rimc" data-c="${p}" aria-label="${TR('Цвет дисков')} ${p}"></button>`).join('')}</div>
+    <div class="sub" style="margin-top:8px">${TR('Подсветка днища')}</div><div class="sws">${GLOWS.map(g=>`<button class="sw${g.c===save.glow?' on':''}${g.c==='off'?' off':''}" style="${g.c!=='off'?'background:'+g.c:''}" data-act="glow" data-c="${g.c}" ${lvl<g.lvl?'disabled':''} aria-label="${g.c==='off'?TR('Без подсветки'):TR('Подсветка ')+g.c}"></button>`).join('')}</div>`;
   }else if(state.gTab==='tasks'){
     h+=renderTasks();
   }else if(state.gTab==='cities'){
-    h+=`<p>Каждые 10 уровней открывается новый город. Гонки твоего уровня можно проезжать в любом открытом городе.</p>`;
+    h+=`<p>${TR('Каждые 10 уровней открывается новый город. Гонки твоего уровня можно проезжать в любом открытом городе.')}</p>`;
     CITIES.forEach((c,i)=>{const ready=cityReady(c),open=lvl>=c.lvl&&ready,cur=c===CUR_CITY,to=CITIES[i+1]?CITIES[i+1].lvl-1:MAXLVL;
-      h+=`<div class="gcar${cur?' cur':''}${open?'':' locked'}"><div class="nm">${esc(c.name)}</div><div class="acts">${cur?'<span class="sub" style="color:var(--cyan)">Ты здесь</span>':open?`<button class="btn small primary" data-act="city" data-id="${c.id}">Поехать</button>`:!ready?'<span class="sub">Скоро</span>':`<span class="sub">Уровень ${c.lvl}</span>`}</div><div class="tagl">Уровни ${c.lvl}–${to}</div></div>`;});
+      h+=`<div class="gcar${cur?' cur':''}${open?'':' locked'}"><div class="nm">${esc(c.name)}</div><div class="acts">${cur?TR('<span class="sub" style="color:var(--cyan)">Ты здесь</span>'):open?`<button class="btn small primary" data-act="city" data-id="${c.id}">${TR('Поехать')}</button>`:!ready?TR('<span class="sub">Скоро</span>'):`<span class="sub">${TR('Уровень')} ${c.lvl}</span>`}</div><div class="tagl">${TR('Уровни')} ${c.lvl}–${to}</div></div>`;});
   }else{
-    h+=`<p>Всего ${MAXLVL} уровней и ${EVENTS.length} гонок: на каждом уровне 10 своих (5 днём, 5 ночью). REP зарабатывается ночью и сохраняется в гараже. За каждый новый уровень — денежный бонус. Чем выше уровень, тем быстрее соперники и больше награды.</p>`;
-    for(let L=1;L<=MAXLVL;L++){const rk=RANKS.find(r=>r.lvl===L);if(rk)h+=`<div class="lvr${lvl>=L?' on':''}">${esc(rk.n)}<span>ур. ${L}${L<MAXLVL?'+':''}</span></div>`;
+    h+=`<p>${TR('Всего')} ${MAXLVL} ${TR('уровней и')} ${EVENTS.length} ${TR('гонок: на каждом уровне 10 своих (5 днём, 5 ночью). REP зарабатывается ночью и сохраняется в гараже. За каждый новый уровень — денежный бонус. Чем выше уровень, тем быстрее соперники и больше награды.')}</p>`;
+    for(let L=1;L<=MAXLVL;L++){const rk=RANKS.find(r=>r.lvl===L);if(rk)h+=`<div class="lvr${lvl>=L?' on':''}">${esc(rk.n)}<span>${TR('ур.')} ${L}${L<MAXLVL?'+':''}</span></div>`;
       const un=unlocksAt(L),cls=L<lvl?'open':L===lvl?'open cur':'lock';
-      h+=`<div class="lv ${cls}"${L===lvl?' id="lvCur"':''}><div class="n">${L}</div><div class="h">${L<=lvl?'Открыт':'Закрыт'}<span>${fmt(LEVELS[L-1])} REP</span></div><div class="tags">${un.map(u=>`<span class="tg" style="--c:${u.c}">${esc(u.s)}</span>`).join('')||'<span class="tg">Старт</span>'}</div></div>`;}
+      h+=`<div class="lv ${cls}"${L===lvl?' id="lvCur"':''}><div class="n">${L}</div><div class="h">${L<=lvl?TR('Открыт'):TR('Закрыт')}<span>${fmt(LEVELS[L-1])} REP</span></div><div class="tags">${un.map(u=>`<span class="tg" style="--c:${u.c}">${esc(u.s)}</span>`).join('')||TR('<span class="tg">Старт</span>')}</div></div>`;}
   }
   $('#gBody').innerHTML=h;
   if(state.gTab==='levels'&&!state.lvScrolled){state.lvScrolled=true;const c=document.getElementById('lvCur');if(c&&c.scrollIntoView)try{c.scrollIntoView({block:'center'});}catch(e){}}
@@ -7256,10 +7933,10 @@ function leaveGarage(t){
   for(const ev of lvlEvents(lvl)){if(ev.time!==t)continue;const d=dist2(player.body,nodePos(...ev.route[0]))+(save.won[ev.id]?5000:0);if(d<bd){bd=d;best=ev;}}
   state.gps=best?{node:best.route[0]}:null;state.hintEv=best;
   state.mode='drive';showOnly('hud');state.hintT=25;
-  banner(CUR_CITY.name.toUpperCase()+' · '+(t==='day'?'ДЕНЬ':'НОЧЬ'),t==='day'?'деньги дают за гонки · следуй за голубой линией':(state.raining?'дождь · ':'')+'гонки за REP · полиция на улицах',t==='day'?'#ffb23e':'#ff2e88',2600);
+  banner(CUR_CITY.name.toUpperCase()+' · '+(t==='day'?TR('ДЕНЬ'):TR('НОЧЬ')),t==='day'?TR('деньги дают за гонки · следуй за голубой линией'):(state.raining?TR('дождь · '):'')+TR('гонки за REP · полиция на улицах'),t==='day'?'#ffb23e':'#ff2e88',2600);
 }
 /* ---------- quick start: a brand-new player goes straight from the title to a short first race; the garage comes after ---------- */
-const TUT_EV={id:'tut',time:'day',type:'sprint',name:'Первый заезд',route:[[2,6],[4,6]],lvl:1,tier:1,reward:2500,rep:0,pole:true,aiAccel:6,count:2.6,clear:220,get ai(){return .8*expTop(1);}};
+const TUT_EV={id:'tut',time:'day',type:'sprint',name:TR('Первый заезд'),route:[[2,6],[4,6]],lvl:1,tier:1,reward:2500,rep:0,pole:true,aiAccel:6,count:2.6,clear:220,get ai(){return .8*expTop(1);}};
 function isFresh(){return !save.tut&&save.rep===0&&!Object.keys(save.won||{}).length&&Object.keys(save.owned||{}).length===1&&save.money===DEF.money&&!save.night;}
 function quickStart(){
   showPreview(null);exitShow();
@@ -7285,8 +7962,11 @@ function resume(){state.mode='drive';showOnly('hud');}
 $('#pResume').onclick=resume;
 $('#pCam').onclick=()=>{state.camMode=(state.camMode+1)%2;};
 $('#pSound').onclick=()=>{setSound(!save.sound);};
+// язык: выбор игрока сохраняется в save.lang, затем перезагрузка (строки собираются при старте)
+const langSwitch=()=>{save.lang=TR.en?'ru':'en';persist();setTimeout(()=>location.reload(),150);};
+['#tLang','#pLang'].forEach(s=>{const b=$(s);if(b){b.innerHTML=TR.en?'🌐 RU / <b>EN</b>':'🌐 <b>RU</b> / EN';b.onclick=langSwitch;}});
 const GFX_ORDER=['high','med','low'];
-function gfxLabel(){$('#pGfx').textContent='Графика: '+gfx.name;}
+function gfxLabel(){$('#pGfx').textContent=TR('Графика: ')+gfx.name;}
 function setGfx(k){save.gfx=k;persist();gfx=GFX[k];renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,gfx.pr));applyShadows();setupComposer();resize();setTime(state.time);gfxLabel();}
 $('#pGfx').onclick=()=>{save.gfxManual=true;setGfx(GFX_ORDER[(GFX_ORDER.indexOf(save.gfx)+1)%3]);};
 // auto-lower graphics if the game runs choppy (only until the player picks a level by hand)
@@ -7299,7 +7979,7 @@ function perfWatch(raw){
   if(PW.cool>0){PW.cool-=raw;return;}
   PW.n++;PW.t+=raw;
   if(PW.t>=4){const fps=PW.n/PW.t;PW.n=0;PW.t=0;
-    if(fps<25){setGfx(GFX_ORDER[GFX_ORDER.indexOf(save.gfx)+1]);PW.cool=6;toast('Графика понижена до уровня «'+gfx.name+'», чтобы игра шла плавно. Поменять можно в паузе.');}}
+    if(fps<25){setGfx(GFX_ORDER[GFX_ORDER.indexOf(save.gfx)+1]);PW.cool=6;toast(TR('Графика понижена до уровня «')+gfx.name+TR('», чтобы игра шла плавно. Поменять можно в паузе.'));}}
 }
 gfxLabel();
 $('#pReset').onclick=()=>{resetToRoad();resume();};
@@ -7307,24 +7987,24 @@ $('#pQuit').onclick=()=>{endRace();resume();};
 $('#pMap').onclick=()=>openMap();
 $('#pWipe').onclick=()=>{$('#pWipeRow').hidden=true;$('#pWipeAsk').hidden=false;};
 $('#pWipeNo').onclick=()=>{$('#pWipeRow').hidden=false;$('#pWipeAsk').hidden=true;};
-$('#pWipeYes').onclick=()=>{const g=save.gfx;save=JSON.parse(JSON.stringify(DEF));save.gfx=g;persist();buildPlayer();state.nightRep=0;openGarage(null);};
+$('#pWipeYes').onclick=()=>{const g=save.gfx,pm=save.premium,pf=save.pmFree,lg=save.lang;save=JSON.parse(JSON.stringify(DEF));save.gfx=g;if(pm)save.premium=pm;if(pf)save.pmFree=pf;if(lg)save.lang=lg;/* купленный Премиум и его лимит сброс прогресса не трогает */persist();buildPlayer();state.nightRep=0;openGarage(null);};
 /* ролик за награду «×2 за гонку» (только на Яндекс Играх; без SDK кнопки нет) */
-$('#rX2').onclick=()=>{const p=state.prize;if(!p||p.used||!PLAT.canReward())return;$('#rX2').disabled=true;
-  PLAT.rewarded(got=>{$('#rX2').disabled=false;if(!got||p.used)return;p.used=true;
-    if(p.day){save.money+=p.amt;persist();qProg('money',p.amt);$('#rReward').textContent='+$'+fmt(p.amt*2)+' (×2 за рекламу)';}
-    else{state.nightRep+=p.amt;saveNight();$('#rReward').textContent='+'+fmt(p.amt*2)+' REP за ночь (×2 за рекламу)';}
+$('#rX2').onclick=()=>{const p=state.prize;if(!p||p.used||!canGetReward())return;$('#rX2').disabled=true;const viaPm=pmFreeNow();
+  getReward(got=>{$('#rX2').disabled=false;if(!got||p.used)return;p.used=true;
+    if(p.day){save.money+=p.amt;persist();qProg('money',p.amt);$('#rReward').textContent='+$'+fmt(p.amt*2)+(viaPm?TR(' (×2, Премиум)'):TR(' (×2 за рекламу)'));}
+    else{state.nightRep+=p.amt;saveNight();$('#rReward').textContent='+'+fmt(p.amt*2)+(viaPm?TR(' REP за ночь (×2, Премиум)'):TR(' REP за ночь (×2 за рекламу)'));}
     $('#rX2Row').hidden=true;sfx('beep',1040);});};
 $('#rOk').onclick=()=>{state.mode='drive';showOnly('hud');$('#rX2Row').hidden=true;state.prize=null;
-  if(state.tutDone){state.tutDone=false;state.tut=false;state.gps={node:GARAGE};state.hintT=0;banner('ТЕПЕРЬ В ГАРАЖ','голубая линия ведёт к гаражу · въедь в голубой круг','#29e3ff',3200);updateSaveLine();}
+  if(state.tutDone){state.tutDone=false;state.tut=false;state.gps={node:GARAGE};state.hintT=0;banner(TR('ТЕПЕРЬ В ГАРАЖ'),TR('голубая линия ведёт к гаражу · въедь в голубой круг'),'#29e3ff',3200);updateSaveLine();}
   if(state.time==='night'&&state.heat>=3){spawnCop(true);spawnCop(true);startPursuit();}};
-$('#pKeys').innerHTML=isTouch?'Кнопки на экране: руль слева, педали справа. Газ и тормоз вместе дают управляемый занос. «Прыжок» перелетает через машины, раз в 3 секунды.':'<kbd>W A S D</kbd> или стрелки · <kbd>Пробел</kbd> дрифт · <kbd>Shift</kbd> нитро · <kbd>F</kbd> прыжок · <kbd>E</kbd> старт · <kbd>M</kbd> карта · <kbd>C</kbd> камера · <kbd>R</kbd> на дорогу';
-if(isTouch)$('#keysLine').textContent='Управление кнопками на экране. Удобнее держать телефон горизонтально.';
+$('#pKeys').innerHTML=isTouch?TR('Кнопки на экране: руль слева, педали справа. Газ и тормоз вместе дают управляемый занос. «Прыжок» перелетает через машины, раз в 3 секунды.'):TR('<kbd>W A S D</kbd> или стрелки · <kbd>Пробел</kbd> дрифт · <kbd>Shift</kbd> нитро · <kbd>F</kbd> прыжок · <kbd>E</kbd> старт · <kbd>M</kbd> карта · <kbd>C</kbd> камера · <kbd>R</kbd> на дорогу');
+if(isTouch)$('#keysLine').textContent=TR('Управление кнопками на экране. Удобнее держать телефон горизонтально.');
 function updateSaveLine(){const L=[];
-  if(save.rep>0||save.money!==DEF.money||Object.keys(save.owned).length>1)L.push('Сохранено: $'+fmt(save.money)+' · '+fmt(save.rep)+' REP · уровень '+levelOf(save.rep));
-  if(state.nightRep>0)L.push('Незавершённая ночь: +'+fmt(state.nightRep)+' REP. Нажми «В гараж», чтобы засчитать.');
-  L.push(cloud.state==='cloud'?'Прогресс хранится в твоём аккаунте.':'Прогресс хранится в этом браузере.');
+  if(save.rep>0||save.money!==DEF.money||Object.keys(save.owned).length>1)L.push(TR('Сохранено: $')+fmt(save.money)+' · '+fmt(save.rep)+TR(' REP · уровень ')+levelOf(save.rep));
+  if(state.nightRep>0)L.push(TR('Незавершённая ночь: +')+fmt(state.nightRep)+TR(' REP. Нажми «В гараж», чтобы засчитать.'));
+  L.push(cloud.state==='cloud'?TR('Прогресс хранится в твоём аккаунте.'):TR('Прогресс хранится в этом браузере.'));
   $('#saveLine').innerHTML=L.map(esc).join('<br>');
-  $('#btnStart').textContent=isFresh()?'Поехать!':'В гараж';}
+  $('#btnStart').textContent=isFresh()?TR('Поехать!'):TR('В гараж');}
 updateSaveLine();
 
 /* ---------- map ---------- */
@@ -7348,7 +8028,7 @@ function drawMap(ctx,W,H,tf,sc,mini){
   const dot=(x,z,rad,fill,stroke)=>{const q=tf(x,z);ctx.beginPath();ctx.arc(q[0],q[1],rad,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2*u;ctx.stroke();}};
   if(!r){const lvl=levelOf(save.rep);for(const m of markers){if(m.ev&&m.ev.time!==state.time)continue;const locked=m.ev&&lvl<m.ev.lvl;const q=tf(m.x,m.z),rr=(mini?6:8.5)*u;
     drawBadge(ctx,q[0],q[1],rr,m.ev?m.ev.time:'garage',locked);
-    const lab=!m.ev?(mini?'':'Гараж'):locked?'ур. '+m.ev.lvl:m.ev.time==='day'?'$'+(mini?shortN(m.ev.reward):fmt(m.ev.reward)):(mini?shortN(m.ev.rep):fmt(m.ev.rep)+' REP');
+    const lab=!m.ev?(mini?'':TR('Гараж')):locked?TR('ур. ')+m.ev.lvl:m.ev.time==='day'?'$'+(mini?shortN(m.ev.reward):fmt(m.ev.reward)):(mini?shortN(m.ev.rep):fmt(m.ev.rep)+' REP');
     if(lab){ctx.font='800 '+Math.round((mini?8.5:12)*u)+'px '+MF;ctx.textAlign='left';ctx.textBaseline='middle';ctx.lineJoin='round';ctx.lineWidth=3*u;ctx.strokeStyle='#0c0a1d';ctx.strokeText(lab,q[0]+rr+3*u,q[1]);ctx.fillStyle=locked?'#c9c2e6':'#ffffff';ctx.fillText(lab,q[0]+rr+3*u,q[1]);}}}
   else{const n=r.seq[r.k];if(n)dot(n.x,n.z,6*u,'#fff','#0c0a1d');for(const a of r.ais)dot(a.x,a.z,4*u,'#f5f0ff','#0c0a1d');}
   const blink=Math.floor(state.t*6)%2;
@@ -7375,11 +8055,11 @@ function renderMap(){
   bigTf=(x,z)=>[pad+(x+HALF+10)*bigSc,pad+(z+HALF+60)*bigSc];
   drawMap(bigX,W,H,bigTf,bigSc,false);
   const lvl=levelOf(save.rep);const list=$('#evList');let h='';
-  h+=`<button class="ev" data-gps="garage" style="--c:var(--cyan)"><img src="${badgeURL('garage',false)}" alt=""><span>Гараж</span><small>${state.time==='night'?'сохранить REP за ночь':'машины и тюнинг'}</small></button>`;
-  {const es=lvlEvents(lvl),w=es.filter(e=>save.won[e.id]).length;h+=`<div class="sub" style="padding:6px 2px">Уровень ${lvl}: выиграно ${w} из ${es.length} гонок</div>`;}
+  h+=`<button class="ev" data-gps="garage" style="--c:var(--cyan)"><img src="${badgeURL('garage',false)}" alt=""><span>${TR('Гараж')}</span><small>${state.time==='night'?TR('сохранить REP за ночь'):TR('машины и тюнинг')}</small></button>`;
+  {const es=lvlEvents(lvl),w=es.filter(e=>save.won[e.id]).length;h+=`<div class="sub" style="padding:6px 2px">${TR('Уровень')} ${lvl}${TR(': выиграно')} ${w} ${TR('из')} ${es.length} ${TR('гонок')}</div>`;}
   const curIds=new Set(lvlEvents(lvl).map(e=>e.id));let shownHdr=false;
-  for(const ev of mapEvents(lvl).filter(e=>e.time===state.time)){const locked=lvl<ev.lvl;if(!curIds.has(ev.id)&&!shownHdr){shownHdr=true;h+=`<div class="sub" style="padding:8px 2px 4px">Классические гонки (награда по твоему уровню)</div>`;}
-    h+=`<button class="ev" data-gps="${ev.id}" style="--c:${locked?'#6f688c':ev.time==='day'?'var(--sun)':'var(--pink)'}" ${state.race?'disabled':''}><img src="${badgeURL(ev.time,locked)}" alt=""><span>${save.won[ev.id]?'✓ ':''}${ev.name}</span><small>${locked?'нужен уровень '+ev.lvl:(ev.time==='day'?'$'+fmt(ev.reward):fmt(ev.rep)+' REP')+' · '+(ev.type==='circuit'?'круги':'спринт')}</small></button>`;}
+  for(const ev of mapEvents(lvl).filter(e=>e.time===state.time)){const locked=lvl<ev.lvl;if(!curIds.has(ev.id)&&!shownHdr){shownHdr=true;h+=`<div class="sub" style="padding:8px 2px 4px">${TR('Классические гонки (награда по твоему уровню)')}</div>`;}
+    h+=`<button class="ev" data-gps="${ev.id}" style="--c:${locked?'#6f688c':ev.time==='day'?'var(--sun)':'var(--pink)'}" ${state.race?'disabled':''}><img src="${badgeURL(ev.time,locked)}" alt=""><span>${save.won[ev.id]?'✓ ':''}${ev.name}</span><small>${locked?TR('нужен уровень ')+ev.lvl:(ev.time==='day'?'$'+fmt(ev.reward):fmt(ev.rep)+' REP')+' · '+(ev.type==='circuit'?TR('круги'):TR('спринт'))}</small></button>`;}
   list.innerHTML=h;
 }
 function setGps(id){if(id==='garage')state.gps={node:GARAGE};else{const ev=EVENTS.find(e=>e.id===id);state.gps={node:ev.route[0]};}closeMap();}
@@ -7450,13 +8130,13 @@ function audioInit(){
     const so=ctx.createOscillator(),sg=ctx.createGain();so.type='triangle';sg.gain.value=0;so.connect(sg);sg.connect(AU.master);so.start();Object.assign(AU,{so,sg});
   }catch(e){AU.ctx=null;}
 }
-function setSound(on,quiet){save.sound=on;if(!quiet)persist();if(AU.master)AU.master.gain.value=on?.55:0;$('#pSound').textContent='Звук: '+(on?'вкл':'выкл');}
-$('#pSound').textContent='Звук: '+(save.sound?'вкл':'выкл');
+function setSound(on,quiet){save.sound=on;if(!quiet)persist();if(AU.master)AU.master.gain.value=on?.55:0;$('#pSound').textContent=TR('Звук: ')+(on?TR('вкл'):TR('выкл'));}
+$('#pSound').textContent=TR('Звук: ')+(save.sound?TR('вкл'):TR('выкл'));
 function sfx(type,k){
   if(!AU.ctx||!save.sound)return;const ctx=AU.ctx,t=ctx.currentTime;
   if(type==='beep'){const o=ctx.createOscillator(),g=ctx.createGain();o.type='square';o.frequency.value=k||660;g.gain.setValueAtTime(.1,t);g.gain.exponentialRampToValueAtTime(.001,t+.18);o.connect(g);g.connect(AU.master);o.start(t);o.stop(t+.2);}
   if(type==='jump'){const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=AU.noise;f.type='bandpass';f.Q.value=1.2;f.frequency.setValueAtTime(500,t);f.frequency.exponentialRampToValueAtTime(2400,t+.3);g.gain.setValueAtTime(.18,t);g.gain.exponentialRampToValueAtTime(.001,t+.4);s.connect(f);f.connect(g);g.connect(AU.master);s.start(t);s.stop(t+.45);}
-  if(type==='hit'){const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=AU.noise;f.type='lowpass';f.frequency.value=420;g.gain.setValueAtTime(Math.min(.55,.06+k*.012),t);g.gain.exponentialRampToValueAtTime(.001,t+.35);s.connect(f);f.connect(g);g.connect(AU.master);s.start(t);s.stop(t+.4);}
+  if(type==='hit'){const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=AU.noise;f.type='lowpass';f.frequency.value=260;g.gain.setValueAtTime(Math.min(.22,.04+k*.006),t);g.gain.exponentialRampToValueAtTime(.001,t+.22);s.connect(f);f.connect(g);g.connect(AU.master);s.start(t);s.stop(t+.4);}
 }
 function gearOf(sp,top){const f=clamp(sp/top,0,1.3),e=[0,.14,.28,.44,.6,.78,1.3];let n=0;while(n<5&&f>e[n+1])n++;return{n:n+1,rpm:clamp((f-e[n])/(e[n+1]-e[n]),0,1)*.85+.15};}
 function audioUpdate(inp){
@@ -7493,18 +8173,19 @@ function collideBodies(){
   }
 }
 function emitPuff(b,n){const day=state.time==='day';for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2;emit(smoke,b.x+Math.cos(a)*1.5,.3,b.z+Math.sin(a)*1.5,Math.cos(a)*3,.8,Math.sin(a)*3,1.4,3.5,.9,day?.82:.58,day?.8:.52,day?.84:.68,day?.3:.2);}}
-function onHit(s,x,z){if(s<5)return;sfx('hit',s);state.shake=Math.min(1,state.shake+s/30);if(x!==undefined)for(let i=0;i<Math.min(16,s);i++)emit(sparks,x,.8,z,(Math.random()-.5)*10,Math.random()*5,(Math.random()-.5)*10,.35,0,.35,1,.6,.2,1);}
+// 6+: касание с отскоком — мягкий звук, лёгкая тряска, без искр и осколков
+function onHit(s,x,z){if(s<5)return;sfx('hit',s);state.shake=Math.min(.35,state.shake+s/70);}
 
 /* ---------- prompts & HUD ---------- */
 function updatePrompt(){
   let pr=null;const P=player.body;
   if(!state.race&&state.mode==='drive'){
     const g=nodePos(...GARAGE);
-    if(dist2(P,g)<16)pr=pursuit.active?{text:'Гараж закрыт, пока за тобой погоня'}:{text:state.time==='night'&&state.nightRep>0?'Гараж: сохранить '+fmt(state.nightRep*HEATM[state.heat])+' REP':'Гараж: машины и тюнинг',btn:'Войти',action:()=>openGarage(null)};
+    if(dist2(P,g)<16)pr=pursuit.active?{text:TR('Гараж закрыт, пока за тобой погоня')}:{text:state.time==='night'&&state.nightRep>0?TR('Гараж: сохранить ')+fmt(state.nightRep*HEATM[state.heat])+' REP':TR('Гараж: машины и тюнинг'),btn:TR('Войти'),action:()=>openGarage(null)};
     for(const m of markers){const ev=m.ev;if(!ev||ev.time!==state.time)continue;const p=nodePos(...ev.route[0]);if(dist2(P,p)>16)continue;
-      if(levelOf(save.rep)<ev.lvl)pr={text:ev.name+': нужен уровень '+ev.lvl};
-      else if(pursuit.active)pr={text:'Сначала оторвись от полиции'};
-      else pr={text:ev.name+' · '+(ev.time==='day'?'$'+fmt(ev.reward):fmt(ev.rep)+' REP'),btn:'Старт',action:()=>startRace(ev)};}
+      if(levelOf(save.rep)<ev.lvl)pr={text:ev.name+TR(': нужен уровень ')+ev.lvl};
+      else if(pursuit.active)pr={text:TR('Сначала оторвись от полиции')};
+      else pr={text:ev.name+' · '+(ev.time==='day'?'$'+fmt(ev.reward):fmt(ev.rep)+' REP'),btn:TR('Старт'),action:()=>startRace(ev)};}
   }
   const key=pr?pr.text+'|'+(pr.btn||''):'';
   if(key!==state.promptKey){state.promptKey=key;const el=$('#prompt');el.hidden=!pr;if(pr){$('#promptText').textContent=pr.text;const b=$('#promptBtn');b.hidden=!pr.btn;b.textContent=(pr.btn||'')+(isTouch?'':' · E');}}
@@ -7516,7 +8197,7 @@ function setH(id,v){if(hc[id]!==v){hc[id]=v;$(id).innerHTML=v;}}
 const heatEls=[...document.querySelectorAll('#hHeat i')];
 function updateHUD(){
   const P=player.body,lvl=levelOf(save.rep);
-  setT('#hMoney',fmt(save.money));setT('#hRep',fmt(save.rep));setT('#hLvl','ур. '+lvl);
+  setT('#hMoney',fmt(save.money));setT('#hRep',fmt(save.rep));setT('#hLvl',TR('ур. ')+lvl);
   const night=state.time==='night';
   $('#hNightRow').hidden=!night;$('#hHeat').hidden=!night;
   if(night){setT('#hNight',fmt(state.nightRep));setT('#hMult','×'+HEATM[state.heat]);setT('#hHeatM','×'+HEATM[state.heat]);
@@ -7529,17 +8210,17 @@ function updateHUD(){
   if(r){
     if(r.count>0)c=`<div class="chip">${r.ev.name}</div>`;
     else{const pos=racePlace(r),n=r.ev.type==='circuit'?r.ev.route.length:0;
-      const prog=r.ev.type==='circuit'?'круг '+Math.min(r.ev.laps,Math.floor(r.k/n)+1)+'/'+r.ev.laps:'точка '+Math.min(r.k+1,r.seq.length)+'/'+r.seq.length;
+      const prog=r.ev.type==='circuit'?TR('круг ')+Math.min(r.ev.laps,Math.floor(r.k/n)+1)+'/'+r.ev.laps:TR('точка ')+Math.min(r.k+1,r.seq.length)+'/'+r.seq.length;
       const m=Math.floor(r.t/60),s=Math.floor(r.t%60).toString().padStart(2,'0');
-      c=`<div class="raceinfo glass" style="padding:6px 12px"><span class="pos">${pos}<small>/4</small></span><span class="meta">${prog} · ${m}:${s} · ${Math.round(dist2(P,r.seq[r.k]||P))} м</span></div>`;}
-    if(r.ev===TUT_EV&&r.t<7)c+=`<div class="chip hint">${isTouch?'Жми «ГАЗ» справа, руль — кнопки слева. «НИТРО» — ускорение.':'W или ↑ — газ, A/D — руль, Shift — нитро.'} Езжай через ворота до финиша.</div>`;
+      c=`<div class="raceinfo glass" style="padding:6px 12px"><span class="pos">${pos}<small>/4</small></span><span class="meta">${prog} · ${m}:${s} · ${Math.round(dist2(P,r.seq[r.k]||P))} ${TR('м')}</span></div>`;}
+    if(r.ev===TUT_EV&&r.t<7)c+=`<div class="chip hint">${isTouch?TR('Жми «ГАЗ» справа, руль — кнопки слева. «НИТРО» — ускорение.'):TR('W или ↑ — газ, A/D — руль, Shift — нитро.')} ${TR('Езжай через ворота до финиша.')}</div>`;
   }
   if(pursuit.active){const cl=Math.round(clamp(pursuit.bust,0,1)*100),ev=Math.round(clamp(pursuit.evade/evadeNeed(),0,1)*100);
-    c+=`<div class="pursuit glass" style="padding:8px 14px"><div class="ttl">ПОГОНЯ · ${cops.length}${heli.on&&!heli.leaving?' · ВЕРТОЛЁТ '+Math.ceil(heli.fuel)+' с':''}</div><div class="lbl">Арест</div><div class="meter bust"><i style="width:${cl}%"></i></div><div class="lbl">Отрыв</div><div class="meter evade"><i style="width:${ev}%"></i></div></div>`;}
-  else if(!r&&state.hintT>0){const e=state.hintEv;c+=`<div class="chip hint">${state.time==='day'?'Деньги дают только за дневные гонки.'+(e?' Голубая линия на мини-карте ведёт к гонке «'+e.name+'». Въедь в жёлтый круг и нажми «Старт».':''):'Ночью дают REP, а не деньги.'+(e?' Линия ведёт к гонке «'+e.name+'».':'')+' REP сохраняется только в гараже.'}</div>`;}
+    c+=`<div class="pursuit glass" style="padding:8px 14px"><div class="ttl">${TR('ПОГОНЯ ·')} ${cops.length}${heli.on&&!heli.leaving?TR(' · ВЕРТОЛЁТ ')+Math.ceil(heli.fuel)+TR(' с'):''}</div><div class="lbl">${TR('Остановка')}</div><div class="meter bust"><i style="width:${cl}%"></i></div><div class="lbl">${TR('Отрыв')}</div><div class="meter evade"><i style="width:${ev}%"></i></div></div>`;}
+  else if(!r&&state.hintT>0){const e=state.hintEv;c+=`<div class="chip hint">${state.time==='day'?TR('Деньги дают только за дневные гонки.')+(e?TR(' Голубая линия на мини-карте ведёт к гонке «')+e.name+TR('». Въедь в жёлтый круг и нажми «Старт».'):''):TR('Ночью дают REP, а не деньги.')+(e?TR(' Линия ведёт к гонке «')+e.name+TR('».'):'')+TR(' REP сохраняется только в гараже.')}</div>`;}
   setH('#hCenter',c);
   const gt=$('#gpsTxt');
-  if(state.gps&&!r){const g=nodePos(...state.gps.node),d=dist2(P,g);if(d<22)state.gps=null;gt.hidden=!state.gps;if(state.gps)setT('#gpsTxt','до цели '+Math.round(d)+' м');}else gt.hidden=true;
+  if(state.gps&&!r){const g=nodePos(...state.gps.node),d=dist2(P,g);if(d<22)state.gps=null;gt.hidden=!state.gps;if(state.gps)setT('#gpsTxt',TR('до цели ')+Math.round(d)+TR(' м'));}else gt.hidden=true;
 }
 
 /* ---------- camera ---------- */
@@ -7581,7 +8262,6 @@ function update(dt){
   if(!(r&&r.count>0)){
     const st0=b.stats;state.spikeT=Math.max(0,(state.spikeT||0)-dt);if(state.spikeT>0)b.stats=Object.assign({},st0,{top:st0.top*.55,accel:st0.accel*.6,handling:st0.handling*.85});
     const sub=dt>1/50?2:1;let hit=0;for(let s=0;s<sub;s++)hit=Math.max(hit,stepCar(b,inp,dt/sub));b.stats=st0;
-    if(state.spikeT>0&&Math.abs(b.vF)>5&&Math.random()<.5){const fx2=Math.sin(b.h),fz2=Math.cos(b.h);emit(sparks,b.x-fx2*1.5,.3,b.z-fz2*1.5,(Math.random()-.5)*4,2,(Math.random()-.5)*4,.3,0,.3,1,.7,.3,1);}
     if(hit>5){const fx=Math.sin(b.h),fz=Math.cos(b.h);onHit(hit,b.x+fx*2.2,b.z+fz*2.2);}
     qTick(dt,b,inp);
   }
@@ -7604,6 +8284,7 @@ function frame(){
   // реклама или пауза площадки: игра стоит, последний кадр остаётся на экране
   if(PLAT.paused()){last=performance.now()/1000;return;}
   PLAT.setPlaying(state.mode==='drive');
+  if(state.mode!==lastPmMode){lastPmMode=state.mode;document.documentElement.classList.toggle('nb-drive',state.mode==='drive');}   // кнопка Премиума скрыта во время езды
   const now=performance.now()/1000,raw=now-last,dt=Math.min(.05,raw);last=now;state.t+=dt;perfWatch(raw);
   if(state.mode==='drive')update(dt);
   else if(state.mode==='title'||state.mode==='garage'){if(state.mode==='title')updateTraffic(dt);if(state.inShow){player.body.h+=dt*.32;showDisc.rotation.z=-player.body.h;}syncCar(player.car,player.body.x,player.body.z,player.body.h,0,0,0,dt);if(preview)syncCar(preview,player.body.x,player.body.z,player.body.h,0,0,0,dt);if(showMirror){const src=preview||player.car;showMirror.position.copy(src.root.position);showMirror.rotation.copy(src.root.rotation);}orbitCam(dt);audioUpdate(NOINP);}
@@ -7682,6 +8363,7 @@ function boot(data){
 function platInit(){
   const btn=$('#btnStart');btn.disabled=true;
   PLAT.init().then(c=>{
+    const lPm=save.premium||null,lPf=save.pmFree||null;
     try{
       if(c&&c.owned&&c.owned.corsa){
         const fresh=save.rep===0&&Object.keys(save.owned).length===1&&!save.night&&!save.tut;
@@ -7689,9 +8371,25 @@ function platInit(){
         if((c.ts||0)>(save.ts||0)||(fresh&&rich)){adoptSave(c);
           if(state.mode==='title'||state.mode==='garage'){const L=levelOf(save.rep);let w=save.city&&CITIES.find(x=>x.id===save.city);if(!w||w.lvl>L||!cityReady(w))w=bestCity(L);if(w!==CUR_CITY)switchCity(w.id);}}
       }
-      if(PLAT.hasCloud()&&(!c||(save.ts||0)>(c.ts||0)))PLAT.put(save);
+      // Премиум не должен пропасть, кто бы ни победил по времени: срок и токены сливаем (модуль), лимит — за одни сутки больший
+      let pmDirty=false;
+      {const cPm=c&&typeof c.premium==='string'?c.premium:null;
+        if(PM&&PM.mergeState&&(lPm||cPm)){const m=PM.mergeState(lPm,cPm);if(m!==save.premium){save.premium=m;pmDirty=true;}if(m!==cPm)pmDirty=true;}
+        const f=pmMergeFree(lPf,c&&c.pmFree);if(f&&JSON.stringify(f)!==JSON.stringify(save.pmFree||null)){save.pmFree=f;pmDirty=true;}
+        if(f&&JSON.stringify(f)!==JSON.stringify((c&&c.pmFree)||null))pmDirty=true;}
+      if(pmDirty)persist();
+      else if(PLAT.hasCloud()&&(!c||(save.ts||0)>(c.ts||0)))PLAT.put(save);
+      // Яндекс 2.14: язык из SDK. Выбор игрока (save.lang) важнее; при расхождении — одна перезагрузка.
+      if(PLAT.hasSdk()){const manual=save.lang==='ru'||save.lang==='en',want=manual?save.lang:TR.map(PLAT.lang());
+        if(!manual&&TR.set)TR.set(want,false);
+        if(want!==TR.lang){let n=0;try{n=+sessionStorage.getItem('nb.langReload')||0;sessionStorage.setItem('nb.langReload',n+1);}catch(e){}
+          if(n<1){location.reload();return;}}}
     }catch(e){console.warn('platform save',e);}
     btn.disabled=false;updateSaveLine();PLAT.ready();
+    // Премиум: только на площадке с SDK; без платежей или без товаров в консоли кнопки нет
+    if(PM&&PLAT.hasSdk())try{PM.init({sdk:PLAT.sdk(),lang:TR.lang,texts:PM_TEXTS,
+      store:{get:()=>save.premium||null,set:raw=>{save.premium=raw;persist();},save:()=>PLAT.saveNow(save)}})
+      .then(()=>{if(state.mode==='title'||state.mode==='garage')pmCard();});}catch(e){console.warn('premium',e);}
   },()=>{btn.disabled=false;PLAT.ready();});
 }
 const HOT=window.claude&&window.claude.hot;

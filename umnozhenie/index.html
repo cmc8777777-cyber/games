@@ -9,6 +9,7 @@
   --ink:#2b1b3d; --ink2:#5a4a73; --cream:#fff8e8; --white:#fff;
   --yellow:#ffd23f; --orange:#ff8a3d; --green:#43c463; --red:#ff4d5e; --blue:#3d8bff; --purple:#7b4dff; --pink:#ff6fb5;
   --bg:#2b1b5e; --shadow:0 4px 0 rgba(43,27,61,.35);
+  --pm-paper:#fff8e8; --pm-ink:#2b1b3d; --pm-red:#ff4d5e; --pm-redink:#fff; --pm-gold:#ffd23f; --pm-muted:#5a4a73; --pm-line:#cdbfe6; --pm-paper2:#f1eaff; --f-display:"Trebuchet MS","Segoe UI",Roboto,Arial,sans-serif; --f-body:"Trebuchet MS","Segoe UI",Roboto,Arial,sans-serif; --pm-z:60;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);overscroll-behavior:none}
@@ -41,6 +42,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulat
 #s-start .logo{margin-top:6px;text-align:center;font-weight:900;line-height:1;color:#fff;text-shadow:0 4px 0 var(--ink),3px 0 0 var(--ink),-3px 0 0 var(--ink),0 -3px 0 var(--ink),3px 3px 0 var(--ink),-3px 3px 0 var(--ink)}
 #s-start .logo small{display:block;font-size:22px;letter-spacing:2px;margin-bottom:6px}
 #s-start .logo b{display:block;font-size:50px}
+html[lang=en] #s-start .logo b{font-size:36px}
 #s-start .logo i{display:block;font-style:normal;font-size:26px;color:var(--yellow);margin-top:6px}
 .cast{display:flex;justify-content:center;align-items:flex-end;gap:0;height:200px;width:100%;position:relative}
 .cast .art{width:132px;height:132px}
@@ -218,23 +220,356 @@ button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulat
   <div id="toast"></div>
 </div>
 
-<!-- YANDEX_SDK (магазинная сборка вставляет сюда <script src="/sdk.js">) -->
+<script src="/sdk.js"></script>
+<script>
+/* ===== Премиум (общий модуль publish\shared\premium\premium.js, копия tools\premium.js, без правок) ===== */
+/* Премиум: общий модуль для браузерных игр на Яндекс Играх.
+   Платный Премиум на срок (30 дней или год), без автопродления: «используемая» покупка, срок считается по серверному
+   времени Яндекса и хранится в облачных данных игрока. Подробно: README.md рядом с этим файлом.
+   Модуль ничего не знает об игре: хранилище, звук и реклама подключаются через init() и несколько вызовов хозяина.
+   Без SDK, без покупок или без созданных товаров в консоли кнопка и карточки скрыты, игра работает как раньше. */
+window.Premium = (function () {
+  "use strict";
+  var DAY = 86400000;
+
+  /* ---- Настройки: все числа и товары в одном месте ---- */
+  var config = {
+    adGapMs: 5 * 60 * 1000,     // интервал полноэкранной рекламы; хозяин читает его при показе (решение владельца 8 ноября: 5 минут)
+    cardEvery: 3,               // карточка «Надоела реклама?» после каждой 3-й показанной полноэкранной рекламы
+    remindDays: 3,              // напоминание о конце Премиума за столько дней и меньше (раз в сутки)
+    pollMs: 60000,              // как часто сверять срок с серверным временем
+    tokensKeep: 20,             // сколько токенов последних покупок помнить
+    products: {                 // id товара в консоли Яндекса → срок
+      premium_30: { days: 30 },
+      premium_365: { days: 365 }
+    },
+    order: ["premium_30", "premium_365"],
+    corner: true,               // кнопка «Премиум» в углу экрана
+    zIndex: 50
+  };
+
+  /* ---- Тексты по умолчанию (нейтральные, без слова «баннер»: Яндекс может показывать свой sticky-баннер). Игра подставляет свои финальные тексты. Подмена: Premium.init({ texts: { ru: {...}, en: {...} } }) ---- */
+  var TEXTS = {
+    ru: {
+      btn: "Премиум", btnOn: "Премиум · {0} д.", title: "Премиум",
+      activeUntil: "Активен до {0}. Осталось {1}.",
+      notActive: "Сейчас Премиум не включён.",
+      perks: ["Полноэкранная реклама отключается.", "Награды за ролики выдаются сразу, без просмотра.", "Правила и сложность игры не меняются: Премиум не помогает выигрывать."],
+      p30: "Премиум на 30 дней", p365: "Премиум на год",
+      validTo: "Будет действовать до {0}", buy: "Купить", endBuy: "Купить Премиум", extend: "Продлить",
+      note: "Один платёж, без автопродления: больше ничего не спишется. Если Премиум уже идёт, новый срок добавится к концу.",
+      close: "Закрыть", later: "Не сейчас",
+      adTitle: "Надоела реклама?", adText: "Премиум отключает полноэкранную рекламу, а награды за ролики выдаёт сразу. 30 дней за {0}, не продлевается сам.", adMore: "Узнать про Премиум",
+      soonTitle: "Премиум скоро закончится", soonText: "Осталось {0}. Продлить?",
+      endTitle: "Премиум закончился", endText: "Реклама вернулась. Можно включить Премиум снова.",
+      busy: "Ждём подтверждения оплаты…", done: "Готово! Премиум активен до {0}.",
+      fail: "Покупка не прошла. Деньги не списаны.", saveFail: "Оплата принята, но срок пока не сохранился. Не закрывайте игру, мы повторим при следующем запуске.",
+      d1: "{0} день", d2: "{0} дня", d5: "{0} дней", free: "Ян", lang: "ru-RU"
+    },
+    en: {
+      btn: "Premium", btnOn: "Premium · {0} d", title: "Premium",
+      activeUntil: "Active until {0}. {1} left.",
+      notActive: "Premium is not active.",
+      perks: ["Full-screen ads are disabled.", "Rewards for videos are given instantly, no watching.", "The rules and difficulty stay the same: Premium does not help you win."],
+      p30: "Premium for 30 days", p365: "Premium for a year",
+      validTo: "Will be active until {0}", buy: "Buy", endBuy: "Buy Premium", extend: "Extend",
+      note: "One payment, no auto-renewal: nothing else will be charged. If Premium is already running, the new period is added to the end.",
+      close: "Close", later: "Not now",
+      adTitle: "Tired of ads?", adText: "Premium removes full-screen ads and gives video rewards instantly. 30 days for {0}, no auto-renewal.", adMore: "About Premium",
+      soonTitle: "Premium ends soon", soonText: "{0} left. Extend?",
+      endTitle: "Premium has ended", endText: "Ads are back. You can turn Premium on again.",
+      busy: "Waiting for payment confirmation…", done: "Done! Premium is active until {0}.",
+      fail: "The purchase did not go through. You were not charged.", saveFail: "Payment accepted, but the period is not saved yet. Keep the game open, we will retry on the next start.",
+      d1: "{0} day", d2: "{0} days", d5: "{0} days", free: "Yan", lang: "en-GB"
+    }
+  };
+
+  /* ---- Состояние ---- */
+  var sdk = null, payments = null, store = null;
+  var lang = "ru", texts = TEXTS.ru;
+  var catalog = {};                   // id → описание товара из консоли
+  var st = blank();
+  var off = 0;                        // запасная поправка серверного времени, если serverTime() недоступен
+  var ready = false, canBuy = false, busy = false, chain = Promise.resolve();
+  var listeners = [], pollTimer = 0, lastActive = false;
+  var ui = { corner: null, ov: null, box: null, status: "", mode: "", style: null, lastFocus: null };
+
+  function blank() { return { until: 0, tokens: [], ads: 0, cardAt: 0, remindDay: 0, endShown: 0 }; }
+  function clean(o) {
+    var r = blank();
+    if (!o || typeof o !== "object") return r;
+    r.until = Math.max(0, Number(o.until) || 0);
+    r.tokens = Array.isArray(o.tokens) ? o.tokens.filter(function (t) { return typeof t === "string"; }).slice(-config.tokensKeep) : [];
+    r.ads = Math.max(0, Math.floor(Number(o.ads) || 0));
+    r.cardAt = Math.max(0, Math.floor(Number(o.cardAt) || 0));
+    r.remindDay = Math.max(0, Math.floor(Number(o.remindDay) || 0));
+    r.endShown = Math.max(0, Number(o.endShown) || 0);
+    return r;
+  }
+  function parse(raw) { try { return clean(typeof raw === "string" ? JSON.parse(raw) : raw); } catch (e) { return blank(); } }
+  /* Слияние двух снимков (облако и устройство): срок и счётчики берём большие, токены объединяем.
+     Хозяин вызывает при импорте облака, иначе срок мог бы пропасть при конфликте двух устройств. */
+  function mergeState(a, b) {
+    var x = parse(a), y = parse(b), r = blank(), seen = {};
+    r.until = Math.max(x.until, y.until); r.ads = Math.max(x.ads, y.ads); r.cardAt = Math.max(x.cardAt, y.cardAt);
+    r.remindDay = Math.max(x.remindDay, y.remindDay); r.endShown = Math.max(x.endShown, y.endShown);
+    y.tokens.concat(x.tokens).forEach(function (t) { if (!seen[t]) { seen[t] = 1; r.tokens.push(t); } });
+    r.tokens = r.tokens.slice(-config.tokensKeep);
+    return JSON.stringify(r);
+  }
+  function persist() { try { if (store && store.set) store.set(JSON.stringify(st)); } catch (e) {} }
+  function loadState() { try { st = parse(store && store.get ? store.get() : null); } catch (e) { st = blank(); } }
+
+  /* ---- Серверное время: часы устройства не используем ---- */
+  function now() {
+    if (sdk && typeof sdk.serverTime === "function") {
+      try { var t = sdk.serverTime(); if (typeof t === "number" && t > 0) { off = t - Date.now(); return t; } } catch (e) {}
+    }
+    return Date.now() + off;
+  }
+  function active() { return st.until > now(); }
+  function daysLeft() { var ms = st.until - now(); return ms > 0 ? Math.ceil(ms / DAY) : 0; }
+  function available() { return !!(ready && canBuy); }
+
+  /* ---- Утилиты текста ---- */
+  function fmt(s) { var a = arguments; return String(s).replace(/\{(\d)\}/g, function (m, i) { var v = a[Number(i) + 1]; return v == null ? "" : v; }); }
+  function tx(k) { var v = texts[k]; return v != null ? v : (TEXTS.ru[k] != null ? TEXTS.ru[k] : k); }
+  function plural(n) {
+    if (lang === "en") return fmt(n === 1 ? tx("d1") : tx("d2"), n);
+    var m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return fmt(tx("d1"), n);
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return fmt(tx("d2"), n);
+    return fmt(tx("d5"), n);
+  }
+  function dateStr(ms) {
+    try { return new Date(ms).toLocaleDateString(tx("lang"), { day: "numeric", month: "long", year: "numeric" }).replace(/\s*г\.$/, ""); }   // без «г.», чтобы в конце фразы не было «г..»
+    catch (e) { return new Date(ms).toISOString().slice(0, 10); }
+  }
+  function priceOf(id) { var c = catalog[id]; return c && c.price ? String(c.price) : ""; }
+  function dayIdx() { return Math.floor(now() / DAY); }
+  function emit() { var a = active(); lastActive = a; listeners.slice().forEach(function (f) { try { f(a); } catch (e) {} }); renderCorner(); if (ui.ov && ui.mode === "shop") renderShop(); }
+
+  /* ---- Покупка и начисление: запись в облако подтверждена, и только потом consumePurchase ---- */
+  function grant(p) {
+    var id = p && p.productID, tok = p && p.purchaseToken, prod = config.products[id];
+    if (!prod || !tok) return Promise.resolve(false);
+    if (st.tokens.indexOf(tok) < 0) {
+      var base = Math.max(now(), st.until);
+      st.until = base + prod.days * DAY;
+      st.tokens.push(tok); if (st.tokens.length > config.tokensKeep) st.tokens.shift();
+      persist();
+    }
+    return Promise.resolve(store && store.save ? store.save() : false).then(function (ok) {
+      if (!ok) { var e = new Error("save"); e.code = "save"; throw e; }
+      // срок уже сохранён: если закрыть покупку не вышло, её закроют при следующем запуске, второй раз срок не начислится
+      return Promise.resolve(payments.consumePurchase(tok)).then(function () {}, function () {});
+    }).then(function () { emit(); return true; });
+  }
+  function queue(f) { var r = chain.then(f, f); chain = r.then(function () {}, function () {}); return r; }
+  function checkPurchases() {
+    return queue(function () {
+      return payments.getPurchases().then(function (list) {
+        list = Array.isArray(list) ? list : (list && list.purchases) || [];
+        return list.reduce(function (p, item) { return p.then(function () { return grant(item).catch(function () {}); }); }, Promise.resolve());
+      });
+    }).catch(function () {}).then(function () { emit(); });
+  }
+  function buy(id) {
+    if (busy || !canBuy || !config.products[id]) return Promise.resolve(false);
+    busy = true; setStatus(tx("busy")); renderShop();
+    return queue(function () {
+      return payments.purchase({ id: id, developerPayload: "pm" }).then(function (p) {
+        return grant(p).then(function () { setStatus(fmt(tx("done"), dateStr(st.until))); return true; }, function (e) {
+          setStatus(e && e.code === "save" ? tx("saveFail") : tx("fail")); return false;
+        });
+      }, function () { setStatus(tx("fail")); return false; });
+    }).then(function (r) { busy = false; renderShop(); return r; }, function () { busy = false; renderShop(); return false; });
+  }
+
+  /* ---- Вызовы хозяина ---- */
+  function noteFullscreen() { st.ads++; persist(); }
+  /* Показать карточку на спокойном экране (меню, результат). Возвращает true, если карточка открыта. */
+  function maybeCard() {
+    if (!available() || ui.ov) return false;
+    if (active()) {
+      if (daysLeft() <= config.remindDays && st.remindDay !== dayIdx()) { st.remindDay = dayIdx(); persist(); openCard("soon"); return true; }
+      return false;
+    }
+    if (st.until > 0 && st.endShown !== st.until) { st.endShown = st.until; persist(); openCard("end"); return true; }
+    if (config.cardEvery > 0 && Math.floor(st.ads / config.cardEvery) > Math.floor(st.cardAt / config.cardEvery)) { st.cardAt = st.ads; persist(); openCard("ad"); return true; }
+    return false;
+  }
+
+  /* ---- Интерфейс ---- */
+  var CSS = ".pm-corner{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:max(12px,env(safe-area-inset-right,0px));z-index:var(--pm-z,50);display:inline-flex;align-items:center;gap:5px;" +
+    "min-height:40px;padding:0 12px;border-radius:20px;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:var(--pm-gold,#f2c14e);color:#2a2110;font:600 14px/1 var(--f-display,system-ui,sans-serif);letter-spacing:.02em;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.25)}" +
+    ".pm-corner[hidden]{display:none}.pm-corner.on{background:var(--pm-paper,var(--paper,#f4edd9));color:var(--pm-ink,var(--fg,#22304a))}" +
+    ".pm-corner:focus-visible,.pm-btn:focus-visible,.pm-x:focus-visible{outline:3px solid var(--pm-focus,var(--focus,#1d5cc0));outline-offset:2px}" +
+    ".pm-ov{position:fixed;inset:0;z-index:calc(var(--pm-z,50) + 10);display:grid;place-items:center;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));background:var(--pm-scrim,rgba(20,18,12,.5))}" +
+    ".pm-ov[hidden]{display:none}.pm-box{position:relative;box-sizing:border-box;width:100%;max-width:420px;max-height:calc(100% - 8px);overflow-y:auto;background:var(--pm-paper,var(--paper,#f4edd9));color:var(--pm-ink,var(--fg,#22304a));" +
+    "border:1.5px solid var(--pm-ink,var(--fg,#22304a));border-radius:12px;padding:18px 18px 16px;box-shadow:0 10px 34px rgba(0,0,0,.4);font:15px/1.4 var(--f-body,system-ui,sans-serif);-webkit-user-select:none;user-select:none}" +
+    ".pm-box h2{margin:0 36px 8px 0;font:600 22px/1.2 var(--f-display,system-ui,sans-serif);text-wrap:balance}.pm-box p{margin:0 0 10px}.pm-sub{color:var(--pm-muted,var(--muted,#615d4f));font-size:14px}" +
+    ".pm-x{position:absolute;top:8px;right:8px;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer}" +
+    ".pm-perks{margin:0 0 12px;padding-left:20px}.pm-perks li{margin:0 0 4px}" +
+    ".pm-prod{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:10px 12px;margin:0 0 10px;border:1.5px solid var(--pm-line,var(--line,#b9ab86));border-radius:10px;background:var(--pm-paper2,var(--paper-2,#ebe1c6))}" +
+    ".pm-prod b{font:600 17px/1.2 var(--f-display,system-ui,sans-serif)}.pm-prod .pm-price{font:600 17px/1 var(--f-display,system-ui,sans-serif);font-variant-numeric:tabular-nums;white-space:nowrap}" +
+    ".pm-prod .pm-sub{grid-column:1 / -1}.pm-btn{box-sizing:border-box;min-height:44px;padding:0 16px;border-radius:8px;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:transparent;color:inherit;font:600 16px/1 var(--f-display,system-ui,sans-serif);cursor:pointer}" +
+    ".pm-btn.main{background:var(--pm-red,var(--red,#b3352b));border-color:var(--pm-red,var(--red,#b3352b));color:var(--pm-redink,var(--red-ink,#fff7ea))}.pm-btn:disabled{opacity:.55;cursor:default}" +
+    ".pm-prod .pm-btn{grid-column:1 / -1;width:100%}.pm-row{display:flex;gap:10px;flex-wrap:wrap}.pm-row .pm-btn{flex:1 1 140px}" +
+    ".pm-status{min-height:20px;margin:6px 0 0;font-size:14px;font-style:italic}@media (prefers-reduced-motion:no-preference){.pm-box{animation:pmIn .2s ease-out}}@keyframes pmIn{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}";
+
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function ensureUi() {
+    if (ui.style) return;
+    ui.style = el("style"); ui.style.textContent = CSS; document.head.appendChild(ui.style);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && ui.ov) closeOv(); });
+  }
+  function renderCorner() {
+    if (!config.corner || typeof document === "undefined") return;
+    var show = ready && (canBuy || active());
+    try { document.documentElement.classList.toggle("pm-on", !!show); } catch (e) {}
+    if (!show) { if (ui.corner) ui.corner.hidden = true; return; }
+    ensureUi();
+    if (!ui.corner) {
+      ui.corner = el("button", "pm-corner"); ui.corner.type = "button"; ui.corner.id = "pmCorner";
+      ui.corner.addEventListener("click", function () { openShop(); });
+      document.body.appendChild(ui.corner);
+    }
+    var on = active();
+    ui.corner.hidden = false;
+    ui.corner.classList.toggle("on", on);
+    // звезда и подпись отдельными элементами: хозяин может скрыть подпись на тесном экране (.pm-lbl), кнопка остаётся звездой
+    ui.corner.textContent = "";
+    ui.corner.appendChild(el("span", "pm-st", "★"));
+    ui.corner.appendChild(el("span", "pm-lbl", on ? fmt(tx("btnOn"), daysLeft()) : tx("btn")));
+    ui.corner.setAttribute("aria-label", on ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("btn"));
+  }
+  function setStatus(s) { ui.status = s || ""; var n = ui.box && ui.box.querySelector(".pm-status"); if (n) n.textContent = ui.status; }
+  function mountOv() {
+    ensureUi(); closeOv(true);
+    ui.lastFocus = document.activeElement;
+    ui.ov = el("div", "pm-ov"); ui.ov.setAttribute("role", "dialog"); ui.ov.setAttribute("aria-modal", "true");
+    ui.box = el("div", "pm-box"); ui.ov.appendChild(ui.box);
+    ui.ov.addEventListener("click", function (e) { if (e.target === ui.ov) closeOv(); });
+    document.body.appendChild(ui.ov);
+  }
+  function closeOv(quiet) {
+    if (ui.ov && ui.ov.parentNode) ui.ov.parentNode.removeChild(ui.ov);
+    ui.ov = null; ui.box = null; ui.mode = ""; ui.status = "";
+    if (!quiet && ui.lastFocus && ui.lastFocus.focus) { try { ui.lastFocus.focus({ preventScroll: true }); } catch (e) {} }
+  }
+  function xBtn() { var b = el("button", "pm-x", "×"); b.type = "button"; b.setAttribute("aria-label", tx("close")); b.addEventListener("click", function () { closeOv(); }); return b; }
+  function productCard(id) {
+    var days = config.products[id].days, c = el("div", "pm-prod");
+    var base = Math.max(now(), st.until);
+    c.appendChild(el("b", "", id === "premium_365" ? tx("p365") : tx("p30")));
+    c.appendChild(el("span", "pm-price", priceOf(id) || ""));
+    c.appendChild(el("span", "pm-sub", fmt(tx("validTo"), dateStr(base + days * DAY))));
+    var b = el("button", "pm-btn main", active() ? tx("extend") : tx("buy")); b.type = "button"; b.disabled = busy; b.setAttribute("data-pm-buy", id);
+    b.addEventListener("click", function () { buy(id); });
+    c.appendChild(b);
+    return c;
+  }
+  function renderShop() {
+    if (!ui.box || ui.mode !== "shop") return;
+    var b = ui.box; b.textContent = "";
+    b.appendChild(xBtn());
+    var h = el("h2", "", tx("title")); h.id = "pmTitle"; b.appendChild(h);
+    ui.ov.setAttribute("aria-labelledby", "pmTitle");
+    b.appendChild(el("p", "", active() ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("notActive")));
+    var ul = el("ul", "pm-perks"); texts.perks.forEach(function (s) { ul.appendChild(el("li", "", s)); }); b.appendChild(ul);
+    config.order.forEach(function (id) { if (catalog[id]) b.appendChild(productCard(id)); });
+    b.appendChild(el("p", "pm-sub", tx("note")));
+    var s = el("p", "pm-status", ui.status); s.setAttribute("role", "status"); s.setAttribute("aria-live", "polite"); b.appendChild(s);
+  }
+  function openShop() {
+    if (!ready || (!canBuy && !active())) return;
+    mountOv(); ui.mode = "shop"; renderShop();
+    var f = ui.box.querySelector(".pm-prod .pm-btn") || ui.box.querySelector(".pm-x"); if (f) try { f.focus({ preventScroll: true }); } catch (e) {}
+  }
+  function openCard(kind) {
+    mountOv(); ui.mode = "card:" + kind;
+    var b = ui.box, p30 = priceOf("premium_30");
+    var title = kind === "ad" ? tx("adTitle") : kind === "soon" ? tx("soonTitle") : tx("endTitle");
+    var text = kind === "ad" ? fmt(tx("adText"), p30 || ("99 " + tx("free"))) : kind === "soon" ? fmt(tx("soonText"), plural(daysLeft())) : tx("endText");
+    b.appendChild(xBtn());
+    var h = el("h2", "", title); h.id = "pmTitle"; b.appendChild(h); ui.ov.setAttribute("aria-labelledby", "pmTitle");
+    b.appendChild(el("p", "", text));
+    var row = el("div", "pm-row");
+    var go = el("button", "pm-btn main", kind === "ad" ? tx("adMore") : (kind === "soon" ? tx("extend") : tx("endBuy"))); go.type = "button";
+    go.addEventListener("click", function () { openShop(); });
+    var no = el("button", "pm-btn", tx("later")); no.type = "button"; no.addEventListener("click", function () { closeOv(); });
+    row.appendChild(go); row.appendChild(no); b.appendChild(row);
+    try { no.focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  /* ---- Запуск ---- */
+  function setLang(l) {
+    lang = l === "en" ? "en" : "ru"; texts = Object.assign({}, TEXTS.ru, TEXTS[lang] || {});
+    renderCorner(); if (ui.ov) { if (ui.mode === "shop") renderShop(); else { var m = ui.mode.split(":")[1]; openCard(m); } }
+  }
+  function tick() {
+    var a = active();
+    if (a !== lastActive) emit(); else renderCorner();
+  }
+  function init(o) {
+    o = o || {};
+    if (o.config) Object.keys(o.config).forEach(function (k) { config[k] = o.config[k]; });
+    if (o.texts) Object.keys(o.texts).forEach(function (l) { TEXTS[l] = Object.assign(TEXTS[l] || {}, o.texts[l]); });
+    sdk = o.sdk || null; store = o.store || null;
+    setLang(o.lang || lang);
+    loadState();
+    ready = true; lastActive = active();
+    try { document.addEventListener("visibilitychange", function () { if (!document.hidden) tick(); }); } catch (e) {}
+    clearInterval(pollTimer); pollTimer = setInterval(tick, config.pollMs);
+    renderCorner();
+    if (!sdk || typeof sdk.getPayments !== "function") return Promise.resolve(false);
+    return sdk.getPayments({ signed: false }).then(function (pay) {
+      payments = pay;
+      return pay.getCatalog();
+    }).then(function (list) {
+      list = Array.isArray(list) ? list : [];
+      list.forEach(function (c) { if (c && config.products[c.id]) catalog[c.id] = c; });
+      canBuy = !!(store && store.save && config.order.some(function (id) { return catalog[id]; }));
+      renderCorner();
+      return canBuy ? checkPurchases().then(function () { return true; }) : false;
+    }).catch(function () { canBuy = false; renderCorner(); return false; });
+  }
+
+  return {
+    config: config,
+    init: init, setLang: setLang,
+    active: active, until: function () { return st.until; }, daysLeft: daysLeft, available: available,
+    noteFullscreen: noteFullscreen, maybeCard: maybeCard, openShop: openShop,
+    onChange: function (f) { if (typeof f === "function") listeners.push(f); },
+    mergeState: mergeState,
+    refresh: function () { return canBuy ? checkPurchases() : Promise.resolve(); },
+    _state: function () { return JSON.parse(JSON.stringify(st)); }
+  };
+})();
+
+</script>
 <script>
 /* ===== Слой платформы (заглушка; на Яндекс Играх подхватывает SDK, иначе localStorage) ===== */
 window.PF = (function () {
   'use strict';
-  var ysdk = null, player = null, sdkOk = false, adBusy = false, tabHidden = false, apiPaused = false, lastAdAt = 0, bornAt = Date.now();
+  var ysdk = null, player = null, sdkOk = false, adBusy = false, tabHidden = false, apiPaused = false;
   var mem = {}, dirty = false, timer = 0, T_KEY = 'umn-syncT';
   var self = { onPause: function () {} };
   function ls(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
   self.get = function (k) { if (k in mem) return mem[k]; try { return localStorage.getItem(k); } catch (e) { return null; } };
   self.put = function (k, v) { v = String(v); mem[k] = v; ls(k, v); if (k.indexOf('umn-') === 0 && k !== T_KEY) { ls(T_KEY, String(Date.now())); dirty = true; if (!timer && player) timer = setTimeout(flush, 2500); } };
   self.del = function (k) { delete mem[k]; ls(k, null); };
+  function snap() { var d = {}; Object.keys(mem).forEach(function (k) { if (k.indexOf('umn-') === 0 && k !== T_KEY) d[k] = mem[k]; }); return { v: 1, _t: Date.now(), d: d }; }
+  self.saveNow = function () { clearTimeout(timer); timer = 0; if (!player) return Promise.resolve(false); try { return Promise.resolve(player.setData(snap(), true)).then(function () { dirty = false; return true; }, function () { return false; }); } catch (e) { return Promise.resolve(false); } };
+  self.sdk = function () { return ysdk; };
+  self.premium = function () { try { return !!(window.Premium && window.Premium.active()); } catch (e) { return false; } };
   function flush() { clearTimeout(timer); timer = 0; if (!dirty || !player) return; dirty = false; var d = {}; Object.keys(mem).forEach(function (k) { if (k.indexOf('umn-') === 0 && k !== T_KEY) d[k] = mem[k]; }); try { player.setData({ v: 1, _t: Date.now(), d: d }, false); } catch (e) {} }
   self.paused = function () { return adBusy || tabHidden || apiPaused; };
   function changed() { try { self.onPause(self.paused()); } catch (e) {} }
   document.addEventListener('visibilitychange', function () { tabHidden = document.hidden; if (tabHidden) flush(); changed(); });
   self.setPlaying = function (on) { try { var g = ysdk && ysdk.features && ysdk.features.GameplayAPI; if (g) { on ? g.start() : g.stop(); } } catch (e) {} };
+  self.lang = function () { try { return ysdk && ysdk.environment && ysdk.environment.i18n && ysdk.environment.i18n.lang; } catch (e) { return null; } };
   self.ready = function () { try { var l = ysdk && ysdk.features && ysdk.features.LoadingAPI; if (l) l.ready(); } catch (e) {} };
   self.init = function () {
     if (!window.YaGames || !window.YaGames.init) return Promise.resolve();
@@ -244,20 +579,16 @@ window.PF = (function () {
         ysdk = sdk; sdkOk = true;
         try { sdk.on('game_api_pause', function () { apiPaused = true; changed(); }); sdk.on('game_api_resume', function () { apiPaused = false; changed(); }); } catch (e) {}
         return sdk.getPlayer({ scopes: false }).then(function (p) { player = p; return p.getData(); }).then(function (data) {
+          var PK = 'umn-premium', cp = data && data.d && typeof data.d[PK] === 'string' ? data.d[PK] : null, lp = self.get(PK);
           if (data && data.d && (data._t || 0) > (Number(self.get(T_KEY)) || 0)) { Object.keys(data.d).forEach(function (k) { mem[k] = data.d[k]; ls(k, data.d[k]); }); ls(T_KEY, String(data._t)); }
+          if ((cp || lp) && window.Premium) { var m = window.Premium.mergeState(lp, cp); mem[PK] = m; ls(PK, m); if (m !== cp) { dirty = true; if (!timer) timer = setTimeout(flush, 2500); } }
         }, function () {});
       }).then(function () { clearTimeout(to); resolve(); }, function () { clearTimeout(to); resolve(); });
     });
   };
-  self.interstitial = function (done) {
-    var now = Date.now(), allowed = lastAdAt ? lastAdAt + 180000 : bornAt + 120000;
-    if (!sdkOk || !ysdk.adv || !ysdk.adv.showFullscreenAdv || now < allowed || adBusy) { done(); return; }
-    var fin = false; function end(sh) { if (fin) return; fin = true; if (sh) lastAdAt = Date.now(); adBusy = false; changed(); done(); }
-    adBusy = true; changed();
-    try { ysdk.adv.showFullscreenAdv({ callbacks: { onClose: end, onError: function () { end(false); }, onOffline: function () { end(false); } } }); } catch (e) { end(false); }
-  };
-  self.canReward = function () { return !!(sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo); };
+  self.canReward = function () { return !!(self.premium() || sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo); };
   self.rewarded = function (done) {
+    if (self.premium()) { done(true); return; }
     if (!self.canReward()) { done(false); return; }
     var fin = false, got = false; function end() { if (fin) return; fin = true; adBusy = false; changed(); done(got); }
     adBusy = true; changed();
@@ -395,6 +726,13 @@ function worldSvg(id) {
   return '<svg viewBox="0 0 375 340" preserveAspectRatio="xMidYMax slice">' + s + '</svg>';
 }
 
+var EN_DICT = {"Рыцарь Рома": "Knight Roma", "Лиса Лика": "Fox Lika", "Робот Бо": "Robo Bo", "Дракончик Дрюня": "Drake Drew", "Щит: первая ошибка в бою не отнимает сердце": "Shield: your first mistake in battle won't cost you a heart", "Подсказка: 2 раза за бой убирает неверные ответы": "Hint: removes wrong answers twice per battle", "+3 секунды на каждый пример": "+3 seconds on every question", "6 сердец вместо 5": "6 hearts instead of 5", "Волшебный лес": "Magic Forest", "Болото": "Swamp", "Замок": "Castle", "Пенёк-Грибок": "Stump Shroom", "Колобок-злюка": "Grumpy Dumpling", "Шишкарь": "Pine Cone Guy", "Лягушонок-Забияка": "Bully Froglet", "Тинник": "Sludge", "Кувшинкин": "Lily Pad Imp", "Шестак — Шестилапый Жаб": "Sixer the Six-Legged Toad", "Скелетик": "Little Skeleton", "Призрак-Простыня": "Sheet Ghost", "Горгулья": "Gargoyle", "Король Семерик": "King Sevener", "Столбец ×2": "×2 Table", "Столбец ×3": "×3 Table", "Столбец ×4": "×4 Table", "Столбец ×5": "×5 Table", "Столбец ×6": "×6 Table", "Столбец ×7": "×7 Table", "Смесь 2–5": "Mix 2–5", "Деление на 2–5": "Division by 2–5", "Смесь 2–6": "Mix 2–6", "Смесь 2–7": "Mix 2–7", "БОСС ×6": "BOSS ×6", "БОСС ×7": "BOSS ×7", "×7 скоростной": "×7 Speed Round", "Уровень": "Level", "БОСС!": "BOSS!", "Поехали!": "Let's go!", "Босс злится!": "The boss is angry!", "меньше времени": "less time", "КОМБО ×": "COMBO ×", "×4 = крит": "×4 = crit", "×8 = суперудар": "×8 = super hit", "СУПЕР!": "SUPER!", "КРИТ −2!": "CRIT −2!", "СУПЕР −3!": "SUPER −3!", "ЩИТ!": "SHIELD!", "Время!": "Time!", "БИТВА ОТРЯДОВ": "SQUAD BATTLE", "ТАБЛИЦА<br>УМНОЖЕНИЯ": "MULTIPLICATION<br>TABLE", "бей монстров знаниями!": "defeat monsters with math!", "ИГРАТЬ": "PLAY", "Герои": "Heroes", "Звук": "Sound", "Для родителей": "For parents", "Назад": "Back", "Пауза": "Pause", "Подсказка": "Hint", "Для родителей — удерживайте шестерёнку": "For parents: hold the gear button", "Космос и Вулкан — скоро!": "Space and Volcano: coming soon!", "Столбцы ×8 и ×9, боссы и новые герои": "×8 and ×9 tables, bosses, and new heroes", "БОСС": "BOSS", "Сначала пройди предыдущий уровень": "Beat the previous level first", "Босс побеждён!": "Boss defeated!", "Победа!": "Victory!", "Не вышло…": "Not this time…", "Не страшно! Эти примеры теперь будут попадаться чаще.": "No worries! These questions will come up more often now.", "Верно: ": "Correct: ", " · Ошибок: ": " · Mistakes: ", " · Лучшее комбо: ×": " · Best combo: ×", "Повторим:": "Let's review:", "Новый герой открыт: ": "New hero unlocked: ", "Удвоить звёзды (ролик)": "Double your stars (watch ad)", "Дальше": "Next", "Ещё раз": "Again", "Ещё раз с +1 сердцем (ролик)": "Try again with +1 heart (watch ad)", "Карта": "Map", " ★ в копилку!": " ★ added to your collection!", " Новый герой: ": " New hero: ", "Выбран": "Selected", "Выбрать": "Select", " нужно ": " required ", "Итого": "Total", "Ответов: ": "Answers: ", " · Верных: ": " · Correct: ", " · Звёзд: ": " · Stars: ", "Умножение": "Multiplication", "Деление": "Division", "Таблица умножения": "Multiplication table", "Деление (строка ÷ столбец)": "Division (row ÷ column)", "не было": "not seen", "западает": "struggling", "учится": "learning", "почти": "almost learned", "выучено": "learned", "Цифра в клетке — сколько раз встретился пример. Нажмите на клетку.": "The number in each cell shows how many times you've seen that problem. Tap a cell.", "Что западает": "Weak spots", "Пока нет ошибок. Играйте — здесь появятся примеры, которые вызывают трудности.": "No mistakes yet. Keep playing: tough questions will show up here.", "ошибок ": "mistakes ", " из ": " of ", "Сбросить прогресс": "Reset progress", "Сбросить все звёзды и статистику?": "Reset all stars and statistics?", ": встретился ": ": seen ", " р., ошибок ": " times, mistakes ", ", ср. время ": ", avg time ", "Пока не встречался": "Not seen yet", "Продолжить": "Resume", "Заново": "Restart", "На карту": "To map", " с": " sec", "Таблица умножения: Битва отрядов": "Multiplication Table: Squad Battle", "Удвоить звёзды (Премиум)": "Double your stars (Premium)", "Ещё раз с +1 сердцем (Премиум)": "Try again with +1 heart (Premium)", "Премиум для родителей": "Premium for Parents", "Премиум на 30 дней или год: награды выдаются сразу, без просмотра роликов. Покупку оплачивает взрослый, автопродления нет.": "Premium for 30 days or one year: rewards are given instantly, no videos to watch. An adult makes the purchase, and it does not renew automatically.", "Премиум активен до ": "Premium is active until ", "Узнать про Премиум": "Learn About Premium", "Премиум": "Premium"};
+var LANG = 'ru';
+function T(k) { return LANG === 'en' && EN_DICT[k] !== undefined ? EN_DICT[k] : k; }
+function detectLang() { try { var l = (PF.lang && PF.lang()) || navigator.language || 'ru'; l = String(l).toLowerCase().slice(0, 2); return ['ru', 'be', 'kk', 'uk', 'uz', 'hy', 'az', 'ky', 'tg', 'tk'].indexOf(l) >= 0 ? 'ru' : 'en'; } catch (e) { return 'ru'; } }
+function applyLang() { try { if (window.Premium) Premium.setLang(LANG); } catch (e) {}
+  document.documentElement.lang = LANG; document.title = T('Таблица умножения: Битва отрядов'); [['b-pause', 'Пауза'], ['b-hint', 'Подсказка']].forEach(function (x) { var e = document.getElementById(x[0]); if (e) e.setAttribute('aria-label', T(x[1])); }); }
+
 /* ===== Данные ===== */
 var HEROES = [
   { id: 'knight', nm: 'Рыцарь Рома', need: 0, perk: 'Щит: первая ошибка в бою не отнимает сердце' },
@@ -453,7 +791,7 @@ function loadSave() {
   SAVE.stars = SAVE.stars || {}; SAVE.stats = SAVE.stats || {}; SAVE.hero = SAVE.hero || 'knight';
 }
 function save() { try { PF.put(KEY, JSON.stringify(SAVE)); } catch (e) {} }
-function totalStars() { var s = 0; for (var k in SAVE.stars) s += SAVE.stars[k]; return s; }
+function totalStars() { var s = SAVE.bonus || 0; for (var k in SAVE.stars) s += SAVE.stars[k]; return s; }
 function unlocked(lv) { return lv.n === 1 || (SAVE.stars[lv.n - 1] || 0) >= 1; }
 function heroOpen(h) { return totalStars() >= h.need; }
 
@@ -489,7 +827,7 @@ function show(id) {
   $(id).classList.add('on'); curScreen = id; $('pause').classList.remove('on');
   PF.setPlaying(id === 's-battle');
 }
-function fmtT(ms) { return (ms / 1000).toFixed(1).replace('.', ',') + ' с'; }
+function fmtT(ms) { return (ms / 1000).toFixed(1).replace('.', LANG === 'en' ? '.' : ',') + T(' с'); }
 
 /* ===== Примеры и адаптивная выдача ===== */
 function factKey(f) { return f.o === 'm' ? 'm' + Math.min(f.a, f.b) + 'x' + Math.max(f.a, f.b) : 'd' + (f.a * f.b) + '/' + f.a; }
@@ -561,8 +899,8 @@ function startLevel(n, bonus) {
   };
   var h = $('b-hero');
   h.querySelector('.spr').innerHTML = art('hero_' + SAVE.hero, heroSvg(SAVE.hero));
-  $('b-title').textContent = 'Уровень ' + lv.n;
-  $('b-sub').textContent = W.nm + ' · ' + lv.nm;
+  $('b-title').textContent = T('Уровень') + ' ' + lv.n;
+  $('b-sub').textContent = T(W.nm) + ' · ' + T(lv.nm);
   $('b-bg').innerHTML = worldSvg(W.id);
   var st = $('b-stage'); st.style.backgroundImage = ''; $('b-bg').style.display = ''; setBg(st, 'bg_' + W.id);
   $('b-fx').innerHTML = ''; $('b-combo').className = 'combo';
@@ -570,7 +908,7 @@ function startLevel(n, bonus) {
   $('b-hint').className = pk.hint ? 'on' : ''; $('b-hint').innerHTML = icon('bulb') + '<span id="b-hn">' + pk.hint + '</span>';
   drawHearts(); spawnEnemy(true); swapArt($('s-battle'));
   show('s-battle');
-  banner(lv.boss ? 'БОСС!' : 'Поехали!', lv.nm);
+  banner(lv.boss ? T('БОСС!') : T('Поехали!'), T(lv.nm));
   var id = B.id;
   setTimeout(function () { if (B && B.id === id) nextQuestion(); }, 1300);
   requestAnimationFrame(tick);
@@ -585,7 +923,7 @@ function spawnEnemy(first) {
   B.emax = isBoss ? m.hp : B.lv.hp; B.ehp = B.emax;
   var el = $('b-enemy');
   el.className = 'unit' + (isBoss ? ' boss' : '');
-  el.querySelector('.nm').textContent = m.nm;
+  el.querySelector('.nm').textContent = T(m.nm);
   el.querySelector('.spr').innerHTML = art('mon_' + B.W.id + (isBoss ? '_boss' : '_' + (B.W.mons.indexOf(m) + 1)), creature(Object.assign({}, m, { mark: null }))) + (isBoss && m.mark ? '<b class="mk">' + m.mark + '</b>' : '');
   hpBar(); swapArt(el);
   if (!first || true) { el.classList.add('enter'); setTimeout(function () { el.classList.remove('enter'); }, 500); }
@@ -659,7 +997,7 @@ function resolve(ok, idx) {
     var dmg = 1 + (B.combo >= 4 ? 1 : 0) + (B.combo >= 8 ? 1 : 0);
     qe.className = 'ok'; qe.textContent = q.text + ' = ' + q.ans;
     (dmg > 1 ? SFX.crit : SFX.ok)();
-    var cb = $('b-combo'); cb.className = 'combo'; if (B.combo >= 2) { void cb.offsetWidth; cb.className = 'combo on'; cb.innerHTML = 'КОМБО ×' + B.combo + (B.combo < 4 ? '<small>×4 = крит</small>' : B.combo < 8 ? '<small>×8 = суперудар</small>' : '<small>СУПЕР!</small>'); }
+    var cb = $('b-combo'); cb.className = 'combo'; if (B.combo >= 2) { void cb.offsetWidth; cb.className = 'combo on'; cb.innerHTML = T('КОМБО ×') + B.combo + (B.combo < 4 ? '<small>' + T('×4 = крит') + '</small>' : B.combo < 8 ? '<small>' + T('×8 = суперудар') + '</small>' : '<small>' + T('СУПЕР!') + '</small>'); }
     var hs = hero.querySelector('.spr'); hs.classList.add('atk-h');
     setTimeout(function () { hs.classList.remove('atk-h'); }, 560);
     setTimeout(function () {
@@ -667,9 +1005,9 @@ function resolve(ok, idx) {
       B.ehp -= dmg; hpBar();
       var es = en.querySelector('.spr'); es.classList.add('hit'); setTimeout(function () { es.classList.remove('hit'); }, 420);
       var p = pos(en.querySelector('.spr'));
-      floatTxt(dmg === 1 ? '−1' : dmg === 2 ? 'КРИТ −2!' : 'СУПЕР −3!', p.x, p.y, dmg > 1 ? 'crit' : '');
+      floatTxt(dmg === 1 ? '−1' : dmg === 2 ? T('КРИТ −2!') : T('СУПЕР −3!'), p.x, p.y, dmg > 1 ? 'crit' : '');
       if (dmg > 1) { var st = $('b-stage'); st.classList.remove('flash'); void st.offsetWidth; st.classList.add('flash'); }
-      if (B.lv.boss && B.ei === B.mons.length - 1 && !B.rage && B.ehp <= B.emax / 2 && B.ehp > 0) { B.rage = true; banner('Босс злится!', 'меньше времени'); }
+      if (B.lv.boss && B.ei === B.mons.length - 1 && !B.rage && B.ehp <= B.emax / 2 && B.ehp > 0) { B.rage = true; banner(T('Босс злится!'), T('меньше времени')); }
     }, 260);
     setTimeout(function () {
       if (!alive()) return;
@@ -680,7 +1018,7 @@ function resolve(ok, idx) {
         es.classList.remove('die'); B.ei++;
         if (B.ei >= B.mons.length) { finish(true); return; }
         spawnEnemy(); B.rage = false;
-        if (B.lv.boss && B.ei === B.mons.length - 1) banner('БОСС!', B.mons[B.ei].nm);
+        if (B.lv.boss && B.ei === B.mons.length - 1) banner(T('БОСС!'), T(B.mons[B.ei].nm));
         setTimeout(function () { if (alive()) nextQuestion(); }, B.lv.boss && B.ei === B.mons.length - 1 ? 1100 : 500);
       }, 520);
     }, 900);
@@ -695,8 +1033,8 @@ function resolve(ok, idx) {
     setTimeout(function () {
       if (!alive()) return;
       var hs2 = hero.querySelector('.spr'), p2 = pos(hs2);
-      if (B.shield) { B.shield = false; floatTxt('ЩИТ!', p2.x, p2.y, 'crit'); }
-      else { B.hp--; drawHearts(); hs2.classList.add('hit'); setTimeout(function () { hs2.classList.remove('hit'); }, 420); floatTxt(idx < 0 ? 'Время!' : '−1', p2.x, p2.y, 'bad'); }
+      if (B.shield) { B.shield = false; floatTxt(T('ЩИТ!'), p2.x, p2.y, 'crit'); }
+      else { B.hp--; drawHearts(); hs2.classList.add('hit'); setTimeout(function () { hs2.classList.remove('hit'); }, 420); floatTxt(idx < 0 ? T('Время!') : '−1', p2.x, p2.y, 'bad'); }
     }, 260);
     setTimeout(function () {
       if (!alive()) return;
@@ -723,12 +1061,13 @@ function finish(won) {
 function renderStart() {
   var W0 = WORLDS[0], W1 = WORLDS[1];
   $('s-start').innerHTML =
-    '<div class="logo"><small>БИТВА ОТРЯДОВ</small><b>ТАБЛИЦА<br>УМНОЖЕНИЯ</b><i>бей монстров знаниями!</i></div>' +
+    '<div class="logo"><small>' + T('БИТВА ОТРЯДОВ') + '</small><b>' + T('ТАБЛИЦА<br>УМНОЖЕНИЯ') + '</b><i>' + T('бей монстров знаниями!') + '</i></div>' +
     '<div class="cast">' + art('mon_forest_1', creature(W0.mons[0]), '') + art('hero_' + SAVE.hero, heroSvg(SAVE.hero), 'mid') + art('mon_swamp_1', creature(W1.mons[0]), '') + '</div>' +
-    '<div class="sbtns"><button class="btn big green" id="st-play">ИГРАТЬ</button>' +
-    '<div class="srow"><button class="btn" id="st-heroes">Герои</button><button class="btn-ic" id="st-snd" aria-label="Звук">' + icon(SAVE.snd ? 'snd' : 'mute') + '</button><button class="btn-ic" id="st-par" aria-label="Для родителей">' + icon('gear') + '</button></div>' +
-    '<div class="holdhint">Для родителей — удерживайте шестерёнку</div></div>';
+    '<div class="sbtns"><button class="btn big green" id="st-play">' + T('ИГРАТЬ') + '</button>' +
+    '<div class="srow"><button class="btn" id="st-heroes">' + T('Герои') + '</button><button class="btn-ic" id="st-lang" aria-label="Language" style="font-weight:900;font-size:16px">' + (LANG === 'en' ? 'EN' : 'RU') + '</button><button class="btn-ic" id="st-snd" aria-label="' + T('Звук') + '">' + icon(SAVE.snd ? 'snd' : 'mute') + '</button><button class="btn-ic" id="st-par" aria-label="' + T('Для родителей') + '">' + icon('gear') + '</button></div>' +
+    '<div class="holdhint">' + T('Для родителей — удерживайте шестерёнку') + '</div></div>';
   $('st-play').onclick = function () { SFX.tap(); renderMap(); };
+  $('st-lang').onclick = function () { SFX.tap(); LANG = LANG === 'en' ? 'ru' : 'en'; SAVE.lang = LANG; save(); applyLang(); renderStart(); };
   $('st-heroes').onclick = function () { SFX.tap(); renderHeroes(); };
   $('st-snd').onclick = function () { SAVE.snd = !SAVE.snd; save(); renderStart(); SFX.tap(); };
   holdGate($('st-par'), 1500, renderParent);
@@ -744,23 +1083,23 @@ function holdGate(btn, ms, fn) {
 }
 function starsRow(n, px) { var s = ''; for (var i = 0; i < 3; i++) s += i < n ? icon('star', px) : ''; return s; }
 function renderMap() {
-  var h = '<div class="topbar"><button class="btn-ic" id="mp-back" aria-label="Назад">' + icon('back') + '</button><span class="pill">' + icon('star') + totalStars() + '</span><span class="sp"></span><button class="btn" id="mp-heroes" style="min-height:58px;font-size:18px">Герои</button></div><div id="map-scroll">';
+  var h = '<div class="topbar"><button class="btn-ic" id="mp-back" aria-label="' + T('Назад') + '">' + icon('back') + '</button><span class="pill">' + icon('star') + totalStars() + '</span><span class="sp"></span><button class="btn" id="mp-heroes" style="min-height:58px;font-size:18px">' + T('Герои') + '</button></div><div id="map-scroll">';
   var aligns = ['flex-start', 'center', 'flex-end', 'center'], curN = 1;
   for (var n = 1; n <= LV.length; n++) if (unlocked(LV[n - 1])) curN = n;
   WORLDS.forEach(function (W, wi) {
-    h += '<div class="world" style="background:' + W.col + '"><h2>' + W.nm + '</h2>';
+    h += '<div class="world" style="background:' + W.col + '"><h2>' + T(W.nm) + '</h2>';
     LV.filter(function (l) { return l.w === wi; }).forEach(function (l) {
       var op = unlocked(l), st = SAVE.stars[l.n] || 0;
       h += '<div class="lrow" style="justify-content:' + aligns[l.j % 4] + '"><button class="lnode' + (l.boss ? ' boss' : '') + (!op ? ' lock' : '') + (st ? ' done' : '') + (l.n === curN && !st ? ' cur' : '') + '" data-n="' + l.n + '">' +
-        (l.boss ? '<span class="crown">' + icon('crown', 34) + '</span>' : '') + (op ? l.n : icon('lock', 34)) + (op && l.boss ? '<small>БОСС</small>' : '') +
+        (l.boss ? '<span class="crown">' + icon('crown', 34) + '</span>' : '') + (op ? l.n : icon('lock', 34)) + (op && l.boss ? '<small>' + T('БОСС') + '</small>' : '') +
         (st ? '<span class="stars">' + starsRow(st, 20) + '</span>' : '') + '</button></div>';
     });
     h += '</div>';
   });
-  h += '<div class="world soon" style="background:#8a7fb0"><h2>Космос и Вулкан — скоро!</h2><p class="note" style="text-align:center;color:#fff;margin:0">Столбцы ×8 и ×9, боссы и новые герои</p></div><div style="height:14px"></div></div>';
+  h += '<div class="world soon" style="background:#8a7fb0"><h2>' + T('Космос и Вулкан — скоро!') + '</h2><p class="note" style="text-align:center;color:#fff;margin:0">' + T('Столбцы ×8 и ×9, боссы и новые герои') + '</p></div><div style="height:14px"></div></div>';
   var s = $('s-map'); s.innerHTML = h;
   $('mp-back').onclick = renderStart; $('mp-heroes').onclick = renderHeroes;
-  s.querySelectorAll('.lnode').forEach(function (b) { b.onclick = function () { var n = Number(b.getAttribute('data-n')); if (!unlocked(LV[n - 1])) { toast('Сначала пройди предыдущий уровень'); return; } SFX.tap(); startLevel(n); }; });
+  s.querySelectorAll('.lnode').forEach(function (b) { b.onclick = function () { var n = Number(b.getAttribute('data-n')); if (!unlocked(LV[n - 1])) { toast(T('Сначала пройди предыдущий уровень')); return; } SFX.tap(); startLevel(n); }; });
   swapArt(s); show('s-map');
   var cur = s.querySelector('.cur') || s.querySelector('.lnode.done:last-of-type');
   if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'center' });
@@ -768,30 +1107,40 @@ function renderMap() {
 function renderResult() {
   if (!B || !B.result) return;
   var r = B.result, lv = B.lv, next = LV[lv.n], s = $('s-result');
-  var h = '<div class="panel"><h1>' + (r.won ? (lv.boss ? 'Босс побеждён!' : 'Победа!') : 'Не вышло…') + '</h1>';
+  var h = '<div class="panel"><h1>' + T(r.won ? (lv.boss ? 'Босс побеждён!' : 'Победа!') : 'Не вышло…') + '</h1>';
   if (r.won) { h += '<div class="rstars">'; for (var i = 0; i < 3; i++) h += '<span class="ic art ' + (i < r.stars ? 'on' : 'off') + '" data-art="ic_star" style="width:78px;height:78px;' + (i < r.stars ? 'animation-delay:' + (i * .35 + .2) + 's' : '') + '"><svg viewBox="0 0 24 24">' + ICONS.star + '</svg></span>'; h += '</div>'; }
-  else h += '<p class="rstat">Не страшно! Эти примеры теперь будут попадаться чаще.</p>';
-  h += '<div class="rstat">Верно: ' + B.oks + ' · Ошибок: ' + B.errs + ' · Лучшее комбо: ×' + B.best + '</div>';
-  if (B.errList.length) h += '<div class="again">Повторим:<b>' + B.errList.slice(0, 4).join('<br>') + '</b></div>';
-  r.newHeroes.forEach(function (hh) { h += '<div class="newhero">Новый герой открыт: ' + hh.nm + '!</div>'; });
+  else h += '<p class="rstat">' + T('Не страшно! Эти примеры теперь будут попадаться чаще.') + '</p>';
+  h += '<div class="rstat">' + T('Верно: ') + B.oks + T(' · Ошибок: ') + B.errs + T(' · Лучшее комбо: ×') + B.best + '</div>';
+  if (B.errList.length) h += '<div class="again">' + T('Повторим:') + '<b>' + B.errList.slice(0, 4).join('<br>') + '</b></div>';
+  r.newHeroes.forEach(function (hh) { h += '<div class="newhero">' + T('Новый герой открыт: ') + T(hh.nm) + '!</div>'; });
   h += '<div class="rbtns">';
-  if (r.won && next && unlocked(next)) h += '<button class="btn green" id="rs-next">Дальше</button>';
-  h += '<button class="btn ' + (r.won ? 'gray' : 'green') + '" id="rs-again">Ещё раз</button>';
-  if (!r.won && PF.canReward()) h += '<button class="btn blue" id="rs-heart">Ещё раз с +1 сердцем (ролик)</button>';
-  h += '<button class="btn gray" id="rs-map">Карта</button></div></div>';
+  if (r.won && PF.canReward()) h += '<button class="btn blue" id="rs-x2">' + T(PF.premium() ? 'Удвоить звёзды (Премиум)' : 'Удвоить звёзды (ролик)') + '</button>';
+  if (r.won && next && unlocked(next)) h += '<button class="btn green" id="rs-next">' + T('Дальше') + '</button>';
+  h += '<button class="btn ' + (r.won ? 'gray' : 'green') + '" id="rs-again">' + T('Ещё раз') + '</button>';
+  if (!r.won && PF.canReward()) h += '<button class="btn blue" id="rs-heart">' + T(PF.premium() ? 'Ещё раз с +1 сердцем (Премиум)' : 'Ещё раз с +1 сердцем (ролик)') + '</button>';
+  h += '<button class="btn gray" id="rs-map">' + T('Карта') + '</button></div></div>';
   s.innerHTML = h; swapArt(s); show('s-result');
   var lvn = lv.n;
-  var nx = $('rs-next'); if (nx) nx.onclick = function () { PF.interstitial(function () { startLevel(lvn + 1); }); };
+  var nx = $('rs-next'); if (nx) nx.onclick = function () { startLevel(lvn + 1); };
   $('rs-again').onclick = function () { startLevel(lvn); };
-  $('rs-map').onclick = function () { PF.interstitial(renderMap); };
+  $('rs-map').onclick = function () { renderMap(); };
+  var xb = $('rs-x2'); if (xb) xb.onclick = function () {
+    PF.rewarded(function (ok) {
+      if (!ok) return;
+      var before = totalStars(); SAVE.bonus = (SAVE.bonus || 0) + r.stars; var after = totalStars(); save();
+      var nh = []; HEROES.forEach(function (hh) { if (hh.need > before && hh.need <= after) nh.push(hh); });
+      var d = document.createElement('div'); d.className = 'newhero'; d.textContent = '+' + r.stars + T(' ★ в копилку!') + (nh.length ? T(' Новый герой: ') + nh.map(function (x) { return T(x.nm); }).join(', ') + '!' : '');
+      xb.parentNode.insertBefore(d, xb); xb.remove(); SFX.win();
+    });
+  };
   var hb = $('rs-heart'); if (hb) hb.onclick = function () { PF.rewarded(function (ok) { if (ok) startLevel(lvn, true); }); };
 }
 function renderHeroes() {
-  var h = '<div class="topbar"><button class="btn-ic" id="he-back" aria-label="Назад">' + icon('back') + '</button><span class="pill">' + icon('star') + totalStars() + '</span></div><div class="scroll">';
+  var h = '<div class="topbar"><button class="btn-ic" id="he-back" aria-label="' + T('Назад') + '">' + icon('back') + '</button><span class="pill">' + icon('star') + totalStars() + '</span></div><div class="scroll">';
   HEROES.forEach(function (hh) {
     var open = heroOpen(hh), sel = SAVE.hero === hh.id;
-    h += '<div class="hcard' + (sel ? ' sel' : '') + (open ? '' : ' lockd') + '">' + art('hero_' + hh.id, heroSvg(hh.id)) + '<div style="flex:1"><h3>' + hh.nm + '</h3><p>' + hh.perk + '</p>' +
-      (open ? '<button class="btn ' + (sel ? 'gray' : 'green') + '" data-h="' + hh.id + '">' + (sel ? 'Выбран' : 'Выбрать') + '</button>' : '<span class="pill" style="min-height:44px">' + icon('lock', 26) + ' нужно ' + hh.need + ' ' + icon('star', 22) + '</span>') + '</div></div>';
+    h += '<div class="hcard' + (sel ? ' sel' : '') + (open ? '' : ' lockd') + '">' + art('hero_' + hh.id, heroSvg(hh.id)) + '<div style="flex:1"><h3>' + T(hh.nm) + '</h3><p>' + T(hh.perk) + '</p>' +
+      (open ? '<button class="btn ' + (sel ? 'gray' : 'green') + '" data-h="' + hh.id + '">' + T(sel ? 'Выбран' : 'Выбрать') + '</button>' : '<span class="pill" style="min-height:44px">' + icon('lock', 26) + T(' нужно ') + hh.need + ' ' + icon('star', 22) + '</span>') + '</div></div>';
   });
   h += '</div>';
   var s = $('s-heroes'); s.innerHTML = h;
@@ -802,11 +1151,12 @@ function renderHeroes() {
 var parTab = 'm';
 function masteryClass(st) { if (!st) return 'c0'; if (st.x >= 4) return 'cG'; if (st.x === 3) return 'cL'; if (st.x === 2) return 'cY'; if (st.x === 1) return 'cO'; return st.w > 0 ? 'cR' : 'cY'; }
 function renderParent() {
-  var h = '<div class="topbar"><button class="btn-ic" id="pa-back" aria-label="Назад">' + icon('back') + '</button><b style="font-size:22px">Для родителей</b></div><div class="scroll">';
+  var h = '<div class="topbar"><button class="btn-ic" id="pa-back" aria-label="' + T('Назад') + '">' + icon('back') + '</button><b style="font-size:22px">' + T('Для родителей') + '</b></div><div class="scroll">';
   var tot = SAVE.ans || 0, okc = SAVE.okc || 0;
-  h += '<div class="card"><h3>Итого</h3><div class="note" style="font-size:16px;color:var(--ink)">Ответов: ' + tot + (tot ? ' · Верных: ' + Math.round(okc / tot * 100) + ' %' : '') + ' · Звёзд: ' + totalStars() + '</div></div>';
-  h += '<div class="tabs"><button class="btn ' + (parTab === 'm' ? 'act' : '') + '" data-t="m">Умножение</button><button class="btn ' + (parTab === 'd' ? 'act' : '') + '" data-t="d">Деление</button></div>';
-  h += '<div class="card"><h3>' + (parTab === 'm' ? 'Таблица умножения' : 'Деление (строка ÷ столбец)') + '</h3><div class="grid"><div class="h"></div>';
+  h += '<div class="card"><h3>' + T('Итого') + '</h3><div class="note" style="font-size:16px;color:var(--ink)">' + T('Ответов: ') + tot + (tot ? T(' · Верных: ') + Math.round(okc / tot * 100) + ' %' : '') + T(' · Звёзд: ') + totalStars() + '</div></div>';
+  if (window.Premium && (Premium.available() || Premium.active())) h += '<div class="card"><h3>★ ' + T('Премиум для родителей') + '</h3><div class="note">' + (Premium.active() ? T('Премиум активен до ') + new Date(Premium.until()).toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ru-RU') + '. ' : '') + T('Премиум на 30 дней или год: награды выдаются сразу, без просмотра роликов. Покупку оплачивает взрослый, автопродления нет.') + '</div><button class="btn blue" id="pa-prem" style="width:100%;margin-top:8px">' + T(Premium.active() ? 'Премиум' : 'Узнать про Премиум') + '</button></div>';
+  h += '<div class="tabs"><button class="btn ' + (parTab === 'm' ? 'act' : '') + '" data-t="m">' + T('Умножение') + '</button><button class="btn ' + (parTab === 'd' ? 'act' : '') + '" data-t="d">' + T('Деление') + '</button></div>';
+  h += '<div class="card"><h3>' + T(parTab === 'm' ? 'Таблица умножения' : 'Деление (строка ÷ столбец)') + '</h3><div class="grid"><div class="h"></div>';
   for (var c = 2; c <= 10; c++) h += '<div class="h">' + c + '</div>';
   for (var r = 2; r <= 10; r++) {
     h += '<div class="h">' + r + '</div>';
@@ -815,26 +1165,28 @@ function renderParent() {
       h += '<div class="' + masteryClass(st) + '" data-k="' + factKey(f) + '">' + (st ? st.n : '') + '</div>';
     }
   }
-  h += '</div><div class="legend"><span><i style="background:#e5e0ee"></i>не было</span><span><i style="background:#ff6b78"></i>западает</span><span><i style="background:#ffa64d"></i>учится</span><span><i style="background:#ffe14d"></i>почти</span><span><i style="background:#43c463"></i>выучено</span></div><div class="note" id="pa-info">Цифра в клетке — сколько раз встретился пример. Нажмите на клетку.</div></div>';
+  h += '</div><div class="legend"><span><i style="background:#e5e0ee"></i>' + T('не было') + '</span><span><i style="background:#ff6b78"></i>' + T('западает') + '</span><span><i style="background:#ffa64d"></i>' + T('учится') + '</span><span><i style="background:#ffe14d"></i>' + T('почти') + '</span><span><i style="background:#43c463"></i>' + T('выучено') + '</span></div><div class="note" id="pa-info">' + T('Цифра в клетке — сколько раз встретился пример. Нажмите на клетку.') + '</div></div>';
   var weak = [];
   for (var k in SAVE.stats) { var s = SAVE.stats[k]; if (s.w > 0 && s.x <= 2) weak.push(s); }
   weak.sort(function (a, b) { return (b.w - a.w) || (a.x - b.x); });
-  h += '<div class="card"><h3>Что западает</h3>';
-  if (!weak.length) h += '<div class="note">Пока нет ошибок. Играйте — здесь появятся примеры, которые вызывают трудности.</div>';
-  weak.slice(0, 5).forEach(function (s) { h += '<div class="weak"><div>' + factFull(s) + '</div><span>ошибок ' + s.w + ' из ' + s.n + (s.t ? ' · ' + fmtT(s.t) : '') + '</span></div>'; });
-  h += '</div><button class="btn red" id="pa-reset" style="width:100%">Сбросить прогресс</button></div>';
+  h += '<div class="card"><h3>' + T('Что западает') + '</h3>';
+  if (!weak.length) h += '<div class="note">' + T('Пока нет ошибок. Играйте — здесь появятся примеры, которые вызывают трудности.') + '</div>';
+  weak.slice(0, 5).forEach(function (s) { h += '<div class="weak"><div>' + factFull(s) + '</div><span>' + T('ошибок ') + s.w + T(' из ') + s.n + (s.t ? ' · ' + fmtT(s.t) : '') + '</span></div>'; });
+  h += '</div><button class="btn red" id="pa-reset" style="width:100%">' + T('Сбросить прогресс') + '</button></div>';
   var el = $('s-parent'); el.innerHTML = h;
   $('pa-back').onclick = renderStart;
   el.querySelectorAll('[data-t]').forEach(function (b) { b.onclick = function () { parTab = b.getAttribute('data-t'); renderParent(); }; });
-  el.querySelectorAll('[data-k]').forEach(function (d) { d.onclick = function () { var st = SAVE.stats[d.getAttribute('data-k')]; $('pa-info').textContent = st ? factFull(st) + ': встретился ' + st.n + ' р., ошибок ' + st.w + (st.t ? ', ср. время ' + fmtT(st.t) : '') : 'Пока не встречался'; }; });
-  $('pa-reset').onclick = function () { if (confirm('Сбросить все звёзды и статистику?')) { SAVE = freshSave(); save(); renderStart(); } };
+  el.querySelectorAll('[data-k]').forEach(function (d) { d.onclick = function () { var st = SAVE.stats[d.getAttribute('data-k')]; $('pa-info').textContent = st ? factFull(st) + T(': встретился ') + st.n + T(' р., ошибок ') + st.w + (st.t ? T(', ср. время ') + fmtT(st.t) : '') : T('Пока не встречался'); }; });
+  $('pa-reset').onclick = function () { if (confirm(T('Сбросить все звёзды и статистику?'))) { SAVE = freshSave(); SAVE.lang = LANG; save(); renderStart(); } };
+  var pb = $('pa-prem'); if (pb) pb.onclick = function () { Premium.openShop(); };
   show('s-parent');
+  try { if (window.Premium) Premium.maybeCard(); } catch (e) {}
 }
 
 /* ===== Пауза и события ===== */
 function openPause() {
   if (!B || B.phase === 'end' || B.paused) return; B.paused = true;
-  var p = $('pause'); p.innerHTML = '<h2>Пауза</h2><button class="btn green" id="pz-go">Продолжить</button><button class="btn gray" id="pz-re">Заново</button><button class="btn gray" id="pz-map">На карту</button>';
+  var p = $('pause'); p.innerHTML = '<h2>' + T('Пауза') + '</h2><button class="btn green" id="pz-go">' + T('Продолжить') + '</button><button class="btn gray" id="pz-re">' + T('Заново') + '</button><button class="btn gray" id="pz-map">' + T('На карту') + '</button>';
   p.classList.add('on');
   $('pz-go').onclick = closePause;
   $('pz-re').onclick = function () { var n = B.lv.n; B.phase = 'end'; p.classList.remove('on'); startLevel(n); };
@@ -857,12 +1209,9 @@ function init() {
     SFX.tap();
   };
   document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-  PF.init().then(function () { loadSave(); renderStart(); PF.ready(); }, function () { renderStart(); });
+  PF.init().then(function () { loadSave(); LANG = (SAVE.lang === 'en' || SAVE.lang === 'ru') ? SAVE.lang : detectLang(); applyLang(); renderStart(); PF.ready();
+    try { Premium.onChange(function () { if (curScreen === 's-parent') renderParent(); }); Premium.init({ sdk: PF.sdk(), lang: LANG, config: { corner: false }, texts: {"ru": {"title": "Премиум для родителей", "perks": ["Награды за ролики выдаются сразу, без просмотра.", "Правила и сложность не меняются: Премиум не помогает выигрывать."], "soonTitle": "Премиум скоро закончится", "soonText": "Осталось {0}. Через это время Премиум закончится сам, без повторных списаний. Купить снова для игры ребёнка?", "endTitle": "Премиум закончился", "endText": "Награды снова требуют просмотра роликов. Ребёнок может продолжать решать примеры и играть бесплатно.", "note": "Оплачивает взрослый. Один платёж, без автопродления: больше ничего не спишется. Если Премиум уже идёт, новый срок добавится к концу."}, "en": {"title": "Premium for Parents", "perks": ["Rewards for videos are given instantly, no watching.", "The rules and difficulty stay the same: Premium does not help you win."], "soonTitle": "Premium Is Ending Soon", "soonText": "{0} left. Premium ends automatically, with no further charges. You can purchase it again for your child's game if you wish.", "endTitle": "Premium Has Ended", "endText": "Video rewards require watching ads again. Your child can still practise multiplication and play for free.", "note": "An adult pays. One-time payment, no auto-renewal: nothing else will be charged. If Premium is already running, the new period is added to the end."}}, store: { get: function () { return PF.get('umn-premium'); }, set: function (r) { PF.put('umn-premium', r); }, save: function () { return PF.saveNow(); } } }).then(function () { if (curScreen === 's-parent') renderParent(); }); } catch (e) {} }, function () { LANG = detectLang(); applyLang(); renderStart(); });
 }
-window.__game = {
-  get SAVE() { return SAVE; }, get B() { return B; }, LV: LV, WORLDS: WORLDS, startLevel: startLevel, resolve: resolve,
-  makeOptions: makeOptions, buildPools: buildPools, factKey: factKey, renderParent: renderParent, renderMap: renderMap, save: save, nextQuestion: nextQuestion
-};
 init();
 </script>
 </body>

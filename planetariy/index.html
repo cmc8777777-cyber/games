@@ -76,20 +76,24 @@ h1,h2{margin:0}
 .fc{background:var(--card);border-radius:14px;padding:10px 12px;margin-bottom:8px;font-size:14px}
 .fc b{color:var(--cyan);display:block;margin-bottom:2px}
 .fc.lock{opacity:.4}
+.pm-hide .pm-corner{display:none!important}
+.pm-on .top{padding-right:128px}
+.pm-corner{--pm-paper:#1f2a6e;--pm-ink:#fff;--paper:#1f2a6e;--fg:#fff}
 </style></head><body>
 <div id="app">
  <div class="screen" id="scrTitle">
   <div class="planet">🌍</div>
-  <div class="logo">ПЛАНЕТАРИЙ</div>
-  <div class="sub">Крути Землю — разгадывай космос</div>
-  <button class="btn" id="bPlay">Играть</button>
-  <button class="btn alt" id="bRepeat">Повторение</button>
-  <button class="btn ghost" id="bJournal">Журнал наблюдений</button>
-  <button class="btn ghost" id="bReset" style="font-size:13px;padding:8px 14px;width:auto">Сбросить прогресс</button>
+  <div class="logo" data-t="logo">ПЛАНЕТАРИЙ</div>
+  <div class="sub" data-t="title.sub">Крути Землю — разгадывай космос</div>
+  <button class="btn" id="bPlay" data-t="title.play">Играть</button>
+  <button class="btn alt" id="bRepeat" data-t="title.repeat">Повторение</button>
+  <button class="btn ghost" id="bJournal" data-t="title.journal">Журнал наблюдений</button>
+  <button class="btn ghost" id="bLang" hidden style="font-size:13px;padding:8px 14px;width:auto">English</button>
+  <button class="btn ghost" id="bReset" data-t="title.reset" style="font-size:13px;padding:8px 14px;width:auto">Сбросить прогресс</button>
  </div>
 
  <div class="screen" id="scrMap" hidden>
-  <div class="top"><button class="ib" data-go="title">←</button><h2>Миры</h2><span id="mapStars" style="color:var(--gold);font-weight:800"></span></div>
+  <div class="top"><button class="ib" data-go="title">←</button><h2 data-t="map.title">Миры</h2><span id="mapStars" style="color:var(--gold);font-weight:800"></span></div>
   <div class="scroll" id="worlds"></div>
  </div>
 
@@ -101,12 +105,12 @@ h1,h2{margin:0}
  </div>
 
  <div class="screen" id="scrQuiz" hidden>
-  <div class="top"><button class="ib" id="qBack">←</button><h2 id="qTitle">Викторина</h2><span id="qProg" style="color:var(--gold);font-weight:800"></span></div>
-  <div class="scroll"><div class="qq" id="qq"></div><div id="qo"></div><div id="qExp"></div><button class="btn" id="qNext" hidden style="width:100%">Дальше</button></div>
+  <div class="top"><button class="ib" id="qBack">←</button><h2 id="qTitle" data-t="quiz.title">Викторина</h2><span id="qProg" style="color:var(--gold);font-weight:800"></span></div>
+  <div class="scroll"><div class="qq" id="qq"></div><div id="qo"></div><div id="qExp"></div><button class="btn" id="qNext" hidden style="width:100%" data-t="res.next">Дальше</button></div>
  </div>
 
  <div class="screen" id="scrJournal" hidden>
-  <div class="top"><button class="ib" data-go="title">←</button><h2>Журнал наблюдений</h2><span id="jCnt" style="color:var(--gold);font-weight:800"></span></div>
+  <div class="top"><button class="ib" data-go="title">←</button><h2 data-t="journal.title">Журнал наблюдений</h2><span id="jCnt" style="color:var(--gold);font-weight:800"></span></div>
   <div class="scroll" id="jList"></div>
  </div>
 
@@ -115,12 +119,14 @@ h1,h2{margin:0}
    <div id="rHero"></div><h2 id="rTitle"></h2>
    <div class="stars" id="rStars"></div>
    <div class="fact" id="rFact"></div>
-   <div class="row"><button class="btn ghost" id="rAgain">Ещё раз</button><button class="btn" id="rNext">Дальше</button></div>
-   <div class="row" style="margin-top:8px"><button class="btn ghost" id="rMap" style="font-size:14px">К уровням</button></div>
+   <div class="row"><button class="btn ghost" id="rAgain" data-t="res.again">Ещё раз</button><button class="btn" id="rNext" data-t="res.next">Дальше</button></div>
+   <div class="row" style="margin-top:8px"><button class="btn ghost" id="rMap" style="font-size:14px" data-t="res.map">К уровням</button></div>
   </div>
  </div>
 </div>
 
+<script>window.I18N_EN={"logo": "PLANETARIUM", "title.sub": "Spin Earth — explore space", "title.play": "Play", "title.repeat": "Practice", "title.journal": "Observation Journal", "title.reset": "Reset Progress", "title.reset_ask": "Erase progress? Tap again", "title.reset_done": "Progress erased", "map.title": "Worlds", "map.world": "World {n}. {name}", "map.soon": "{sub} — coming soon", "quiz.title": "Quiz", "quiz.boss": "Boss {n}", "quiz.right": "Correct!", "quiz.wrong": "Not quite.", "journal.title": "Observation Journal", "journal.obs": "Observation {n}", "journal.locked": "Unlocks after you finish the level.", "game.title": "Level {n} · {w}", "game.w1": "Day and Night", "game.w2": "Time Zones", "ctl.rew": "🎬 Watch an ad for the answer", "ctl.m1h": "⟲ −1 hr", "ctl.m15": "−15 min", "ctl.p15": "+15 min", "ctl.p1h": "+1 hr ⟳", "ctl.ok": "Done ✓", "day.m1": "yesterday", "day.0": "today", "day.1": "tomorrow", "day.label": "day: {d}", "rew.spin": "🎬 Comet spun Earth for you. Tap \"Done\".", "rew.clock": "🎬 Comet showed the answer. Tap \"Done\".", "hint.ring": "💡 The golden ring on Earth shows where the city should be.", "hint.clock2": "💡 You can now see the time in the right cities on Earth. Set the clocks to match.", "hint.auto.spin": "💡 Comet spun Earth for you. Tap \"Done\".", "hint.auto.clock": "💡 Comet gave you a hint. Tap \"Done\".", "err.spin": "🐱 Not quite. In {city}, it's <b>{now}<\/b>, but it should be <b>{need}<\/b>. Keep spinning!", "err.between": "between {a} and {b}", "err.clock": "🐱 Something's not right. Look at Earth: farther east means a later time. Move east, add an hour.", "res.great": "Great job!", "res.boss_win": "Boss defeated! {n} out of 5", "res.boss_lose": "Correct answers: {n} out of 5. You need 4", "res.lose_text": "That's okay! Play the levels again and try once more. You'll get new questions each time.", "res.journal": "📖 Observation Journal:", "res.next": "Next", "res.next_repeat": "Next (Practice)", "res.again": "Try Again", "res.map": "Levels", "scene.rot": "rotation", "scene.day": "☀ day", "city.msk": "Moscow", "city.lon": "London", "city.ber": "Berlin", "city.cai": "Cairo", "city.ekb": "Yekaterinburg", "city.omsk": "Omsk", "city.vl": "Vladivostok", "city.tok": "Tokyo", "city.ny": "New York", "city.la": "L.A.", "world.1.name": "Day and Night", "world.1.sub": "Day, night, and Earth's rotation", "world.2.name": "Time Zones", "world.2.sub": "Time zones and trains", "world.3.name": "Seasons", "world.3.sub": "Earth's orbit and tilt", "world.4.name": "Polar Day", "world.4.sub": "Latitude and daylight hours", "world.5.name": "Moon", "world.5.sub": "Moon phases and eclipses", "world.6.name": "Travel", "world.6.sub": "Time zones + seasons", "world.7.name": "Astronomer's Exam", "world.7.sub": "Everything together", "lv.1.txt": "Hi! I'm Mira, and this is my cat, Comet. Spin Earth with your finger until <b>it's noon in Moscow<\/b> — when the Sun is directly above the city.", "lv.1.fact": "Earth spins on its axis. That's why day turns into night.", "lv.1.h1": "Noon is when a city faces the Sun. Spin Earth until Moscow is on the right.", "lv.2.txt": "Now <b>it's midnight in Moscow<\/b>. Where is the Sun?", "lv.2.fact": "Night happens on the side of Earth facing away from the Sun. When it's midnight here, it's noon on the other side.", "lv.2.h1": "At midnight, Moscow is on the darkest side, on the left.", "lv.3.txt": "<b>It's sunrise in Moscow<\/b> (6:00). Earth spins counterclockwise. Which way should Moscow move?", "lv.3.fact": "Earth spins from west to east. That's why the Sun rises in the east.", "lv.3.h1": "At sunrise, a city moves out of the dark and into the light. Moscow should be at the bottom, where day meets night.", "lv.4.txt": "<b>It's sunset in Moscow<\/b> (18:00).", "lv.4.fact": "Sunset happens when a city moves into Earth's shadow as Earth spins. The Sun seems to go down.", "lv.4.h1": "At sunset, Moscow is at the top, where day meets night.", "lv.5.txt": "<b>It's daytime in Tokyo, but nighttime in London.<\/b> Yes, that can happen!", "lv.5.fact": "When it's daytime on one side of Earth, it's nighttime on the other. That's why people in different countries have different times.", "lv.5.h1": "Tokyo and London are far apart, almost on opposite sides of Earth.", "lv.6.txt": "<b>It's noon in New York.<\/b> Look at the time in London!", "lv.6.fact": "The farther east a city is, the later its time. The Sun appears to move from east to west.", "lv.6.h1": "New York should be on the right, facing the Sun. London is farther east, so it's already evening there.", "lv.7.txt": "<b>It's noon in London.<\/b> Look at Moscow: it's already past 13:00 there!", "lv.7.fact": "Every 15° of longitude makes about one hour of difference in solar time. Moscow is 37.6° east of London. That's about 2.5 hours.", "lv.7.h1": "London should be on the right, facing the Sun.", "lv.8.txt": "<b>It's midnight in London.<\/b> London is on the prime (Greenwich) meridian.", "lv.8.fact": "The prime (Greenwich) meridian passes through Greenwich, an area of London. We use it to measure longitude and count time zones.", "lv.8.h1": "London should be on the darkest side, on the left.", "lv.9.txt": "<b>It's sunset in Moscow and morning in Los Angeles.<\/b> Set Moscow to sunset and look at Los Angeles.", "lv.9.fact": "Earth makes one full turn in 24 hours: 360° ÷ 24 = 15° per hour.", "lv.9.h1": "Moscow should be at the top, where day meets night.", "lv.10.txt": "<b>Boss quiz!<\/b> Five questions about day and night. Get at least 4 right.", "lv.10.fact": "You know how day and night work: Earth spins, and the Sun lights up one side.", "lv.11.txt": "It's <b>12:00<\/b> in Moscow. Set the clock in <b>London<\/b>.", "lv.11.fact": "Time zones help large areas use the same time.", "lv.11.h1": "London is 3 hours behind Moscow. Look at Earth to see which city is closer to the Sun.", "lv.12.txt": "It's <b>12:00<\/b> in Moscow. What time is it in <b>Vladivostok<\/b>?", "lv.12.fact": "Vladivostok is 7 hours ahead of Moscow. It's already evening there.", "lv.12.h1": "Vladivostok is farther east, so its time is later.", "lv.13.txt": "It's <b>12:00<\/b> in Moscow. What time is it in <b>New York<\/b>?", "lv.13.fact": "Earth has 24 main time zones. Each zone is 15° wide.", "lv.13.h1": "New York is 8 hours behind Moscow.", "lv.14.txt": "It's <b>12:00<\/b> in Moscow. What time is it in <b>Yekaterinburg<\/b>?", "lv.14.fact": "Russia has 11 time zones, more than any other country.", "lv.14.h1": "Yekaterinburg is 2 hours ahead of Moscow.", "lv.15.txt": "It's <b>8:00<\/b> in London. Set the clocks in <b>Berlin<\/b> and <b>Cairo<\/b>.", "lv.15.fact": "Greenwich in London is the starting point for time zones. Berlin is 1 hour ahead, and Cairo is 2 hours ahead.", "lv.15.h1": "Berlin is one time zone east of London. Cairo is two.", "lv.16.txt": "A train leaves Moscow at <b>10:00<\/b> and crosses <b>3 time zones east<\/b> to Omsk. What time is it in Omsk?", "lv.16.fact": "When you travel east, clocks move forward. Each time zone adds one hour.", "lv.16.h1": "Each time zone east adds one hour. Three zones add three hours.", "lv.17.txt": "A train leaves Moscow at <b>15:00<\/b> Moscow time. What time is it in <b>Vladivostok<\/b> at that moment?", "lv.17.fact": "The Trans-Siberian Railway crosses 7 time zones. The trip from Moscow to Vladivostok takes 7 days.", "lv.17.h1": "Vladivostok is 7 hours ahead of Moscow.", "lv.18.txt": "It's <b>8:00<\/b> in Tokyo. Set the clock in <b>Los Angeles<\/b>. Don't forget the day!", "lv.18.fact": "The International Date Line is between Tokyo and Los Angeles. Los Angeles is 17 hours behind Tokyo, so it's still yesterday there.", "lv.18.h1": "Tokyo is 17 hours ahead of L.A. Subtract 17 hours. You'll go back past midnight.", "lv.19.txt": "Spin Earth until <b>it's 9:00 in Moscow<\/b> by the clock (time zone time).", "lv.19.fact": "Moscow uses UTC+3. That's 3 hours ahead of Greenwich.", "lv.19.h1": "It's morning in Moscow. The city is still near the dark side, close to sunrise, at the bottom.", "lv.20.txt": "<b>Boss quiz!<\/b> Day, night, and time zones. Get at least 4 right.", "lv.20.fact": "Now you can find the time in different cities and understand how time zones work.", "q.1.q": "Why do we have day and night on Earth?", "q.1.a0": "Earth spins on its axis", "q.1.a1": "The Sun circles Earth", "q.1.a2": "The Moon blocks the Sun", "q.1.e": "Earth spins on its axis, so the Sun lights up different sides of Earth.", "q.2.q": "How long does Earth take to spin once?", "q.2.a0": "12 hours", "q.2.a1": "24 hours", "q.2.a2": "365 days", "q.2.e": "One full spin takes one day, or 24 hours.", "q.3.q": "Which way does Earth spin?", "q.3.a0": "East to west", "q.3.a1": "North to south", "q.3.a2": "West to east", "q.3.e": "Earth spins from west to east. That's why the Sun rises in the east.", "q.4.q": "How many degrees does Earth turn in 1 hour?", "q.4.a0": "15°", "q.4.a1": "24°", "q.4.a2": "60°", "q.4.e": "360° ÷ 24 hours = 15° per hour.", "q.5.q": "If it's noon in Moscow, on the opposite side of Earth it's…", "q.5.a0": "Noon too", "q.5.a1": "Midnight", "q.5.a2": "Sunrise", "q.5.e": "The opposite side faces away from the Sun, so it's nighttime there.", "q.6.q": "Where does the Sun rise first?", "q.6.a0": "Moscow", "q.6.a1": "Vladivostok", "q.6.a2": "London", "q.6.e": "Earth spins east. Vladivostok is farther east, so it sees the sunrise first.", "q.7.q": "What line do we use to measure longitude?", "q.7.a0": "Equator", "q.7.a1": "Tropic", "q.7.a2": "Prime (Greenwich) meridian", "q.7.e": "The prime (Greenwich) meridian passes through Greenwich, an area of London.", "q.8.q": "How many main time zones are there on Earth?", "q.8.a0": "12", "q.8.a1": "24", "q.8.a2": "60", "q.8.e": "360° ÷ 15° = 24 time zones.", "q.9.q": "How wide is one time zone in longitude?", "q.9.a0": "15°", "q.9.a1": "10°", "q.9.a2": "30°", "q.9.e": "One time zone equals one hour of Earth's rotation, or 15°.", "q.10.q": "It's 12:00 in Moscow. What time is it in London?", "q.10.a0": "15:00", "q.10.a1": "12:00", "q.10.a2": "9:00", "q.10.e": "London is 3 hours behind Moscow.", "q.11.q": "You're traveling east by train. What happens to your clock?", "q.11.a0": "Move it forward", "q.11.a1": "Move it back", "q.11.a2": "Nothing", "q.11.e": "Time is later to the east. Cross one time zone and add one hour.", "q.12.q": "How many time zones does Russia have?", "q.12.a0": "3", "q.12.a1": "11", "q.12.a2": "24", "q.12.e": "Russia has 11 time zones, from Kaliningrad to Kamchatka."};</script>
+<script src="/sdk.js"></script>
 <script>
 /* Слой платформы (Яндекс Игры SDK, заглушка вне площадки) — как в Крепости */
 window.PF = (function () {
@@ -128,7 +134,10 @@ window.PF = (function () {
   var ysdk = null, player = null, sdkOk = false, cloudOk = false, gaveUp = false;
   var wantReady = false, readyDone = false, adBusy = false, tabHidden = false, apiPaused = false, gpOn = false, wantGp = false;
   var lastAdAt = 0, bornAt = Date.now();
-  var AD_FIRST_MS = 120000, AD_GAP_MS = 180000;   // полноэкранная: не раньше 2 минут после загрузки и не чаще раза в 3 минуты
+  var AD_FIRST_MS = 120000;   // полноэкранная: не раньше 2 минут после загрузки; дальше не чаще раза в Premium.config.adGapMs (5 минут, решение владельца 8.11)
+  var PREM_KEY = 'planetariy-premium';
+  function adGap() { try { return (window.Premium && window.Premium.config && window.Premium.config.adGapMs) || 300000; } catch (e) { return 300000; } }
+  function premiumOn() { try { return !!(window.Premium && window.Premium.active()); } catch (e) { return false; } }
   var INIT_TIMEOUT_MS = 4000, SYNC_DELAY_MS = 2500, T_KEY = 'planetariy-syncT';
   var mem = {}, dirty = false, syncTimer = 0;
   var self = { onPause: function () {}, onCloud: function () {} };
@@ -145,11 +154,18 @@ window.PF = (function () {
   /* облако: целый снимок ключей игры, побеждает более поздняя отметка времени */
   function importCloud(data) {
     var d = data && typeof data === 'object' ? data : {}, ct = Number(d._t) || 0, blob = d.d && typeof d.d === 'object' ? d.d : null, changedAny = false;
+    var cloudPrem = blob && typeof blob[PREM_KEY] === 'string' ? blob[PREM_KEY] : null, localPrem = Object.prototype.hasOwnProperty.call(mem, PREM_KEY) ? mem[PREM_KEY] : null;
     if (blob && ct > localT()) {
       Object.keys(mem).forEach(function (k) { if (isSynced(k)) { delete mem[k]; lsDel(k); } });
       Object.keys(blob).forEach(function (k) { if (isSynced(k) && typeof blob[k] === 'string') { mem[k] = blob[k]; lsSet(k, blob[k]); } });
       mem[T_KEY] = String(ct); lsSet(T_KEY, String(ct)); dirty = false; changedAny = true;
     } else if (localT() > ct) dirty = true;
+    // срок Премиума не должен пропасть, кто бы ни победил по времени: сливаем (больший срок, объединённые токены)
+    if ((localPrem || cloudPrem) && window.Premium && window.Premium.mergeState) {
+      var m = window.Premium.mergeState(localPrem, cloudPrem);
+      mem[PREM_KEY] = m; lsSet(PREM_KEY, m);
+      if (m !== cloudPrem) dirty = true;
+    }
     cloudOk = true;
     if (dirty) schedule();
     if (changedAny) try { self.onCloud(); } catch (e) {}
@@ -157,10 +173,19 @@ window.PF = (function () {
   function flush(now) {
     clearTimeout(syncTimer); syncTimer = 0;
     if (!dirty || !player || !cloudOk) return;
-    var d = {}; Object.keys(mem).forEach(function (k) { if (isSynced(k) && mem[k] != null) d[k] = mem[k]; });
     dirty = false;
-    try { var p = player.setData({ v: 1, _t: localT(), d: d }, !!now); if (p && p.catch) p.catch(function () { dirty = true; }); } catch (e) { dirty = true; }
+    try { var p = player.setData(snapshot(), !!now); if (p && p.catch) p.catch(function () { dirty = true; }); } catch (e) { dirty = true; }
   }
+  function snapshot() { var d = {}; Object.keys(mem).forEach(function (k) { if (isSynced(k) && mem[k] != null) d[k] = mem[k]; }); return { v: 1, _t: localT(), d: d }; }
+  /* запись в облако с подтверждением: Promise<true>, когда данные сохранены (нужна Премиуму: сначала запись, потом consumePurchase) */
+  self.save = function () {
+    clearTimeout(syncTimer); syncTimer = 0;
+    if (!player || !cloudOk) return Promise.resolve(false);
+    dirty = false;
+    try { return Promise.resolve(player.setData(snapshot(), true)).then(function () { return true; }, function () { dirty = true; return false; }); }
+    catch (e) { dirty = true; return Promise.resolve(false); }
+  };
+  self.sdk = function () { return ysdk; };
   /* пауза (реклама, скрытая вкладка, пауза от площадки) и GameplayAPI */
   self.paused = function () { return adBusy || tabHidden || apiPaused; };
   function applyGp() {
@@ -190,22 +215,26 @@ window.PF = (function () {
     });
   };
   self.hasSdk = function () { return sdkOk; };
+  /* язык площадки (ysdk.environment.i18n.lang), '' без SDK */
+  self.lang = function () { try { return (sdkOk && ysdk.environment && ysdk.environment.i18n && ysdk.environment.i18n.lang) || ''; } catch (e) { return ''; } };
   /* реклама */
   function adBegin() { adBusy = true; changed(); }
   function adEnd() { adBusy = false; changed(); }
   /* полноэкранная в логической паузе; done — ровно один раз, когда игра может продолжать (сразу, если рекламы нет) */
   self.interstitial = function (done) {
     if (adBusy) return;
-    var now = Date.now(), allowedAt = lastAdAt ? lastAdAt + AD_GAP_MS : bornAt + AD_FIRST_MS;
-    if (!sdkOk || !ysdk.adv || !ysdk.adv.showFullscreenAdv || now < allowedAt) { done(); return; }
+    var now = Date.now(), allowedAt = lastAdAt ? lastAdAt + adGap() : bornAt + AD_FIRST_MS;
+    if (premiumOn() || !sdkOk || !ysdk.adv || !ysdk.adv.showFullscreenAdv || now < allowedAt) { done(); return; }   // при Премиуме рекламы нет
     var fin = false;
-    function end(shown) { if (fin) return; fin = true; if (shown) lastAdAt = Date.now(); adEnd(); done(); }
+    function end(shown) { if (fin) return; fin = true; if (shown) { lastAdAt = Date.now(); try { if (window.Premium) window.Premium.noteFullscreen(); } catch (e) {} } adEnd(); done(); }
     adBegin();
     try { ysdk.adv.showFullscreenAdv({ callbacks: { onClose: function (w) { end(w); }, onError: function () { end(false); }, onOffline: function () { end(false); } } }); } catch (e) { end(false); }
   };
-  self.canReward = function () { return !!(sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo); };
-  /* ролик за награду: done(true) — только если игрок досмотрел */
+  self.premium = premiumOn;
+  self.canReward = function () { return !!(premiumOn() || (sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo)); };
+  /* ролик за награду: done(true) — только если игрок досмотрел; при Премиуме награда сразу, без ролика */
   self.rewarded = function (done) {
+    if (premiumOn()) { done(true); return; }
     if (!self.canReward()) { done(false); return; }
     var fin = false, got = false;
     function end() { if (fin) return; fin = true; adEnd(); done(got); }
@@ -214,6 +243,333 @@ window.PF = (function () {
   };
   return self;
 })();
+</script>
+<script>
+/* Премиум: общий модуль для браузерных игр на Яндекс Играх.
+   Платный Премиум на срок (30 дней или год), без автопродления: «используемая» покупка, срок считается по серверному
+   времени Яндекса и хранится в облачных данных игрока. Подробно: README.md рядом с этим файлом.
+   Модуль ничего не знает об игре: хранилище, звук и реклама подключаются через init() и несколько вызовов хозяина.
+   Без SDK, без покупок или без созданных товаров в консоли кнопка и карточки скрыты, игра работает как раньше. */
+window.Premium = (function () {
+  "use strict";
+  var DAY = 86400000;
+
+  /* ---- Настройки: все числа и товары в одном месте ---- */
+  var config = {
+    adGapMs: 5 * 60 * 1000,     // интервал полноэкранной рекламы; хозяин читает его при показе (решение владельца 8 ноября: 5 минут)
+    cardEvery: 3,               // карточка «Надоела реклама?» после каждой 3-й показанной полноэкранной рекламы
+    remindDays: 3,              // напоминание о конце Премиума за столько дней и меньше (раз в сутки)
+    pollMs: 60000,              // как часто сверять срок с серверным временем
+    tokensKeep: 20,             // сколько токенов последних покупок помнить
+    products: {                 // id товара в консоли Яндекса → срок
+      premium_30: { days: 30 },
+      premium_365: { days: 365 }
+    },
+    order: ["premium_30", "premium_365"],
+    corner: true,               // кнопка «Премиум» в углу экрана
+    zIndex: 50
+  };
+
+  /* ---- Тексты (временные, их заменит сессия «Тексты»). Подмена: Premium.init({ texts: { ru: {...}, en: {...} } }) ---- */
+  var TEXTS = {
+    ru: {
+      btn: "Премиум", btnOn: "Премиум · {0} д.", title: "Премиум",
+      activeUntil: "Активен до {0}. Осталось {1}.",
+      notActive: "Сейчас Премиум не включён.",
+      perks: ["Без полноэкранной рекламы и баннеров.", "Награды за ролики выдаются сразу, без просмотра.", "Правила и сложность игры не меняются: Премиум не помогает выигрывать."],
+      p30: "Премиум на 30 дней", p365: "Премиум на год",
+      validTo: "Будет действовать до {0}", buy: "Купить", extend: "Продлить",
+      note: "Один платёж, без автопродления: больше ничего не спишется. Если Премиум уже идёт, новый срок добавится к концу.",
+      close: "Закрыть", later: "Не сейчас",
+      adTitle: "Надоела реклама?", adText: "Премиум: без роликов и баннеров, 30 дней за {0}, не продлевается сам.", adMore: "Узнать про Премиум",
+      soonTitle: "Премиум скоро закончится", soonText: "Осталось {0}. Продлить?",
+      endTitle: "Премиум закончился", endText: "Реклама вернулась. Можно включить Премиум снова.",
+      busy: "Ждём подтверждения оплаты…", done: "Готово! Премиум активен до {0}.",
+      fail: "Покупка не прошла. Деньги не списаны.", saveFail: "Оплата принята, но срок пока не сохранился. Не закрывайте игру, мы повторим при следующем запуске.",
+      d1: "{0} день", d2: "{0} дня", d5: "{0} дней", free: "Ян", lang: "ru-RU"
+    },
+    en: {
+      btn: "Premium", btnOn: "Premium · {0} d", title: "Premium",
+      activeUntil: "Active until {0}. {1} left.",
+      notActive: "Premium is not active.",
+      perks: ["No full-screen ads or banners.", "Rewards for videos are given instantly, no watching.", "The rules and difficulty stay the same: Premium does not help you win."],
+      p30: "Premium for 30 days", p365: "Premium for a year",
+      validTo: "Will be active until {0}", buy: "Buy", extend: "Extend",
+      note: "One payment, no auto-renewal: nothing else will be charged. If Premium is already running, the new period is added to the end.",
+      close: "Close", later: "Not now",
+      adTitle: "Tired of ads?", adText: "Premium: no videos or banners, 30 days for {0}, does not renew by itself.", adMore: "About Premium",
+      soonTitle: "Premium ends soon", soonText: "{0} left. Extend?",
+      endTitle: "Premium has ended", endText: "Ads are back. You can turn Premium on again.",
+      busy: "Waiting for payment confirmation…", done: "Done! Premium is active until {0}.",
+      fail: "The purchase did not go through. You were not charged.", saveFail: "Payment accepted, but the period is not saved yet. Keep the game open, we will retry on the next start.",
+      d1: "{0} day", d2: "{0} days", d5: "{0} days", free: "Yan", lang: "en-GB"
+    }
+  };
+
+  /* ---- Состояние ---- */
+  var sdk = null, payments = null, store = null;
+  var lang = "ru", texts = TEXTS.ru;
+  var catalog = {};                   // id → описание товара из консоли
+  var st = blank();
+  var off = 0;                        // запасная поправка серверного времени, если serverTime() недоступен
+  var ready = false, canBuy = false, busy = false, chain = Promise.resolve();
+  var listeners = [], pollTimer = 0, lastActive = false;
+  var ui = { corner: null, ov: null, box: null, status: "", mode: "", style: null, lastFocus: null };
+
+  function blank() { return { until: 0, tokens: [], ads: 0, cardAt: 0, remindDay: 0, endShown: 0 }; }
+  function clean(o) {
+    var r = blank();
+    if (!o || typeof o !== "object") return r;
+    r.until = Math.max(0, Number(o.until) || 0);
+    r.tokens = Array.isArray(o.tokens) ? o.tokens.filter(function (t) { return typeof t === "string"; }).slice(-config.tokensKeep) : [];
+    r.ads = Math.max(0, Math.floor(Number(o.ads) || 0));
+    r.cardAt = Math.max(0, Math.floor(Number(o.cardAt) || 0));
+    r.remindDay = Math.max(0, Math.floor(Number(o.remindDay) || 0));
+    r.endShown = Math.max(0, Number(o.endShown) || 0);
+    return r;
+  }
+  function parse(raw) { try { return clean(typeof raw === "string" ? JSON.parse(raw) : raw); } catch (e) { return blank(); } }
+  /* Слияние двух снимков (облако и устройство): срок и счётчики берём большие, токены объединяем.
+     Хозяин вызывает при импорте облака, иначе срок мог бы пропасть при конфликте двух устройств. */
+  function mergeState(a, b) {
+    var x = parse(a), y = parse(b), r = blank(), seen = {};
+    r.until = Math.max(x.until, y.until); r.ads = Math.max(x.ads, y.ads); r.cardAt = Math.max(x.cardAt, y.cardAt);
+    r.remindDay = Math.max(x.remindDay, y.remindDay); r.endShown = Math.max(x.endShown, y.endShown);
+    y.tokens.concat(x.tokens).forEach(function (t) { if (!seen[t]) { seen[t] = 1; r.tokens.push(t); } });
+    r.tokens = r.tokens.slice(-config.tokensKeep);
+    return JSON.stringify(r);
+  }
+  function persist() { try { if (store && store.set) store.set(JSON.stringify(st)); } catch (e) {} }
+  function loadState() { try { st = parse(store && store.get ? store.get() : null); } catch (e) { st = blank(); } }
+
+  /* ---- Серверное время: часы устройства не используем ---- */
+  function now() {
+    if (sdk && typeof sdk.serverTime === "function") {
+      try { var t = sdk.serverTime(); if (typeof t === "number" && t > 0) { off = t - Date.now(); return t; } } catch (e) {}
+    }
+    return Date.now() + off;
+  }
+  function active() { return st.until > now(); }
+  function daysLeft() { var ms = st.until - now(); return ms > 0 ? Math.ceil(ms / DAY) : 0; }
+  function available() { return !!(ready && canBuy); }
+
+  /* ---- Утилиты текста ---- */
+  function fmt(s) { var a = arguments; return String(s).replace(/\{(\d)\}/g, function (m, i) { var v = a[Number(i) + 1]; return v == null ? "" : v; }); }
+  function tx(k) { var v = texts[k]; return v != null ? v : (TEXTS.ru[k] != null ? TEXTS.ru[k] : k); }
+  function plural(n) {
+    if (lang === "en") return fmt(n === 1 ? tx("d1") : tx("d2"), n);
+    var m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return fmt(tx("d1"), n);
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return fmt(tx("d2"), n);
+    return fmt(tx("d5"), n);
+  }
+  function dateStr(ms) {
+    try { return new Date(ms).toLocaleDateString(tx("lang"), { day: "numeric", month: "long", year: "numeric" }).replace(/\s*г\.$/, ""); }   // без «г.», чтобы в конце фразы не было «г..»
+    catch (e) { return new Date(ms).toISOString().slice(0, 10); }
+  }
+  function priceOf(id) { var c = catalog[id]; return c && c.price ? String(c.price) : ""; }
+  function dayIdx() { return Math.floor(now() / DAY); }
+  function emit() { var a = active(); lastActive = a; listeners.slice().forEach(function (f) { try { f(a); } catch (e) {} }); renderCorner(); if (ui.ov && ui.mode === "shop") renderShop(); }
+
+  /* ---- Покупка и начисление: запись в облако подтверждена, и только потом consumePurchase ---- */
+  function grant(p) {
+    var id = p && p.productID, tok = p && p.purchaseToken, prod = config.products[id];
+    if (!prod || !tok) return Promise.resolve(false);
+    if (st.tokens.indexOf(tok) < 0) {
+      var base = Math.max(now(), st.until);
+      st.until = base + prod.days * DAY;
+      st.tokens.push(tok); if (st.tokens.length > config.tokensKeep) st.tokens.shift();
+      persist();
+    }
+    return Promise.resolve(store && store.save ? store.save() : false).then(function (ok) {
+      if (!ok) { var e = new Error("save"); e.code = "save"; throw e; }
+      // срок уже сохранён: если закрыть покупку не вышло, её закроют при следующем запуске, второй раз срок не начислится
+      return Promise.resolve(payments.consumePurchase(tok)).then(function () {}, function () {});
+    }).then(function () { emit(); return true; });
+  }
+  function queue(f) { var r = chain.then(f, f); chain = r.then(function () {}, function () {}); return r; }
+  function checkPurchases() {
+    return queue(function () {
+      return payments.getPurchases().then(function (list) {
+        list = Array.isArray(list) ? list : (list && list.purchases) || [];
+        return list.reduce(function (p, item) { return p.then(function () { return grant(item).catch(function () {}); }); }, Promise.resolve());
+      });
+    }).catch(function () {}).then(function () { emit(); });
+  }
+  function buy(id) {
+    if (busy || !canBuy || !config.products[id]) return Promise.resolve(false);
+    busy = true; setStatus(tx("busy")); renderShop();
+    return queue(function () {
+      return payments.purchase({ id: id, developerPayload: "pm" }).then(function (p) {
+        return grant(p).then(function () { setStatus(fmt(tx("done"), dateStr(st.until))); return true; }, function (e) {
+          setStatus(e && e.code === "save" ? tx("saveFail") : tx("fail")); return false;
+        });
+      }, function () { setStatus(tx("fail")); return false; });
+    }).then(function (r) { busy = false; renderShop(); return r; }, function () { busy = false; renderShop(); return false; });
+  }
+
+  /* ---- Вызовы хозяина ---- */
+  function noteFullscreen() { st.ads++; persist(); }
+  /* Показать карточку на спокойном экране (меню, результат). Возвращает true, если карточка открыта. */
+  function maybeCard() {
+    if (!available() || ui.ov) return false;
+    if (active()) {
+      if (daysLeft() <= config.remindDays && st.remindDay !== dayIdx()) { st.remindDay = dayIdx(); persist(); openCard("soon"); return true; }
+      return false;
+    }
+    if (st.until > 0 && st.endShown !== st.until) { st.endShown = st.until; persist(); openCard("end"); return true; }
+    if (config.cardEvery > 0 && Math.floor(st.ads / config.cardEvery) > Math.floor(st.cardAt / config.cardEvery)) { st.cardAt = st.ads; persist(); openCard("ad"); return true; }
+    return false;
+  }
+
+  /* ---- Интерфейс ---- */
+  var CSS = ".pm-corner{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:max(12px,env(safe-area-inset-right,0px));z-index:var(--pm-z,50);display:inline-flex;align-items:center;gap:5px;" +
+    "min-height:40px;padding:0 12px;border-radius:20px;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:var(--pm-gold,#f2c14e);color:#2a2110;font:600 14px/1 var(--f-display,system-ui,sans-serif);letter-spacing:.02em;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.25)}" +
+    ".pm-corner[hidden]{display:none}.pm-corner.on{background:var(--pm-paper,var(--paper,#f4edd9));color:var(--pm-ink,var(--fg,#22304a))}" +
+    ".pm-corner:focus-visible,.pm-btn:focus-visible,.pm-x:focus-visible{outline:3px solid var(--pm-focus,var(--focus,#1d5cc0));outline-offset:2px}" +
+    ".pm-ov{position:fixed;inset:0;z-index:calc(var(--pm-z,50) + 10);display:grid;place-items:center;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));background:var(--pm-scrim,rgba(20,18,12,.5))}" +
+    ".pm-ov[hidden]{display:none}.pm-box{position:relative;box-sizing:border-box;width:100%;max-width:420px;max-height:calc(100% - 8px);overflow-y:auto;background:var(--pm-paper,var(--paper,#f4edd9));color:var(--pm-ink,var(--fg,#22304a));" +
+    "border:1.5px solid var(--pm-ink,var(--fg,#22304a));border-radius:12px;padding:18px 18px 16px;box-shadow:0 10px 34px rgba(0,0,0,.4);font:15px/1.4 var(--f-body,system-ui,sans-serif);-webkit-user-select:none;user-select:none}" +
+    ".pm-box h2{margin:0 36px 8px 0;font:600 22px/1.2 var(--f-display,system-ui,sans-serif);text-wrap:balance}.pm-box p{margin:0 0 10px}.pm-sub{color:var(--pm-muted,var(--muted,#615d4f));font-size:14px}" +
+    ".pm-x{position:absolute;top:8px;right:8px;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer}" +
+    ".pm-perks{margin:0 0 12px;padding-left:20px}.pm-perks li{margin:0 0 4px}" +
+    ".pm-prod{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:10px 12px;margin:0 0 10px;border:1.5px solid var(--pm-line,var(--line,#b9ab86));border-radius:10px;background:var(--pm-paper2,var(--paper-2,#ebe1c6))}" +
+    ".pm-prod b{font:600 17px/1.2 var(--f-display,system-ui,sans-serif)}.pm-prod .pm-price{font:600 17px/1 var(--f-display,system-ui,sans-serif);font-variant-numeric:tabular-nums;white-space:nowrap}" +
+    ".pm-prod .pm-sub{grid-column:1 / -1}.pm-btn{box-sizing:border-box;min-height:44px;padding:0 16px;border-radius:8px;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:transparent;color:inherit;font:600 16px/1 var(--f-display,system-ui,sans-serif);cursor:pointer}" +
+    ".pm-btn.main{background:var(--pm-red,var(--red,#b3352b));border-color:var(--pm-red,var(--red,#b3352b));color:var(--pm-redink,var(--red-ink,#fff7ea))}.pm-btn:disabled{opacity:.55;cursor:default}" +
+    ".pm-prod .pm-btn{grid-column:1 / -1;width:100%}.pm-row{display:flex;gap:10px;flex-wrap:wrap}.pm-row .pm-btn{flex:1 1 140px}" +
+    ".pm-status{min-height:20px;margin:6px 0 0;font-size:14px;font-style:italic}@media (prefers-reduced-motion:no-preference){.pm-box{animation:pmIn .2s ease-out}}@keyframes pmIn{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}";
+
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function ensureUi() {
+    if (ui.style) return;
+    ui.style = el("style"); ui.style.textContent = CSS; document.head.appendChild(ui.style);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && ui.ov) closeOv(); });
+  }
+  function renderCorner() {
+    if (!config.corner || typeof document === "undefined") return;
+    var show = ready && (canBuy || active());
+    try { document.documentElement.classList.toggle("pm-on", !!show); } catch (e) {}
+    if (!show) { if (ui.corner) ui.corner.hidden = true; return; }
+    ensureUi();
+    if (!ui.corner) {
+      ui.corner = el("button", "pm-corner"); ui.corner.type = "button"; ui.corner.id = "pmCorner";
+      ui.corner.addEventListener("click", function () { openShop(); });
+      document.body.appendChild(ui.corner);
+    }
+    var on = active();
+    ui.corner.hidden = false;
+    ui.corner.classList.toggle("on", on);
+    // звезда и подпись отдельными элементами: хозяин может скрыть подпись на тесном экране (.pm-lbl), кнопка остаётся звездой
+    ui.corner.textContent = "";
+    ui.corner.appendChild(el("span", "pm-st", "★"));
+    ui.corner.appendChild(el("span", "pm-lbl", on ? fmt(tx("btnOn"), daysLeft()) : tx("btn")));
+    ui.corner.setAttribute("aria-label", on ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("btn"));
+  }
+  function setStatus(s) { ui.status = s || ""; var n = ui.box && ui.box.querySelector(".pm-status"); if (n) n.textContent = ui.status; }
+  function mountOv() {
+    ensureUi(); closeOv(true);
+    ui.lastFocus = document.activeElement;
+    ui.ov = el("div", "pm-ov"); ui.ov.setAttribute("role", "dialog"); ui.ov.setAttribute("aria-modal", "true");
+    ui.box = el("div", "pm-box"); ui.ov.appendChild(ui.box);
+    ui.ov.addEventListener("click", function (e) { if (e.target === ui.ov) closeOv(); });
+    document.body.appendChild(ui.ov);
+  }
+  function closeOv(quiet) {
+    if (ui.ov && ui.ov.parentNode) ui.ov.parentNode.removeChild(ui.ov);
+    ui.ov = null; ui.box = null; ui.mode = ""; ui.status = "";
+    if (!quiet && ui.lastFocus && ui.lastFocus.focus) { try { ui.lastFocus.focus({ preventScroll: true }); } catch (e) {} }
+  }
+  function xBtn() { var b = el("button", "pm-x", "×"); b.type = "button"; b.setAttribute("aria-label", tx("close")); b.addEventListener("click", function () { closeOv(); }); return b; }
+  function productCard(id) {
+    var days = config.products[id].days, c = el("div", "pm-prod");
+    var base = Math.max(now(), st.until);
+    c.appendChild(el("b", "", id === "premium_365" ? tx("p365") : tx("p30")));
+    c.appendChild(el("span", "pm-price", priceOf(id) || ""));
+    c.appendChild(el("span", "pm-sub", fmt(tx("validTo"), dateStr(base + days * DAY))));
+    var b = el("button", "pm-btn main", active() ? tx("extend") : tx("buy")); b.type = "button"; b.disabled = busy; b.setAttribute("data-pm-buy", id);
+    b.addEventListener("click", function () { buy(id); });
+    c.appendChild(b);
+    return c;
+  }
+  function renderShop() {
+    if (!ui.box || ui.mode !== "shop") return;
+    var b = ui.box; b.textContent = "";
+    b.appendChild(xBtn());
+    var h = el("h2", "", tx("title")); h.id = "pmTitle"; b.appendChild(h);
+    ui.ov.setAttribute("aria-labelledby", "pmTitle");
+    b.appendChild(el("p", "", active() ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("notActive")));
+    var ul = el("ul", "pm-perks"); texts.perks.forEach(function (s) { ul.appendChild(el("li", "", s)); }); b.appendChild(ul);
+    config.order.forEach(function (id) { if (catalog[id]) b.appendChild(productCard(id)); });
+    b.appendChild(el("p", "pm-sub", tx("note")));
+    var s = el("p", "pm-status", ui.status); s.setAttribute("role", "status"); s.setAttribute("aria-live", "polite"); b.appendChild(s);
+  }
+  function openShop() {
+    if (!ready || (!canBuy && !active())) return;
+    mountOv(); ui.mode = "shop"; renderShop();
+    var f = ui.box.querySelector(".pm-prod .pm-btn") || ui.box.querySelector(".pm-x"); if (f) try { f.focus({ preventScroll: true }); } catch (e) {}
+  }
+  function openCard(kind) {
+    mountOv(); ui.mode = "card:" + kind;
+    var b = ui.box, p30 = priceOf("premium_30");
+    var title = kind === "ad" ? tx("adTitle") : kind === "soon" ? tx("soonTitle") : tx("endTitle");
+    var text = kind === "ad" ? fmt(tx("adText"), p30 || ("99 " + tx("free"))) : kind === "soon" ? fmt(tx("soonText"), plural(daysLeft())) : tx("endText");
+    b.appendChild(xBtn());
+    var h = el("h2", "", title); h.id = "pmTitle"; b.appendChild(h); ui.ov.setAttribute("aria-labelledby", "pmTitle");
+    b.appendChild(el("p", "", text));
+    var row = el("div", "pm-row");
+    var go = el("button", "pm-btn main", kind === "ad" ? tx("adMore") : (kind === "soon" ? tx("extend") : tx("buy"))); go.type = "button";
+    go.addEventListener("click", function () { openShop(); });
+    var no = el("button", "pm-btn", tx("later")); no.type = "button"; no.addEventListener("click", function () { closeOv(); });
+    row.appendChild(go); row.appendChild(no); b.appendChild(row);
+    try { no.focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  /* ---- Запуск ---- */
+  function setLang(l) {
+    lang = l === "en" ? "en" : "ru"; texts = Object.assign({}, TEXTS.ru, TEXTS[lang] || {});
+    renderCorner(); if (ui.ov) { if (ui.mode === "shop") renderShop(); else { var m = ui.mode.split(":")[1]; openCard(m); } }
+  }
+  function tick() {
+    var a = active();
+    if (a !== lastActive) emit(); else renderCorner();
+  }
+  function init(o) {
+    o = o || {};
+    if (o.config) Object.keys(o.config).forEach(function (k) { config[k] = o.config[k]; });
+    if (o.texts) Object.keys(o.texts).forEach(function (l) { TEXTS[l] = Object.assign(TEXTS[l] || {}, o.texts[l]); });
+    sdk = o.sdk || null; store = o.store || null;
+    setLang(o.lang || lang);
+    loadState();
+    ready = true; lastActive = active();
+    try { document.addEventListener("visibilitychange", function () { if (!document.hidden) tick(); }); } catch (e) {}
+    clearInterval(pollTimer); pollTimer = setInterval(tick, config.pollMs);
+    renderCorner();
+    if (!sdk || typeof sdk.getPayments !== "function") return Promise.resolve(false);
+    return sdk.getPayments({ signed: false }).then(function (pay) {
+      payments = pay;
+      return pay.getCatalog();
+    }).then(function (list) {
+      list = Array.isArray(list) ? list : [];
+      list.forEach(function (c) { if (c && config.products[c.id]) catalog[c.id] = c; });
+      canBuy = !!(store && store.save && config.order.some(function (id) { return catalog[id]; }));
+      renderCorner();
+      return canBuy ? checkPurchases().then(function () { return true; }) : false;
+    }).catch(function () { canBuy = false; renderCorner(); return false; });
+  }
+
+  return {
+    config: config,
+    init: init, setLang: setLang,
+    active: active, until: function () { return st.until; }, daysLeft: daysLeft, available: available,
+    noteFullscreen: noteFullscreen, maybeCard: maybeCard, openShop: openShop,
+    onChange: function (f) { if (typeof f === "function") listeners.push(f); },
+    mergeState: mergeState,
+    refresh: function () { return canBuy ? checkPurchases() : Promise.resolve(); },
+    _state: function () { return JSON.parse(JSON.stringify(st)); }
+  };
+})();
+
 </script>
 
 <script>
@@ -272,6 +628,36 @@ var Q=[null,
  {q:'Ты едешь на поезде на восток. Что делают с часами?',a:['Переводят вперёд','Переводят назад','Ничего'],c:0,e:'К востоку время больше: пересёк пояс — прибавь час.'},
  {q:'Сколько часовых поясов в России?',a:['3','11','24'],c:1,e:'В России 11 поясов, от Калининграда до Камчатки.'}
 ];
+/*I18N-BEGIN*/
+var UIRU={
+'logo':'ПЛАНЕТАРИЙ','title.sub':'Крути Землю — разгадывай космос','title.play':'Играть','title.repeat':'Повторение','title.journal':'Журнал наблюдений','title.reset':'Сбросить прогресс','title.reset_ask':'Точно стереть? Нажми ещё раз','title.reset_done':'Прогресс стёрт',
+'map.title':'Миры','map.world':'Мир {n}. {name}','map.soon':'{sub} — скоро','quiz.title':'Викторина','quiz.boss':'{n}-й босс','quiz.right':'Верно!','quiz.wrong':'Не совсем.',
+'journal.title':'Журнал наблюдений','journal.obs':'Наблюдение {n}','journal.locked':'Откроется после прохождения уровня.',
+'game.title':'Уровень {n} · {w}','game.w1':'Сутки','game.w2':'Пояса',
+'ctl.rew':'🎬 Показать ответ за ролик','ctl.m1h':'⟲ −1 ч','ctl.m15':'−15 мин','ctl.p15':'+15 мин','ctl.p1h':'+1 ч ⟳','ctl.ok':'Готово ✓',
+'day.m1':'вчера','day.0':'сегодня','day.1':'завтра','day.label':'день: {d}',
+'rew.spin':'🎬 Комета повернула Землю. Нажми «Готово».','rew.clock':'🎬 Комета показала ответ. Нажми «Готово».',
+'hint.ring':'💡 Золотое кольцо на Земле показывает, где должен стоять город.','hint.clock2':'💡 Теперь на Земле видно время в нужных городах. Поставь такое же на часах.',
+'hint.auto.spin':'💡 Комета сама повернула Землю. Нажми «Готово».','hint.auto.clock':'💡 Комета подсказала ответ — нажми «Готово».',
+'err.spin':'🐱 Не совсем. В городе «{city}» сейчас <b>{now}</b>, а нужно <b>{need}</b>. Покрути ещё!','err.between':'между {a} и {b}',
+'err.clock':'🐱 Есть ошибка. Прикинь по Земле: ближе к Солнцу — значит время больше (идём на восток — прибавляем час).',
+'res.great':'Отлично!','res.boss_win':'Босс побеждён! {n} из 5','res.boss_lose':'Верных ответов: {n} из 5. Нужно 4','res.lose_text':'Не страшно! Пройди уровни ещё раз и попробуй снова — вопросы каждый раз новые.',
+'res.journal':'📖 Журнал наблюдений:','res.next':'Дальше','res.next_repeat':'Дальше (повтор)','res.again':'Ещё раз','res.map':'К уровням',
+'scene.rot':'вращение','scene.day':'☀ день'
+};
+var RUD={};(function(){for(var k in UIRU)RUD[k]=UIRU[k];
+ for(var c in CITIES)RUD['city.'+c]=CITIES[c].n;
+ WORLDS.forEach(function(w){RUD['world.'+w.id+'.name']=w.name;RUD['world.'+w.id+'.sub']=w.sub;});
+ LEVELS.forEach(function(L){RUD['lv.'+L.id+'.txt']=L.txt;RUD['lv.'+L.id+'.fact']=L.fact;if(L.h1)RUD['lv.'+L.id+'.h1']=L.h1;});
+ Q.forEach(function(q,i){if(!q)return;RUD['q.'+i+'.q']=q.q;q.a.forEach(function(a,j){RUD['q.'+i+'.a'+j]=a;});RUD['q.'+i+'.e']=q.e;});
+})();
+/*I18N-END*/
+var LANG='ru',EN=window.I18N_EN||null;
+function t(k,p){var s=(LANG==='en'&&EN&&EN[k]!=null)?EN[k]:(RUD[k]!=null?RUD[k]:k);if(p)for(var x in p)s=s.split('{'+x+'}').join(p[x]);return s;}
+function cn(k){return t('city.'+k);}
+function lt(L,f){return t('lv.'+L.id+'.'+f);}
+function applyStatic(){[].forEach.call(document.querySelectorAll('[data-t]'),function(el){el.textContent=t(el.getAttribute("data-t"));});document.documentElement.lang=LANG;try{if(window.Premium)Premium.setLang(LANG);}catch(e){}document.title=LANG==='en'?'Planetarium':'Планетарий';var b=document.getElementById('bLang');if(b){b.hidden=!EN;b.textContent=LANG==='en'?'Русский':'English';}}
+function pickLang(){if(!EN)return 'ru';var l=(PF.lang&&PF.lang())||'';if(!l)l=(navigator.language||'ru').slice(0,2);return /^(ru|be|kk|uk|uz|ky|hy|az|tg|tk)/.test(l)?'ru':'en';}
 /* ===== утилиты ===== */
 function $(id){return document.getElementById(id);}
 var IM={};['bg_w1','bg_w2','sun','cover','mira','mira_think','mira_win','kometa','kometa_hint','stars_pop'].forEach(function(n){var i=new Image();i.onload=function(){IM[n]=i;if(n==='cover')coverOn();if(n==='mira')setAv('mira');};i.src=(window.IMGDATA&&window.IMGDATA[n])||'img/'+n+'.webp';});
@@ -293,13 +679,13 @@ function totalStars(){var s=0;for(var k in SV.stars)s+=SV.stars[k];return s;}
 function unlocked(id){return id===1||(SV.stars[id-1]||0)>0;}
 /* ===== экраны ===== */
 var cur='title';
-function show(n){['title','map','game','quiz','journal'].forEach(function(s){var el=$('scr'+s[0].toUpperCase()+s.slice(1));if(el)el.hidden=(s!==n);});$('scrRes').hidden=true;cur=n;PF.setPlaying&&PF.setPlaying(n==='game'||n==='quiz');if(n==='map')buildMap();if(n==='journal')buildJournal();if(n==='game')setTimeout(resize,0);}
+function show(n){['title','map','game','quiz','journal'].forEach(function(s){var el=$('scr'+s[0].toUpperCase()+s.slice(1));if(el)el.hidden=(s!==n);});$('scrRes').hidden=true;cur=n;PF.setPlaying&&PF.setPlaying(n==='game'||n==='quiz');if(n==='map')buildMap();if(n==='journal')buildJournal();if(n==='game')setTimeout(resize,0);pmSync();}
 document.addEventListener('click',function(e){var g=e.target.closest&&e.target.closest('[data-go]');if(g)show(g.getAttribute('data-go'));});
 function buildMap(){
  var h='';var nextId=0;for(var i=1;i<=20;i++){if(unlocked(i)&&!(SV.stars[i]>0)){nextId=i;break;}}
  WORLDS.forEach(function(w){
-  if(w.soon){h+='<div class="world soon"><h3>Мир '+w.id+'. '+w.name+'</h3><p>'+w.sub+' — скоро</p></div>';return;}
-  h+='<div class="world"><h3>Мир '+w.id+'. '+w.name+'</h3><p>'+w.sub+'</p><div class="grid">';
+  if(w.soon){h+='<div class="world soon"><h3>'+t('map.world',{n:w.id,name:t('world.'+w.id+'.name')})+'</h3><p>'+t('map.soon',{sub:t('world.'+w.id+'.sub')})+'</p></div>';return;}
+  h+='<div class="world"><h3>'+t('map.world',{n:w.id,name:t('world.'+w.id+'.name')})+'</h3><p>'+t('world.'+w.id+'.sub')+'</p><div class="grid">';
   for(var i=w.from;i<=w.to;i++){var st=SV.stars[i]||0,un=unlocked(i),bs=lvl(i).t==='boss';
    h+='<button class="lv'+(bs?' boss':'')+(un?'':' lock')+(i===nextId?' next':'')+'" data-lv="'+i+'">'+(bs?'👑':i)+'<small>'+(st?'★★★'.slice(0,st):(un?'':'🔒'))+'</small></button>';}
   h+='</div></div>';});
@@ -308,7 +694,7 @@ function buildMap(){
 $('worlds').addEventListener('click',function(e){var b=e.target.closest('[data-lv]');if(!b)return;var id=+b.getAttribute('data-lv');if(!unlocked(id)){return;}Q_ADAPT=null;openLevel(id);});
 function buildJournal(){
  var h='',n=0;LEVELS.forEach(function(L){var open=SV.journal[L.id];if(open)n++;
-  h+='<div class="fc'+(open?'':' lock')+'"><b>'+(L.t==='boss'?'👑 ':'')+'Наблюдение '+L.id+'</b>'+(open?L.fact:'Откроется после прохождения уровня.')+'</div>';});
+  h+='<div class="fc'+(open?'':' lock')+'"><b>'+(L.t==='boss'?'👑 ':'')+t('journal.obs',{n:L.id})+'</b>'+(open?lt(L,'fact'):t('journal.locked'))+'</div>';});
  $('jList').innerHTML=h;$('jCnt').textContent=n+'/'+LEVELS.length;
 }
 /* ===== игра ===== */
@@ -328,19 +714,20 @@ function openLevel(id){
  G={L:L,hint:0,tries:0,t:0,anim:null,dragging:false,done:false,ans:[]};
  if(L.t==='spin'){G.sol=solve(L);G.t=mod(G.sol+7.3+id*1.7,24);}
  else{var g=L.given;G.t=mod(g.h-CITIES[g.c].off,24);G.ans=L.items.map(function(it){return {h:mod(it.h+5,24),day:0};});}
- $('gTitle').textContent='Уровень '+id+' · '+(id<=10?'Сутки':'Пояса');
- $('msg').innerHTML=L.txt;$('hn').textContent=3;setAv('mira');
+ $('gTitle').textContent=t('game.title',{n:id,w:t(id<=10?'game.w1':'game.w2')});
+ $('msg').innerHTML=lt(L,'txt');$('hn').textContent=3;setAv('mira');
  buildCtl();show('game');
 }
-function rewBtn(){return PF.canReward()?'<div class="row"><button class="sm" id="bRew">🎬 Показать ответ за ролик</button></div>':'';}
+function rewLbl(){return PF.premium&&PF.premium()?(LANG==='en'?'🎬 Show the answer (Premium)':'🎬 Показать ответ (Премиум)'):t('ctl.rew');}
+function rewBtn(){return PF.canReward()?'<div class="row"><button class="sm" id="bRew">'+rewLbl()+'</button></div>':'';}
 function buildCtl(){
  var L=G.L,c=$('ctl'),h='';
  if(L.t==='spin'){
-  h='<div class="row"><button class="sm" data-d="-1">⟲ −1 ч</button><button class="sm" data-d="-.25">−15 мин</button><button class="sm" data-d=".25">+15 мин</button><button class="sm" data-d="1">+1 ч ⟳</button></div><div class="row"><button class="btn" id="bOk" style="width:70%">Готово ✓</button></div>'+rewBtn();
+  h='<div class="row"><button class="sm" data-d="-1">'+t('ctl.m1h')+'</button><button class="sm" data-d="-.25">'+t('ctl.m15')+'</button><button class="sm" data-d=".25">'+t('ctl.p15')+'</button><button class="sm" data-d="1">'+t('ctl.p1h')+'</button></div><div class="row"><button class="btn" id="bOk" style="width:70%">'+t('ctl.ok')+'</button></div>'+rewBtn();
  }else{
   h='<div class="cards" id="cards">';
-  L.items.forEach(function(it,i){h+='<div class="ccard" data-i="'+i+'"><div class="cn">'+CITIES[it.c].n+'</div><div class="clk"></div><div class="dg"></div><div class="cr"><button data-s="-1">−</button><button data-s="1">+</button></div><button class="dy" data-dy="1"></button></div>';});
-  h+='</div><div class="row"><button class="btn" id="bOk" style="width:70%">Готово ✓</button></div>'+rewBtn();
+  L.items.forEach(function(it,i){h+='<div class="ccard" data-i="'+i+'"><div class="cn">'+cn(it.c)+'</div><div class="clk"></div><div class="dg"></div><div class="cr"><button data-s="-1">−</button><button data-s="1">+</button></div><button class="dy" data-dy="1"></button></div>';});
+  h+='</div><div class="row"><button class="btn" id="bOk" style="width:70%">'+t('ctl.ok')+'</button></div>'+rewBtn();
  }
  c.innerHTML=h;if(L.t==='clock')renderCards();
 }
@@ -349,12 +736,12 @@ function clockSvg(h){var m=(h%1)*60,hh=h%12,ah=hh*30+m*.5,am=m*6,r=function(a,l)
  for(var i=0;i<12;i++){var a=i*30;var p=r(a,29),q=r(a,25);s+='<line x1="'+p.split(',')[0]+'" y1="'+p.split(',')[1]+'" x2="'+q.split(',')[0]+'" y2="'+q.split(',')[1]+'" stroke="#334" stroke-width="2"/>';}
  var a1=r(ah,16).split(','),a2=r(am,24).split(',');
  s+='<line x1="35" y1="35" x2="'+a1[0]+'" y2="'+a1[1]+'" stroke="#e0452c" stroke-width="4" stroke-linecap="round"/><line x1="35" y1="35" x2="'+a2[0]+'" y2="'+a2[1]+'" stroke="#223" stroke-width="2.5" stroke-linecap="round"/><circle cx="35" cy="35" r="3" fill="#223"/></svg>';return s;}
-var DAYN={'-1':'вчера','0':'сегодня','1':'завтра'};
-function renderCards(){var cs=document.querySelectorAll('.ccard');G.ans.forEach(function(a,i){var c=cs[i];c.querySelector('.clk').innerHTML=clockSvg(a.h);c.querySelector('.dg').textContent=fmt(a.h);c.querySelector('.dy').textContent='день: '+DAYN[a.day];});}
+function dayn(d){return t(d<0?'day.m1':d>0?'day.1':'day.0');}
+function renderCards(){var cs=document.querySelectorAll('.ccard');G.ans.forEach(function(a,i){var c=cs[i];c.querySelector('.clk').innerHTML=clockSvg(a.h);c.querySelector('.dg').textContent=fmt(a.h);c.querySelector('.dy').textContent=t('day.label',{d:dayn(a.day)});});}
 $('ctl').addEventListener('click',function(e){
  if(!G||G.done)return;var b=e.target.closest('button');if(!b)return;
  if(b.id==='bOk'){check();return;}
- if(b.id==='bRew'){PF.rewarded(function(ok){if(!ok||!G||G.done)return;G.free=true;G.hint=3;$('hn').textContent=0;setAv('kometa_hint');var L=G.L;if(L.t==='spin'){G.anim={to:G.sol};$('msg').innerHTML='🎬 Комета повернула Землю. Нажми «Готово».';}else{L.items.forEach(function(it,i){G.ans[i]={h:it.h,day:it.day||0};});renderCards();$('msg').innerHTML='🎬 Комета показала ответ. Нажми «Готово».';}b.hidden=true;});return;}
+ if(b.id==='bRew'){PF.rewarded(function(ok){if(!ok||!G||G.done)return;G.free=true;G.hint=3;$('hn').textContent=0;setAv('kometa_hint');var L=G.L;if(L.t==='spin'){G.anim={to:G.sol};$('msg').innerHTML=t('rew.spin');}else{L.items.forEach(function(it,i){G.ans[i]={h:it.h,day:it.day||0};});renderCards();$('msg').innerHTML=t('rew.clock');}b.hidden=true;});return;}
  if(b.hasAttribute('data-d')){G.anim=null;G.t=mod(G.t+parseFloat(b.getAttribute('data-d')),24);return;}
  var card=b.closest('.ccard');if(!card)return;var a=G.ans[+card.getAttribute('data-i')];card.classList.remove('ok','no');
  if(b.hasAttribute('data-s'))a.h=mod(a.h+parseInt(b.getAttribute('data-s')),24);
@@ -365,10 +752,10 @@ $('ctl').addEventListener('click',function(e){
 $('gHint').addEventListener('click',function(){
  if(!G||G.done)return;var L=G.L;if(G.hint>=3)return;G.hint++;$('hn').textContent=3-G.hint;
  setAv(G.hint===3?'kometa_hint':'mira_think');
- if(G.hint===1)$('msg').innerHTML='💡 '+L.h1;
- else if(G.hint===2){$('msg').innerHTML=L.t==='spin'?'💡 Золотое кольцо на Земле показывает, где должен стоять город.':'💡 Теперь на Земле видно время в нужных городах. Поставь такое же на часах.';}
- else{if(L.t==='spin'){G.anim={to:G.sol};$('msg').innerHTML='💡 Комета сама повернула Землю. Нажми «Готово».';}
-  else{L.items.forEach(function(it,i){G.ans[i]={h:it.h,day:it.day||0};});renderCards();$('msg').innerHTML='💡 Комета подсказала ответ — нажми «Готово».';}}
+ if(G.hint===1)$('msg').innerHTML='💡 '+lt(L,'h1');
+ else if(G.hint===2){$('msg').innerHTML=t(L.t==='spin'?'hint.ring':'hint.clock2');}
+ else{if(L.t==='spin'){G.anim={to:G.sol};$('msg').innerHTML=t('hint.auto.spin');}
+  else{L.items.forEach(function(it,i){G.ans[i]={h:it.h,day:it.day||0};});renderCards();$('msg').innerHTML=t('hint.auto.clock');}}
 });
 function condErr(c,L,t){var cl=localT(c.c,t,L.mode);if(c.h!=null)return cd(cl,c.h)*60;
  var w=mod(c.to-c.from,24),p=mod(cl-c.from,24);if(p<=w)return 0;return Math.min(cd(cl,c.from),cd(cl,c.to))*60;}
@@ -378,12 +765,12 @@ function check(){
  if(L.t==='spin'){
   var worst=-1,wc=null;L.conds.forEach(function(c){var e=condErr(c,L,G.t);if(e>worst){worst=e;wc=c;}});
   st=baseStars(worst);
-  if(!st){SV.err[L.topic]=(SV.err[L.topic]||0)+1;save();var tgt=wc.h!=null?fmt(wc.h):('между '+fmt(wc.from)+' и '+fmt(wc.to));
-   setAv('kometa');$('msg').innerHTML='🐱 Не совсем. В городе «'+CITIES[wc.c].n+'» сейчас <b>'+fmt(localT(wc.c,G.t,L.mode))+'</b>, а нужно <b>'+tgt+'</b>. Покрути ещё!';return;}
+  if(!st){SV.err[L.topic]=(SV.err[L.topic]||0)+1;save();var tgt=wc.h!=null?fmt(wc.h):t('err.between',{a:fmt(wc.from),b:fmt(wc.to)});
+   setAv('kometa');$('msg').innerHTML=t('err.spin',{city:cn(wc.c),now:fmt(localT(wc.c,G.t,L.mode)),need:tgt});return;}
  }else{
   var cs=document.querySelectorAll('.ccard'),all=true;
   L.items.forEach(function(it,i){var ok=G.ans[i].h===it.h&&G.ans[i].day===(it.day||0);cs[i].classList.remove('ok','no');cs[i].classList.add(ok?'ok':'no');if(!ok)all=false;});
-  if(!all){SV.err.zones=(SV.err.zones||0)+1;save();setAv('kometa');$('msg').innerHTML='🐱 Есть ошибка. Прикинь по Земле: ближе к Солнцу — значит время больше (идём на восток — прибавляем час).';return;}
+  if(!all){SV.err.zones=(SV.err.zones||0)+1;save();setAv('kometa');$('msg').innerHTML=t('err.clock');return;}
   st=G.tries===1?3:G.tries===2?2:1;
  }
  st=Math.max(1,st-(G.free?0:G.hint));finish(L,st);
@@ -393,11 +780,11 @@ function finish(L,st){
  showRes(L,st);
 }
 function showRes(L,st,title){
- $('rTitle').textContent=title||'Отлично!';$('rHero').innerHTML=IM[st?'mira_win':'mira_think']?'<img class=hero src="'+IM[st?'mira_win':'mira_think'].src+'" alt="">':'';
+ $('rTitle').textContent=title||t('res.great');$('rHero').innerHTML=IM[st?'mira_win':'mira_think']?'<img class=hero src="'+IM[st?'mira_win':'mira_think'].src+'" alt="">':'';
  $('rStars').innerHTML='★★★'.slice(0,st)+'<i>'+'★★★'.slice(0,3-st)+'</i>';
- $('rFact').innerHTML='<b>📖 Журнал наблюдений:</b><br>'+L.fact;
- var nxt=nextAfter(L.id);$('rNext').style.display=nxt?'':'none';$('rNext').textContent=Q_ADAPT&&Q_ADAPT.length?'Дальше (повтор)':'Дальше';
- $('scrRes').hidden=false;
+ $('rFact').innerHTML='<b>'+t('res.journal')+'</b><br>'+lt(L,'fact');
+ var nxt=nextAfter(L.id);$('rNext').style.display=nxt?'':'none';$('rNext').textContent=t(Q_ADAPT&&Q_ADAPT.length?'res.next_repeat':'res.next');
+ $('scrRes').hidden=false;pmSync();pmCard(600);
 }
 function nextAfter(id){if(Q_ADAPT&&Q_ADAPT.length)return Q_ADAPT[0];var n=id+1;return (n<=20&&unlocked(n))?n:0;}
 $('rNext').addEventListener('click',function(){var L=G&&G.L||curBoss;var n;if(Q_ADAPT&&Q_ADAPT.length){n=Q_ADAPT.shift();}else n=nextAfter(L.id);$('scrRes').hidden=true;adGate(function(){if(n)openLevel(n);else show('map');});});
@@ -406,22 +793,22 @@ $('rMap').addEventListener('click',function(){$('scrRes').hidden=true;Q_ADAPT=nu
 $('gBack').addEventListener('click',function(){show('map');});
 /* ===== викторина ===== */
 var doneCount=0,adDue=false;
-function adGate(done){if(adDue){adDue=false;PF.interstitial(done);}else done();}
+function adGate(done){if(adDue){adDue=false;PF.interstitial(function(){done();pmCard(400);});}else done();}
 function markDone(isBoss){doneCount++;if(isBoss||doneCount%5===0)adDue=true;}
 var curBoss=null,qs=[],qi=0,qok=0,qlock=false;
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var x=a[i];a[i]=a[j];a[j]=x;}return a;}
-function openQuiz(L){curBoss=L;G=null;qs=shuffle(L.pool).slice(0,L.n);qi=0;qok=0;$('qTitle').textContent='👑 '+(L.id/10)+'-й босс';show('quiz');nextQ();}
+function openQuiz(L){curBoss=L;G=null;qs=shuffle(L.pool).slice(0,L.n);qi=0;qok=0;$('qTitle').textContent='👑 '+t('quiz.boss',{n:L.id/10});show('quiz');nextQ();}
 function nextQ(){
  if(qi>=qs.length){var pass=qok>=4,st=pass?(qok===5?3:2):0;
-  if(pass){markDone(true);if(st>(SV.stars[curBoss.id]||0))SV.stars[curBoss.id]=st;SV.journal[curBoss.id]=1;save();showRes(curBoss,st,'Босс побеждён! '+qok+' из 5');}
-  else{showRes(curBoss,0,'Верных ответов: '+qok+' из 5. Нужно 4');$('rNext').style.display='none';$('rFact').innerHTML='Не страшно! Пройди уровни ещё раз и попробуй снова — вопросы каждый раз новые.';}
+  if(pass){markDone(true);if(st>(SV.stars[curBoss.id]||0))SV.stars[curBoss.id]=st;SV.journal[curBoss.id]=1;save();showRes(curBoss,st,t('res.boss_win',{n:qok}));}
+  else{showRes(curBoss,0,t('res.boss_lose',{n:qok}));$('rNext').style.display='none';$('rFact').textContent=t('res.lose_text');}
   return;}
- var q=Q[qs[qi]],ord=shuffle([0,1,2]);qlock=false;$('qProg').textContent=(qi+1)+'/'+qs.length;$('qq').textContent=q.q;$('qExp').textContent='';$('qNext').hidden=true;
- $('qo').innerHTML=ord.map(function(k){return '<button class="opt" data-k="'+k+'">'+q.a[k]+'</button>';}).join('');
+ var q=Q[qs[qi]],ord=shuffle([0,1,2]);qlock=false;$('qProg').textContent=(qi+1)+'/'+qs.length;$('qq').textContent=t('q.'+qs[qi]+'.q');$('qExp').textContent='';$('qNext').hidden=true;
+ $('qo').innerHTML=ord.map(function(k){return '<button class="opt" data-k="'+k+'">'+t('q.'+qs[qi]+'.a'+k)+'</button>';}).join('');
 }
 $('qo').addEventListener('click',function(e){var b=e.target.closest('.opt');if(!b||qlock)return;qlock=true;var q=Q[qs[qi]],k=+b.getAttribute('data-k');
  [].forEach.call($('qo').children,function(x){if(+x.getAttribute('data-k')===q.c)x.classList.add('ok');});
- if(k===q.c){qok++;$('qExp').textContent='Верно! '+q.e;}else{b.classList.add('no');var tp=qs[qi]<=7?'day':'zones';SV.err[tp]=(SV.err[tp]||0)+1;save();$('qExp').textContent='Не совсем. '+q.e;}
+ if(k===q.c){qok++;$('qExp').textContent=t('quiz.right')+' '+t('q.'+qs[qi]+'.e');}else{b.classList.add('no');var tp=qs[qi]<=7?'day':'zones';SV.err[tp]=(SV.err[tp]||0)+1;save();$('qExp').textContent=t('quiz.wrong')+' '+t('q.'+qs[qi]+'.e');}
  $('qNext').hidden=false;});
 $('qNext').addEventListener('click',function(){qi++;nextQ();});
 $('qBack').addEventListener('click',function(){show('map');});
@@ -436,9 +823,33 @@ function startRepeat(){
 }
 /* ===== сцена ===== */
 var STARS=[];(function(){var s=7;function r(){s=(s*16807)%2147483647;return s/2147483647;}for(var i=0;i<70;i++)STARS.push([r(),r(),r()*1.6+.4,r()*6]);})();
-var LAND=[[30,55,.17],[55,58,.18],[85,60,.2],[115,57,.2],[140,50,.12],[20,47,.1],[100,38,.17],[75,30,.1],
- [18,10,.19],[25,-3,.18],[22,-18,.14],[-100,52,.2],[-112,40,.15],[-80,45,.15],[-40,72,.08],[-62,-5,.14],[-60,-20,.13],[-66,-35,.1],[135,-25,.11]];
-function polar(lon,lat,ls,cx,cy,R){var th=(lon-ls)*Math.PI/180,r=R*Math.max(0,Math.min(1.02,(90-lat)/130));return [cx+r*Math.cos(th),cy-r*Math.sin(th)];}
+var CLAT={msk:55.8,lon:51.5,ber:52.5,cai:30,ekb:56.8,omsk:55,vl:43.1,tok:35.7,ny:40.7,la:34};
+var PL=[
+ ['#5ed16b',[[-17,21],[-16,12],[-8,4.5],[5,5],[9,4],[10,-2],[13,-12],[12,-18],[15,-27],[18,-34],[25,-34],[32,-28],[35,-20],[40,-15],[40,-10],[39,-5],[42,0],[51,11],[43,12],[38,18],[33,28],[32,31],[20,31],[10,34],[10,37],[0,36],[-6,35.5],[-10,30],[-13,27]]],
+ ['#5ed16b',[[-9,37],[-9,43],[-2,43.5],[-1,46],[-4.5,48],[2,51],[8,54],[9,57],[11,54],[14,54],[21,55],[24,59],[30,60],[23,60],[21,64],[25,65.5],[18,63],[12,56],[6,58],[5,62],[14,67],[20,70],[30,70],[40,67],[44,68],[60,69],[70,73],[80,73],[100,77],[113,74],[130,71],[140,72],[160,70],[170,70],[180,68],[180,65],[170,60],[163,59],[156,51],[155,57],[143,59],[137,54],[141,48],[135,43],[130,42],[129,35],[126,35],[126,38],[125,40],[121,40],[122,37],[119,35],[122,31],[121,28],[119,25],[113,22],[108,21],[106,19],[109,12],[105,9],[100,13],[100,7],[103,1.5],[98,8],[98,16],[94,17],[92,21],[88,22],[80,15],[77,8],[73,18],[72,21],[67,24],[57,25.5],[56,27],[50,30],[48,30],[51,24],[56,25],[59,22],[52,16],[44,13],[43,16],[39,21],[35,28],[34,31],[35,36],[28,37],[26,40],[23,40],[22,37],[19,41],[14,45],[12,44],[18,40],[16,38],[10,44],[3,43],[0,39],[-5,36]]],
+ ['#5ed16b',[[-5,50],[1,51],[2,53],[-2,56],[-3,58.5],[-6,57],[-5,54],[-3,53],[-5,52]]],
+ ['#5ed16b',[[-10,52],[-6,52],[-6,55],[-9,54]]],
+ ['#e8f4ff',[[-24,64],[-14,64],[-14,66],[-22,66.5]]],
+ ['#5ed16b',[[130,31],[135,33],[140,35],[142,38],[142,42],[145,44],[141,45],[139,40],[136,36],[131,34]]],
+ ['#5ed16b',[[44,-25],[47,-25],[50,-15],[49,-12],[44,-17]]],
+ ['#5ed16b',[[95,5],[98,4],[106,-3],[104,-5],[100,-2]]],
+ ['#5ed16b',[[105,-6],[114,-8],[106,-7.5]]],
+ ['#5ed16b',[[109,1],[117,7],[119,1],[116,-4],[110,-3]]],
+ ['#5ed16b',[[131,-1],[141,-3],[150,-10],[141,-9],[137,-5]]],
+ ['#5ed16b',[[114,-22],[122,-18],[130,-12],[137,-12],[136,-16],[142,-11],[146,-19],[153,-26],[151,-34],[147,-39],[141,-38],[135,-35],[131,-31],[124,-33],[115,-34],[114,-26]]],
+ ['#5ed16b',[[172,-35],[178,-38],[175,-41],[172,-41]]],
+ ['#5ed16b',[[-168,66],[-162,70],[-156,71],[-141,70],[-128,70],[-115,68],[-95,72],[-90,68],[-82,69],[-80,63],[-93,61],[-95,58],[-88,56],[-82,55],[-79,52],[-77,57],[-78,62],[-70,61],[-65,60],[-62,57],[-56,52],[-60,50],[-66,49],[-65,45],[-70,43],[-70,41],[-74,40],[-76,35],[-81,31],[-80,26],[-82,27],[-83,30],[-89,30],[-94,29],[-97,26],[-97,22],[-95,19],[-91,19],[-90,21],[-87,21],[-88,16],[-84,15],[-83,10],[-79,9],[-77,8],[-80,7],[-84,9],[-87,13],[-92,15],[-96,16],[-105,20],[-106,23],[-112,29],[-115,31],[-117,32],[-121,35],[-124,40],[-124,46],[-124,48],[-128,51],[-133,55],[-140,59],[-148,60],[-152,59],[-158,57],[-164,55],[-158,58],[-162,60],[-165,62],[-166,65]]],
+ ['#e8f4ff',[[-73,78],[-60,82],[-30,83],[-20,80],[-20,70],[-30,68],[-43,60],[-50,62],[-55,68],[-60,76]]],
+ ['#5ed16b',[[-77,8],[-72,12],[-62,10],[-52,5],[-50,0],[-44,-2],[-35,-5],[-35,-9],[-39,-14],[-41,-22],[-48,-26],[-53,-34],[-58,-35],[-57,-38],[-62,-39],[-65,-42],[-67,-46],[-69,-51],[-68,-54],[-72,-53],[-75,-47],[-73,-40],[-71,-30],[-70,-18],[-76,-14],[-81,-6],[-80,-2],[-78,2]]],
+ ['#2f9fe0',[[28,42],[28,45],[33,46],[38,47],[41,42],[36,41.5],[31,41]]],
+ ['#2f9fe0',[[47,45],[53,47],[54,40],[50,37],[49,40]]]
+];
+function drawLand(ls,cx,cy,R){
+ ctx.lineJoin='round';ctx.lineWidth=1.6;ctx.strokeStyle='#2a7f3a';
+ PL.forEach(function(P){ctx.fillStyle=P[0];ctx.beginPath();P[1].forEach(function(q,i){var p=polar(q[0],q[1],ls,cx,cy,R);if(i)ctx.lineTo(p[0],p[1]);else ctx.moveTo(p[0],p[1]);});ctx.closePath();ctx.fill();ctx.stroke();});
+ var g=ctx.createRadialGradient(cx,cy,0,cx,cy,R*.12);g.addColorStop(0,'#fff');g.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R*.12,0,6.3);ctx.fill();
+}
+function polar(lon,lat,ls,cx,cy,R){var th=(lon-ls)*Math.PI/180,r=R*Math.max(0,Math.min(1.3,(90-lat)/125));return [cx+r*Math.cos(th),cy-r*Math.sin(th)];}
 function lsun(){return -(G.t-12)*15;}
 function frame(now){
  requestAnimationFrame(frame);
@@ -451,7 +862,7 @@ function draw(T){
  var gr=ctx.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#070b2e');gr.addColorStop(1,'#16206a');ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
  var bg=IM[L.id<=10?'bg_w1':'bg_w2'];if(bg){var k=Math.max(W/bg.width,H/bg.height),bw=bg.width*k,bh=bg.height*k;ctx.globalAlpha=.8;ctx.drawImage(bg,(W-bw)/2,(H-bh)/2,bw,bh);ctx.globalAlpha=1;}
  STARS.forEach(function(s){ctx.globalAlpha=.4+.5*Math.abs(Math.sin(T*1.3+s[3]));ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s[0]*W,s[1]*H,s[2],0,6.3);ctx.fill();});ctx.globalAlpha=1;
- var R=Math.min(W*.28,H*.38),cx=W*.40,cy=H*.5,sr=Math.min(W*.2,H*.3),sx=W+sr*.1,sy=cy;
+ var R=Math.min(W*.31,H*.38),cx=W*.40,cy=H*.5,sr=Math.min(W*.2,H*.3),sx=W+sr*.1,sy=cy;
  // Солнце
  var sg=ctx.createRadialGradient(sx,sy,sr*.3,sx,sy,sr*1.7);sg.addColorStop(0,'rgba(255,220,80,.95)');sg.addColorStop(.5,'rgba(255,150,40,.25)');sg.addColorStop(1,'rgba(255,150,40,0)');
  ctx.fillStyle=sg;ctx.beginPath();ctx.arc(sx,sy,sr*1.7,0,6.3);ctx.fill();
@@ -471,9 +882,7 @@ function draw(T){
  }else{ // меридианы через 15°
   ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=1;for(var m=0;m<24;m++){var am=(m*15-ls)*Math.PI/180;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(am)*R,cy-Math.sin(am)*R);ctx.stroke();}
  }
- ctx.fillStyle='#5ed16b';ctx.strokeStyle='#2f8f3f';ctx.lineWidth=1.5;
- LAND.forEach(function(b){var p=polar(b[0],b[1],ls,cx,cy,R);ctx.beginPath();ctx.arc(p[0],p[1],b[2]*R*0.95+1,0,6.3);ctx.fill();ctx.stroke();});
- LAND.forEach(function(b){var p=polar(b[0],b[1],ls,cx,cy,R);ctx.beginPath();ctx.arc(p[0],p[1],b[2]*R*0.95-1,0,6.3);ctx.fill();});
+ drawLand(ls,cx,cy,R);
  // ночь
  var ng=ctx.createLinearGradient(cx-R*.25,0,cx+R*.1,0);ng.addColorStop(0,'rgba(5,8,40,.62)');ng.addColorStop(1,'rgba(5,8,40,0)');
  ctx.fillStyle='rgba(5,8,40,.62)';ctx.fillRect(cx-R-2,cy-R-2,R-.25*R+2,2*R+4);ctx.fillStyle=ng;ctx.fillRect(cx-R*.25,cy-R,R*.35,2*R);
@@ -483,8 +892,8 @@ function draw(T){
  // стрелка вращения
  ctx.strokeStyle='#ffd23f';ctx.fillStyle='#ffd23f';ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,cy,R+11,Math.PI*.62,Math.PI*.95,false);ctx.stroke();
  var ea=Math.PI*.95,ex=cx+Math.cos(ea)*(R+11),ey=cy+Math.sin(ea)*(R+11);ctx.beginPath();ctx.moveTo(ex,ey+9);ctx.lineTo(ex-6,ey-5);ctx.lineTo(ex+6,ey-5);ctx.fill();
- ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillStyle='#ffd23f';ctx.fillText('вращение',cx-R*.62,cy+R+27);
- ctx.fillStyle='#ffe58a';ctx.fillText('☀ день',cx+R*.5,cy+R+27);
+ ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillStyle='#ffd23f';ctx.fillText(t('scene.rot'),cx-R*.62,cy+R+27);
+ ctx.fillStyle='#ffe58a';ctx.fillText(t('scene.day'),cx+R*.5,cy+R+27);
  // подсказка-кольца
  var show=L.show||[];
  if(L.t==='spin'&&G.hint>=2){L.conds.forEach(function(c){var th=(CITIES[c.c].lon-(-(G.sol-12)*15))*Math.PI/180,r=R*.72,px=cx+r*Math.cos(th),py=cy-r*Math.sin(th);ctx.strokeStyle='#ffd23f';ctx.lineWidth=3;ctx.setLineDash([5,4]);ctx.lineDashOffset=-T*14;ctx.beginPath();ctx.arc(px,py,24+2*Math.sin(T*4),0,6.3);ctx.stroke();ctx.setLineDash([]);});}
@@ -495,10 +904,13 @@ function draw(T){
 }
 function pin(k,ls,cx,cy,R,mode,hl,hide){
  var c=CITIES[k],th=(c.lon-ls)*Math.PI/180,r=R*.72,px=cx+r*Math.cos(th),py=cy-r*Math.sin(th);
+ var lp=polar(c.lon,CLAT[k]||40,ls,cx,cy,R);
+ ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(lp[0],lp[1]);ctx.lineTo(px,py);ctx.stroke();
+ ctx.fillStyle='#ff4d4d';ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(lp[0],lp[1],4.5,0,6.3);ctx.fill();ctx.stroke();
  var tt=localT(k,G.t,mode);var w=62,h=28;
  ctx.fillStyle='#fff';ctx.strokeStyle=hl?'#ffb21f':'#7a86d8';ctx.lineWidth=hl?3:2;
  ctx.beginPath();if(ctx.roundRect)ctx.roundRect(px-w/2,py-h/2,w,h,8);else ctx.rect(px-w/2,py-h/2,w,h);ctx.fill();ctx.stroke();
- ctx.fillStyle='#223';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 9.5px system-ui';ctx.fillText(c.n.length>11?c.n.slice(0,10)+'.':c.n,px,py-6);
+ ctx.fillStyle='#223';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 9.5px system-ui';var nm=cn(k);ctx.fillText(nm.length>11?nm.slice(0,10)+'.':nm,px,py-6);
  ctx.font='bold 12px system-ui';ctx.fillStyle='#c4400f';ctx.fillText(hide?'?':fmt(tt),px,py+7);
 }
 /* ввод: вращение пальцем и колесом */
@@ -514,13 +926,38 @@ document.addEventListener('keydown',function(e){if(cur!=='game'||!G||G.L.t!=='sp
 $('bPlay').addEventListener('click',function(){show('map');});
 $('bJournal').addEventListener('click',function(){show('journal');});
 $('bRepeat').addEventListener('click',startRepeat);
-var rsT=0;$('bReset').addEventListener('click',function(){var b=$('bReset');if(!rsT){b.textContent='Точно стереть? Нажми ещё раз';rsT=setTimeout(function(){rsT=0;b.textContent='Сбросить прогресс';},3500);return;}clearTimeout(rsT);rsT=0;SV={v:1,stars:{},journal:{},err:{day:0,zones:0}};save();b.textContent='Прогресс стёрт';setTimeout(function(){b.textContent='Сбросить прогресс';},2000);});
+var rsT=0;$('bReset').addEventListener('click',function(){var b=$('bReset');if(!rsT){b.textContent=t('title.reset_ask');rsT=setTimeout(function(){rsT=0;b.textContent=t('title.reset');},3500);return;}clearTimeout(rsT);rsT=0;var lg=SV.lang;SV={v:1,stars:{},journal:{},err:{day:0,zones:0}};if(lg)SV.lang=lg;save();b.textContent=t('title.reset_done');setTimeout(function(){b.textContent=t('title.reset');},2000);});
+/* ===== Премиум (общий модуль window.Premium, publish\shared\premium) ===== */
+/* Кнопка в углу только на спокойных экранах (заставка, карта, журнал, итог); в уровне и викторине скрыта. Баннера в игре нет, поэтому о нём не говорим. Тексты: publish\texts\planetariy\premium.md */
+var PM_KEY='planetariy-premium';
+var PM_TEXTS={
+ ru:{p30:'Премиум на 30 дней',p365:'Премиум на год',
+  perks:['Полноэкранная реклама отключается.','При нажатии «Показать ответ за ролик» ответ показывается сразу, без просмотра.','Подсказки и игровые лимиты остаются прежними.'],
+  note:'Оплата один раз. Премиум действует 30 дней или год — в зависимости от выбранного товара. Автопродления и повторных списаний нет. Если Премиум уже идёт, новый срок добавится к концу.',
+  adTitle:'Надоела реклама?',adText:'Изучай день, ночь и часовые пояса вместе с Мирой и котом Кометой! Премиум убирает полноэкранную рекламу, а награды за ролики выдаёт сразу.',adMore:'Узнать про Премиум',later:'Не сейчас',
+  soonTitle:'Премиум скоро закончится',soonText:'Ещё {0} без рекламных пауз среди звёзд. Премиум закончится сам, без списаний. Если захочешь, его можно купить снова.',extend:'Продлить',
+  endTitle:'Премиум закончился',endText:'Полноэкранная реклама вернулась, а награды снова требуют просмотра роликов. Мира и Комета продолжают исследовать космос!',buy:'Купить Премиум'},
+ en:{p30:'30-Day Premium',p365:'1-Year Premium',
+  perks:['Full-screen ads are disabled.','When you tap “Show the answer”, the answer is shown instantly, without a video.','Hints and game limits stay the same.'],
+  note:'One-time payment. Premium lasts 30 days or 1 year, depending on your purchase. No automatic renewal or recurring charges. If Premium is already active, the new period is added to the end.',
+  adTitle:'Tired of ads?',adText:'Explore day, night and time zones with Mira and Comet the cat! Premium removes full-screen ads and gives video rewards instantly.',adMore:'Learn About Premium',later:'Not Now',
+  soonTitle:'Premium Is Ending Soon',soonText:'Enjoy {0} more without ad breaks among the stars. Premium ends automatically with no further charges. You can buy it again if you like.',extend:'Renew',
+  endTitle:'Premium Has Ended',endText:'Full-screen ads are back, and video rewards require watching ads again. Mira and Comet are still exploring space!',buy:'Buy Premium'}
+};
+function pmCalm(){return cur==='title'||cur==='map'||cur==='journal'||!$('scrRes').hidden;}
+function pmSync(){try{document.documentElement.classList.toggle('pm-hide',!pmCalm());}catch(e){}}
+function pmCard(d){setTimeout(function(){pmSync();if(pmCalm()&&window.Premium)try{Premium.maybeCard();}catch(e){}},d||0);}
+function pmStart(){if(!window.Premium)return;try{
+ Premium.onChange(function(){if(cur==='game'&&G&&!G.done)buildCtl();});
+ Premium.init({sdk:PF.sdk(),lang:LANG,texts:PM_TEXTS,store:{get:function(){return PF.get(PM_KEY);},set:function(raw){PF.put(PM_KEY,raw);},save:function(){return PF.save();}}}).then(function(){pmSync();pmCard(0);});
+}catch(e){}}
 /* ===== старт ===== */
 PF.onPause=function(){};
-PF.onCloud=function(){load();if(cur==='map')buildMap();};
-PF.init().then(function(){load();PF.ready();});
-load();show('title');requestAnimationFrame(frame);
-window.__game={LEVELS:LEVELS,CITIES:CITIES,openLevel:openLevel,get G(){return G;},get SV(){return SV;},check:check,solve:solve,show:show};
+PF.onCloud=function(){load();initLang();if(cur==='map')buildMap();};
+$('bLang').addEventListener('click',function(){LANG=LANG==='en'?'ru':'en';SV.lang=LANG;save();applyStatic();});
+function initLang(){LANG=(SV.lang==='en'||SV.lang==='ru')?SV.lang:pickLang();if(LANG==='en'&&!EN)LANG='ru';applyStatic();}
+PF.init().then(function(){load();initLang();PF.ready();pmStart();});
+load();initLang();show('title');requestAnimationFrame(frame);
 })();
 </script>
 </body></html>

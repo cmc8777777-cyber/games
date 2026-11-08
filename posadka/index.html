@@ -47,50 +47,53 @@ h2{font-size:26px;margin:4px 0 10px;text-align:center;color:#ffd84a;text-shadow:
 .cov{background-color:#150f4d;background-repeat:no-repeat}.cov h1{margin-top:2px}.cov .sub{display:none}.cov #m-total{display:block;margin-top:0;font-size:13px}.cov #b-play{margin-top:auto;margin-bottom:4px;font-size:24px;min-width:260px}.big{font-size:56px;letter-spacing:6px;color:#ffd84a;text-shadow:0 3px 0 #b34a00;margin:6px 0}
 .ship{width:72px;height:72px;flex:none}
 .row{display:flex;gap:10px;align-items:center;width:100%;z-index:2}
+:root{--pm-paper:#1c1850;--pm-ink:#fff;--pm-red:#ff8a1f;--pm-redink:#1a1030;--pm-gold:#ffd84a;--pm-muted:#c6c2f0;--pm-line:#5b55b0;--pm-focus:#7fd0ff;--pm-scrim:rgba(5,3,26,.78);--pm-z:60}
+body.playing .pm-corner{display:none!important}
+.pm-corner{border-radius:18px!important;font-weight:800}
 </style>
 </head>
 <body>
 <div id="app">
   <canvas id="cv" width="750" height="1624"></canvas>
   <div id="toast"></div>
-  <button id="hud-pause" aria-label="Пауза">❚❚</button>
-  <button id="chute" class="btn org small">🪂 Парашют</button>
+  <button id="hud-pause" data-ia="ui.pause" aria-label="Пауза">❚❚</button>
+  <button id="chute" class="btn org small"><span class="ic">🪂</span> <span data-i="ui.chute">Парашют</span></button>
   <div id="ctl">
-    <div id="thrust"><span style="font-size:34px">🔥</span>ТЯГА</div>
+    <div id="thrust"><span style="font-size:34px">🔥</span><span data-i="ui.thrust">ТЯГА</span></div>
     <div id="tilt"><div class="h" id="tl">◀</div><div class="h" id="tr">▶</div></div>
   </div>
 
   <div class="screen on" id="s-menu"><div class="stars"></div>
     <div style="height:30px"></div>
     <svg width="150" height="150" viewBox="-40 -50 80 100" id="menuShip"></svg>
-    <h1>ПОСАДКА<br>НА ПЛАНЕТУ</h1>
-    <div class="sub" style="margin-top:12px">Посади модуль мягко на площадку.<br>У каждой планеты свой вес и свой воздух!</div>
-    <button class="btn" id="b-play">▶ Играть</button>
-    <div class="row" style="justify-content:center;gap:12px"><button class="btn blue small" id="b-ships">🚀 Корабли</button><button class="btn blue small" id="b-snd">🔊 Звук: вкл</button></div>
+    <h1 data-h="menu.title">ПОСАДКА<br>НА ПЛАНЕТУ</h1>
+    <div class="sub" style="margin-top:12px" data-h="menu.sub">Посади модуль мягко на площадку.<br>У каждой планеты свой вес и свой воздух!</div>
+    <button class="btn" id="b-play" data-i="menu.play">▶ Играть</button>
+    <div class="row" style="justify-content:center;gap:12px"><button class="btn blue small" id="b-ships" data-i="menu.ships">🚀 Корабли</button><button class="btn blue small" id="b-snd">🔊 Звук: вкл</button><button class="btn blue small" id="b-lang" style="display:none">EN</button></div>
     <div class="sub" id="m-total"></div>
   </div>
 
   <div class="screen" id="s-map"><div class="stars"></div>
-    <h2>Куда летим?</h2>
+    <h2 data-i="map.title">Куда летим?</h2>
     <div class="grid" id="mapgrid"></div>
-    <button class="btn blue small" style="margin-top:auto" data-go="menu">← В меню</button>
+    <button class="btn blue small" style="margin-top:auto" data-go="menu" data-i="nav.menu">← В меню</button>
   </div>
 
   <div class="screen" id="s-lv"><div class="stars"></div>
     <h2 id="lv-title"></h2>
     <div class="sub" id="lv-sub"></div>
     <div class="lvgrid" id="lvgrid"></div>
-    <button class="btn blue small" style="margin-top:auto" data-go="map">← К планетам</button>
+    <button class="btn blue small" style="margin-top:auto" data-go="map" data-i="nav.planets">← К планетам</button>
   </div>
 
   <div class="screen" id="s-brief"><div class="stars"></div>
-    <h2>Брифинг</h2>
+    <h2 data-i="brief.title">Брифинг</h2>
     <div class="sub" id="br-sub"></div>
     <div class="panel"><div class="q" id="br-q"></div><div id="br-ans"></div></div>
     <div class="panel hint" id="br-hint" style="display:none"></div>
-    <button class="btn" id="b-go" style="display:none">🚀 К посадке!</button>
-    <button class="btn org small" id="b-reward" style="display:none">📺 Ролик: +25 % топлива</button>
-    <button class="btn blue small" id="b-skip" style="margin-top:auto">Пропустить вопрос</button>
+    <button class="btn" id="b-go" style="display:none" data-i="brief.go">🚀 К посадке!</button>
+    <button class="btn org small" id="b-reward" style="display:none" data-i="brief.reward">📺 Ролик: +25 % топлива</button>
+    <button class="btn blue small" id="b-skip" style="margin-top:auto" data-i="brief.skip">Пропустить вопрос</button>
   </div>
 
   <div class="screen" id="s-res"><div class="stars"></div>
@@ -98,31 +101,373 @@ h2{font-size:26px;margin:4px 0 10px;text-align:center;color:#ffd84a;text-shadow:
     <div class="big" id="r-stars"></div>
     <div class="panel hint" id="r-text"></div>
     <button class="btn" id="r-next">Дальше ▶</button>
-    <button class="btn org" id="r-retry">↻ Ещё раз</button>
-    <button class="btn" id="r-reward" style="display:none">📺 Ещё раз с +25 % топлива</button>
-    <button class="btn blue small" data-go="lv">☰ К площадкам</button>
+    <button class="btn org" id="r-retry" data-i="res.retry">↻ Ещё раз</button>
+    <button class="btn" id="r-reward" style="display:none" data-i="res.rewardRetry">📺 Ещё раз с +25 % топлива</button>
+    <button class="btn blue small" data-go="lv" data-i="res.toLv">☰ К площадкам</button>
   </div>
 
   <div class="screen" id="s-ships"><div class="stars"></div>
-    <h2>Корабли</h2>
+    <h2 data-i="ships.title">Корабли</h2>
     <div class="sub" id="sh-sub"></div>
     <div class="grid" id="shgrid"></div>
-    <button class="btn blue small" style="margin-top:auto" data-go="menu">← В меню</button>
+    <button class="btn blue small" style="margin-top:auto" data-go="menu" data-i="nav.menu">← В меню</button>
   </div>
 
-  <div class="screen" id="pause"><h2>Пауза</h2>
-    <button class="btn" id="p-res">▶ Продолжить</button>
-    <button class="btn blue small" id="p-quit">☰ К площадкам</button>
+  <div class="screen" id="pause"><h2 data-i="ui.pause">Пауза</h2>
+    <button class="btn" id="p-res" data-i="pause.resume">▶ Продолжить</button>
+    <button class="btn blue small" id="p-quit" data-i="res.toLv">☰ К площадкам</button>
   </div>
 </div>
 
+<script>
+/* Премиум: общий модуль для браузерных игр на Яндекс Играх.
+   Платный Премиум на срок (30 дней или год), без автопродления: «используемая» покупка, срок считается по серверному
+   времени Яндекса и хранится в облачных данных игрока. Подробно: README.md рядом с этим файлом.
+   Модуль ничего не знает об игре: хранилище, звук и реклама подключаются через init() и несколько вызовов хозяина.
+   Без SDK, без покупок или без созданных товаров в консоли кнопка и карточки скрыты, игра работает как раньше. */
+window.Premium = (function () {
+  "use strict";
+  var DAY = 86400000;
+
+  /* ---- Настройки: все числа и товары в одном месте ---- */
+  var config = {
+    adGapMs: 5 * 60 * 1000,     // интервал полноэкранной рекламы; хозяин читает его при показе (решение владельца 8 ноября: 5 минут)
+    cardEvery: 3,               // карточка «Надоела реклама?» после каждой 3-й показанной полноэкранной рекламы
+    remindDays: 3,              // напоминание о конце Премиума за столько дней и меньше (раз в сутки)
+    pollMs: 60000,              // как часто сверять срок с серверным временем
+    tokensKeep: 20,             // сколько токенов последних покупок помнить
+    products: {                 // id товара в консоли Яндекса → срок
+      premium_30: { days: 30 },
+      premium_365: { days: 365 }
+    },
+    order: ["premium_30", "premium_365"],
+    corner: true,               // кнопка «Премиум» в углу экрана
+    zIndex: 50
+  };
+
+  /* ---- Тексты (временные, их заменит сессия «Тексты»). Подмена: Premium.init({ texts: { ru: {...}, en: {...} } }) ---- */
+  var TEXTS = {
+    ru: {
+      btn: "Премиум", btnOn: "Премиум · {0} д.", title: "Премиум",
+      activeUntil: "Активен до {0}. Осталось {1}.",
+      notActive: "Сейчас Премиум не включён.",
+      perks: ["Без полноэкранной рекламы и баннеров.", "Награды за ролики выдаются сразу, без просмотра.", "Правила и сложность игры не меняются: Премиум не помогает выигрывать."],
+      p30: "Премиум на 30 дней", p365: "Премиум на год",
+      validTo: "Будет действовать до {0}", buy: "Купить", extend: "Продлить",
+      note: "Один платёж, без автопродления: больше ничего не спишется. Если Премиум уже идёт, новый срок добавится к концу.",
+      close: "Закрыть", later: "Не сейчас",
+      adTitle: "Надоела реклама?", adText: "Премиум: без роликов и баннеров, 30 дней за {0}, не продлевается сам.", adMore: "Узнать про Премиум",
+      soonTitle: "Премиум скоро закончится", soonText: "Осталось {0}. Продлить?",
+      endTitle: "Премиум закончился", endText: "Реклама вернулась. Можно включить Премиум снова.",
+      busy: "Ждём подтверждения оплаты…", done: "Готово! Премиум активен до {0}.",
+      fail: "Покупка не прошла. Деньги не списаны.", saveFail: "Оплата принята, но срок пока не сохранился. Не закрывайте игру, мы повторим при следующем запуске.",
+      d1: "{0} день", d2: "{0} дня", d5: "{0} дней", free: "Ян", lang: "ru-RU"
+    },
+    en: {
+      btn: "Premium", btnOn: "Premium · {0} d", title: "Premium",
+      activeUntil: "Active until {0}. {1} left.",
+      notActive: "Premium is not active.",
+      perks: ["No full-screen ads or banners.", "Rewards for videos are given instantly, no watching.", "The rules and difficulty stay the same: Premium does not help you win."],
+      p30: "Premium for 30 days", p365: "Premium for a year",
+      validTo: "Will be active until {0}", buy: "Buy", extend: "Extend",
+      note: "One payment, no auto-renewal: nothing else will be charged. If Premium is already running, the new period is added to the end.",
+      close: "Close", later: "Not now",
+      adTitle: "Tired of ads?", adText: "Premium: no videos or banners, 30 days for {0}, does not renew by itself.", adMore: "About Premium",
+      soonTitle: "Premium ends soon", soonText: "{0} left. Extend?",
+      endTitle: "Premium has ended", endText: "Ads are back. You can turn Premium on again.",
+      busy: "Waiting for payment confirmation…", done: "Done! Premium is active until {0}.",
+      fail: "The purchase did not go through. You were not charged.", saveFail: "Payment accepted, but the period is not saved yet. Keep the game open, we will retry on the next start.",
+      d1: "{0} day", d2: "{0} days", d5: "{0} days", free: "Yan", lang: "en-GB"
+    }
+  };
+
+  /* ---- Состояние ---- */
+  var sdk = null, payments = null, store = null;
+  var lang = "ru", texts = TEXTS.ru;
+  var catalog = {};                   // id → описание товара из консоли
+  var st = blank();
+  var off = 0;                        // запасная поправка серверного времени, если serverTime() недоступен
+  var ready = false, canBuy = false, busy = false, chain = Promise.resolve();
+  var listeners = [], pollTimer = 0, lastActive = false;
+  var ui = { corner: null, ov: null, box: null, status: "", mode: "", style: null, lastFocus: null };
+
+  function blank() { return { until: 0, tokens: [], ads: 0, cardAt: 0, remindDay: 0, endShown: 0 }; }
+  function clean(o) {
+    var r = blank();
+    if (!o || typeof o !== "object") return r;
+    r.until = Math.max(0, Number(o.until) || 0);
+    r.tokens = Array.isArray(o.tokens) ? o.tokens.filter(function (t) { return typeof t === "string"; }).slice(-config.tokensKeep) : [];
+    r.ads = Math.max(0, Math.floor(Number(o.ads) || 0));
+    r.cardAt = Math.max(0, Math.floor(Number(o.cardAt) || 0));
+    r.remindDay = Math.max(0, Math.floor(Number(o.remindDay) || 0));
+    r.endShown = Math.max(0, Number(o.endShown) || 0);
+    return r;
+  }
+  function parse(raw) { try { return clean(typeof raw === "string" ? JSON.parse(raw) : raw); } catch (e) { return blank(); } }
+  /* Слияние двух снимков (облако и устройство): срок и счётчики берём большие, токены объединяем.
+     Хозяин вызывает при импорте облака, иначе срок мог бы пропасть при конфликте двух устройств. */
+  function mergeState(a, b) {
+    var x = parse(a), y = parse(b), r = blank(), seen = {};
+    r.until = Math.max(x.until, y.until); r.ads = Math.max(x.ads, y.ads); r.cardAt = Math.max(x.cardAt, y.cardAt);
+    r.remindDay = Math.max(x.remindDay, y.remindDay); r.endShown = Math.max(x.endShown, y.endShown);
+    y.tokens.concat(x.tokens).forEach(function (t) { if (!seen[t]) { seen[t] = 1; r.tokens.push(t); } });
+    r.tokens = r.tokens.slice(-config.tokensKeep);
+    return JSON.stringify(r);
+  }
+  function persist() { try { if (store && store.set) store.set(JSON.stringify(st)); } catch (e) {} }
+  function loadState() { try { st = parse(store && store.get ? store.get() : null); } catch (e) { st = blank(); } }
+
+  /* ---- Серверное время: часы устройства не используем ---- */
+  function now() {
+    if (sdk && typeof sdk.serverTime === "function") {
+      try { var t = sdk.serverTime(); if (typeof t === "number" && t > 0) { off = t - Date.now(); return t; } } catch (e) {}
+    }
+    return Date.now() + off;
+  }
+  function active() { return st.until > now(); }
+  function daysLeft() { var ms = st.until - now(); return ms > 0 ? Math.ceil(ms / DAY) : 0; }
+  function available() { return !!(ready && canBuy); }
+
+  /* ---- Утилиты текста ---- */
+  function fmt(s) { var a = arguments; return String(s).replace(/\{(\d)\}/g, function (m, i) { var v = a[Number(i) + 1]; return v == null ? "" : v; }); }
+  function tx(k) { var v = texts[k]; return v != null ? v : (TEXTS.ru[k] != null ? TEXTS.ru[k] : k); }
+  function plural(n) {
+    if (lang === "en") return fmt(n === 1 ? tx("d1") : tx("d2"), n);
+    var m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return fmt(tx("d1"), n);
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return fmt(tx("d2"), n);
+    return fmt(tx("d5"), n);
+  }
+  function dateStr(ms) {
+    try { return new Date(ms).toLocaleDateString(tx("lang"), { day: "numeric", month: "long", year: "numeric" }).replace(/\s*г\.$/, ""); }   // без «г.», чтобы в конце фразы не было «г..»
+    catch (e) { return new Date(ms).toISOString().slice(0, 10); }
+  }
+  function priceOf(id) { var c = catalog[id]; return c && c.price ? String(c.price) : ""; }
+  function dayIdx() { return Math.floor(now() / DAY); }
+  function emit() { var a = active(); lastActive = a; listeners.slice().forEach(function (f) { try { f(a); } catch (e) {} }); renderCorner(); if (ui.ov && ui.mode === "shop") renderShop(); }
+
+  /* ---- Покупка и начисление: запись в облако подтверждена, и только потом consumePurchase ---- */
+  function grant(p) {
+    var id = p && p.productID, tok = p && p.purchaseToken, prod = config.products[id];
+    if (!prod || !tok) return Promise.resolve(false);
+    if (st.tokens.indexOf(tok) < 0) {
+      var base = Math.max(now(), st.until);
+      st.until = base + prod.days * DAY;
+      st.tokens.push(tok); if (st.tokens.length > config.tokensKeep) st.tokens.shift();
+      persist();
+    }
+    return Promise.resolve(store && store.save ? store.save() : false).then(function (ok) {
+      if (!ok) { var e = new Error("save"); e.code = "save"; throw e; }
+      // срок уже сохранён: если закрыть покупку не вышло, её закроют при следующем запуске, второй раз срок не начислится
+      return Promise.resolve(payments.consumePurchase(tok)).then(function () {}, function () {});
+    }).then(function () { emit(); return true; });
+  }
+  function queue(f) { var r = chain.then(f, f); chain = r.then(function () {}, function () {}); return r; }
+  function checkPurchases() {
+    return queue(function () {
+      return payments.getPurchases().then(function (list) {
+        list = Array.isArray(list) ? list : (list && list.purchases) || [];
+        return list.reduce(function (p, item) { return p.then(function () { return grant(item).catch(function () {}); }); }, Promise.resolve());
+      });
+    }).catch(function () {}).then(function () { emit(); });
+  }
+  function buy(id) {
+    if (busy || !canBuy || !config.products[id]) return Promise.resolve(false);
+    busy = true; setStatus(tx("busy")); renderShop();
+    return queue(function () {
+      return payments.purchase({ id: id, developerPayload: "pm" }).then(function (p) {
+        return grant(p).then(function () { setStatus(fmt(tx("done"), dateStr(st.until))); return true; }, function (e) {
+          setStatus(e && e.code === "save" ? tx("saveFail") : tx("fail")); return false;
+        });
+      }, function () { setStatus(tx("fail")); return false; });
+    }).then(function (r) { busy = false; renderShop(); return r; }, function () { busy = false; renderShop(); return false; });
+  }
+
+  /* ---- Вызовы хозяина ---- */
+  function noteFullscreen() { st.ads++; persist(); }
+  /* Показать карточку на спокойном экране (меню, результат). Возвращает true, если карточка открыта. */
+  function maybeCard() {
+    if (!available() || ui.ov) return false;
+    if (active()) {
+      if (daysLeft() <= config.remindDays && st.remindDay !== dayIdx()) { st.remindDay = dayIdx(); persist(); openCard("soon"); return true; }
+      return false;
+    }
+    if (st.until > 0 && st.endShown !== st.until) { st.endShown = st.until; persist(); openCard("end"); return true; }
+    if (config.cardEvery > 0 && Math.floor(st.ads / config.cardEvery) > Math.floor(st.cardAt / config.cardEvery)) { st.cardAt = st.ads; persist(); openCard("ad"); return true; }
+    return false;
+  }
+
+  /* ---- Интерфейс ---- */
+  var CSS = ".pm-corner{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:max(12px,env(safe-area-inset-right,0px));z-index:var(--pm-z,50);display:inline-flex;align-items:center;gap:5px;" +
+    "min-height:40px;padding:0 12px;border-radius:20px;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:var(--pm-gold,#f2c14e);color:#2a2110;font:600 14px/1 var(--f-display,system-ui,sans-serif);letter-spacing:.02em;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.25)}" +
+    ".pm-corner[hidden]{display:none}.pm-corner.on{background:var(--pm-paper,var(--paper,#f4edd9));color:var(--pm-ink,var(--fg,#22304a))}" +
+    ".pm-corner:focus-visible,.pm-btn:focus-visible,.pm-x:focus-visible{outline:3px solid var(--pm-focus,var(--focus,#1d5cc0));outline-offset:2px}" +
+    ".pm-ov{position:fixed;inset:0;z-index:calc(var(--pm-z,50) + 10);display:grid;place-items:center;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));background:var(--pm-scrim,rgba(20,18,12,.5))}" +
+    ".pm-ov[hidden]{display:none}.pm-box{position:relative;box-sizing:border-box;width:100%;max-width:420px;max-height:calc(100% - 8px);overflow-y:auto;background:var(--pm-paper,var(--paper,#f4edd9));color:var(--pm-ink,var(--fg,#22304a));" +
+    "border:1.5px solid var(--pm-ink,var(--fg,#22304a));border-radius:12px;padding:18px 18px 16px;box-shadow:0 10px 34px rgba(0,0,0,.4);font:15px/1.4 var(--f-body,system-ui,sans-serif);-webkit-user-select:none;user-select:none}" +
+    ".pm-box h2{margin:0 36px 8px 0;font:600 22px/1.2 var(--f-display,system-ui,sans-serif);text-wrap:balance}.pm-box p{margin:0 0 10px}.pm-sub{color:var(--pm-muted,var(--muted,#615d4f));font-size:14px}" +
+    ".pm-x{position:absolute;top:8px;right:8px;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer}" +
+    ".pm-perks{margin:0 0 12px;padding-left:20px}.pm-perks li{margin:0 0 4px}" +
+    ".pm-prod{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:10px 12px;margin:0 0 10px;border:1.5px solid var(--pm-line,var(--line,#b9ab86));border-radius:10px;background:var(--pm-paper2,var(--paper-2,#ebe1c6))}" +
+    ".pm-prod b{font:600 17px/1.2 var(--f-display,system-ui,sans-serif)}.pm-prod .pm-price{font:600 17px/1 var(--f-display,system-ui,sans-serif);font-variant-numeric:tabular-nums;white-space:nowrap}" +
+    ".pm-prod .pm-sub{grid-column:1 / -1}.pm-btn{box-sizing:border-box;min-height:44px;padding:0 16px;border-radius:8px;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:transparent;color:inherit;font:600 16px/1 var(--f-display,system-ui,sans-serif);cursor:pointer}" +
+    ".pm-btn.main{background:var(--pm-red,var(--red,#b3352b));border-color:var(--pm-red,var(--red,#b3352b));color:var(--pm-redink,var(--red-ink,#fff7ea))}.pm-btn:disabled{opacity:.55;cursor:default}" +
+    ".pm-prod .pm-btn{grid-column:1 / -1;width:100%}.pm-row{display:flex;gap:10px;flex-wrap:wrap}.pm-row .pm-btn{flex:1 1 140px}" +
+    ".pm-status{min-height:20px;margin:6px 0 0;font-size:14px;font-style:italic}@media (prefers-reduced-motion:no-preference){.pm-box{animation:pmIn .2s ease-out}}@keyframes pmIn{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}";
+
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function ensureUi() {
+    if (ui.style) return;
+    ui.style = el("style"); ui.style.textContent = CSS; document.head.appendChild(ui.style);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && ui.ov) closeOv(); });
+  }
+  function renderCorner() {
+    if (!config.corner || typeof document === "undefined") return;
+    var show = ready && (canBuy || active());
+    try { document.documentElement.classList.toggle("pm-on", !!show); } catch (e) {}
+    if (!show) { if (ui.corner) ui.corner.hidden = true; return; }
+    ensureUi();
+    if (!ui.corner) {
+      ui.corner = el("button", "pm-corner"); ui.corner.type = "button"; ui.corner.id = "pmCorner";
+      ui.corner.addEventListener("click", function () { openShop(); });
+      document.body.appendChild(ui.corner);
+    }
+    var on = active();
+    ui.corner.hidden = false;
+    ui.corner.classList.toggle("on", on);
+    // звезда и подпись отдельными элементами: хозяин может скрыть подпись на тесном экране (.pm-lbl), кнопка остаётся звездой
+    ui.corner.textContent = "";
+    ui.corner.appendChild(el("span", "pm-st", "★"));
+    ui.corner.appendChild(el("span", "pm-lbl", on ? fmt(tx("btnOn"), daysLeft()) : tx("btn")));
+    ui.corner.setAttribute("aria-label", on ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("btn"));
+  }
+  function setStatus(s) { ui.status = s || ""; var n = ui.box && ui.box.querySelector(".pm-status"); if (n) n.textContent = ui.status; }
+  function mountOv() {
+    ensureUi(); closeOv(true);
+    ui.lastFocus = document.activeElement;
+    ui.ov = el("div", "pm-ov"); ui.ov.setAttribute("role", "dialog"); ui.ov.setAttribute("aria-modal", "true");
+    ui.box = el("div", "pm-box"); ui.ov.appendChild(ui.box);
+    ui.ov.addEventListener("click", function (e) { if (e.target === ui.ov) closeOv(); });
+    document.body.appendChild(ui.ov);
+  }
+  function closeOv(quiet) {
+    if (ui.ov && ui.ov.parentNode) ui.ov.parentNode.removeChild(ui.ov);
+    ui.ov = null; ui.box = null; ui.mode = ""; ui.status = "";
+    if (!quiet && ui.lastFocus && ui.lastFocus.focus) { try { ui.lastFocus.focus({ preventScroll: true }); } catch (e) {} }
+  }
+  function xBtn() { var b = el("button", "pm-x", "×"); b.type = "button"; b.setAttribute("aria-label", tx("close")); b.addEventListener("click", function () { closeOv(); }); return b; }
+  function productCard(id) {
+    var days = config.products[id].days, c = el("div", "pm-prod");
+    var base = Math.max(now(), st.until);
+    c.appendChild(el("b", "", id === "premium_365" ? tx("p365") : tx("p30")));
+    c.appendChild(el("span", "pm-price", priceOf(id) || ""));
+    c.appendChild(el("span", "pm-sub", fmt(tx("validTo"), dateStr(base + days * DAY))));
+    var b = el("button", "pm-btn main", active() ? tx("extend") : tx("buy")); b.type = "button"; b.disabled = busy; b.setAttribute("data-pm-buy", id);
+    b.addEventListener("click", function () { buy(id); });
+    c.appendChild(b);
+    return c;
+  }
+  function renderShop() {
+    if (!ui.box || ui.mode !== "shop") return;
+    var b = ui.box; b.textContent = "";
+    b.appendChild(xBtn());
+    var h = el("h2", "", tx("title")); h.id = "pmTitle"; b.appendChild(h);
+    ui.ov.setAttribute("aria-labelledby", "pmTitle");
+    b.appendChild(el("p", "", active() ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("notActive")));
+    var ul = el("ul", "pm-perks"); texts.perks.forEach(function (s) { ul.appendChild(el("li", "", s)); }); b.appendChild(ul);
+    config.order.forEach(function (id) { if (catalog[id]) b.appendChild(productCard(id)); });
+    b.appendChild(el("p", "pm-sub", tx("note")));
+    var s = el("p", "pm-status", ui.status); s.setAttribute("role", "status"); s.setAttribute("aria-live", "polite"); b.appendChild(s);
+  }
+  function openShop() {
+    if (!ready || (!canBuy && !active())) return;
+    mountOv(); ui.mode = "shop"; renderShop();
+    var f = ui.box.querySelector(".pm-prod .pm-btn") || ui.box.querySelector(".pm-x"); if (f) try { f.focus({ preventScroll: true }); } catch (e) {}
+  }
+  function openCard(kind) {
+    mountOv(); ui.mode = "card:" + kind;
+    var b = ui.box, p30 = priceOf("premium_30");
+    var title = kind === "ad" ? tx("adTitle") : kind === "soon" ? tx("soonTitle") : tx("endTitle");
+    var text = kind === "ad" ? fmt(tx("adText"), p30 || ("99 " + tx("free"))) : kind === "soon" ? fmt(tx("soonText"), plural(daysLeft())) : tx("endText");
+    b.appendChild(xBtn());
+    var h = el("h2", "", title); h.id = "pmTitle"; b.appendChild(h); ui.ov.setAttribute("aria-labelledby", "pmTitle");
+    b.appendChild(el("p", "", text));
+    var row = el("div", "pm-row");
+    var go = el("button", "pm-btn main", kind === "ad" ? tx("adMore") : (kind === "soon" ? tx("extend") : tx("buy"))); go.type = "button";
+    go.addEventListener("click", function () { openShop(); });
+    var no = el("button", "pm-btn", tx("later")); no.type = "button"; no.addEventListener("click", function () { closeOv(); });
+    row.appendChild(go); row.appendChild(no); b.appendChild(row);
+    try { no.focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  /* ---- Запуск ---- */
+  function setLang(l) {
+    lang = l === "en" ? "en" : "ru"; texts = Object.assign({}, TEXTS.ru, TEXTS[lang] || {});
+    renderCorner(); if (ui.ov) { if (ui.mode === "shop") renderShop(); else { var m = ui.mode.split(":")[1]; openCard(m); } }
+  }
+  function tick() {
+    var a = active();
+    if (a !== lastActive) emit(); else renderCorner();
+  }
+  function init(o) {
+    o = o || {};
+    if (o.config) Object.keys(o.config).forEach(function (k) { config[k] = o.config[k]; });
+    if (o.texts) Object.keys(o.texts).forEach(function (l) { TEXTS[l] = Object.assign(TEXTS[l] || {}, o.texts[l]); });
+    sdk = o.sdk || null; store = o.store || null;
+    setLang(o.lang || lang);
+    loadState();
+    ready = true; lastActive = active();
+    try { document.addEventListener("visibilitychange", function () { if (!document.hidden) tick(); }); } catch (e) {}
+    clearInterval(pollTimer); pollTimer = setInterval(tick, config.pollMs);
+    renderCorner();
+    if (!sdk || typeof sdk.getPayments !== "function") return Promise.resolve(false);
+    return sdk.getPayments({ signed: false }).then(function (pay) {
+      payments = pay;
+      return pay.getCatalog();
+    }).then(function (list) {
+      list = Array.isArray(list) ? list : [];
+      list.forEach(function (c) { if (c && config.products[c.id]) catalog[c.id] = c; });
+      canBuy = !!(store && store.save && config.order.some(function (id) { return catalog[id]; }));
+      renderCorner();
+      return canBuy ? checkPurchases().then(function () { return true; }) : false;
+    }).catch(function () { canBuy = false; renderCorner(); return false; });
+  }
+
+  return {
+    config: config,
+    init: init, setLang: setLang,
+    active: active, until: function () { return st.until; }, daysLeft: daysLeft, available: available,
+    noteFullscreen: noteFullscreen, maybeCard: maybeCard, openShop: openShop,
+    onChange: function (f) { if (typeof f === "function") listeners.push(f); },
+    mergeState: mergeState,
+    refresh: function () { return canBuy ? checkPurchases() : Promise.resolve(); },
+    _state: function () { return JSON.parse(JSON.stringify(st)); }
+  };
+})();
+
+</script>
+<script src="/sdk.js"></script>
 <script>
 'use strict';
 /* ===== Платформа: заглушка Яндекс Игр (без SDK всё работает как есть) ===== */
 var PF = (function () {
   var ys = null, ok = false, adBusy = false, tabHidden = false, apiPaused = false, lastAdAt = Date.now(), gpOn = false, wantGp = false, readyDone = false, wantReady = false;
-  var AD_GAP_MS = 180000;   // полноэкранная реклама не чаще раза в 3 минуты
-  var self = { onPause: function () {} };
+  var AD_GAP_MS = 300000;   // полноэкранная реклама не чаще раза в 5 минут
+  var self = { onPause: function () {}, onLang: function () {}, onSdk: function () {} };
+  var player = null, cloud = {};
+  function initPlayer() {
+    try { if (!ys.getPlayer) return Promise.resolve(); } catch (e) { return Promise.resolve(); }
+    return ys.getPlayer({ scopes: false }).then(function (p) { player = p; return p.getData(['premium']); })
+      .then(function (d) { cloud = (d && typeof d === 'object') ? d : {}; }).catch(function () { player = null; });
+  }
+  self.cloudGet = function (k) { return cloud[k] == null ? null : cloud[k]; };
+  /* запись в облако: Promise<true> только когда облако подтвердило запись (flush) */
+  self.cloudSave = function (k, v) {
+    if (!player) return Promise.resolve(false);
+    cloud[k] = v;
+    return Promise.resolve(player.setData(cloud, true)).then(function () { return true; }, function () { return false; });
+  };
+  self.lang = function () { try { return ys && ys.environment && ys.environment.i18n && ys.environment.i18n.lang || ''; } catch (e) { return ''; } };
   self.get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
   self.put = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
   self.paused = function () { return adBusy || tabHidden || apiPaused; };
@@ -140,6 +485,8 @@ var PF = (function () {
         ys = s; ok = true;
         try { if (ys.on) { ys.on('game_api_pause', function () { apiPaused = true; changed(); }); ys.on('game_api_resume', function () { apiPaused = false; changed(); }); } } catch (e) {}
         tryReady(); changed();
+        try { var L = self.lang(); if (L) self.onLang(L); } catch (e) {}
+        initPlayer().then(function () { try { self.onSdk(ys); } catch (e) {} });
       }).catch(function () {});
     } catch (e) {}
   };
@@ -148,14 +495,16 @@ var PF = (function () {
   /* межстраничная: вызывать в естественной паузе (после итога уровня); по окончании вызывается done */
   self.fullscreen = function (done) {
     var fin = false;
-    function end() { if (fin) return; fin = true; adBusy = false; lastAdAt = Date.now(); changed(); done(); }
-    if (!ok || adBusy || Date.now() - lastAdAt < AD_GAP_MS || !ys.adv || !ys.adv.showFullscreenAdv) { done(); return; }
+    if (window.Premium && Premium.active()) { done(); return; }
+    function end(shown) { if (fin) return; fin = true; adBusy = false; lastAdAt = Date.now(); changed(); if (shown === true && window.Premium) { try { Premium.noteFullscreen(); } catch (e) {} } done(); }
+    if (!ok || adBusy || Date.now() - lastAdAt < (window.Premium ? Premium.config.adGapMs : AD_GAP_MS) || !ys.adv || !ys.adv.showFullscreenAdv) { done(); return; }
     adBusy = true; changed();
-    try { ys.adv.showFullscreenAdv({ callbacks: { onClose: end, onError: end, onOffline: end } }); } catch (e) { end(); }
+    try { ys.adv.showFullscreenAdv({ callbacks: { onClose: function (w) { end(w !== false); }, onError: function () { end(false); }, onOffline: function () { end(false); } } }); } catch (e) { end(false); }
   };
-  self.canReward = function () { return !!(ok && !adBusy && ys.adv && ys.adv.showRewardedVideo); };
+  self.canReward = function () { if (window.Premium && Premium.active()) return true; return !!(ok && !adBusy && ys.adv && ys.adv.showRewardedVideo); };
   /* ролик за награду: cb(true) только если игрок досмотрел */
   self.reward = function (cb) {
+    if (window.Premium && Premium.active()) { cb(true); return; }
     if (!self.canReward()) { cb(false); return; }
     var got = false, fin = false;
     function end() { if (fin) return; fin = true; adBusy = false; lastAdAt = Date.now(); changed(); cb(got); }
@@ -167,50 +516,190 @@ var PF = (function () {
   return self;
 })();
 
+/* ===== Язык: RU — словарь RU ниже, EN — словарь EN (из en.json, вшивает tools\build.py) ===== */
+var RU = /*RU*/{
+ "brief.rewardPm": "⛽ Получить +25 % топлива (Премиум)",
+ "res.rewardRetryPm": "⛽ Ещё раз с +25 % топлива (Премиум)",
+ "b.moon": "Луна",
+ "b.moon.loc": "Луне",
+ "b.moon.chute": "Воздуха нет — парашют не работает!",
+ "b.moon.info": "g = 1,62 м/с² (в 6 раз слабее земной)",
+ "moon.q1": "Во сколько раз притяжение на Луне слабее земного?",
+ "moon.q1a1": "В 2 раза",
+ "moon.q1a2": "В 6 раз",
+ "moon.q1a3": "В 20 раз",
+ "moon.q1h": "На Луне g = 1,62 м/с² — примерно 1/6 земного. Модуль падает медленно, но воздуха нет: парашют не поможет, тормозить придётся только двигателем.",
+ "moon.q2": "Есть ли на Луне воздух?",
+ "moon.q2a1": "Есть, как на Земле",
+ "moon.q2a2": "Почти нет — там вакуум",
+ "moon.q2a3": "Только на тёмной стороне",
+ "moon.q2h": "Воздуха на Луне нет, поэтому парашют бесполезен, а небо всегда чёрное. Тормозим только двигателем!",
+ "b.mars": "Марс",
+ "b.mars.loc": "Марсе",
+ "b.mars.chute": "Воздух тонкий — парашют тормозит слабо.",
+ "b.mars.info": "g = 3,71 м/с² (38 % земной), воздух очень разрежен",
+ "mars.q1": "Почему на Марсе парашют помогает хуже, чем на Земле?",
+ "mars.q1a1": "Воздух очень разрежен",
+ "mars.q1a2": "Там нет притяжения",
+ "mars.q1a3": "Парашют сгорает",
+ "mars.q1h": "Давление на Марсе всего 0,6 % от земного. Парашют чуть помогает, но основную работу делает двигатель. g = 3,71 м/с².",
+ "mars.q2": "Какого цвета небо над Марсом днём?",
+ "mars.q2a1": "Ярко-синее",
+ "mars.q2a2": "Розово-оранжевое от пыли",
+ "mars.q2a3": "Зелёное",
+ "mars.q2h": "Небо розово-оранжевое от мелкой пыли. Лёгкий ветер сносит модуль — следи за стрелкой ветра.",
+ "b.venus": "Венера",
+ "b.venus.loc": "Венере",
+ "b.venus.chute": "Воздух густой — парашют сильно тормозит!",
+ "b.venus.info": "g = 8,87 м/с² (почти как на Земле), воздух в 92 раза плотнее",
+ "venus.q1": "Какое давление воздуха у поверхности Венеры?",
+ "venus.q1a1": "Такое же, как на Земле",
+ "venus.q1a2": "В 92 раза больше земного",
+ "venus.q1a3": "В 10 раз меньше земного",
+ "venus.q1h": "Воздух на Венере в 92 раза давит сильнее, чем на Земле — парашют тормозит отлично. Но g = 8,87 м/с², падать тяжело и ветер сильный.",
+ "venus.q2": "Почему на Венере жарче всего (около 460 °C)?",
+ "venus.q2a1": "Она ближе всех к Солнцу",
+ "venus.q2a2": "Парниковый эффект: много углекислого газа",
+ "venus.q2a3": "Там много вулканов-печей",
+ "venus.q2h": "Углекислый газ держит тепло, как стекло теплицы. Густой воздух плотно давит на парашют — раскрой его пораньше!",
+ "b.titan": "Титан",
+ "b.jupiter": "Юпитер",
+ "b.mercury": "Меркурий",
+ "b.earth": "Земля",
+ "b.europa": "Европа",
+ "b.ceres": "Церера",
+ "b.pluto": "Плутон",
+ "s.0": "Искра",
+ "s.1": "Крошка",
+ "s.2": "Вездеход-Х",
+ "s.3": "Звездолёт",
+ "lv.0": "Широкая площадка",
+ "lv.1": "Площадка поуже, есть кратер",
+ "lv.2": "Кратеры и ветер",
+ "lv.3": "Узкая площадка, порывы ветра",
+ "lv.4": "Ночь! Светит только прожектор",
+ "ui.title": "Посадка на планету",
+ "ui.pause": "Пауза",
+ "ui.chute": "Парашют",
+ "ui.thrust": "ТЯГА",
+ "menu.title": "ПОСАДКА<br>НА ПЛАНЕТУ",
+ "menu.sub": "Посади модуль мягко на площадку.<br>У каждой планеты свой вес и свой воздух!",
+ "menu.play": "▶ Играть",
+ "menu.ships": "🚀 Корабли",
+ "menu.sndOn": "🔊 Звук: вкл",
+ "menu.sndOff": "🔇 Звук: выкл",
+ "menu.total": "Звёзд собрано: {n}",
+ "map.title": "Куда летим?",
+ "nav.menu": "← В меню",
+ "nav.planets": "← К планетам",
+ "brief.title": "Брифинг",
+ "brief.go": "🚀 К посадке!",
+ "brief.reward": "📺 Ролик: +25 % топлива",
+ "brief.skip": "Пропустить вопрос",
+ "res.retry": "↻ Ещё раз",
+ "res.rewardRetry": "📺 Ещё раз с +25 % топлива",
+ "res.toLv": "☰ К площадкам",
+ "ships.title": "Корабли",
+ "pause.resume": "▶ Продолжить",
+ "map.lock": "🔒 посади {n} раза на {where}",
+ "map.soon": "скоро",
+ "ships.sub": "Звёзд: {n}. Больше звёзд — больше топлива в баке.",
+ "ships.tank": "бак {n} %",
+ "ships.sel": " · выбран",
+ "ships.need": "🔒 нужно {n} ★",
+ "brief.sub": "{body}, площадка {n} — {lv}. Ответь верно: подсказка и +10 % топлива!",
+ "brief.right": "✅ Верно! {hint}<br><b>⛽ +10 % топлива!</b>",
+ "brief.wrong": "❌ Не совсем. Правильный ответ: <b>{ans}</b>.<br>{hint}",
+ "toast.reward": "+25 % топлива!",
+ "toast.night": "Ночь! Ищи площадку по огонькам",
+ "crash.body": "Модуль задел землю корпусом.",
+ "crash.miss": "Посадка мимо площадки — ноги должны стоять на ней обе.",
+ "crash.vy": "Слишком быстро вниз: {v} при допустимых {max}. Включай тягу раньше{chute}",
+ "crash.chute1": " и раскрой парашют.",
+ "crash.chute0": ".",
+ "crash.vx": "Слишком быстро вбок: {v} при допустимых {max}. Погаси боковую скорость наклоном.",
+ "crash.ang": "Модуль наклонён на {a}° — допустимо не больше 12°.",
+ "res.win": "Мягкая посадка!",
+ "res.text": "Скорость при касании: <b>{vy}</b> (можно до {max}), наклон <b>{an}°</b>. Топлива осталось <b>{left} %</b>.<br>",
+ "res.s3": "🌟 Идеально!",
+ "res.s2": "Ещё ★: сохрани хотя бы 30 % топлива.",
+ "res.s1": "Ещё ★: сядь тише (до {v}) и ровнее (до 6°).",
+ "res.next": "Дальше ▶",
+ "res.toPlanets": "К планетам ▶",
+ "res.lose": "Авария!",
+ "hud.fuel": "ТОПЛИВО",
+ "hud.alt": "Высота {n}",
+ "hud.tilt": "наклон {n}°",
+ "hud.wind": "Ветер"
+}/*END*/;
+var EN = /*EN*/{"b.moon": "Moon", "b.moon.loc": "the Moon", "b.moon.chute": "No air — the parachute won't work!", "b.moon.info": "g = 1.62 m/s² (6 times weaker than Earth)", "moon.q1": "How much weaker is gravity on the Moon?", "moon.q1a1": "2 times", "moon.q1a2": "6 times", "moon.q1a3": "20 times", "moon.q1h": "On the Moon, g = 1.62 m/s² — about 1/6 of Earth's gravity. Your lander falls slowly, but there's no air. A parachute won't help, so use your engine to slow down!", "moon.q2": "Is there air on the Moon?", "moon.q2a1": "Yes, like on Earth", "moon.q2a2": "Almost none — a vacuum", "moon.q2a3": "Only on the dark side", "moon.q2h": "There's no air on the Moon, so a parachute won't work, and the sky is always black. Use your engine to slow down!", "b.mars": "Mars", "b.mars.loc": "Mars", "b.mars.chute": "Thin air — the parachute barely slows you down.", "b.mars.info": "g = 3.71 m/s² (38% of Earth's), very thin air", "mars.q1": "Why does a parachute work poorly on Mars?", "mars.q1a1": "The air is very thin", "mars.q1a2": "There's no gravity", "mars.q1a3": "The parachute burns up", "mars.q1h": "Air pressure on Mars is only 0.6% of Earth's. A parachute helps a little, but your engine does most of the work. g = 3.71 m/s².", "mars.q2": "What color is the sky on Mars during the day?", "mars.q2a1": "Bright blue", "mars.q2a2": "Pink-orange from dust", "mars.q2a3": "Green", "mars.q2h": "Fine dust makes the sky look pink-orange. Even a light wind can push your lander sideways. Watch the wind arrow!", "b.venus": "Venus", "b.venus.loc": "Venus", "b.venus.chute": "Thick air — the parachute slows you down a lot!", "b.venus.info": "g = 8.87 m/s² (almost like Earth), air 92 times denser", "venus.q1": "How high is the air pressure on Venus?", "venus.q1a1": "Same as Earth", "venus.q1a2": "92 times Earth's", "venus.q1a3": "10 times lower", "venus.q1h": "Air pressure on Venus is 92 times higher than on Earth, so parachutes work great! But gravity is strong (g = 8.87 m/s²), and so is the wind.", "venus.q2": "Why is Venus so hot (about 460 °C)?", "venus.q2a1": "It's closest to the Sun", "venus.q2a2": "Greenhouse effect: lots of CO₂", "venus.q2a3": "Lots of hot volcanoes", "venus.q2h": "Carbon dioxide traps heat like glass in a greenhouse. The thick air pushes hard against your parachute. Open it early!", "b.titan": "Titan", "b.jupiter": "Jupiter", "b.mercury": "Mercury", "b.earth": "Earth", "b.europa": "Europa", "b.ceres": "Ceres", "b.pluto": "Pluto", "s.0": "Spark", "s.1": "Tiny", "s.2": "Rover-X", "s.3": "Starship", "lv.0": "Wide landing pad", "lv.1": "Narrower pad with a crater", "lv.2": "Craters and wind", "lv.3": "Narrow pad, wind gusts", "lv.4": "Night! Only the spotlight is on", "ui.title": "Planet Landing", "ui.pause": "Pause", "ui.chute": "Parachute", "ui.thrust": "THRUST", "menu.title": "PLANET<br>LANDING", "menu.sub": "Land your spacecraft gently on the landing pad.<br>Every planet has different gravity and air!", "menu.play": "▶ Play", "menu.ships": "🚀 Ships", "menu.sndOn": "🔊 Sound: On", "menu.sndOff": "🔇 Sound: Off", "menu.total": "Stars collected: {n}", "map.title": "Where to next?", "nav.menu": "← Menu", "nav.planets": "← Planets", "brief.title": "Briefing", "brief.go": "🚀 Let's Land!", "brief.reward": "📺 Watch ad: +25% fuel", "brief.skip": "Skip Question", "res.retry": "↻ Try Again", "res.rewardRetry": "📺 Retry with +25% fuel", "res.toLv": "☰ Landing Pads", "ships.title": "Ships", "pause.resume": "▶ Resume", "map.lock": "🔒 land {n} times on {where}", "map.soon": "coming soon", "ships.sub": "Stars: {n}. More stars mean more fuel in your tank.", "ships.tank": "tank {n}%", "ships.sel": " · selected", "ships.need": "🔒 need {n} ★", "brief.sub": "{body}, landing pad {n} — {lv}. Answer correctly for a hint and +10% fuel!", "brief.right": "✅ Correct! {hint}<br><b>⛽ +10% fuel!</b>", "brief.wrong": "❌ Not quite. The correct answer is <b>{ans}</b>.<br>{hint}", "toast.reward": "+25% fuel!", "toast.night": "It's night! Look for the landing pad lights", "crash.body": "The lander's body hit the ground.", "crash.miss": "You missed the landing pad! Both legs must land on it.", "crash.vy": "Too fast going down: {v}, but the limit is {max}. Use thrust sooner{chute}", "crash.chute1": " and open your parachute.", "crash.chute0": ".", "crash.vx": "Too fast sideways: {v}, but the limit is {max}. Tilt your lander to slow down sideways.", "crash.ang": "Your lander is tilted {a}°. The limit is 12°.", "res.win": "Soft Landing!", "res.text": "Landing speed: <b>{vy}</b> (limit {max}), tilt <b>{an}°</b>. Fuel left: <b>{left}%</b>.<br>", "res.s3": "🌟 Perfect!", "res.s2": "One more ★: save at least 30% fuel.", "res.s1": "One more ★: land slower (up to {v}) and straighter (up to 6°).", "res.next": "Next ▶", "res.toPlanets": "Planets ▶", "res.lose": "Crash!", "hud.fuel": "FUEL", "hud.alt": "Altitude {n}", "hud.tilt": "tilt {n}°", "hud.wind": "Wind", "brief.rewardPm": "⛽ Get +25% fuel (Premium)", "res.rewardRetryPm": "⛽ Try again with +25% fuel (Premium)"}/*END*/;
+var LANG = 'ru';
+function TR(key, p) {
+  var d = (LANG === 'en' && EN[key] != null) ? EN : RU, v = d[key] != null ? d[key] : (RU[key] != null ? RU[key] : key);
+  if (p) v = v.replace(/\{(\w+)\}/g, function (m, n) { return p[n] != null ? p[n] : m; });
+  return v;
+}
+function hasEN() { for (var k in EN) return true; return false; }
+function applyStatic() {
+  document.documentElement.lang = LANG;
+  document.title = TR('ui.title');
+  Array.prototype.forEach.call(document.querySelectorAll('[data-i]'), function (e) { e.textContent = TR(e.getAttribute('data-i')); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-h]'), function (e) { e.innerHTML = TR(e.getAttribute('data-h')); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-ia]'), function (e) { e.setAttribute('aria-label', TR(e.getAttribute('data-ia'))); });
+  var bl = document.getElementById('b-lang'); if (bl) { bl.style.display = hasEN() ? '' : 'none'; bl.textContent = LANG === 'en' ? 'RU' : 'EN'; }
+}
+function setLang(l, remember) {
+  LANG = (l === 'en' && hasEN()) ? 'en' : 'ru';
+  if (remember) { save.lang = LANG; save.langSet = 1; persist(); }
+  applyStatic();
+  if (window.Premium) { try { Premium.setLang(LANG); } catch (e) {} }
+  if (typeof cur !== 'undefined') { if (cur === 'menu') drawMenuShip(); else if (cur === 'map') buildMap(); else if (cur === 'lv') buildLv(); else if (cur === 'ships') buildShips(); else if (cur === 'res' || cur === 'brief') { /* открытый итог/брифинг не перерисовываем */ } }
+}
+
 /* ===== Картинки (WebP из art\ → game\img\). Нет файла или не загрузился — рисуем кодом ===== */
 var IMG_LIST = /*IMGN*/['ship_0','ship_1','ship_2','ship_3','pad','chute','flame','boom','beacon','flag','ic_fuel','ic_star','ic_lock','ic_wind','ic_quiz','ic_chute','cover','bg_moon','bg_mars','bg_venus','bg_jupiter']/*END*/;
 var IMGDATA = window.IMGDATA || {};
 function U(n) { return IMGDATA[n] || 'img/' + n + '.webp'; }
 var IM = {};
-IMG_LIST.forEach(function (n) { var i = new Image(); i.onload = function () { IM[n] = i; if (n === 'cover') coverReady(); if (n === 'ic_chute') $('chute').innerHTML = '<img src=\"' + U('ic_chute') + '\" style=\"height:22px;vertical-align:middle;margin-right:6px\">Парашют'; }; i.src = U(n); });
+IMG_LIST.forEach(function (n) { var i = new Image(); i.onload = function () { IM[n] = i; if (n === 'cover') coverReady(); if (n === 'ic_chute') document.querySelector('#chute .ic').innerHTML = '<img src=\"' + U('ic_chute') + '\" style=\"height:22px;vertical-align:middle;margin-right:2px\">'; }; i.src = U(n); });
 function img(n) { return IM[n] && IM[n].naturalWidth ? IM[n] : null; }
 function starsHTML(n) { var a = img('ic_star'), h = ''; for (var i = 0; i < 3; i++) h += a ? '<img src=\"' + U('ic_star') + '\" style=\"height:30px;margin:0 2px;' + (i < n ? '' : 'filter:grayscale(1) brightness(.5);') + '\">' : (i < n ? '★' : '☆'); return h; }
 function lockHTML() { return img('ic_lock') ? '<img src=\"' + U('ic_lock') + '\" style=\"height:40px\">' : '🔒'; }
 
-/* ===== Данные ===== */
+/* ===== Данные (тексты — ключи словаря RU/EN) ===== */
 var BODIES = [
-  { id: 'moon', name: 'Луна', g: 1.62, c: 0, T: 95, wind: 0, color: 'radial-gradient(circle at 35% 30%,#f2f2f2,#9a9a9a)', sky: ['#04030f', '#12103a'], ground: ['#b9b6c9', '#7d7a92', '#4b4960'], stars: true, chuteMsg: 'Воздуха нет — парашют не работает!', unlockNeed: 0,
-    info: 'g = 1,62 м/с² (в 6 раз слабее земной)',
+  { id: 'moon', name: 'b.moon', loc: 'b.moon.loc', g: 1.62, c: 0, T: 95, wind: 0, color: 'radial-gradient(circle at 35% 30%,#f2f2f2,#9a9a9a)', sky: ['#04030f', '#12103a'], ground: ['#b9b6c9', '#7d7a92', '#4b4960'], stars: true, chuteMsg: 'b.moon.chute', unlockNeed: 0,
+    info: 'b.moon.info',
     qs: [
-      { q: 'Во сколько раз притяжение на Луне слабее земного?', a: ['В 2 раза', 'В 6 раз', 'В 20 раз'], c: 1, hint: 'Верно! На Луне g = 1,62 м/с² — примерно 1/6 земного. Модуль падает медленно, но воздуха нет: парашют не поможет, тормозить придётся только двигателем.' },
-      { q: 'Есть ли на Луне воздух?', a: ['Есть, как на Земле', 'Почти нет — там вакуум', 'Только на тёмной стороне'], c: 1, hint: 'Верно! Воздуха на Луне нет, поэтому парашют бесполезен, а небо всегда чёрное. Тормозим только двигателем!' }
+      { q: 'moon.q1', a: ['moon.q1a1','moon.q1a2','moon.q1a3'], c: 1, hint: 'moon.q1h' },
+      { q: 'moon.q2', a: ['moon.q2a1','moon.q2a2','moon.q2a3'], c: 1, hint: 'moon.q2h' }
     ] },
-  { id: 'mars', name: 'Марс', g: 3.71, c: 0.06, T: 150, wind: 70, color: 'radial-gradient(circle at 35% 30%,#ff9a5a,#b33c14)', sky: ['#7a3b2a', '#e8a070'], ground: ['#d4743c', '#a24a25', '#6b2e18'], stars: false, chuteMsg: 'Воздух тонкий — парашют тормозит слабо.', unlockNeed: 3,
-    info: 'g = 3,71 м/с² (38 % земной), воздух очень разрежен',
+  { id: 'mars', name: 'b.mars', loc: 'b.mars.loc', g: 3.71, c: 0.06, T: 150, wind: 70, color: 'radial-gradient(circle at 35% 30%,#ff9a5a,#b33c14)', sky: ['#7a3b2a', '#e8a070'], ground: ['#d4743c', '#a24a25', '#6b2e18'], stars: false, chuteMsg: 'b.mars.chute', unlockNeed: 3,
+    info: 'b.mars.info',
     qs: [
-      { q: 'Почему на Марсе парашют помогает хуже, чем на Земле?', a: ['Воздух очень разрежен', 'Там нет притяжения', 'Парашют сгорает'], c: 0, hint: 'Верно! Давление на Марсе всего 0,6 % от земного. Парашют чуть помогает, но основную работу делает двигатель. g = 3,71 м/с².' },
-      { q: 'Какого цвета небо над Марсом днём?', a: ['Ярко-синее', 'Розово-оранжевое от пыли', 'Зелёное'], c: 1, hint: 'Верно! Небо розово-оранжевое от мелкой пыли. Лёгкий ветер сносит модуль — следи за стрелкой ветра.' }
+      { q: 'mars.q1', a: ['mars.q1a1','mars.q1a2','mars.q1a3'], c: 0, hint: 'mars.q1h' },
+      { q: 'mars.q2', a: ['mars.q2a1','mars.q2a2','mars.q2a3'], c: 1, hint: 'mars.q2h' }
     ] },
-  { id: 'venus', name: 'Венера', g: 8.87, c: 0.35, T: 285, wind: 20, color: 'radial-gradient(circle at 35% 30%,#fff0a0,#d09a1a)', sky: ['#7d6a10', '#d9c24a'], ground: ['#a8741f', '#7a4d12', '#4a2d0a'], stars: false, chuteMsg: 'Воздух густой — парашют сильно тормозит!', unlockNeed: 3,
-    info: 'g = 8,87 м/с² (почти как на Земле), воздух в 92 раза плотнее',
+  { id: 'venus', name: 'b.venus', loc: 'b.venus.loc', g: 8.87, c: 0.35, T: 285, wind: 20, color: 'radial-gradient(circle at 35% 30%,#fff0a0,#d09a1a)', sky: ['#7d6a10', '#d9c24a'], ground: ['#a8741f', '#7a4d12', '#4a2d0a'], stars: false, chuteMsg: 'b.venus.chute', unlockNeed: 3,
+    info: 'b.venus.info',
     qs: [
-      { q: 'Какое давление воздуха у поверхности Венеры?', a: ['Такое же, как на Земле', 'В 92 раза больше земного', 'В 10 раз меньше земного'], c: 1, hint: 'Верно! Воздух на Венере в 92 раза давит сильнее, чем на Земле — парашют тормозит отлично. Но g = 8,87 м/с², падать тяжело и ветер сильный.' },
-      { q: 'Почему на Венере жарче всего (около 460 °C)?', a: ['Она ближе всех к Солнцу', 'Парниковый эффект: много углекислого газа', 'Там много вулканов-печей'], c: 1, hint: 'Верно! Углекислый газ держит тепло, как стекло теплицы. Густой воздух плотно давит на парашют — раскрой его пораньше!' }
+      { q: 'venus.q1', a: ['venus.q1a1','venus.q1a2','venus.q1a3'], c: 1, hint: 'venus.q1h' },
+      { q: 'venus.q2', a: ['venus.q2a1','venus.q2a2','venus.q2a3'], c: 1, hint: 'venus.q2h' }
     ] }
 ];
-var SOON = ['Титан', 'Юпитер', 'Меркурий', 'Земля', 'Европа', 'Церера', 'Плутон'];
+var SOON = ['b.titan', 'b.jupiter', 'b.mercury', 'b.earth', 'b.europa', 'b.ceres', 'b.pluto'];
 var SHIPS = [
-  { name: 'Искра', fuel: 100, need: 0, col: '#ff5a4a', col2: '#ffd84a', leg: 0 },
-  { name: 'Крошка', fuel: 110, need: 6, col: '#3fb8ff', col2: '#fff', leg: 1 },
-  { name: 'Вездеход-Х', fuel: 120, need: 15, col: '#46d36a', col2: '#222', leg: 2 },
-  { name: 'Звездолёт', fuel: 130, need: 30, col: '#b06bff', col2: '#ffd84a', leg: 3 }
+  { name: 's.0', fuel: 100, need: 0, col: '#ff5a4a', col2: '#ffd84a', leg: 0 },
+  { name: 's.1', fuel: 110, need: 6, col: '#3fb8ff', col2: '#fff', leg: 1 },
+  { name: 's.2', fuel: 120, need: 15, col: '#46d36a', col2: '#222', leg: 2 },
+  { name: 's.3', fuel: 130, need: 30, col: '#b06bff', col2: '#ffd84a', leg: 3 }
 ];
 var LV = [
-  { padW: 96, fuel: 1.0, wind: 0,   cr: 0, night: false, txt: 'Широкая площадка' },
-  { padW: 78, fuel: 1.0, wind: 0,   cr: 1, night: false, txt: 'Площадка поуже, есть кратер' },
-  { padW: 64, fuel: 0.95, wind: 0.6, cr: 2, night: false, txt: 'Кратеры и ветер' },
-  { padW: 54, fuel: 0.9, wind: 1,   cr: 3, night: false, txt: 'Узкая площадка, порывы ветра' },
-  { padW: 52, fuel: 0.9, wind: 0.8, cr: 3, night: true,  txt: 'Ночь! Светит только прожектор' }
+  { padW: 96, fuel: 1.0, wind: 0, cr: 0, night: false, txt: 'lv.0' },
+  { padW: 78, fuel: 1.0, wind: 0, cr: 1, night: false, txt: 'lv.1' },
+  { padW: 64, fuel: 0.95, wind: 0.6, cr: 2, night: false, txt: 'lv.2' },
+  { padW: 54, fuel: 0.9, wind: 1, cr: 3, night: false, txt: 'lv.3' },
+  { padW: 52, fuel: 0.9, wind: 0.8, cr: 3, night: true, txt: 'lv.4' }
 ];
 var K = { vy: 45, vx: 30, ang: 12 * Math.PI / 180, vy2: 25, ang2: 6 * Math.PI / 180, burn: 12, turn: 1.7, W: 375, H: 812 };
 
@@ -264,8 +753,33 @@ var Snd = (function () {
 function $(id) { return document.getElementById(id); }
 function rng(seed) { var a = seed >>> 0; return function () { a = (a + 0x6D2B79F5) >>> 0; var t = a; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
-function fmt(v, d) { return v.toFixed(d == null ? 0 : d).replace('.', ','); }
+function fmt(v, d) { var r = v.toFixed(d == null ? 0 : d); return LANG === 'en' ? r : r.replace('.', ','); }
 
+/* ===== Премиум: тексты (publish\texts\posadka\premium.md; баннера в игре нет) ===== */
+var PM_TEXTS = {
+  ru: {
+    p30: 'Премиум на 30 дней', p365: 'Премиум на год',
+    perks: ['Полноэкранная реклама отключается.', 'Награда за ролик выдаётся сразу, без просмотра.', 'Правила и сложность остаются прежними.'],
+    note: 'Оплата один раз. Автопродления и повторных списаний нет. Если Премиум уже идёт, новый срок добавится к концу.',
+    adTitle: 'Надоела реклама?', adText: 'Рассчитывай скорость и мягко сажай модуль на планеты с разной силой тяжести! Премиум убирает полноэкранную рекламу, а награды за ролики выдаёт сразу.', adMore: 'Узнать про Премиум', later: 'Не сейчас',
+    soonTitle: 'Премиум скоро закончится', soonText: 'Ещё {0} посадок без рекламных пауз. Премиум закончится сам, без списаний. При желании его можно купить снова.',
+    endTitle: 'Премиум закончился', endText: 'Полноэкранная реклама снова показывается, а награды требуют просмотра роликов. Новые планеты по-прежнему ждут посадки!'
+  },
+  en: {
+    p30: '30-Day Premium', p365: '1-Year Premium',
+    perks: ['Full-screen ads are turned off.', 'Video rewards are given instantly, no watching.', 'Rules and difficulty stay the same.'],
+    note: 'One payment. No auto-renewal and no repeat charges. If Premium is already running, the new period is added to the end.',
+    adTitle: 'Tired of ads?', adText: 'Calculate your speed and land softly on planets with different gravity! Premium removes full-screen ads and gives video rewards instantly.', adMore: 'Learn About Premium', later: 'Not Now',
+    soonTitle: 'Premium Is Ending Soon', soonText: 'Premium has {0} left. It ends automatically with no further charges. You can buy it again if you like.',
+    endTitle: 'Premium Has Ended', endText: 'Full-screen ads are back, and video rewards require watching ads again. There are still new planets to land on!'
+  }
+};
+function pmRefresh() { if (window.Premium && $('b-reward') && cur === 'brief') $('b-reward').style.display = PF.canReward() ? 'block' : 'none'; if (cur === 'brief') applyRewardLabels(); }
+function calmCard() { if (window.Premium && (cur === 'menu' || cur === 'map' || cur === 'res')) { try { Premium.maybeCard(); } catch (e) {} } }
+function applyRewardLabels() {
+  var pm = window.Premium && Premium.active();
+  $('b-reward').textContent = TR(pm ? 'brief.rewardPm' : 'brief.reward'); $('r-reward').textContent = TR(pm ? 'res.rewardRetryPm' : 'res.rewardRetry');
+}
 /* ===== Экраны ===== */
 var cur = 'menu', selB = 0, selL = 0, bonusFuel = 0, rewardFuel = 0, attempts = 0;
 function coverReady() { $('s-menu').style.backgroundImage = 'url(' + U('cover') + ')'; $('s-menu').style.backgroundSize = '100% auto'; $('s-menu').style.backgroundPosition = 'center top'; $('s-menu').classList.add('cov'); $('menuShip').style.display = 'none'; }
@@ -279,6 +793,9 @@ function show(id) {
   if (id === 'lv') buildLv();
   if (id === 'ships') buildShips();
   PF.gameplay(play);
+  document.body.classList.toggle('playing', play);
+  if (id === 'brief' || id === 'res') applyRewardLabels();
+  if (id === 'menu' || id === 'map' || id === 'res') setTimeout(calmCard, 300);
   if (id !== 'play') { G.run = false; Snd.engine(false); }
 }
 document.addEventListener('click', function (e) {
@@ -293,14 +810,14 @@ function shipSVG(sh, flame) {
     '<rect x="-12" y="14" width="24" height="7" rx="3" fill="' + sh.col2 + '" stroke="#222" stroke-width="2"/>' +
     (flame ? '<path d="M-7 26 Q0 50 7 26Z" fill="#ffb02e" stroke="#222" stroke-width="2"/>' : '') + '</g>';
 }
-function drawMenuShip() { $('menuShip').innerHTML = shipSVG(SHIPS[save.ship], true); $('m-total').textContent = 'Звёзд собрано: ' + totalStars(); $('b-snd').textContent = save.snd ? '🔊 Звук: вкл' : '🔇 Звук: выкл'; }
+function drawMenuShip() { $('menuShip').innerHTML = shipSVG(SHIPS[save.ship], true); $('m-total').textContent = TR('menu.total', { n: totalStars() }); $('b-snd').textContent = TR(save.snd ? 'menu.sndOn' : 'menu.sndOff'); }
 function buildMap() {
   var h = '';
   BODIES.forEach(function (b, i) {
     var open = bodyOpen(i);
-    h += '<div class="card' + (open ? '' : ' lock') + '" data-b="' + i + '"><div class="pl" style="background:' + b.color + '"></div><b>' + b.name + '</b><i>' + (open ? '★ ' + bodySum(i) + ' / 15' : '🔒 посади ' + b.unlockNeed + ' раза на ' + BODIES[i - 1].name.replace('Луна', 'Луне').replace('Марс', 'Марсе')) + '</i></div>';
+    h += '<div class="card' + (open ? '' : ' lock') + '" data-b="' + i + '"><div class="pl" style="background:' + b.color + '"></div><b>' + TR(b.name) + '</b><i>' + (open ? '★ ' + bodySum(i) + ' / 15' : TR('map.lock', { n: b.unlockNeed, where: TR(BODIES[i - 1].loc) })) + '</i></div>';
   });
-  SOON.forEach(function (n) { h += '<div class="card lock"><div class="pl" style="background:#3a3a63"></div><b>' + n + '</b><i>скоро</i></div>'; });
+  SOON.forEach(function (n) { h += '<div class="card lock"><div class="pl" style="background:#3a3a63"></div><b>' + TR(n) + '</b><i>' + TR('map.soon') + '</i></div>'; });
   $('mapgrid').innerHTML = h;
   Array.prototype.forEach.call($('mapgrid').querySelectorAll('.card[data-b]'), function (el) {
     el.onclick = function () { var i = +el.getAttribute('data-b'); if (!bodyOpen(i)) return; Snd.init(); Snd.click(); selB = i; show('lv'); };
@@ -308,7 +825,7 @@ function buildMap() {
 }
 function buildLv() {
   var b = BODIES[selB];
-  $('lv-title').textContent = b.name; $('lv-sub').textContent = b.info;
+  $('lv-title').textContent = TR(b.name); $('lv-sub').textContent = TR(b.info);
   var h = '';
   for (var i = 0; i < 5; i++) {
     var o = lvOpen(selB, i), s = stars(b.id, i);
@@ -320,11 +837,11 @@ function buildLv() {
   });
 }
 function buildShips() {
-  var t = totalStars(); $('sh-sub').textContent = 'Звёзд: ' + t + '. Больше звёзд — больше топлива в баке.';
+  var t = totalStars(); $('sh-sub').textContent = TR('ships.sub', { n: t });
   var h = '';
   SHIPS.forEach(function (s, i) {
     var o = t >= s.need;
-    h += '<div class="card' + (o ? '' : ' lock') + '" data-s="' + i + '" style="' + (save.ship === i ? 'border-color:#ffd84a' : '') + '">' + (img('ship_' + i) ? '<img class="ship" style="object-fit:contain" src="' + U('ship_' + i) + '">' : '<svg class="ship" viewBox="-40 -50 80 100">' + shipSVG(s, false) + '</svg>') + '<b>' + s.name + '</b><i>' + (o ? 'бак ' + s.fuel + ' %' + (save.ship === i ? ' · выбран' : '') : '🔒 нужно ' + s.need + ' ★') + '</i></div>';
+    h += '<div class="card' + (o ? '' : ' lock') + '" data-s="' + i + '" style="' + (save.ship === i ? 'border-color:#ffd84a' : '') + '">' + (img('ship_' + i) ? '<img class="ship" style="object-fit:contain" src="' + U('ship_' + i) + '">' : '<svg class="ship" viewBox="-40 -50 80 100">' + shipSVG(s, false) + '</svg>') + '<b>' + TR(s.name) + '</b><i>' + (o ? TR('ships.tank', { n: s.fuel }) + (save.ship === i ? TR('ships.sel') : '') : TR('ships.need', { n: s.need })) + '</i></div>';
   });
   $('shgrid').innerHTML = h;
   Array.prototype.forEach.call($('shgrid').querySelectorAll('.card'), function (el) {
@@ -333,6 +850,7 @@ function buildShips() {
 }
 $('b-play').onclick = function () { Snd.init(); Snd.click(); show('map'); };
 $('b-ships').onclick = function () { Snd.init(); Snd.click(); show('ships'); };
+$('b-lang').onclick = function () { Snd.init(); Snd.click(); setLang(LANG === 'en' ? 'ru' : 'en', true); };
 $('b-snd').onclick = function () { Snd.init(); save.snd = save.snd ? 0 : 1; persist(); drawMenuShip(); };
 
 /* ===== Брифинг ===== */
@@ -340,9 +858,9 @@ var curQ = null;
 function openBrief() {
   var b = BODIES[selB]; curQ = b.qs[selL % b.qs.length]; bonusFuel = 0; rewardFuel = 0;
   show('brief');
-  $('br-sub').textContent = b.name + ', площадка ' + (selL + 1) + ' — ' + LV[selL].txt + '. Ответь верно: подсказка и +10 % топлива!';
-  $('b-reward').style.display = PF.canReward() ? 'block' : 'none'; $('br-q').textContent = curQ.q; $('br-hint').style.display = 'none'; $('b-go').style.display = 'none'; $('b-skip').style.display = 'block';
-  var h = ''; curQ.a.forEach(function (t, i) { h += '<button class="ans" data-a="' + i + '">' + t + '</button>'; });
+  $('br-sub').textContent = TR('brief.sub', { body: TR(b.name), n: selL + 1, lv: TR(LV[selL].txt) });
+  $('b-reward').style.display = PF.canReward() ? 'block' : 'none'; $('br-q').textContent = TR(curQ.q); $('br-hint').style.display = 'none'; $('b-go').style.display = 'none'; $('b-skip').style.display = 'block';
+  var h = ''; curQ.a.forEach(function (t, i) { h += '<button class="ans" data-a="' + i + '">' + TR(t) + '</button>'; });
   $('br-ans').innerHTML = h;
   Array.prototype.forEach.call($('br-ans').querySelectorAll('.ans'), function (el) {
     el.onclick = function () {
@@ -352,14 +870,14 @@ function openBrief() {
       if (!good) $('br-ans').querySelectorAll('.ans')[curQ.c].classList.add('ok');
       bonusFuel = good ? 0.1 : 0;
       var hint = $('br-hint'); hint.style.display = 'block';
-      hint.innerHTML = good ? '✅ ' + curQ.hint + '<br><b>⛽ +10 % топлива!</b>' : '❌ Не совсем. Правильный ответ: <b>' + curQ.a[curQ.c] + '</b>.<br>' + curQ.hint.replace('Верно! ', '');
+      hint.innerHTML = good ? TR('brief.right', { hint: TR(curQ.hint) }) : TR('brief.wrong', { ans: TR(curQ.a[curQ.c]), hint: TR(curQ.hint) });
       $('b-go').style.display = 'block'; $('b-skip').style.display = 'none';
       if (good) Snd.ok(); else Snd.warn();
     };
   });
 }
 $('b-reward').onclick = function () {
-  PF.reward(function (got) { if (got) { rewardFuel = 0.25; $('b-reward').style.display = 'none'; toast('+25 % топлива!', 1500); } });
+  PF.reward(function (got) { if (got) { rewardFuel = 0.25; $('b-reward').style.display = 'none'; toast(TR('toast.reward'), 1500); } });
 };
 $('b-go').onclick = function () { Snd.init(); startGame(); };
 $('b-skip').onclick = function () { Snd.init(); bonusFuel = 0; startGame(); };
@@ -407,7 +925,7 @@ function startGame() {
   G.chute = false; G.parts = []; G.t = 0; G.ending = 0; G.over = null; G.paused = false; G.thrust = false; G.tilt = 0; G.wphase = T.r() * 6;
   G.lastWarn = 0;
   show('play'); G.run = true; $('pause').classList.remove('on'); $('chute').disabled = false; $('chute').style.opacity = 1;
-  toast(lv.night ? 'Ночь! Ищи площадку по огонькам' : lv.txt, 1800);
+  toast(lv.night ? TR('toast.night') : TR(lv.txt), 1800);
   last = performance.now();
 }
 var toastT = 0;
@@ -443,10 +961,10 @@ function step(dt) {
     var pl = G.padX - G.padW / 2, pr = G.padX + G.padW / 2;
     var onPad = f1[0] >= pl && f1[0] <= pr && f2[0] >= pl && f2[0] <= pr && !hitB;
     var vy = G.vy, vx = Math.abs(G.vx), an = Math.abs(G.ang);
-    if (!onPad) end(false, hitB && (hit1 || hit2) === false ? 'Модуль задел землю корпусом.' : 'Посадка мимо площадки — ноги должны стоять на ней обе.');
-    else if (vy > K.vy) end(false, 'Слишком быстро вниз: ' + fmt(vy) + ' при допустимых ' + K.vy + '. Включай тягу раньше' + (b.c > 0.02 ? ' и раскрой парашют.' : '.'));
-    else if (vx > K.vx) end(false, 'Слишком быстро вбок: ' + fmt(vx) + ' при допустимых ' + K.vx + '. Погаси боковую скорость наклоном.');
-    else if (an > K.ang) end(false, 'Модуль наклонён на ' + fmt(an * 180 / Math.PI) + '° — допустимо не больше 12°.');
+    if (!onPad) end(false, hitB && (hit1 || hit2) === false ? TR('crash.body') : TR('crash.miss'));
+    else if (vy > K.vy) end(false, TR('crash.vy', { v: fmt(vy), max: K.vy, chute: TR(b.c > 0.02 ? 'crash.chute1' : 'crash.chute0') }));
+    else if (vx > K.vx) end(false, TR('crash.vx', { v: fmt(vx), max: K.vx }));
+    else if (an > K.ang) end(false, TR('crash.ang', { a: fmt(an * 180 / Math.PI) }));
     else {
       var s = 1;
       if (vy <= K.vy2 && an <= K.ang2) s = 2;
@@ -466,16 +984,16 @@ function finish() {
   show('res');
   if (o.win) {
     var was = save.stars[key] || 0; if (o.s > was) save.stars[key] = o.s; persist();
-    $('r-title').textContent = 'Мягкая посадка!'; $('r-stars').innerHTML = starsHTML(o.s);
+    $('r-title').textContent = TR('res.win'); $('r-stars').innerHTML = starsHTML(o.s);
     var left = Math.round(G.fuel / G.fuel0 * 100);
-    $('r-text').innerHTML = 'Скорость при касании: <b>' + fmt(o.vy) + '</b> (можно до ' + K.vy + '), наклон <b>' + fmt(o.an * 180 / Math.PI, 1) + '°</b>. Топлива осталось <b>' + left + ' %</b>.<br>' +
-      (o.s === 3 ? '🌟 Идеально!' : o.s === 2 ? 'Ещё ★: сохрани хотя бы 30 % топлива.' : 'Ещё ★: сядь тише (до ' + K.vy2 + ') и ровнее (до 6°).');
+    $('r-text').innerHTML = TR('res.text', { vy: fmt(o.vy), max: K.vy, an: fmt(o.an * 180 / Math.PI, 1), left: left }) +
+      (o.s === 3 ? TR('res.s3') : o.s === 2 ? TR('res.s2') : TR('res.s1', { v: K.vy2 }));
     var nxt = $('r-next'); nxt.style.display = (selL < 4) ? 'block' : 'block';
-    nxt.textContent = selL < 4 ? 'Дальше ▶' : 'К планетам ▶';
+    nxt.textContent = TR(selL < 4 ? 'res.next' : 'res.toPlanets');
     nxt.onclick = function () { Snd.click(); PF.fullscreen(function () { if (selL < 4) { selL++; openBrief(); } else show('map'); }); };
     $('r-reward').style.display = 'none';
   } else {
-    $('r-title').textContent = 'Авария!'; $('r-stars').innerHTML = img('boom') ? '<img src="' + U('boom') + '" style="height:90px">' : '💥';
+    $('r-title').textContent = TR('res.lose'); $('r-stars').innerHTML = img('boom') ? '<img src="' + U('boom') + '" style="height:90px">' : '💥';
     $('r-text').textContent = o.why; $('r-next').style.display = 'none';
     attempts++;
     $('r-reward').style.display = PF.canReward() ? 'block' : 'none';
@@ -552,18 +1070,18 @@ function hudText(t, x, y, col, size, al) { ctx.font = '700 ' + (size || 15) + 'p
 function drawHUD() {
   var fr = G.fuel / G.fuel0;
   ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(0, 0, K.W, 62);
-  if (img('ic_fuel')) ctx.drawImage(img('ic_fuel'), 12, 4, 18, 18); hudText('ТОПЛИВО', img('ic_fuel') ? 34 : 12, 20, '#fff', 12);
+  if (img('ic_fuel')) ctx.drawImage(img('ic_fuel'), 12, 4, 18, 18); hudText(TR('hud.fuel'), img('ic_fuel') ? 34 : 12, 20, '#fff', 12);
   ctx.fillStyle = '#222'; ctx.fillRect(12, 26, 150, 14);
   ctx.fillStyle = fr > 0.3 ? '#4bd16a' : fr > 0.12 ? '#ffb02e' : '#ff4a4a'; ctx.fillRect(12, 26, 150 * fr, 14);
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.strokeRect(12, 26, 150, 14);
   ctx.fillStyle = '#fff8'; ctx.fillRect(12 + 150 * 0.3 - 1, 24, 2, 18);
   var alt = Math.max(0, Math.round(groundY(G.x) - G.y - 17));
-  hudText('Высота ' + alt, 12, 58, '#fff', 13);
+  hudText(TR('hud.alt', { n: alt }), 12, 58, '#fff', 13);
   var vyOk = G.vy <= K.vy, vxOk = Math.abs(G.vx) <= K.vx;
   hudText((G.vy > 0 ? '↓ ' : '↑ ') + fmt(Math.abs(G.vy)), 178, 20, vyOk ? '#7dff9a' : '#ff7a7a', 15);
   hudText('→ ' + fmt(G.vx), 178, 40, vxOk ? '#7dff9a' : '#ff7a7a', 15);
-  hudText('наклон ' + fmt(Math.abs(G.ang) * 180 / Math.PI) + '°', 178, 58, Math.abs(G.ang) <= K.ang ? '#7dff9a' : '#ff7a7a', 13);
-  if (G.body.wind > 0 && G.lv.wind > 0) { var w = G.wind || 0; if (img('ic_wind')) ctx.drawImage(img('ic_wind'), 244, 6, 18, 18); hudText('Ветер', 266, 20, '#cfe', 12); ctx.save(); ctx.translate(290, 38); ctx.strokeStyle = '#fff'; ctx.fillStyle = '#fff'; ctx.lineWidth = 3; var L = clamp(w / G.body.wind, -1.3, 1.3) * 22; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L, 0); ctx.stroke(); var dir = L >= 0 ? 1 : -1; ctx.beginPath(); ctx.moveTo(L + dir * 7, 0); ctx.lineTo(L, -5); ctx.lineTo(L, 5); ctx.fill(); ctx.restore(); }
+  hudText(TR('hud.tilt', { n: fmt(Math.abs(G.ang) * 180 / Math.PI) }), 178, 58, Math.abs(G.ang) <= K.ang ? '#7dff9a' : '#ff7a7a', 13);
+  if (G.body.wind > 0 && G.lv.wind > 0) { var w = G.wind || 0; if (img('ic_wind')) ctx.drawImage(img('ic_wind'), 244, 6, 18, 18); hudText(TR('hud.wind'), 266, 20, '#cfe', 12); ctx.save(); ctx.translate(290, 38); ctx.strokeStyle = '#fff'; ctx.fillStyle = '#fff'; ctx.lineWidth = 3; var L = clamp(w / G.body.wind, -1.3, 1.3) * 22; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L, 0); ctx.stroke(); var dir = L >= 0 ? 1 : -1; ctx.beginPath(); ctx.moveTo(L + dir * 7, 0); ctx.lineTo(L, -5); ctx.lineTo(L, 5); ctx.fill(); ctx.restore(); }
 }
 function render() {
   var b = G.body; ctx.setTransform(2, 0, 0, 2, 0, 0);
@@ -622,7 +1140,7 @@ requestAnimationFrame(frame);
   tp.addEventListener('pointermove', function (e) { if (e.buttons || e.pressure > 0) setTilt(e); });
   ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (n) { tp.addEventListener(n, clr); });
   $('chute').addEventListener('click', function () {
-    if (!G.run || G.chute) return; G.chute = true; this.style.opacity = .4; Snd.click(); toast(G.body.chuteMsg, 2200);
+    if (!G.run || G.chute) return; G.chute = true; this.style.opacity = .4; Snd.click(); toast(TR(G.body.chuteMsg), 2200);
   });
   $('hud-pause').onclick = function () { PF.gameplay(false); G.paused = true; $('pause').classList.add('on'); Snd.engine(false); };
   $('p-res').onclick = function () { PF.gameplay(true); G.paused = false; $('pause').classList.remove('on'); last = performance.now(); };
@@ -645,8 +1163,23 @@ function fit() {
 }
 window.addEventListener('resize', fit); fit();
 drawMenuShip();
+(function () {
+  var pl = ''; try { pl = (PF.lang && PF.lang()) || ''; } catch (e) {}
+  var want = save.langSet ? save.lang : (pl ? (pl === 'ru' || pl === 'be' || pl === 'kk' || pl === 'uk' || pl === 'uz' ? 'ru' : 'en') : ((navigator.language || 'ru').slice(0, 2) === 'ru' ? 'ru' : 'en'));
+  setLang(want, false);
+  PF.onLang = function (l) { if (!save.langSet) setLang(l === 'ru' || l === 'be' || l === 'kk' || l === 'uk' || l === 'uz' ? 'ru' : 'en', false); };
+})();
+PF.onSdk = function (sdk) {
+  if (!window.Premium) return;
+  var KEY = 'posadka-premium';
+  try { var m = Premium.mergeState(PF.get(KEY), PF.cloudGet('premium')); if (m) PF.put(KEY, m); } catch (e) {}
+  Premium.init({
+    sdk: sdk, lang: LANG, texts: PM_TEXTS,
+    store: { get: function () { return PF.get(KEY); }, set: function (raw) { PF.put(KEY, raw); }, save: function () { return PF.cloudSave('premium', PF.get(KEY)); } }
+  }).then(function () { pmRefresh(); calmCard(); });
+  Premium.onChange(function () { pmRefresh(); });
+};
 PF.ready();
-window.__game = { G: G, K: K, save: save, BODIES: BODIES, step: step, start: function (b, l) { selB = b; selL = l; bonusFuel = 0; startGame(); }, show: show, groundY: groundY, finish: finish, setSel: function (b, l) { selB = b; selL = l; } };
 </script>
 </body>
 </html>
