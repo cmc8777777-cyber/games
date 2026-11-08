@@ -36,6 +36,8 @@ button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulat
 
 /* старт */
 #s-start{background:linear-gradient(#5fd0ff,#b9f0ff 45%,#9be86a 46%,#4fbf4a);align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom))}
+#s-start.cov{background-color:#3f9a3a;background-repeat:no-repeat;background-size:100% auto,100% 100%;background-position:center 100px,0 0}
+#s-start.cov .cast{visibility:hidden}
 #s-start .logo{margin-top:6px;text-align:center;font-weight:900;line-height:1;color:#fff;text-shadow:0 4px 0 var(--ink),3px 0 0 var(--ink),-3px 0 0 var(--ink),0 -3px 0 var(--ink),3px 3px 0 var(--ink),-3px 3px 0 var(--ink)}
 #s-start .logo small{display:block;font-size:22px;letter-spacing:2px;margin-bottom:6px}
 #s-start .logo b{display:block;font-size:50px}
@@ -267,7 +269,7 @@ window.PF = (function () {
 <script>
 'use strict';
 /* ===== Картинки: слоты под WebP. Имя из IMGN → показывается файл img/<имя>.webp, иначе рисунок кодом ===== */
-var IMGN = /*IMGN*/['bg_castle','bg_forest','bg_swamp','hero_dragon','hero_fox','hero_knight','hero_robot','mon_castle_1','mon_castle_2','mon_castle_3','mon_castle_boss','mon_forest_1','mon_forest_2','mon_forest_3','mon_forest_boss','mon_swamp_1','mon_swamp_2','mon_swamp_3','mon_swamp_boss']/*END*/;
+var IMGN = /*IMGN*/['bg_castle','bg_forest','bg_swamp','cover','hero_dragon','hero_fox','hero_knight','hero_robot','ic_bolt','ic_bulb','ic_clock','ic_crown','ic_cup','ic_gear','ic_heart','ic_lock','ic_star','mon_castle_1','mon_castle_2','mon_castle_3','mon_castle_boss','mon_forest_1','mon_forest_2','mon_forest_3','mon_forest_boss','mon_swamp_1','mon_swamp_2','mon_swamp_3','mon_swamp_boss']/*END*/;
 
 var ICONS = {
   star: '<polygon points="12,1.5 15.2,8.4 22.5,9.2 17,14.2 18.7,21.5 12,17.7 5.3,21.5 7,14.2 1.5,9.2 8.8,8.4" fill="#ffd23f" stroke="#2b1b3d" stroke-width="2" stroke-linejoin="round"/>',
@@ -730,6 +732,8 @@ function renderStart() {
   $('st-heroes').onclick = function () { SFX.tap(); renderHeroes(); };
   $('st-snd').onclick = function () { SAVE.snd = !SAVE.snd; save(); renderStart(); SFX.tap(); };
   holdGate($('st-par'), 1500, renderParent);
+  var sc = $('s-start'); sc.classList.remove('cov'); sc.style.backgroundImage = '';
+  if (IMGN.indexOf('cover') >= 0) { var ci = new Image(); ci.onload = function () { sc.style.backgroundImage = 'url(img/cover.webp), linear-gradient(#2f9bf0 0,#2f9bf0 110px,#3f9a3a 110px)'; sc.classList.add('cov'); }; ci.src = 'img/cover.webp'; }
   swapArt($('s-start')); show('s-start');
 }
 function holdGate(btn, ms, fn) {
@@ -775,7 +779,7 @@ function renderResult() {
   h += '<button class="btn ' + (r.won ? 'gray' : 'green') + '" id="rs-again">Ещё раз</button>';
   if (!r.won && PF.canReward()) h += '<button class="btn blue" id="rs-heart">+1 сердце за ролик</button>';
   h += '<button class="btn gray" id="rs-map">Карта</button></div></div>';
-  s.innerHTML = h; show('s-result');
+  s.innerHTML = h; swapArt(s); show('s-result');
   var lvn = lv.n;
   var nx = $('rs-next'); if (nx) nx.onclick = function () { PF.interstitial(function () { startLevel(lvn + 1); }); };
   $('rs-again').onclick = function () { startLevel(lvn); };
