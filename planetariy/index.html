@@ -1,0 +1,515 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<title>Планетарий</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<style>
+:root{--bg:#0b1034;--bg2:#1a2160;--card:#1f2a6e;--card2:#2a378c;--ink:#fff;--muted:#a9b4ff;--gold:#ffd23f;--orange:#ff7a45;--cyan:#5ee0ff;--good:#5ce08a;--bad:#ff6b8a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#050820;color:var(--ink);font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
+#app{position:relative;max-width:480px;height:100vh;height:100dvh;margin:0 auto;overflow:hidden;background:radial-gradient(120% 80% at 50% 0,var(--bg2),var(--bg))}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column}
+.screen[hidden]{display:none}
+.scroll{overflow-y:auto;flex:1;padding:12px 14px 20px}
+button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulation}
+.btn{background:linear-gradient(#ffdc5c,#ffb21f);color:#4a2a00;font-weight:800;border-radius:16px;padding:12px 18px;font-size:17px;box-shadow:0 4px 0 #b97500}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 #b97500}
+.btn.alt{background:linear-gradient(#5b6bff,#3a47d6);color:#fff;box-shadow:0 4px 0 #222c93}
+.btn.ghost{background:rgba(255,255,255,.12);color:#fff;box-shadow:none}
+.btn[disabled]{opacity:.4}
+h1,h2{margin:0}
+/* заставка */
+#scrTitle{align-items:center;justify-content:center;text-align:center;gap:14px;padding:20px}
+#scrTitle .logo{font-size:44px;font-weight:900;color:var(--gold);text-shadow:0 4px 0 #b97500,0 0 30px rgba(255,210,63,.5);letter-spacing:1px}
+#scrTitle .sub{color:var(--muted);margin-bottom:10px}
+#scrTitle .planet{font-size:92px;animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px) rotate(6deg)}}
+#scrTitle .btn{width:240px}
+/* карта уровней */
+.top{display:flex;align-items:center;gap:8px;padding:10px 12px;min-height:50px}
+.top h2{flex:1;font-size:18px}
+.ib{background:rgba(255,255,255,.14);border-radius:12px;min-width:40px;height:40px;font-size:18px;padding:0 10px}
+.world{background:var(--card);border-radius:18px;padding:12px;margin-bottom:12px}
+.world h3{margin:0 0 2px;font-size:17px}
+.world p{margin:0 0 10px;color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.lv{aspect-ratio:1;border-radius:14px;background:var(--card2);font-weight:800;font-size:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.lv small{font-size:11px;color:var(--gold);letter-spacing:-1px;min-height:13px}
+.lv.boss{background:linear-gradient(#ff8a5c,#e0452c)}
+.lv.lock{opacity:.35}
+.lv.next{outline:3px solid var(--gold)}
+.world.soon{opacity:.5}
+/* игра */
+#gTop{display:flex;align-items:center;gap:8px;padding:8px 10px}
+#gTitle{flex:1;font-weight:800;font-size:15px}
+#bubble{display:flex;gap:8px;align-items:center;margin:0 10px;background:rgba(255,255,255,.1);border-radius:16px;padding:8px 10px;min-height:76px}
+#bubble .av{font-size:34px;line-height:1}
+#bubble .tx{flex:1;font-size:15px;line-height:1.25}
+#bubble .tx b{color:var(--gold)}
+#stage{position:relative;flex:1;min-height:0;margin:4px 0}
+#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+#ctl{padding:6px 10px 12px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:8px;justify-content:center;align-items:center}
+.row .btn{padding:10px 12px;font-size:15px}
+.sm{background:rgba(255,255,255,.16);border-radius:12px;padding:9px 11px;font-weight:700;font-size:14px}
+#hintBtn.on{background:var(--gold);color:#4a2a00}
+.cards{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.ccard{background:var(--card);border-radius:16px;padding:8px;width:156px;text-align:center}
+.ccard .cn{font-weight:800;font-size:14px}
+.ccard .dg{font-size:28px;font-weight:900;color:var(--gold)}
+.ccard svg{width:70px;height:70px}
+.ccard .cr{display:flex;gap:6px;justify-content:center;margin-top:4px}
+.ccard .cr button{background:rgba(255,255,255,.18);border-radius:10px;width:44px;height:36px;font-size:20px;font-weight:900}
+.ccard .dy{margin-top:5px;background:rgba(255,255,255,.1);border-radius:10px;font-size:12px;padding:5px 8px;width:100%}
+.ccard.ok{outline:3px solid var(--good)}.ccard.no{outline:3px solid var(--bad)}
+/* результат */
+.modal{background:rgba(5,8,32,.86);align-items:center;justify-content:center;padding:18px;z-index:5}
+.pane{background:var(--card);border-radius:22px;padding:18px;width:100%;max-width:380px;text-align:center}
+.stars{font-size:46px;letter-spacing:4px;color:var(--gold);text-shadow:0 0 18px rgba(255,210,63,.6)}
+.stars i{opacity:.25;font-style:normal}
+.pane .fact{background:rgba(255,255,255,.1);border-radius:14px;padding:10px;margin:12px 0;font-size:14px;text-align:left}
+.pane .fact b{color:var(--cyan)}
+/* викторина */
+#scrQuiz .qq{font-size:20px;font-weight:800;margin:10px 4px 16px;line-height:1.25}
+.opt{display:block;width:100%;background:var(--card2);border-radius:16px;padding:14px;margin-bottom:10px;font-size:16px;font-weight:700;text-align:left}
+.opt.ok{background:#1f9d57}.opt.no{background:#b3304f}
+#qExp{margin:6px 4px;color:var(--muted);font-size:14px;min-height:40px}
+/* журнал */
+.fc{background:var(--card);border-radius:14px;padding:10px 12px;margin-bottom:8px;font-size:14px}
+.fc b{color:var(--cyan);display:block;margin-bottom:2px}
+.fc.lock{opacity:.4}
+</style></head><body>
+<div id="app">
+ <div class="screen" id="scrTitle">
+  <div class="planet">🌍</div>
+  <div class="logo">ПЛАНЕТАРИЙ</div>
+  <div class="sub">Крути Землю — разгадывай космос</div>
+  <button class="btn" id="bPlay">Играть</button>
+  <button class="btn alt" id="bRepeat">Повторение</button>
+  <button class="btn ghost" id="bJournal">Журнал наблюдений</button>
+  <button class="btn ghost" id="bReset" style="font-size:13px;padding:8px 14px;width:auto">Сбросить прогресс</button>
+ </div>
+
+ <div class="screen" id="scrMap" hidden>
+  <div class="top"><button class="ib" data-go="title">←</button><h2>Миры</h2><span id="mapStars" style="color:var(--gold);font-weight:800"></span></div>
+  <div class="scroll" id="worlds"></div>
+ </div>
+
+ <div class="screen" id="scrGame" hidden>
+  <div id="gTop"><button class="ib" id="gBack">←</button><div id="gTitle"></div><button class="ib" id="gHint">💡 <span id="hn">3</span></button></div>
+  <div id="bubble"><div class="av">🧑‍🚀</div><div class="tx" id="msg"></div></div>
+  <div id="stage"><canvas id="cv"></canvas></div>
+  <div id="ctl"></div>
+ </div>
+
+ <div class="screen" id="scrQuiz" hidden>
+  <div class="top"><button class="ib" id="qBack">←</button><h2 id="qTitle">Викторина</h2><span id="qProg" style="color:var(--gold);font-weight:800"></span></div>
+  <div class="scroll"><div class="qq" id="qq"></div><div id="qo"></div><div id="qExp"></div><button class="btn" id="qNext" hidden style="width:100%">Дальше</button></div>
+ </div>
+
+ <div class="screen" id="scrJournal" hidden>
+  <div class="top"><button class="ib" data-go="title">←</button><h2>Журнал наблюдений</h2><span id="jCnt" style="color:var(--gold);font-weight:800"></span></div>
+  <div class="scroll" id="jList"></div>
+ </div>
+
+ <div class="screen modal" id="scrRes" hidden>
+  <div class="pane">
+   <h2 id="rTitle"></h2>
+   <div class="stars" id="rStars"></div>
+   <div class="fact" id="rFact"></div>
+   <div class="row"><button class="btn ghost" id="rAgain">Ещё раз</button><button class="btn" id="rNext">Дальше</button></div>
+   <div class="row" style="margin-top:8px"><button class="btn ghost" id="rMap" style="font-size:14px">К уровням</button></div>
+  </div>
+ </div>
+</div>
+
+<script>
+/* Слой платформы (Яндекс Игры SDK, заглушка вне площадки) — как в Крепости */
+window.PF = (function () {
+  'use strict';
+  var ysdk = null, player = null, sdkOk = false, cloudOk = false, gaveUp = false;
+  var wantReady = false, readyDone = false, adBusy = false, tabHidden = false, apiPaused = false, gpOn = false, wantGp = false;
+  var lastAdAt = 0, bornAt = Date.now();
+  var AD_FIRST_MS = 120000, AD_GAP_MS = 180000;   // полноэкранная: не раньше 2 минут после загрузки и не чаще раза в 3 минуты
+  var INIT_TIMEOUT_MS = 4000, SYNC_DELAY_MS = 2500, T_KEY = 'planetariy-syncT';
+  var mem = {}, dirty = false, syncTimer = 0;
+  var self = { onPause: function () {}, onCloud: function () {} };
+  function isSynced(k) { return k !== T_KEY && k.indexOf('planetariy-') === 0; }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+  function seedMem() { try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (isSynced(k) || k === T_KEY) mem[k] = localStorage.getItem(k); } } catch (e) {} }
+  function localT() { return Number(mem[T_KEY]) || 0; }
+  function schedule() { if (!syncTimer && player && cloudOk) syncTimer = setTimeout(function () { flush(false); }, SYNC_DELAY_MS); }
+  function touch() { var t = String(Date.now()); mem[T_KEY] = t; lsSet(T_KEY, t); dirty = true; schedule(); }
+  self.get = function (k) { if (Object.prototype.hasOwnProperty.call(mem, k)) return mem[k]; try { return localStorage.getItem(k); } catch (e) { return null; } };
+  self.put = function (k, raw) { raw = String(raw); mem[k] = raw; lsSet(k, raw); if (isSynced(k)) touch(); };
+  self.del = function (k) { delete mem[k]; lsDel(k); if (isSynced(k)) touch(); };
+  /* облако: целый снимок ключей игры, побеждает более поздняя отметка времени */
+  function importCloud(data) {
+    var d = data && typeof data === 'object' ? data : {}, ct = Number(d._t) || 0, blob = d.d && typeof d.d === 'object' ? d.d : null, changedAny = false;
+    if (blob && ct > localT()) {
+      Object.keys(mem).forEach(function (k) { if (isSynced(k)) { delete mem[k]; lsDel(k); } });
+      Object.keys(blob).forEach(function (k) { if (isSynced(k) && typeof blob[k] === 'string') { mem[k] = blob[k]; lsSet(k, blob[k]); } });
+      mem[T_KEY] = String(ct); lsSet(T_KEY, String(ct)); dirty = false; changedAny = true;
+    } else if (localT() > ct) dirty = true;
+    cloudOk = true;
+    if (dirty) schedule();
+    if (changedAny) try { self.onCloud(); } catch (e) {}
+  }
+  function flush(now) {
+    clearTimeout(syncTimer); syncTimer = 0;
+    if (!dirty || !player || !cloudOk) return;
+    var d = {}; Object.keys(mem).forEach(function (k) { if (isSynced(k) && mem[k] != null) d[k] = mem[k]; });
+    dirty = false;
+    try { var p = player.setData({ v: 1, _t: localT(), d: d }, !!now); if (p && p.catch) p.catch(function () { dirty = true; }); } catch (e) { dirty = true; }
+  }
+  /* пауза (реклама, скрытая вкладка, пауза от площадки) и GameplayAPI */
+  self.paused = function () { return adBusy || tabHidden || apiPaused; };
+  function applyGp() {
+    if (!sdkOk || !readyDone) return;
+    var should = wantGp && !self.paused(); if (should === gpOn) return; gpOn = should;
+    try { var g = ysdk.features && ysdk.features.GameplayAPI; if (g) { if (should) g.start(); else g.stop(); } } catch (e) {}
+  }
+  function changed() { applyGp(); try { self.onPause(self.paused()); } catch (e) {} }
+  function onVis() { tabHidden = !!document.hidden; if (tabHidden) flush(true); changed(); }
+  self.setPlaying = function (on) { wantGp = !!on; applyGp(); };
+  function tryReady() { if (readyDone || !wantReady || !sdkOk) return; readyDone = true; try { var l = ysdk.features && ysdk.features.LoadingAPI; if (l) l.ready(); } catch (e) {} applyGp(); }
+  self.ready = function () { wantReady = true; tryReady(); };
+  self.init = function () {
+    seedMem();
+    try { document.addEventListener('visibilitychange', onVis); window.addEventListener('pagehide', function () { flush(true); }); } catch (e) {}
+    if (!window.YaGames || !window.YaGames.init) return Promise.resolve();
+    return new Promise(function (resolve) {
+      var timer = setTimeout(function () { gaveUp = true; resolve(); }, INIT_TIMEOUT_MS);
+      function fin() { clearTimeout(timer); resolve(); }
+      window.YaGames.init().then(function (sdk) {
+        ysdk = sdk; sdkOk = true;
+        try { sdk.on('game_api_pause', function () { apiPaused = true; changed(); }); sdk.on('game_api_resume', function () { apiPaused = false; changed(); }); } catch (e) {}
+        tryReady();
+        return sdk.getPlayer({ scopes: false }).then(function (p) { player = p; return p.getData(); })
+          .then(function (data) { importCloud(data); }, function () {});
+      }).then(fin, fin);
+    });
+  };
+  self.hasSdk = function () { return sdkOk; };
+  /* реклама */
+  function adBegin() { adBusy = true; changed(); }
+  function adEnd() { adBusy = false; changed(); }
+  /* полноэкранная в логической паузе; done — ровно один раз, когда игра может продолжать (сразу, если рекламы нет) */
+  self.interstitial = function (done) {
+    if (adBusy) return;
+    var now = Date.now(), allowedAt = lastAdAt ? lastAdAt + AD_GAP_MS : bornAt + AD_FIRST_MS;
+    if (!sdkOk || !ysdk.adv || !ysdk.adv.showFullscreenAdv || now < allowedAt) { done(); return; }
+    var fin = false;
+    function end(shown) { if (fin) return; fin = true; if (shown) lastAdAt = Date.now(); adEnd(); done(); }
+    adBegin();
+    try { ysdk.adv.showFullscreenAdv({ callbacks: { onClose: function (w) { end(w); }, onError: function () { end(false); }, onOffline: function () { end(false); } } }); } catch (e) { end(false); }
+  };
+  self.canReward = function () { return !!(sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo); };
+  /* ролик за награду: done(true) — только если игрок досмотрел */
+  self.rewarded = function (done) {
+    if (!self.canReward()) { done(false); return; }
+    var fin = false, got = false;
+    function end() { if (fin) return; fin = true; adEnd(); done(got); }
+    adBegin();
+    try { ysdk.adv.showRewardedVideo({ callbacks: { onRewarded: function () { got = true; }, onClose: end, onError: end } }); } catch (e) { end(); }
+  };
+  return self;
+})();
+</script>
+
+<script>
+(function(){
+'use strict';
+/* ===== данные ===== */
+var CITIES={
+ msk:{n:'Москва',lon:37.6,off:3},lon:{n:'Лондон',lon:0,off:0},ber:{n:'Берлин',lon:13.4,off:1},cai:{n:'Каир',lon:31.2,off:2},
+ ekb:{n:'Екатеринбург',lon:60.6,off:5},omsk:{n:'Омск',lon:73.4,off:6},vl:{n:'Владивосток',lon:131.9,off:10},tok:{n:'Токио',lon:139.7,off:9},
+ ny:{n:'Нью-Йорк',lon:-74,off:-5},la:{n:'Лос-Андж.',lon:-118.2,off:-8}
+};
+var WORLDS=[
+ {id:1,name:'Сутки',sub:'День, ночь и вращение Земли',from:1,to:10},
+ {id:2,name:'Пояса',sub:'Часовые пояса и поезда',from:11,to:20},
+ {id:3,name:'Времена года',sub:'Орбита и наклон оси',soon:1},
+ {id:4,name:'Полярный день',sub:'Широты и длина дня',soon:1},
+ {id:5,name:'Луна',sub:'Фазы и затмения',soon:1},
+ {id:6,name:'Путешествия',sub:'Пояса + сезоны',soon:1},
+ {id:7,name:'Экзамен астронома',sub:'Всё вместе',soon:1}
+];
+function sp(id,txt,conds,show,fact,h1,mode){return {id:id,t:'spin',mode:mode||'solar',txt:txt,conds:conds,show:show,fact:fact,h1:h1,topic:mode==='civil'?'zones':'day'};}
+function ck(id,txt,given,items,fact,h1){return {id:id,t:'clock',txt:txt,given:given,items:items,fact:fact,h1:h1,topic:'zones'};}
+var LEVELS=[
+ sp(1,'Привет! Я Мира, а это кот Комета. Покрути Землю пальцем так, чтобы <b>в Москве был полдень</b> — Солнце прямо над городом.',[{c:'msk',h:12}],['msk'],'Земля вращается вокруг своей оси — поэтому день сменяет ночь.','Полдень — когда город смотрит прямо на Солнце. Поверни Землю, чтобы Москва оказалась справа.'),
+ sp(2,'Теперь <b>в Москве полночь</b>. Где на Земле тогда Солнце?',[{c:'msk',h:0}],['msk'],'Ночь — это сторона Земли, отвёрнутая от Солнца. Когда у нас полночь, на другой стороне — полдень.','Полночь — Москва на самой тёмной стороне, слева.'),
+ sp(3,'<b>В Москве рассвет</b> (6:00). Земля вертится против часовой стрелки — в какую сторону ехать Москве?',[{c:'msk',h:6}],['msk'],'Земля вращается с запада на восток, поэтому Солнце встаёт на востоке.','На рассвете город только выезжает из тени на свет: он на границе дня и ночи, внизу.'),
+ sp(4,'<b>В Москве закат</b> (18:00).',[{c:'msk',h:18}],['msk'],'Закат — когда город уходит в тень: Земля вращается, и Солнце «заходит».','Закат — Москва наверху, на границе света и тени.'),
+ sp(5,'<b>В Токио день, а в Лондоне ночь.</b> Такое бывает!',[{c:'tok',from:8,to:16},{c:'lon',from:21,to:3}],['tok','lon'],'Когда у нас день, на другой стороне Земли ночь. Поэтому у людей в разных странах разные часы.','Токио и Лондон далеко друг от друга — почти на разных сторонах Земли.'),
+ sp(6,'<b>В Нью-Йорке полдень.</b> Посмотри, сколько тогда в Лондоне!',[{c:'ny',h:12}],['ny','lon'],'Чем город восточнее, тем позже там время: Солнце идёт с востока на запад.','Нью-Йорк должен быть справа, под Солнцем. Лондон окажется левее, восточнее — там уже вечер.'),
+ sp(7,'<b>В Лондоне полдень.</b> Смотри, что с Москвой: у неё уже второй час дня!',[{c:'lon',h:12}],['lon','msk'],'Каждые 15° долготы — час разницы. Москва на 37,6° восточнее Лондона, это ≈ 2,5 часа.','Лондон под Солнцем, справа.'),
+ sp(8,'<b>В Лондоне полночь.</b> Лондон стоит на нулевом меридиане.',[{c:'lon',h:0}],['lon','msk'],'Нулевой меридиан проходит через Гринвич — район Лондона. От него считают долготу и часовые пояса.','Лондон на самой тёмной стороне, слева.'),
+ sp(9,'<b>В Москве закат, а в Лос-Анджелесе утро.</b> Поставь закат в Москве и посмотри на Лос-Анджелес.',[{c:'msk',h:18}],['msk','la'],'Земля делает полный оборот за 24 часа: 360° ÷ 24 = 15° в час.','Москва наверху, на границе света и тени.'),
+ {id:10,t:'boss',topic:'day',pool:[1,2,3,4,5,6,7],n:5,txt:'<b>Босс-викторина!</b> Пять вопросов про сутки. Нужно хотя бы 4 верных.',fact:'Ты знаешь, как устроены сутки: Земля вращается, а Солнце светит с одной стороны.'},
+ ck(11,'В Москве <b>12:00</b>. Поставь часы в <b>Лондоне</b>.',{c:'msk',h:12},[{c:'lon',h:9}],'Часовые пояса придумали, чтобы на большой территории время было единым.','Лондон на 3 часа «позади» Москвы: смотри на Земле, кто ближе к Солнцу.'),
+ ck(12,'В Москве <b>12:00</b>. Сколько во <b>Владивостоке</b>?',{c:'msk',h:12},[{c:'vl',h:19}],'Владивосток на 7 часов впереди Москвы — там уже вечер.','Владивосток восточнее, значит его время больше.'),
+ ck(13,'В Москве <b>12:00</b>. Сколько в <b>Нью-Йорке</b>?',{c:'msk',h:12},[{c:'ny',h:4}],'На Земле 24 основных часовых пояса, ширина пояса — 15°.','Нью-Йорк западнее Москвы на 8 часов.'),
+ ck(14,'В Москве <b>12:00</b>. Сколько в <b>Екатеринбурге</b>?',{c:'msk',h:12},[{c:'ekb',h:14}],'В России 11 часовых поясов — больше, чем в любой другой стране.','Екатеринбург на 2 часа впереди Москвы.'),
+ ck(15,'В Лондоне <b>8:00</b>. Поставь часы в <b>Берлине</b> и <b>Каире</b>.',{c:'lon',h:8},[{c:'ber',h:9},{c:'cai',h:10}],'Лондонский Гринвич — начало отсчёта часовых поясов. Берлин +1 час, Каир +2 часа.','Берлин на один пояс восточнее Лондона, Каир на два.'),
+ ck(16,'Поезд выехал из Москвы в <b>10:00</b> и пересёк <b>3 пояса на восток</b> (до Омска). Сколько на часах в Омске?',{c:'msk',h:10},[{c:'omsk',h:13}],'Едешь на восток — часы переводят вперёд: каждый пояс прибавляет час.','Каждый пояс на восток — плюс час. Три пояса — три часа.'),
+ ck(17,'Поезд отправляется из Москвы в <b>15:00</b> по московскому времени. Сколько в этот момент во <b>Владивостоке</b>?',{c:'msk',h:15},[{c:'vl',h:22}],'Транссибирская магистраль пересекает 7 часовых поясов: путь из Москвы во Владивосток занимает 7 суток.','Разница Москва — Владивосток 7 часов.'),
+ ck(18,'В Токио <b>8:00</b> утра. Поставь часы в <b>Лос-Анджелесе</b>. Не забудь про день!',{c:'tok',h:8},[{c:'la',h:15,day:-1}],'Между Токио и Лос-Анджелесом линия перемены дат: Лос-Анджелес «отстаёт» на 17 часов, и там ещё вчера.','Токио на 17 часов впереди ЛА. Отними 17 часов — перейдёшь через полночь назад.'),
+ sp(19,'Поверни Землю так, чтобы <b>в Москве было 9:00</b> по часам (поясное время).',[{c:'msk',h:9}],['msk','lon'],'Московское время — это UTC+3: оно на 3 часа опережает Гринвич.','Утро в Москве: город ещё в тени, у самого рассвета, снизу.','civil'),
+ {id:20,t:'boss',topic:'zones',pool:[3,4,5,6,7,8,9,10,11,12,13,14],n:5,txt:'<b>Босс-викторина!</b> Сутки и часовые пояса. Нужно хотя бы 4 верных.',fact:'Теперь ты можешь переводить время между городами и знаешь, как устроены пояса.'}
+];
+var Q=[null,
+ {q:'Почему на Земле сменяются день и ночь?',a:['Земля вращается вокруг оси','Солнце облетает Землю','Луна закрывает Солнце'],c:0,e:'Земля вращается вокруг своей оси, и Солнце освещает то одну, то другую сторону.'},
+ {q:'За сколько часов Земля делает оборот вокруг оси?',a:['За 12 часов','За 24 часа','За 365 дней'],c:1,e:'Один оборот — одни сутки, 24 часа.'},
+ {q:'В какую сторону вращается Земля?',a:['С востока на запад','С севера на юг','С запада на восток'],c:2,e:'С запада на восток, поэтому Солнце встаёт на востоке.'},
+ {q:'На сколько градусов поворачивается Земля за 1 час?',a:['15°','24°','60°'],c:0,e:'360° ÷ 24 часа = 15° в час.'},
+ {q:'Если в Москве полдень, то на противоположной стороне Земли…',a:['Тоже полдень','Полночь','Рассвет'],c:1,e:'Противоположная сторона отвёрнута от Солнца — там ночь.'},
+ {q:'Где Солнце встаёт раньше?',a:['В Москве','Во Владивостоке','В Лондоне'],c:1,e:'Земля вращается на восток, Владивосток — восточнее, и Солнце приходит к нему первым.'},
+ {q:'Как называется линия, от которой считают долготу?',a:['Экватор','Тропик','Нулевой (Гринвичский) меридиан'],c:2,e:'Нулевой меридиан проходит через Гринвич, район Лондона.'},
+ {q:'Сколько основных часовых поясов на Земле?',a:['12','24','60'],c:1,e:'360° ÷ 15° = 24 пояса.'},
+ {q:'Какова ширина одного часового пояса по долготе?',a:['15°','10°','30°'],c:0,e:'Пояс — это час вращения Земли, то есть 15°.'},
+ {q:'В Москве 12:00. Сколько в Лондоне?',a:['15:00','12:00','9:00'],c:2,e:'Лондон на 3 часа позади Москвы.'},
+ {q:'Ты едешь на поезде на восток. Что делают с часами?',a:['Переводят вперёд','Переводят назад','Ничего'],c:0,e:'К востоку время больше: пересёк пояс — прибавь час.'},
+ {q:'Сколько часовых поясов в России?',a:['3','11','24'],c:1,e:'В России 11 поясов, от Калининграда до Камчатки.'}
+];
+/* ===== утилиты ===== */
+function $(id){return document.getElementById(id);}
+function mod(a,n){return ((a%n)+n)%n;}
+function cd(a,b){var d=mod(a-b,24);return Math.min(d,24-d);}
+function fmt(h){h=mod(h,24);var m=Math.round(h*60)%1440;return Math.floor(m/60)+':'+('0'+(m%60)).slice(-2);}
+function shift(c,mode){return mode==='civil'?CITIES[c].off:CITIES[c].lon/15;}
+function localT(c,t,mode){return mod(t+shift(c,mode),24);}
+function lvl(id){return LEVELS[id-1];}
+/* ===== сохранение ===== */
+var SK='planetariy-save';
+var SV={v:1,stars:{},journal:{},err:{day:0,zones:0}};
+function load(){try{var r=PF.get(SK);if(r){var o=JSON.parse(r);if(o&&o.v===1){SV=o;SV.stars=SV.stars||{};SV.journal=SV.journal||{};SV.err=SV.err||{day:0,zones:0};}}}catch(e){}}
+function save(){try{PF.put(SK,JSON.stringify(SV));}catch(e){}}
+function totalStars(){var s=0;for(var k in SV.stars)s+=SV.stars[k];return s;}
+function unlocked(id){return id===1||(SV.stars[id-1]||0)>0;}
+/* ===== экраны ===== */
+var cur='title';
+function show(n){['title','map','game','quiz','journal'].forEach(function(s){var el=$('scr'+s[0].toUpperCase()+s.slice(1));if(el)el.hidden=(s!==n);});$('scrRes').hidden=true;cur=n;PF.setPlaying&&PF.setPlaying(n==='game'||n==='quiz');if(n==='map')buildMap();if(n==='journal')buildJournal();if(n==='game')setTimeout(resize,0);}
+document.addEventListener('click',function(e){var g=e.target.closest&&e.target.closest('[data-go]');if(g)show(g.getAttribute('data-go'));});
+function buildMap(){
+ var h='';var nextId=0;for(var i=1;i<=20;i++){if(unlocked(i)&&!(SV.stars[i]>0)){nextId=i;break;}}
+ WORLDS.forEach(function(w){
+  if(w.soon){h+='<div class="world soon"><h3>Мир '+w.id+'. '+w.name+'</h3><p>'+w.sub+' — скоро</p></div>';return;}
+  h+='<div class="world"><h3>Мир '+w.id+'. '+w.name+'</h3><p>'+w.sub+'</p><div class="grid">';
+  for(var i=w.from;i<=w.to;i++){var st=SV.stars[i]||0,un=unlocked(i),bs=lvl(i).t==='boss';
+   h+='<button class="lv'+(bs?' boss':'')+(un?'':' lock')+(i===nextId?' next':'')+'" data-lv="'+i+'">'+(bs?'👑':i)+'<small>'+(st?'★★★'.slice(0,st):(un?'':'🔒'))+'</small></button>';}
+  h+='</div></div>';});
+ $('worlds').innerHTML=h;$('mapStars').textContent='★ '+totalStars();
+}
+$('worlds').addEventListener('click',function(e){var b=e.target.closest('[data-lv]');if(!b)return;var id=+b.getAttribute('data-lv');if(!unlocked(id)){return;}Q_ADAPT=null;openLevel(id);});
+function buildJournal(){
+ var h='',n=0;LEVELS.forEach(function(L){var open=SV.journal[L.id];if(open)n++;
+  h+='<div class="fc'+(open?'':' lock')+'"><b>'+(L.t==='boss'?'👑 ':'')+'Наблюдение '+L.id+'</b>'+(open?L.fact:'Откроется после прохождения уровня.')+'</div>';});
+ $('jList').innerHTML=h;$('jCnt').textContent=n+'/'+LEVELS.length;
+}
+/* ===== игра ===== */
+var cv=$('cv'),ctx=cv.getContext('2d'),dpr=1,W=0,H=0;
+var G=null;           // текущий уровень
+var Q_ADAPT=null;     // очередь повторения
+function resize(){var r=cv.getBoundingClientRect();dpr=Math.min(window.devicePixelRatio||1,2);W=r.width;H=r.height;cv.width=Math.max(1,Math.round(W*dpr));cv.height=Math.max(1,Math.round(H*dpr));}
+if(window.ResizeObserver)new ResizeObserver(resize).observe($('stage'));window.addEventListener('resize',resize);
+function solve(L){
+ var best=1e9,bt=0;
+ for(var t=0;t<24;t+=1/60){var e=0;L.conds.forEach(function(c){var cl=localT(c.c,t,L.mode),h=c.h!=null?c.h:mod((c.from+(mod(c.to-c.from,24))/2),24);e=Math.max(e,cd(cl,h)*60);});
+  if(e<best-1e-6){best=e;bt=t;}}
+ return bt;
+}
+function openLevel(id){
+ var L=lvl(id);if(L.t==='boss'){openQuiz(L);return;}
+ G={L:L,hint:0,tries:0,t:0,anim:null,dragging:false,done:false,ans:[]};
+ if(L.t==='spin'){G.sol=solve(L);G.t=mod(G.sol+7.3+id*1.7,24);}
+ else{var g=L.given;G.t=mod(g.h-CITIES[g.c].off,24);G.ans=L.items.map(function(it){return {h:mod(it.h+5,24),day:0};});}
+ $('gTitle').textContent='Уровень '+id+' · '+(id<=10?'Сутки':'Пояса');
+ $('msg').innerHTML=L.txt;$('hn').textContent=3;
+ buildCtl();show('game');
+}
+function buildCtl(){
+ var L=G.L,c=$('ctl'),h='';
+ if(L.t==='spin'){
+  h='<div class="row"><button class="sm" data-d="-1">⟲ −1 ч</button><button class="sm" data-d="-.25">−15 мин</button><button class="sm" data-d=".25">+15 мин</button><button class="sm" data-d="1">+1 ч ⟳</button></div><div class="row"><button class="btn" id="bOk" style="width:70%">Готово ✓</button></div>';
+ }else{
+  h='<div class="cards" id="cards">';
+  L.items.forEach(function(it,i){h+='<div class="ccard" data-i="'+i+'"><div class="cn">'+CITIES[it.c].n+'</div><div class="clk"></div><div class="dg"></div><div class="cr"><button data-s="-1">−</button><button data-s="1">+</button></div><button class="dy" data-dy="1"></button></div>';});
+  h+='</div><div class="row"><button class="btn" id="bOk" style="width:70%">Готово ✓</button></div>';
+ }
+ c.innerHTML=h;if(L.t==='clock')renderCards();
+}
+function clockSvg(h){var m=(h%1)*60,hh=h%12,ah=hh*30+m*.5,am=m*6,r=function(a,l){var x=35+Math.sin(a*Math.PI/180)*l,y=35-Math.cos(a*Math.PI/180)*l;return x+','+y;};
+ var s='<svg viewBox="0 0 70 70"><circle cx="35" cy="35" r="33" fill="#fff" stroke="#ffd23f" stroke-width="3"/>';
+ for(var i=0;i<12;i++){var a=i*30;var p=r(a,29),q=r(a,25);s+='<line x1="'+p.split(',')[0]+'" y1="'+p.split(',')[1]+'" x2="'+q.split(',')[0]+'" y2="'+q.split(',')[1]+'" stroke="#334" stroke-width="2"/>';}
+ var a1=r(ah,16).split(','),a2=r(am,24).split(',');
+ s+='<line x1="35" y1="35" x2="'+a1[0]+'" y2="'+a1[1]+'" stroke="#e0452c" stroke-width="4" stroke-linecap="round"/><line x1="35" y1="35" x2="'+a2[0]+'" y2="'+a2[1]+'" stroke="#223" stroke-width="2.5" stroke-linecap="round"/><circle cx="35" cy="35" r="3" fill="#223"/></svg>';return s;}
+var DAYN={'-1':'вчера','0':'сегодня','1':'завтра'};
+function renderCards(){var cs=document.querySelectorAll('.ccard');G.ans.forEach(function(a,i){var c=cs[i];c.querySelector('.clk').innerHTML=clockSvg(a.h);c.querySelector('.dg').textContent=fmt(a.h);c.querySelector('.dy').textContent='день: '+DAYN[a.day];});}
+$('ctl').addEventListener('click',function(e){
+ if(!G||G.done)return;var b=e.target.closest('button');if(!b)return;
+ if(b.id==='bOk'){check();return;}
+ if(b.hasAttribute('data-d')){G.anim=null;G.t=mod(G.t+parseFloat(b.getAttribute('data-d')),24);return;}
+ var card=b.closest('.ccard');if(!card)return;var a=G.ans[+card.getAttribute('data-i')];card.classList.remove('ok','no');
+ if(b.hasAttribute('data-s'))a.h=mod(a.h+parseInt(b.getAttribute('data-s')),24);
+ else if(b.hasAttribute('data-dy'))a.day=a.day===1?-1:a.day+1;
+ renderCards();
+});
+/* подсказки */
+$('gHint').addEventListener('click',function(){
+ if(!G||G.done)return;var L=G.L;if(G.hint>=3)return;G.hint++;$('hn').textContent=3-G.hint;
+ if(G.hint===1)$('msg').innerHTML='💡 '+L.h1;
+ else if(G.hint===2){$('msg').innerHTML=L.t==='spin'?'💡 Золотое кольцо на Земле показывает, где должен стоять город.':'💡 Теперь на Земле видно время в нужных городах. Поставь такое же на часах.';}
+ else{if(L.t==='spin'){G.anim={to:G.sol};$('msg').innerHTML='💡 Комета сама повернула Землю. Нажми «Готово».';}
+  else{L.items.forEach(function(it,i){G.ans[i]={h:it.h,day:it.day||0};});renderCards();$('msg').innerHTML='💡 Комета подсказала ответ — нажми «Готово».';}}
+});
+function condErr(c,L,t){var cl=localT(c.c,t,L.mode);if(c.h!=null)return cd(cl,c.h)*60;
+ var w=mod(c.to-c.from,24),p=mod(cl-c.from,24);if(p<=w)return 0;return Math.min(cd(cl,c.from),cd(cl,c.to))*60;}
+function baseStars(e){return e<=20?3:e<=40?2:e<=60?1:0;}
+function check(){
+ var L=G.L,st=0;G.tries++;
+ if(L.t==='spin'){
+  var worst=-1,wc=null;L.conds.forEach(function(c){var e=condErr(c,L,G.t);if(e>worst){worst=e;wc=c;}});
+  st=baseStars(worst);
+  if(!st){SV.err[L.topic]=(SV.err[L.topic]||0)+1;save();var tgt=wc.h!=null?fmt(wc.h):('между '+fmt(wc.from)+' и '+fmt(wc.to));
+   $('msg').innerHTML='🐱 Не совсем. В городе «'+CITIES[wc.c].n+'» сейчас <b>'+fmt(localT(wc.c,G.t,L.mode))+'</b>, а нужно <b>'+tgt+'</b>. Покрути ещё!';return;}
+ }else{
+  var cs=document.querySelectorAll('.ccard'),all=true;
+  L.items.forEach(function(it,i){var ok=G.ans[i].h===it.h&&G.ans[i].day===(it.day||0);cs[i].classList.remove('ok','no');cs[i].classList.add(ok?'ok':'no');if(!ok)all=false;});
+  if(!all){SV.err.zones=(SV.err.zones||0)+1;save();$('msg').innerHTML='🐱 Есть ошибка. Прикинь по Земле: ближе к Солнцу — значит время больше (идём на восток — прибавляем час).';return;}
+  st=G.tries===1?3:G.tries===2?2:1;
+ }
+ st=Math.max(1,st-G.hint);finish(L,st);
+}
+function finish(L,st){
+ G.done=true;if(st>(SV.stars[L.id]||0))SV.stars[L.id]=st;SV.journal[L.id]=1;save();
+ showRes(L,st);
+}
+function showRes(L,st,title){
+ $('rTitle').textContent=title||'Отлично!';
+ $('rStars').innerHTML='★★★'.slice(0,st)+'<i>'+'★★★'.slice(0,3-st)+'</i>';
+ $('rFact').innerHTML='<b>📖 Журнал наблюдений:</b><br>'+L.fact;
+ var nxt=nextAfter(L.id);$('rNext').style.display=nxt?'':'none';$('rNext').textContent=Q_ADAPT&&Q_ADAPT.length?'Дальше (повтор)':'Дальше';
+ $('scrRes').hidden=false;
+}
+function nextAfter(id){if(Q_ADAPT&&Q_ADAPT.length)return Q_ADAPT[0];var n=id+1;return (n<=20&&unlocked(n))?n:0;}
+$('rNext').addEventListener('click',function(){var L=G&&G.L||curBoss;var n;if(Q_ADAPT&&Q_ADAPT.length){n=Q_ADAPT.shift();}else n=nextAfter(L.id);$('scrRes').hidden=true;PF.interstitial(function(){if(n)openLevel(n);else show('map');});});
+$('rAgain').addEventListener('click',function(){var L=G&&G.L||curBoss;$('scrRes').hidden=true;openLevel(L.id);});
+$('rMap').addEventListener('click',function(){$('scrRes').hidden=true;Q_ADAPT=null;PF.interstitial(function(){show('map');});});
+$('gBack').addEventListener('click',function(){show('map');});
+/* ===== викторина ===== */
+var curBoss=null,qs=[],qi=0,qok=0,qlock=false;
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var x=a[i];a[i]=a[j];a[j]=x;}return a;}
+function openQuiz(L){curBoss=L;G=null;qs=shuffle(L.pool).slice(0,L.n);qi=0;qok=0;$('qTitle').textContent='👑 '+(L.id/10)+'-й босс';show('quiz');nextQ();}
+function nextQ(){
+ if(qi>=qs.length){var pass=qok>=4,st=pass?(qok===5?3:2):0;
+  if(pass){if(st>(SV.stars[curBoss.id]||0))SV.stars[curBoss.id]=st;SV.journal[curBoss.id]=1;save();showRes(curBoss,st,'Босс побеждён! '+qok+' из 5');}
+  else{showRes(curBoss,0,'Верных ответов: '+qok+' из 5. Нужно 4');$('rNext').style.display='none';$('rFact').innerHTML='Не страшно! Пройди уровни ещё раз и попробуй снова — вопросы каждый раз новые.';}
+  return;}
+ var q=Q[qs[qi]],ord=shuffle([0,1,2]);qlock=false;$('qProg').textContent=(qi+1)+'/'+qs.length;$('qq').textContent=q.q;$('qExp').textContent='';$('qNext').hidden=true;
+ $('qo').innerHTML=ord.map(function(k){return '<button class="opt" data-k="'+k+'">'+q.a[k]+'</button>';}).join('');
+}
+$('qo').addEventListener('click',function(e){var b=e.target.closest('.opt');if(!b||qlock)return;qlock=true;var q=Q[qs[qi]],k=+b.getAttribute('data-k');
+ [].forEach.call($('qo').children,function(x){if(+x.getAttribute('data-k')===q.c)x.classList.add('ok');});
+ if(k===q.c){qok++;$('qExp').textContent='Верно! '+q.e;}else{b.classList.add('no');var tp=qs[qi]<=7?'day':'zones';SV.err[tp]=(SV.err[tp]||0)+1;save();$('qExp').textContent='Не совсем. '+q.e;}
+ $('qNext').hidden=false;});
+$('qNext').addEventListener('click',function(){qi++;nextQ();});
+$('qBack').addEventListener('click',function(){show('map');});
+/* ===== повторение ===== */
+function startRepeat(){
+ var c=[];LEVELS.forEach(function(L){if(L.t==='boss'||!SV.stars[L.id])return;if(SV.stars[L.id]<3)c.push(L);});
+ c.sort(function(a,b){return (SV.stars[a.id]-SV.stars[b.id])||((SV.err[b.topic]||0)-(SV.err[a.topic]||0));});
+ var ids=c.slice(0,3).map(function(L){return L.id;});
+ if(!ids.length){var d=[];LEVELS.forEach(function(L){if(L.t!=='boss'&&SV.stars[L.id])d.push(L.id);});ids=shuffle(d).slice(0,3);}
+ if(!ids.length){show('map');return;}
+ Q_ADAPT=ids.slice(1);openLevel(ids[0]);
+}
+/* ===== сцена ===== */
+var STARS=[];(function(){var s=7;function r(){s=(s*16807)%2147483647;return s/2147483647;}for(var i=0;i<70;i++)STARS.push([r(),r(),r()*1.6+.4,r()*6]);})();
+var LAND=[[30,55,.17],[55,58,.18],[85,60,.2],[115,57,.2],[140,50,.12],[20,47,.1],[100,38,.17],[75,30,.1],
+ [18,10,.19],[25,-3,.18],[22,-18,.14],[-100,52,.2],[-112,40,.15],[-80,45,.15],[-40,72,.08],[-62,-5,.14],[-60,-20,.13],[-66,-35,.1],[135,-25,.11]];
+function polar(lon,lat,ls,cx,cy,R){var th=(lon-ls)*Math.PI/180,r=R*Math.max(0,Math.min(1.02,(90-lat)/130));return [cx+r*Math.cos(th),cy-r*Math.sin(th)];}
+function lsun(){return -(G.t-12)*15;}
+function frame(now){
+ requestAnimationFrame(frame);
+ if(cur!=='game'||!G||!W||PF.paused())return;
+ if(G.anim){var d=((G.anim.to-G.t+36)%24)-12;if(Math.abs(d)<.01){G.t=G.anim.to;G.anim=null;}else G.t=mod(G.t+d*.12,24);}
+ draw(now/1000);
+}
+function draw(T){
+ var L=G.L;ctx.setTransform(dpr,0,0,dpr,0,0);
+ var gr=ctx.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#070b2e');gr.addColorStop(1,'#16206a');ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
+ STARS.forEach(function(s){ctx.globalAlpha=.4+.5*Math.abs(Math.sin(T*1.3+s[3]));ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s[0]*W,s[1]*H,s[2],0,6.3);ctx.fill();});ctx.globalAlpha=1;
+ var R=Math.min(W*.28,H*.38),cx=W*.40,cy=H*.5,sr=Math.min(W*.2,H*.3),sx=W+sr*.1,sy=cy;
+ // Солнце
+ var sg=ctx.createRadialGradient(sx,sy,sr*.3,sx,sy,sr*1.7);sg.addColorStop(0,'rgba(255,220,80,.95)');sg.addColorStop(.5,'rgba(255,150,40,.25)');sg.addColorStop(1,'rgba(255,150,40,0)');
+ ctx.fillStyle=sg;ctx.beginPath();ctx.arc(sx,sy,sr*1.7,0,6.3);ctx.fill();
+ ctx.fillStyle='#ffd23f';ctx.beginPath();ctx.arc(sx,sy,sr,0,6.3);ctx.fill();
+ ctx.fillStyle='#ffb21f';ctx.beginPath();ctx.arc(sx-sr*.25,sy-sr*.2,sr*.5,0,6.3);ctx.fill();
+ // лучи
+ ctx.strokeStyle='rgba(255,224,110,.75)';ctx.fillStyle='rgba(255,224,110,.75)';ctx.lineWidth=2.5;
+ [-.7,-.35,0,.35,.7].forEach(function(k){var y=cy+k*R,x1=sx-sr-4,x2=cx+R*Math.sqrt(Math.max(0,1-k*k))+10;if(x1-x2<14)return;ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x2,y);ctx.stroke();ctx.beginPath();ctx.moveTo(x2,y);ctx.lineTo(x2+9,y-5);ctx.lineTo(x2+9,y+5);ctx.fill();});
+ // Земля
+ var ls=lsun();
+ ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,6.3);ctx.clip();
+ var og=ctx.createRadialGradient(cx+R*.2,cy-R*.2,R*.1,cx,cy,R);og.addColorStop(0,'#52c7ff');og.addColorStop(1,'#1c6fd1');ctx.fillStyle=og;ctx.fillRect(cx-R,cy-R,2*R,2*R);
+ if(L.mode==='civil'||L.t==='clock'){ // пояса
+  for(var z=-12;z<12;z++){var a0=(z*15-7.5-ls)*Math.PI/180,a1=a0+15*Math.PI/180;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,-a1,-a0);ctx.closePath();ctx.fillStyle=(z&1)?'rgba(255,255,255,.12)':'rgba(255,255,255,0)';ctx.fill();}
+  ctx.fillStyle='rgba(255,255,255,.8)';ctx.font='bold 9px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+  for(var z2=-12;z2<12;z2+=1){var a=(z2*15-ls)*Math.PI/180;ctx.fillText((z2>0?'+':'')+z2,cx+Math.cos(a)*R*.92,cy-Math.sin(a)*R*.92);}
+ }else{ // меридианы через 15°
+  ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=1;for(var m=0;m<24;m++){var am=(m*15-ls)*Math.PI/180;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(am)*R,cy-Math.sin(am)*R);ctx.stroke();}
+ }
+ ctx.fillStyle='#5ed16b';ctx.strokeStyle='#2f8f3f';ctx.lineWidth=1.5;
+ LAND.forEach(function(b){var p=polar(b[0],b[1],ls,cx,cy,R);ctx.beginPath();ctx.arc(p[0],p[1],b[2]*R*0.95+1,0,6.3);ctx.fill();ctx.stroke();});
+ LAND.forEach(function(b){var p=polar(b[0],b[1],ls,cx,cy,R);ctx.beginPath();ctx.arc(p[0],p[1],b[2]*R*0.95-1,0,6.3);ctx.fill();});
+ // ночь
+ var ng=ctx.createLinearGradient(cx-R*.25,0,cx+R*.1,0);ng.addColorStop(0,'rgba(5,8,40,.62)');ng.addColorStop(1,'rgba(5,8,40,0)');
+ ctx.fillStyle='rgba(5,8,40,.62)';ctx.fillRect(cx-R-2,cy-R-2,R-.25*R+2,2*R+4);ctx.fillStyle=ng;ctx.fillRect(cx-R*.25,cy-R,R*.35,2*R);
+ ctx.restore();
+ ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,cy,R,0,6.3);ctx.stroke();
+ ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(cx,cy,3,0,6.3);ctx.fill();
+ // стрелка вращения
+ ctx.strokeStyle='#ffd23f';ctx.fillStyle='#ffd23f';ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,cy,R+11,Math.PI*.62,Math.PI*.95,false);ctx.stroke();
+ var ea=Math.PI*.95,ex=cx+Math.cos(ea)*(R+11),ey=cy+Math.sin(ea)*(R+11);ctx.beginPath();ctx.moveTo(ex,ey+9);ctx.lineTo(ex-6,ey-5);ctx.lineTo(ex+6,ey-5);ctx.fill();
+ ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillStyle='#ffd23f';ctx.fillText('вращение',cx-R*.62,cy+R+27);
+ ctx.fillStyle='#ffe58a';ctx.fillText('☀ день',cx+R*.5,cy+R+27);
+ // подсказка-кольца
+ var show=L.show||[];
+ if(L.t==='spin'&&G.hint>=2){L.conds.forEach(function(c){var th=(CITIES[c.c].lon-(-(G.sol-12)*15))*Math.PI/180,r=R*.72,px=cx+r*Math.cos(th),py=cy-r*Math.sin(th);ctx.strokeStyle='#ffd23f';ctx.lineWidth=3;ctx.setLineDash([5,4]);ctx.lineDashOffset=-T*14;ctx.beginPath();ctx.arc(px,py,24+2*Math.sin(T*4),0,6.3);ctx.stroke();ctx.setLineDash([]);});}
+ // города
+ var mode=L.mode||'civil';
+ show.forEach(function(k){pin(k,ls,cx,cy,R,mode,L.t==='spin'&&L.conds.some(function(c){return c.c===k;}));});
+ if(L.t==='clock'){pin(L.given.c,ls,cx,cy,R,'civil',true);L.items.forEach(function(it){pin(it.c,ls,cx,cy,R,'civil',true,G.hint<2);});}
+}
+function pin(k,ls,cx,cy,R,mode,hl,hide){
+ var c=CITIES[k],th=(c.lon-ls)*Math.PI/180,r=R*.72,px=cx+r*Math.cos(th),py=cy-r*Math.sin(th);
+ var tt=localT(k,G.t,mode);var w=62,h=28;
+ ctx.fillStyle='#fff';ctx.strokeStyle=hl?'#ffb21f':'#7a86d8';ctx.lineWidth=hl?3:2;
+ ctx.beginPath();if(ctx.roundRect)ctx.roundRect(px-w/2,py-h/2,w,h,8);else ctx.rect(px-w/2,py-h/2,w,h);ctx.fill();ctx.stroke();
+ ctx.fillStyle='#223';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 9.5px system-ui';ctx.fillText(c.n.length>11?c.n.slice(0,10)+'.':c.n,px,py-6);
+ ctx.font='bold 12px system-ui';ctx.fillStyle='#c4400f';ctx.fillText(hide?'?':fmt(tt),px,py+7);
+}
+/* ввод: вращение пальцем и колесом */
+function ang(e){var r=cv.getBoundingClientRect(),x=e.clientX-r.left-W*.40,y=e.clientY-r.top-H*.5;return Math.atan2(-y,x)*180/Math.PI;}
+var last=0;
+cv.addEventListener('pointerdown',function(e){if(!G||G.done||G.L.t!=='spin')return;G.dragging=true;G.anim=null;last=ang(e);try{cv.setPointerCapture(e.pointerId);}catch(x){}});
+cv.addEventListener('pointermove',function(e){if(!G||!G.dragging)return;var a=ang(e),d=a-last;if(d>180)d-=360;if(d<-180)d+=360;last=a;G.t=mod(G.t+d/15,24);});
+function up(){if(G)G.dragging=false;}
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+cv.addEventListener('wheel',function(e){if(!G||G.done||G.L.t!=='spin')return;e.preventDefault();G.anim=null;G.t=mod(G.t+(e.deltaY<0?1:-1)*(e.shiftKey?1:.25),24);},{passive:false});
+document.addEventListener('keydown',function(e){if(cur!=='game'||!G||G.L.t!=='spin')return;if(e.key==='ArrowRight'||e.key==='ArrowUp'){G.t=mod(G.t+.25,24);}if(e.key==='ArrowLeft'||e.key==='ArrowDown'){G.t=mod(G.t-.25,24);}if(e.key==='Enter')check();});
+/* ===== кнопки заставки ===== */
+$('bPlay').addEventListener('click',function(){show('map');});
+$('bJournal').addEventListener('click',function(){show('journal');});
+$('bRepeat').addEventListener('click',startRepeat);
+$('bReset').addEventListener('click',function(){if(confirm('Стереть весь прогресс?')){SV={v:1,stars:{},journal:{},err:{day:0,zones:0}};save();}});
+/* ===== старт ===== */
+PF.onPause=function(){};
+PF.onCloud=function(){load();if(cur==='map')buildMap();};
+PF.init().then(function(){load();PF.ready();});
+load();show('title');requestAnimationFrame(frame);
+window.__game={LEVELS:LEVELS,CITIES:CITIES,openLevel:openLevel,get G(){return G;},get SV(){return SV;},check:check,solve:solve,show:show};
+})();
+</script>
+</body></html>
