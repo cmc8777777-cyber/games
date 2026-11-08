@@ -87,8 +87,8 @@ var QUIZ=[
  ['Какой органический продукт муравьи используют для защиты?',['муравьиную кислоту','мёд','молоко','смолу сосны только'],0,'Многие муравьи могут брызгать муравьиной кислотой — она отпугивает врагов.']
 ];
 /* ---------- картинки-слоты (запасной вариант — код) ---------- */
-var IMG={},USE_ART=false;/* true, когда картинки лежат в ../art/*.webp */
-function art(n){if(!USE_ART)return null;var o=IMG[n];if(!o){o=IMG[n]={i:new Image(),ok:false};o.i.onload=function(){o.ok=true};o.i.onerror=function(){o.ok=false};o.i.src='../art/'+n+'.webp';}return o.ok?o.i:null}
+var IMG={},USE_ART=true;/* false — всё рисуется кодом; картинки: game/img/*.webp (tools/make_art.py) */
+function art(n){if(!USE_ART)return null;var o=IMG[n];if(!o){o=IMG[n]={i:new Image(),ok:false};o.i.onload=function(){o.ok=true};o.i.onerror=function(){o.ok=false};o.i.src='img/'+n+'.webp';}return o.ok?o.i:null}
 /* ---------- Yandex SDK: слой с заглушкой ---------- */
 var YA={sdk:null,init:function(){if(!window.YaGames||!window.YaGames.init)return;try{window.YaGames.init().then(function(s){YA.sdk=s;if(s.features&&s.features.LoadingAPI)s.features.LoadingAPI.ready()}).catch(function(){})}catch(e){}},
  rewarded:function(cb){if(YA.sdk&&YA.sdk.adv){try{YA.sdk.adv.showRewardedVideo({callbacks:{onRewarded:function(){cb(true)},onError:function(){cb(false)},onClose:function(){}}});return}catch(e){}}cb(true)}};
@@ -119,6 +119,7 @@ function enq(f){Q.push(f);if(!busy)pump()}
 function pump(){if(over)return;if(!Q.length){busy=false;$('modal').style.display='none';render();return}busy=true;var f=Q.shift();f(pump)}
 function show(html,btns,done){$('mcard').innerHTML=html+'<div id="mb"></div>';$('modal').style.display='flex';var c=$('mb');
  btns.forEach(function(b){var e=document.createElement('button');e.className='btn opt'+(b.alt?' alt':'');e.textContent=b.t;if(b.off)e.disabled=true;e.onclick=function(){if(b.f)b.f();done()};c.appendChild(e)})}
+function pimg(n){return USE_ART?'<img src="img/'+n+'.webp" alt="" style="display:block;margin:0 auto 6px;height:96px" onerror="this.style.display=\'none\'">':''}
 function info(h,t,done,label){show('<h2>'+h+'</h2><p>'+t+'</p>',[{t:label||'Дальше'}],done)}
 function quiz(i,onres){return function(done){var q=QUIZ[i],idx=[0,1,2,3].sort(function(){return rnd()-.5});
  $('mcard').innerHTML='<h2>🔬 Урок природоведа</h2><p><b>'+q[0]+'</b></p><div id="mb"></div>';$('modal').style.display='flex';var c=$('mb'),answered=false;
@@ -142,9 +143,9 @@ function mathQ(){var t=Math.floor(rnd()*5),W=s.ants.work,A=adults(),q,ans,sol;
 function nextDay(){if(busy||over)return;var d=s.day,se=sOf(d),yr=yOf(d),mods={forage:1,hide:false};
  if(d%10==1)enq(mathQ());
  if(se<3&&rnd()<.12){mods.forage=.3;toast('🌧 Дождь: добыча ×0,3')}
- if(se==1&&rnd()<.08)enq(function(done){show('<h2>🔍 Дети с лупой!</h2><p>На поверхности дети разглядывают насекомых. Что делать?</p>',[{t:'Затаиться (день без добычи)',f:function(){mods.hide=true}},{t:'Рискнуть (−4 добытчика, добыча как обычно)',f:function(){s.ants.work=Math.max(0,s.ants.work-4);toast('Дети поймали 4 добытчиков')}}],done)});
- if(se==2&&!s.hedge[yr]&&rnd()<.15){s.hedge[yr]=1;enq(function(done){show('<h2>🦔 Ёж!</h2><p>Ёж бродит у входа и давит муравьёв. Бороться с ним нельзя.</p>',[{t:'Спрятаться (день без добычи)',f:function(){mods.hide=true}},{t:'Не обращать внимания (−15 % рабочих)',f:function(){var l=Math.ceil(s.ants.work*.15);s.ants.work-=l;toast('Ёж унёс '+l+' рабочих')}}],done)})}
- if(se<3&&rnd()<.12)enq(function(done){var ok=s.ants.sold>=4;show('<h2>🐛 Гусеница!</h2><p>Большая гусеница у входа. Чтобы справиться, нужно ≥ 4 солдат (у тебя '+s.ants.sold+'). Награда — 60 крошек.</p>',[{t:'Отправить 4 солдат (+60 крошек)',off:!ok,f:function(){s.food+=60;toast('Гусеница поймана: +60 крошек')}},{t:'Пропустить',alt:true}],done)});
+ if(se==1&&rnd()<.08)enq(function(done){show(pimg('en_lens')+'<h2>🔍 Дети с лупой!</h2><p>На поверхности дети разглядывают насекомых. Что делать?</p>',[{t:'Затаиться (день без добычи)',f:function(){mods.hide=true}},{t:'Рискнуть (−4 добытчика, добыча как обычно)',f:function(){s.ants.work=Math.max(0,s.ants.work-4);toast('Дети поймали 4 добытчиков')}}],done)});
+ if(se==2&&!s.hedge[yr]&&rnd()<.15){s.hedge[yr]=1;enq(function(done){show(pimg('en_hedgehog')+'<h2>🦔 Ёж!</h2><p>Ёж бродит у входа и давит муравьёв. Бороться с ним нельзя.</p>',[{t:'Спрятаться (день без добычи)',f:function(){mods.hide=true}},{t:'Не обращать внимания (−15 % рабочих)',f:function(){var l=Math.ceil(s.ants.work*.15);s.ants.work-=l;toast('Ёж унёс '+l+' рабочих')}}],done)})}
+ if(se<3&&rnd()<.12)enq(function(done){var ok=s.ants.sold>=4;show(pimg('f_caterpillar')+'<h2>🐛 Гусеница!</h2><p>Большая гусеница у входа. Чтобы справиться, нужно ≥ 4 солдат (у тебя '+s.ants.sold+'). Награда — 60 крошек.</p>',[{t:'Отправить 4 солдат (+60 крошек)',off:!ok,f:function(){s.food+=60;toast('Гусеница поймана: +60 крошек')}},{t:'Пропустить',alt:true}],done)});
  enq(function(done){simDay(mods);done()})}
 function simDay(mods){var d=s.day,se=sOf(d),yr=yOf(d),r={d:d,lines:[]},c=split(),W=s.ants.work;
  if(mods.hide){c.f=0;r.lines.push('Муравьи сидели в гнезде — добычи нет')}
@@ -226,6 +227,8 @@ $('tabs').addEventListener('click',function(e){if(e.target.dataset.t){tab=e.targ
 $('next').onclick=nextDay;
 /* ---------- рисунок разреза ---------- */
 var cv=$('cv'),cx=cv.getContext('2d'),T=0;
+var RICON={nursery:'ant_larva',store:'f_grain',dorm:'ant_pupa',barracks:'ic_sword',farm:'f_aphids'};
+function pic(n,x,y,h){var im=art(n);if(!im)return false;var w=h*im.width/im.height;cx.drawImage(im,x-w/2,y-h/2,w,h);return true}
 var ROOM={nursery:[80,112],store:[295,112],dorm:[80,176],barracks:[295,176],farm:[187,200]},QUEEN=[187,140];
 var SKY=['#a8e6ff','#6fd0ff','#ffd9a0','#cfe3f2'],GRASS=['#6ad04a','#3fb83a','#d9962e','#e8f2f8'];
 function frame(){T+=1/60;var w=375,se=s?sOf(s.day):0;
@@ -241,18 +244,19 @@ function frame(){T+=1/60;var w=375,se=s?sOf(s.day):0;
  if(s.project){var p2=ROOM[s.project.id],pr=1-s.project.left/CH[s.project.id].cm;cx.setLineDash([6,6]);cx.strokeStyle='#e0b878';cx.lineWidth=5;cx.beginPath();cx.moveTo(187,p2[1]);cx.lineTo(187+(p2[0]-187)*pr,p2[1]);cx.stroke();cx.setLineDash([])}
  /* камеры */
  cx.textAlign='center';cx.textBaseline='middle';
- Object.keys(ROOM).forEach(function(k){var p=ROOM[k],n=s.ch[k],img=art('room_'+k);cx.globalAlpha=n?1:.3;
-  if(img)cx.drawImage(img,p[0]-34,p[1]-20,68,40);else{cx.fillStyle=n?'#ffcf80':'#c9a06a';cx.strokeStyle='#3a2410';cx.lineWidth=3;rr(p[0]-34,p[1]-18,68,36,12);cx.fill();cx.stroke();cx.font='20px serif';cx.fillStyle='#000';cx.fillText(CH[k].ico,p[0]-8,p[1])}
+ Object.keys(ROOM).forEach(function(k){var p=ROOM[k],n=s.ch[k];cx.globalAlpha=n?1:.3;
+  cx.fillStyle=n?'#ffcf80':'#c9a06a';cx.strokeStyle='#3a2410';cx.lineWidth=3;rr(p[0]-34,p[1]-18,68,36,12);cx.fill();cx.stroke();
+  if(!pic(RICON[k],p[0]-10,p[1],28)){cx.font='20px serif';cx.fillStyle='#000';cx.fillText(CH[k].ico,p[0]-8,p[1])}
   cx.globalAlpha=1;if(n>0){cx.font='bold 12px sans-serif';cx.fillStyle='#3b2a1a';cx.fillText('×'+n,p[0]+18,p[1]+5)}});
- cx.fillStyle='#ffe08a';cx.strokeStyle='#3a2410';rr(QUEEN[0]-30,QUEEN[1]-17,60,34,12);cx.fill();cx.stroke();cx.font='22px serif';cx.fillStyle='#000';cx.fillText('👑',QUEEN[0],QUEEN[1]+1);
+ cx.fillStyle='#ffe08a';cx.strokeStyle='#3a2410';rr(QUEEN[0]-30,QUEEN[1]-17,60,34,12);cx.fill();cx.stroke();if(!pic('ant_queen',QUEEN[0],QUEEN[1]+2,40)){cx.font='22px serif';cx.fillStyle='#000';cx.fillText('👑',QUEEN[0],QUEEN[1]+1)}
  /* расплод и еда внутри */
- cx.font='10px serif';var bshow=Math.min(10,broodN());for(var i=0;i<bshow;i++)cx.fillText('🥚',ROOM.nursery[0]-24+(i%5)*12,ROOM.nursery[1]+(i<5?8:-6)+ (s.ch.nursery?0:0));
- var fshow=Math.min(10,Math.floor(10*s.food/capStore()));for(var j=0;j<fshow;j++)cx.fillText('🌾',ROOM.store[0]-24+(j%5)*12,ROOM.store[1]+(j<5?8:-6));
+ cx.font='10px serif';var bshow=Math.min(10,broodN());for(var i=0;i<bshow;i++){var ex=ROOM.nursery[0]-24+(i%5)*12,ey=ROOM.nursery[1]+(i<5?8:-6);if(!pic('ant_egg',ex,ey,11))cx.fillText('🥚',ex,ey)}
+ var fshow=Math.min(10,Math.floor(10*s.food/capStore()));for(var j=0;j<fshow;j++){var fx=ROOM.store[0]-24+(j%5)*12,fy=ROOM.store[1]+(j<5?8:-6);if(!pic('f_seed',fx,fy,11))cx.fillText('🌾',fx,fy)}
  /* муравьи */
  cx.font='15px serif';var fr=split().f,nS=Math.min(9,Math.ceil(fr/4));
- for(var k2=0;k2<nS;k2++){var x=((T*22+k2*41)%330)+22,y=44+Math.sin(T*6+k2)*2;cx.fillText('🐜',x,y)}
- var nT=Math.min(8,Math.ceil(adults()/12));for(var m=0;m<nT;m++){var yy=60+((T*30+m*37)%140);cx.fillText('🐜',187+(m%2?5:-5),yy)}
- if(s.forecast){cx.font='26px serif';cx.fillText(s.forecast.e,340,40+Math.sin(T*4)*3)}
+ for(var k2=0;k2<nS;k2++){var x=((T*22+k2*41)%330)+22,y=42+Math.sin(T*6+k2)*2;if(!pic('ant_worker',x,y,18))cx.fillText('🐜',x,y)}
+ var nT=Math.min(8,Math.ceil(adults()/12));for(var m=0;m<nT;m++){var yy=60+((T*30+m*37)%140),xx=187+(m%2?5:-5);if(!pic('ant_worker',xx,yy,10))cx.fillText('🐜',xx,yy)}
+ if(s.forecast){var fy2=34+Math.sin(T*4)*3;if(!pic('en_'+s.forecast.k,335,fy2,34)){cx.font='26px serif';cx.fillText(s.forecast.e,340,40+Math.sin(T*4)*3)}}
  }
  requestAnimationFrame(frame)}
 function rr(x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath()}
@@ -261,7 +265,7 @@ function newGame(){s=fresh();over=false;busy=false;Q=[];tab='tasks';save();$('mo
  enq(function(done){info('🐜 Муравейник','Ты — королева-основательница. Три года (120 дней) веди колонию: добывай еду, копай камеры, расти солдат и нянек, отбивайся от врагов и переживи три зимы. Между сезонами — урок природоведа и расчёт.',done,'Начать')})}
 function start(){YA.init();var o=load();var img=art('cover');
  $('mcard').innerHTML='<img id="cover" alt=""><h2>🐜 Муравейник</h2><p>Стратегия про муравьиную колонию: еда, камеры, враги и три зимы.</p><div id="mb"></div>';$('modal').style.display='flex';busy=true;
- var im=$('cover');im.onload=function(){im.style.display='block'};if(USE_ART)im.src='../art/cover.webp';
+ var im=$('cover');im.onload=function(){im.style.display='block'};if(USE_ART)im.src='img/cover.webp';
  var mb=$('mb');function add(t,f,alt){var b=document.createElement('button');b.className='btn opt'+(alt?' alt':'');b.textContent=t;b.onclick=f;mb.appendChild(b)}
  if(o)add('Продолжить (день '+o.day+')',function(){s=o;busy=false;$('modal').style.display='none';render()});
  add('Новая игра',function(){busy=false;newGame()},!!o);
