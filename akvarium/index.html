@@ -110,7 +110,10 @@ const TANKS=[{V:20,p:1200,mp:6},{V:60,p:3500,mp:3},{V:120,p:7000,mp:6},{V:250,p:
 const EQ={filter:['Фильтр',1500,'нитраты растут на 40 % медленнее'],aer:['Аэратор',900,'вместимость по кислороду +30 %'],lamp:['Лампа',700,'растения лучше чистят воду, +5 % привлекательности'],feeder:['Автокормушка',2200,'выдаёт ровно норму корма'],decor:['Декор (замок)',1200,'+10 % привлекательности']};
 const BASE_PRICE=60,RENT=200,FEED_RUB=1.5,GK=0.8,DAYS=60;
 // слоты под картинки: сюда добавляются имена файлов из art\ (WebP) после генерации; пока пусто, чтобы не было 404
-const ART={bg_fresh:0,bg_salt:0,cover:0};
+// картинки (WebP из art\ через tools\make_art.py). Если файла нет или не загрузился — рисуем кодом.
+const IMGS={};let _rt=0;
+function _sched(){clearTimeout(_rt);_rt=setTimeout(()=>{if(!document.getElementById('ov')&&(typeof S==='undefined'||!S||document.getElementById('main')))render()},200)}
+['bg_fresh','bg_salt','cover_start'].concat(Array.from({length:40},(_,i)=>'fish_'+String(i).padStart(2,'0'))).forEach(n=>{const im=new Image();im.onload=()=>{IMGS[n]=im;_sched()};im.src='img/'+n+'.webp'});
 const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 const nf=n=>Math.round(n).toLocaleString('ru-RU');
@@ -248,6 +251,11 @@ function genTask(){
 function toast(m){const e=document.createElement('div');e.className='toast';e.textContent=m;$('app').appendChild(e);setTimeout(()=>e.remove(),2200)}
 function topbar(){return `<div class="top"><span>День ${S.day}/${DAYS}${weekend()?' 🎉':''}</span><span>💰 ${nf(S.money)}</span><span>${rep_stars()}</span><span>🪙 ${S.coins}</span></div>`}
 function fishSVG(sp,w){
+ const im=IMGS['fish_'+String(sp.i).padStart(2,'0')];
+ if(im)return `<img src="${im.src}" width="${Math.round(w*1.05)}" style="display:block;max-height:${Math.round(w*1.2)}px;object-fit:contain" alt="">`;
+ return fishCode(sp,w);
+}
+function fishCode(sp,w){
  const h=Math.round(w*0.66),c1=sp.c1,c2=sp.c2,st='stroke="#3b2a1a" stroke-width="2.4" stroke-linejoin="round"';
  let b;
  switch(sp.sh){
@@ -265,7 +273,8 @@ function fishSVG(sp,w){
 }
 function fw(sp){return Math.round(Math.max(22,Math.min(74,14+8*Math.log2(sp.cm))))}
 function viewHTML(t,big){
- let h='<div class="view '+(t.salt?'salt':'')+(big?' big':'')+'" data-t="'+t.id+'"><div class="sand"></div>';
+ const bgn=t.salt?'bg_salt':'bg_fresh',bgi=IMGS[bgn];
+ let h='<div class="view '+(t.salt?'salt':'')+(big?' big':'')+'" data-t="'+t.id+'"'+(bgi?` style="background:url(${bgi.src}) center/cover"`:'')+'>'+(bgi?'':'<div class="sand"></div>');
  let pi=0;Object.keys(t.pl).forEach(k=>{for(let q=0;q<t.pl[k];q++){h+=`<span class="pl" style="left:${6+(pi*37)%88}%">${PLANTS[k].w?'🪸':'🌿'}</span>`;pi++}});
  if(t.eq.decor)h+='<span class="pl" style="left:78%;font-size:28px">🏰</span>';
  let n=0;
@@ -297,8 +306,9 @@ function loop(ts){
 }
 function render(){
  const app=$('app');
- if(!S){app.innerHTML=`<div class="cover"><div style="font-size:70px">🐠🐙🐡</div><h1>Подводный мир</h1><p style="font-size:17px">Аквариумный бизнес: рыбы, вода, математика</p>
-  <div style="display:grid;gap:10px;margin-top:30px">${hasSave()?'<button class="b-go" id="bCont">▶ Продолжить</button>':''}<button class="${hasSave()?'b-nav':'b-go'}" id="bNew">Новая игра</button></div></div>`;
+ if(!S){const cv=IMGS.cover_start;
+  app.innerHTML=`<div class="cover" style="${cv?`background:linear-gradient(rgba(0,20,40,.15),rgba(0,20,40,.15)),url(${cv.src}) center/cover;height:100%;display:flex;flex-direction:column`:''}">${cv?'':'<div style="font-size:70px">🐠🐙🐡</div>'}<h1 style="${cv?'margin-top:14px':''}">Подводный мир</h1><p style="font-size:17px;text-shadow:1px 1px 3px #000">Аквариумный бизнес: рыбы, вода, математика</p>
+  <div style="display:grid;gap:10px;margin-top:${cv?'auto;margin-bottom:24px':'30px'}">${hasSave()?'<button class="b-go" id="bCont">▶ Продолжить</button>':''}<button class="${hasSave()?'b-nav':'b-go'}" id="bNew">Новая игра</button></div></div>`;
   const c=$('bCont');if(c)c.onclick=()=>{load();render();afterLoad()};$('bNew').onclick=()=>{newGame();render();afterLoad()};return}
  let h=topbar()+'<div id="main">';
  S.tanks.forEach((t,k)=>{
