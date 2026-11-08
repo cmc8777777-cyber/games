@@ -27,6 +27,7 @@ canvas{display:block;width:100%;aspect-ratio:375/200;background:#05070f}
 .card{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 8px}
 .av{width:42px;height:42px;border-radius:50%;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:24px;flex:none;overflow:hidden;border:2px solid var(--c,#4aa8ff)}
 .av img{width:100%;height:100%;object-fit:cover}
+.chip img.ic{width:16px;height:16px;vertical-align:-3px}
 .card .nm{flex:1;min-width:0;font-size:13px}
 .card .nm b{font-size:14px}
 .hp{height:6px;background:#0b1128;border-radius:3px;margin-top:3px;overflow:hidden}
@@ -194,10 +195,12 @@ var QS=[
 
 /* ---------- Состояние ---------- */
 var S=null,busy=false,usedQ=[],art={};
-var ARTNAMES=['bg_moon','earth','rover','mod_hab','mod_store','mod_power','mod_green','mod_drill','mod_recy','astro_0','astro_1','astro_2','astro_3','cover'];
+var ARTNAMES=['bg_moon','earth','rover','mod_hab','mod_store','mod_power','mod_green','mod_drill','mod_recy','astro_0','astro_1','astro_2','astro_3','cover','ic_energy','ic_o2','ic_water','ic_food','ic_parts','ic_temp'];
+var ICN={'⚡':'ic_energy','🫁':'ic_o2','💧':'ic_water','🍲':'ic_food','🔧':'ic_parts','🌡':'ic_temp'};
+function IC(e){var n=ICN[e];return n&&art[n]?'<img class="ic" src="img/'+n+'.webp" alt="">':e}
 /* картинки: список готовых файлов лежит в img/index.json (пустой список — всё рисуется кодом, запросов к несуществующим файлам нет) */
 fetch('img/index.json').then(function(r){return r.json()}).then(function(list){
- list.forEach(function(n){if(ARTNAMES.indexOf(n)<0)return;var im=new Image();im.onload=function(){art[n]=im;if(n==='cover')setCover();if(S)$('crew').dataset.sig=''};im.onerror=function(){};im.src='img/'+n+'.webp'});
+ list.forEach(function(n){if(ARTNAMES.indexOf(n)<0)return;var im=new Image();im.onload=function(){art[n]=im;if(n==='cover')setCover();if(S){$('crew').dataset.sig='';if(n.indexOf('ic_')===0)try{refresh()}catch(e){}}};im.onerror=function(){};im.src='img/'+n+'.webp'});
 }).catch(function(){});
 function setCover(){var b=$('coverBox');if(art.cover){b.innerHTML='';b.appendChild(art.cover.cloneNode())}}
 
@@ -507,7 +510,7 @@ function refresh(){
  var pr=isN?S.day/14:(S.phase==='prep'?1:S.step/7);
  $('bar').className=isN?'n':'';$('bar').firstChild.style.width=(pr*100)+'%';
  var nd=needs(),st=stocks(),R=S.res;
- function chip(ic,v,sub,low,pct){return '<div class="chip'+(low?' low':'')+'">'+ic+' <b>'+v+'</b><em>'+sub+'</em>'+(pct!=null?'<i style="width:'+Math.min(100,pct*100)+'%"></i>':'')+'</div>'}
+ function chip(ic,v,sub,low,pct){return '<div class="chip'+(low?' low':'')+'">'+IC(ic)+' <b>'+v+'</b><em>'+sub+'</em>'+(pct!=null?'<i style="width:'+Math.min(100,pct*100)+'%"></i>':'')+'</div>'}
  $('chips').innerHTML=
   chip('⚡',RU(S.energy),'из '+capE()+' кВт·ч',S.energy<useNight()*3,capE()?S.energy/capE():0)+
   chip('🫁',RU(R.o2),'кг · '+S.crew.length+'/сут',R.o2<S.crew.length*3,R.o2/capR())+
@@ -567,10 +570,11 @@ function drawScene(t){
  /* ровер и люди */
  var ry=170;
  if(S.trip){cx.fillStyle='#ffd166';cx.font='11px sans-serif';cx.fillText('🚙 ровер в рейсе…',270,ry)}
- else if(art.rover)cx.drawImage(art.rover,300,ry-16,40,24);
+ else if(art.rover)cx.drawImage(art.rover,298,ry-26,40,30);
  else{cx.fillStyle='#d8dbe2';cx.fillRect(300,ry-8,34,10);cx.fillStyle='#4aa8ff';cx.fillRect(316,ry-14,14,7);cx.fillStyle='#222';cx.beginPath();cx.arc(306,ry+3,4,0,7);cx.arc(328,ry+3,4,0,7);cx.fill()}
  S.crew.forEach(function(c,i){
   var x=24+i*30+(night?0:Math.sin(t/500+i)*6),y=176+Math.abs(Math.sin(t/300+i))*(night?0:2);
+  var ai=art['astro_'+(c.i%4)];if(ai){cx.drawImage(ai,x-4,y-26,20,27);return}
   cx.fillStyle=COLS[c.i];cx.fillRect(x,y-12,8,12);cx.fillStyle='#f4f6fb';cx.beginPath();cx.arc(x+4,y-15,5,0,7);cx.fill();cx.fillStyle='#223';cx.beginPath();cx.arc(x+5,y-15,3,0,7);cx.fill();
  });
  if(night){cx.fillStyle='rgba(2,4,20,.28)';cx.fillRect(0,0,W,H)}
