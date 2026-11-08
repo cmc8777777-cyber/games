@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Космическая станция</title>
+<style>
+:root{--ink:#0e1230;--paper:#e9f1ff;--paper2:#cfe0ff;--sun:#ffb703;--red:#ef476f;--blue:#3a86ff;--green:#2fbf71;--bg:#0b1030}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS","Segoe UI",Roboto,Arial,sans-serif;overscroll-behavior:none}
+body{touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#app{max-width:430px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;padding:5px 7px 6px;gap:5px}
+#hud{display:flex;gap:5px;flex:none}
+.chip{background:var(--paper);border:3px solid var(--ink);border-radius:11px;padding:4px 8px;font-weight:800;font-size:14px;box-shadow:0 3px 0 #000;display:flex;align-items:center;white-space:nowrap;color:var(--ink);font-family:inherit}
+#hDay{flex:1.1}#hMoney{flex:1.5;justify-content:center;color:#1e6b2c;font-size:15px}#hCoin{flex:.8;justify-content:center;color:#6b3fb3;cursor:pointer}
+#btnMenu{font-size:19px;padding:2px 11px;cursor:pointer}
+#mapWrap{flex:none;border:3px solid var(--ink);border-radius:13px;background:#0b1030;overflow:hidden;box-shadow:0 0 0 2px #35408a}
+canvas#map{display:block;width:100%;height:auto}
+#gauges{flex:none;display:flex;gap:4px}
+.g{flex:1;background:var(--paper);border:3px solid var(--ink);border-radius:10px;padding:2px 0;text-align:center;font-weight:800;font-size:12px;line-height:1.15}
+.g i{font-style:normal;display:block;font-size:15px}
+.g.warn{background:#ffe08a}.g.bad{background:#ff9d9d}
+#info{flex:none;background:var(--paper2);border:3px solid var(--ink);border-radius:11px;padding:3px 9px;font-size:12.5px;line-height:1.3;min-height:36px;display:flex;align-items:center}
+#panel{flex:1;min-height:0;display:flex;flex-direction:column;gap:5px}
+#pcontent{flex:1;min-height:0;overflow:auto;background:var(--paper);border:3px solid var(--ink);border-radius:13px;padding:7px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;line-height:1.35}
+#pfoot{flex:none;display:flex;gap:6px}#pfoot .btn{flex:1}#pfoot .btn.go{flex:1.6}
+#tabs{flex:none;display:flex;gap:4px}
+.tab{flex:1;font:inherit;font-weight:800;font-size:11.5px;color:var(--ink);background:var(--paper);border:3px solid var(--ink);border-radius:11px;padding:3px 0;min-height:42px;cursor:pointer;box-shadow:0 2px 0 #000;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.tab b{font-size:16px}
+.tab.on{background:var(--sun);transform:translateY(1px);box-shadow:0 1px 0 #000}
+.btn{font:inherit;font-weight:800;font-size:16px;color:var(--ink);background:var(--sun);border:3px solid var(--ink);border-radius:13px;padding:8px 12px;min-height:44px;box-shadow:0 4px 0 #000;cursor:pointer}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #000}
+.btn.go{background:var(--green);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35);font-size:17px}
+.btn.alt{background:var(--paper2)}.btn.red{background:var(--red);color:#fff}.btn.sm{min-height:34px;padding:3px 10px;font-size:14px;box-shadow:0 3px 0 #000}
+.btn[disabled]{opacity:.45}
+.row{display:flex;gap:6px;align-items:center}.row>.grow{flex:1}
+.head{font-weight:800;font-size:15px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.kv{display:flex;justify-content:space-between;gap:8px;border-bottom:2px dashed #a9bde6;padding:2px 0}.kv b{text-align:right}
+.hint{font-size:12.5px;opacity:.85;line-height:1.35}
+.warn{color:#b8321f;font-weight:800}.good{color:#1e6b2c;font-weight:800}
+.box{background:#fff;border:3px solid var(--ink);border-radius:11px;padding:6px 8px}
+.bar{height:12px;background:#c9d4ee;border:2px solid var(--ink);border-radius:8px;overflow:hidden}.bar>div{height:100%;background:var(--green)}
+.bar.r>div{background:var(--red)}.bar.y>div{background:var(--sun)}
+.cr{display:flex;align-items:center;gap:7px;background:#fff;border:3px solid var(--ink);border-radius:11px;padding:3px 7px}
+.cr .pic{width:34px;height:34px;flex:none;font-size:26px;text-align:center;line-height:34px}.cr img.pic{object-fit:contain}
+.cart{display:flex;align-items:center;gap:6px;background:#fff;border:3px solid var(--ink);border-radius:11px;padding:3px 7px}
+.cart .nm{flex:1;font-size:12.5px;line-height:1.2}.cart .nm b{font-size:13.5px}.cart .nm small{display:block;opacity:.8}
+.step{display:flex;align-items:center;gap:5px}.step b{min-width:34px;text-align:center;font-size:16px}
+.step .btn{min-height:34px;width:36px;padding:0;font-size:18px;box-shadow:0 3px 0 #000}
+.exp{background:#fff;border:3px solid var(--ink);border-radius:11px;padding:5px 8px;display:flex;flex-direction:column;gap:3px}
+.exp.lock{opacity:.5}
+#ov{position:fixed;inset:0;background:rgba(5,8,30,.7);display:flex;align-items:center;justify-content:center;padding:8px;z-index:10;overflow:auto}
+#ov.hidden{display:none}
+#card{background:var(--paper);border:4px solid var(--ink);border-radius:18px;box-shadow:0 6px 0 #000;padding:12px;width:100%;max-width:400px;max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:8px}
+#card h2{margin:0;font-size:21px}#card p{margin:0;line-height:1.4;font-size:14.5px}
+.q{font-size:16px;line-height:1.4;font-weight:700;background:#fff;border:3px solid var(--ink);border-radius:11px;padding:8px}
+.tag{display:inline-block;font-size:11.5px;font-weight:800;background:var(--blue);color:#fff;border:2px solid var(--ink);border-radius:20px;padding:1px 8px}
+.ok{background:#dff3d2;border:3px solid var(--ink);border-radius:11px;padding:8px}.bad{background:#ffdcd3;border:3px solid var(--ink);border-radius:11px;padding:8px}
+.opt{font:inherit;font-weight:700;font-size:15px;text-align:left;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:11px;padding:8px 10px;min-height:44px;cursor:pointer;box-shadow:0 3px 0 #000}
+.opt.right{background:#bfe8a8}.opt.wrong{background:#ffb4a6}
+.pad{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.pad .btn{font-size:20px;padding:4px 0;min-height:44px}
+.calcin{font-size:26px;font-weight:800;text-align:right;background:#fff;border:3px solid var(--ink);border-radius:11px;padding:4px 10px;min-height:44px}
+.stars{font-size:36px;text-align:center;letter-spacing:6px;color:#e5a600;text-shadow:0 2px 0 var(--ink)}
+.cover{width:100%;max-height:44dvh;object-fit:cover;border-radius:12px;border:3px solid var(--ink);display:block}
+.ic{width:22px;height:22px;object-fit:contain;vertical-align:middle}
+#toast{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);background:#000;color:#fff;border-radius:20px;padding:7px 14px;font-weight:700;font-size:13.5px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:20;max-width:92%;text-align:center}
+#toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <div class="chip" id="hDay">День 1/90</div>
+    <div class="chip" id="hMoney">0 ₽</div>
+    <button class="chip" id="hCoin" aria-label="Монеты знаний">◎ 0</button>
+    <button class="chip" id="btnMenu" aria-label="Меню">≡</button>
+  </div>
+  <div id="mapWrap"><canvas id="map" width="750" height="330"></canvas></div>
+  <div id="gauges"></div>
+  <div id="info"></div>
+  <div id="panel">
+    <div id="pcontent"></div>
+    <div id="pfoot"></div>
+    <div id="tabs"></div>
+  </div>
+</div>
+<div id="ov" class="hidden"><div id="card"></div></div>
+<div id="toast"></div>
+<script>
+'use strict';
+/* ================= ДАННЫЕ ================= */
+const DAYS=90,SLOTS=16,DOCKS=[1,31,61];
+const PANEL_KW=4,BATT_KWH=3,RAD_KW=10,NIGHT_H=.75,ORBIT_H=1.5;
+const O2D=.84,WATD=3,FOODD=2,SAL=400,WASTE_D=1,GREEN_KG=3;
+const CAP=1500,LAUNCH=10000,GRANT=40000,CREW_COST=8000,REGEN_COST=15000,REGEN_MASS=100,MAXCREW=6,START_MONEY=150000,HORIZON=30;
+const SAVE_KEY='kosmos-save-v1',BEST_KEY='kosmos-best-v1';
+const STAR_AT=[25,50,85];
+const MOD={
+ core:{n:'Узловой',cost:0,mass:0,pw:1,ic:'🛰️'},
+ hab:{n:'Жилой',cost:18000,mass:150,pw:2,info:'3 спальных места'},
+ lab:{n:'Лаборатория',cost:25000,mass:180,pw:3,info:'1 эксперимент'},
+ green:{n:'Оранжерея',cost:20000,mass:160,pw:2,info:'+3 кг еды в сутки'},
+ lock:{n:'Шлюз',cost:12000,mass:120,pw:1,info:'выход в космос, ремонт снаружи'},
+ panel:{n:'Панель',cost:6000,mass:40,pw:0,info:'4 кВт на свету'},
+ rad:{n:'Радиатор',cost:4000,mass:40,pw:0,info:'отводит 10 кВт тепла'},
+ batt:{n:'Аккумулятор',cost:3000,mass:30,pw:0,info:'хранит 3 кВт·ч'}
+};
+const BUY=['hab','lab','green','lock','panel','rad','batt'];
+const EXTERNAL=['panel','rad'];
+const RES={
+ o2:{n:'Кислород',u:'кг',p:100,m:1,step:10,ic:'🫁'},
+ water:{n:'Вода',u:'л',p:20,m:1,step:50,ic:'💧'},
+ food:{n:'Еда',u:'кг',p:150,m:1,step:20,ic:'🍎'},
+ kit:{n:'Расходники для опытов',u:'кг',p:100,m:1,step:10,ic:'🧪'},
+ spare:{n:'Запчасти',u:'шт',p:800,m:5,step:1,ic:'🔧'},
+ fuel:{n:'Топливо',u:'кг',p:200,m:1,step:10,ic:'⛽'}
+};
+const RKEYS=Object.keys(RES);
+const EXP=[
+ {n:'Кресс-салат в невесомости',d:3,c:1,kit:5,rew:6000,sc:1,need:0},
+ {n:'Снимки Земли',d:2,c:1,kit:2,rew:4000,sc:1,need:0},
+ {n:'Рост кристаллов',d:5,c:1,kit:10,rew:12000,sc:2,need:2},
+ {n:'Мышцы в невесомости',d:6,c:2,kit:15,rew:24000,sc:4,need:5},
+ {n:'Сплавы металлов',d:8,c:2,kit:25,rew:40000,sc:7,need:10},
+ {n:'Полезные бактерии',d:10,c:2,kit:30,rew:56000,sc:10,need:18},
+ {n:'Новые лекарства',d:12,c:3,kit:40,rew:90000,sc:16,need:30},
+ {n:'Квантовые опыты',d:15,c:3,kit:60,rew:160000,sc:30,need:45}
+];
+const NAMES=['Алёна','Максим','Тимур','Света','Игорь','Нина'];
+/* вопросы ЦУПа: [вопрос, верный, неверный×3, разбор] — 3 уровня по стыковкам */
+const QB=[[
+ ['Какая планета ближе всех к Солнцу?','Меркурий','Венера','Земля','Марс','Меркурий — самая близкая к Солнцу и самая быстрая планета.'],
+ ['Как называется естественный спутник Земли?','Луна','Фобос','Титан','Европа','Вокруг Земли обращается одна Луна.'],
+ ['Кто первым полетел в космос?','Юрий Гагарин','Алексей Леонов','Нил Армстронг','Герман Титов','Юрий Гагарин, 12 апреля 1961 года, корабль «Восток».'],
+ ['В каком году Гагарин полетел в космос?','1961','1957','1969','1975','1961 год. А в 1957-м запустили первый спутник.'],
+ ['Как называется наша галактика?','Млечный Путь','Андромеда','Туманность Ориона','Большая Медведица','Солнце — одна из звёзд галактики Млечный Путь.'],
+ ['Сколько планет в Солнечной системе?','8','7','9','10','Восемь: от Меркурия до Нептуна.'],
+ ['Какую планету называют красной?','Марс','Венера','Юпитер','Сатурн','Марс красный из-за ржавчины (оксидов железа) на поверхности.'],
+ ['Что происходит с предметами в невесомости?','Они парят','Падают вниз','Становятся тяжелее','Исчезают','Станция и всё в ней непрерывно падают вокруг Земли, поэтому всё парит.'],
+ ['С какого космодрома стартовал Гагарин?','Байконур','Плесецк','Восточный','Канаверал','Байконур в Казахстане.'],
+ ['Что находится в центре Солнечной системы?','Солнце','Земля','Юпитер','Луна','Солнце — звезда, вокруг неё обращаются все планеты.']
+],[
+ ['Как назывался первый искусственный спутник Земли?','«Спутник-1»','«Луна-1»','«Восток-1»','«Прогресс»','Спутник-1 запустили 4 октября 1957 года.'],
+ ['Кто первая женщина в космосе?','Валентина Терешкова','Светлана Савицкая','Елена Кондакова','Салли Райд','Терешкова полетела в 1963 году.'],
+ ['Кто первым вышел в открытый космос?','Алексей Леонов','Юрий Гагарин','Герман Титов','Эдвин Олдрин','Леонов вышел в космос 18 марта 1965 года.'],
+ ['Какая планета самая большая?','Юпитер','Сатурн','Земля','Нептун','Юпитер больше всех остальных планет вместе взятых.'],
+ ['У какой планеты самые заметные кольца?','Сатурн','Марс','Меркурий','Венера','Кольца Сатурна из льда и камней видны даже в маленький телескоп.'],
+ ['Почему на Земле день сменяется ночью?','Земля вращается вокруг своей оси','Земля обращается вокруг Солнца','Солнце гаснет ночью','Луна закрывает Солнце','Один оборот вокруг оси — сутки (24 часа).'],
+ ['Кто первым ступил на Луну?','Нил Армстронг','Юрий Гагарин','Базз Олдрин','Алан Шепард','Нил Армстронг, 1969 год, «Аполлон-11».'],
+ ['За какое время МКС облетает Землю?','Около 90 минут','Около суток','Около недели','Около 10 минут','Скорость около 8 км/с, один оборот — примерно 1,5 часа.'],
+ ['Что такое комета?','Ледяное тело с хвостом','Маленькая планета','Звезда','Спутник','Вблизи Солнца лёд испаряется и образует хвост.'],
+ ['Сколько длится год на Земле?','Около 365 суток','30 суток','100 суток','24 часа','Земля облетает Солнце примерно за 365 суток.']
+],[
+ ['За сколько света от Солнца идёт до Земли?','Около 8 минут','1 секунду','1 час','1 сутки','Расстояние 150 млн км, скорость света 300 000 км/с: ≈ 500 секунд.'],
+ ['Какая планета самая горячая?','Венера','Меркурий','Марс','Юпитер','На Венере плотная атмосфера, парниковый эффект — около 460 °C.'],
+ ['Что такое созвездие?','Группа звёзд, образующая рисунок','Одна яркая звезда','Скопление планет','Вид метеора','Созвездия — «картинки» из звёзд: Большая Медведица, Орион.'],
+ ['На какую сторону света показывает Полярная звезда?','На север','На юг','На восток','На запад','Она почти неподвижна на небе над Северным полюсом.'],
+ ['Сколько восходов Солнца в сутки видит экипаж МКС?','Около 16','1','2','Около 100','24 ч × 60 = 1440 мин; 1440 ÷ 90 = 16 оборотов.'],
+ ['Зачем космонавтам заниматься спортом?','В невесомости слабеют мышцы и кости','Чтобы согреться','Чтобы не уснуть','Чтобы весить больше','Без нагрузки мышцы и кости теряют силу, поэтому на станции спорт 2 часа в день.'],
+ ['Что такое космический мусор?','Обломки спутников и ракет','Метеориты из пояса астероидов','Лунная пыль','Облака газа','Мелкий обломок летит быстро и опасен для станции.'],
+ ['У какой планеты самая высокая гора-вулкан (Олимп)?','Марс','Венера','Земля','Юпитер','Гора Олимп на Марсе — около 22 км высотой.'],
+ ['Сколько примерно длится лунный месяц (полный цикл фаз)?','Около 29–30 суток','Около 7 суток','Около 365 суток','Около 1 суток','Фазы Луны повторяются примерно каждые 29,5 суток.'],
+ ['Что даёт космонавтам кислород на МКС?','Электролиз воды','Деревья на борту','Воздух из космоса','Лунный грунт','Электричество разделяет воду на кислород и водород.']
+]];
+
+/* ================= УТИЛИТЫ ================= */
+const $=s=>document.querySelector(s);
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const fmt=(n,d=2)=>{const k=Math.pow(10,d);return String(Math.round(n*k)/k).replace('.',',');};
+const fm=n=>Math.round(n).toLocaleString('ru-RU')+' ₽';
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2400);}
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+const PF={rewarded(cb){toast('Ролик (заглушка SDK)…');setTimeout(cb,900);}};
+
+/* картинки (WebP в img/, нарезаны tools/make_art.py). Нет файла — рисуется кодом */
+const IMGN=/*IMGN*/[]/*END*/;
+const IMG={};
+IMGN.forEach(n=>{const i=new Image();i.onload=()=>{IMG[n]=i;if(S)render();};i.src='img/'+n+'.webp';});
+const imgTag=(n,cls,fb)=>!IMGN.includes(n)?(fb||''):`<img class="${cls||'ic'}" src="img/${n}.webp" alt="" onerror="this.outerHTML='${fb||''}'">`;
+
+/* ================= СОСТОЯНИЕ ================= */
+let S=null,tab='st',auto=0,busy=false;
+const mk=t=>({t,b:0});
+const emptyCart=()=>({o2:0,water:0,food:0,kit:0,spare:0,fuel:0,regen:0,crew:0,mods:{hab:0,lab:0,green:0,lock:0,panel:0,rad:0,batt:0}});
+function newState(){
+  return {v:1,day:1,money:START_MONEY,coins:2,health:100,crew:3,
+    mods:['core','hab','lab','panel','panel','panel','batt','batt','rad'].map(mk),
+    st:{o2:25.2,water:90,food:60,kit:20,spare:2,fuel:10,waste:0},
+    regen:false,act:[],done:0,sci:0,capBonus:0,debris:10,walkCd:0,flare:0,
+    cart:emptyCart(),dock:true,quiz:null,event:null,log:[],warned:{},
+    goals:{g1:null,g2:null},stats:{ok:0,bad:0,earned:0},over:null};
+}
+function save(){if(S)lsSet(SAVE_KEY,S);}
+const cnt=t=>S.mods.filter(m=>m.t===t&&!m.b).length;
+const tot=t=>S.mods.filter(m=>m.t===t).length;
+const beds=()=>cnt('hab')*3;
+const freeCrew=()=>S.crew-S.act.reduce((a,x)=>a+x.c,0);
+function power(){
+  const C=S.mods.reduce((a,m)=>a+(m.b?0:MOD[m.t].pw),0);
+  const P=cnt('panel'),B=cnt('batt'),R=cnt('rad');
+  const gen=P*PANEL_KW,genE=gen*NIGHT_H,needE=C*ORBIT_H,batCap=B*BATT_KWH,batNeed=C*NIGHT_H;
+  const g=C?Math.min(1,genE/needE):1,b=C?Math.min(1,batCap/batNeed):1;
+  const radCap=R*RAD_KW;
+  return{C,P,B,R,gen,genE,needE,batCap,batNeed,g,b,sup:Math.min(g,b),over:C>radCap,radCap};
+}
+const needFor=(crew,regen)=>({o2:crew*O2D,water:crew*WATD*(regen?.5:1),food:crew*FOODD,waste:crew*WASTE_D});
+const need=()=>needFor(S.crew,S.regen);
+const greenKg=()=>cnt('green')*GREEN_KG*power().sup;
+function daysLeft(k){const nd=need();let d=nd[k];if(k==='food')d-=greenKg();return d<=1e-9?99:S.st[k]/d;}
+const nextDock=()=>DOCKS.find(d=>d>S.day)||DAYS+1;
+const cycleIdx=()=>Math.max(0,DOCKS.indexOf(S.day));
+const starsOf=sc=>STAR_AT.filter(x=>sc>=x).length;
+function log(t){S.log.unshift('День '+S.day+': '+t);S.log.length=Math.min(S.log.length,40);}
+
+/* ================= ДЕНЬ ================= */
+function breakRandom(filter){
+  const c=S.mods.filter(m=>m.t!=='core'&&!m.b&&(!filter||filter(m)));
+  if(!c.length)return null;const m=pick(c);m.b=1;return m;
+}
+function stepDay(){
+  const news=[],pw=power(),n=S.crew,nd=need(),flare=S.flare>0;
+  if(flare)S.flare=0;
+  S.st.food+=greenKg();
+  const sh=[];
+  for(const k of['o2','water','food']){if(S.st[k]>=nd[k]-1e-9)S.st[k]-=nd[k];else{S.st[k]=0;sh.push(k);}}
+  S.st.waste+=nd.waste;
+  const labs=cnt('lab');
+  S.act.forEach((a,i)=>{if(i<labs&&!flare)a.left-=pw.sup*(pw.over?.5:1)*(S.health<30?.5:1);});
+  const fin=S.act.filter(a=>a.left<=1e-9);S.act=S.act.filter(a=>a.left>1e-9);
+  fin.forEach(a=>{const e=EXP[a.id];S.money+=e.rew;S.sci+=e.sc;S.done++;S.stats.earned+=e.rew;
+    news.push({h:'Опыт завершён',t:`«${e.n}»: +${fm(e.rew)} и ${e.sc} очк. науки.`});log(`опыт «${e.n}» завершён (+${fm(e.rew)})`);});
+  S.money-=n*SAL;
+  S.walkCd=Math.max(0,S.walkCd-1);S.debris=Math.min(60,S.debris+.3);
+  let dh=0;const why=[];
+  if(sh.includes('o2')){dh-=35;why.push('нет кислорода');}
+  if(sh.includes('water')){dh-=20;why.push('нет воды');}
+  if(sh.includes('food')){dh-=10;why.push('нет еды');}
+  if(pw.sup<.5){dh-=10;why.push('мало энергии');}
+  if(S.st.waste>250){dh-=5;why.push('много отходов');}
+  if(n>beds()){dh-=10;why.push('тесно: мест '+beds());}
+  S.health=clamp(S.health+(dh<0?dh:4),0,100);
+  if(dh<0){news.push({h:'Здоровье экипажа падает',t:why.join(', ')+'. Здоровье: '+Math.round(S.health)+' %.',bad:1});log('здоровье −: '+why.join(', '));}
+  // случайные события
+  const r=Math.random(),pB=pw.over?.08:.04,pD=.02+S.debris/1000,pF=.02;
+  if(r<pB){const m=breakRandom();if(m){news.push({h:'Поломка!',t:`Вышел из строя модуль «${MOD[m.t].n}». Ремонт: вкладка «Станция» (нужны запчасть и свободный космонавт${EXTERNAL.includes(m.t)?', а также шлюз':''}).`,bad:1});log('поломка: '+MOD[m.t].n);}}
+  else if(r<pB+pD)S.event={t:'debris'};
+  else if(r<pB+pD+pF){S.flare=1;news.push({h:'Вспышка на Солнце',t:'Экипаж укрылся в защищённом отсеке. Завтра опыты не продвигаются.'});log('вспышка на Солнце');}
+  S.day++;
+  // предупреждения о запасах
+  if(S.day<=DAYS)for(const k of['o2','water','food']){const dl=daysLeft(k);
+    if(dl<=3&&(S.warned[k]===undefined||S.day-S.warned[k]>=4)){S.warned[k]=S.day;news.push({h:'Запас на исходе',t:`${RES[k].n}: хватит ещё на ${fmt(dl,1)} дн. Следующая стыковка — на ${nextDock()}-й день.`,bad:1});}}
+  if(S.health<=0)S.over='health';else if(S.money<-20000)S.over='money';else if(S.day>DAYS)S.over='done';
+  else if(DOCKS.includes(S.day)){S.dock=true;S.money+=GRANT;S.quiz=null;S.capBonus=0;news.push({h:'Стыковка!',t:`Грузовик «Прогресс» у станции. Получено финансирование ${fm(GRANT)}.`});log('стыковка, финансирование '+fm(GRANT));}
+  save();return news;
+}
+function resolveEvent(c){
+  const e=S.event;if(!e)return'';let t='';
+  if(e.t==='debris'){
+    if(c==='move'&&S.st.fuel>=10){S.st.fuel-=10;t='Манёвр выполнен, облако обломков прошло мимо. Топлива −10 кг.';}
+    else{
+      if(Math.random()<.4){const m=breakRandom(x=>EXTERNAL.includes(x.t))||breakRandom();
+        t=m?`Попадание! Сломан модуль «${MOD[m.t].n}».`:'Попаданий нет.';}
+      else t='Повезло: обломки прошли мимо.';
+    }
+    log(t);
+  }
+  S.event=null;save();return t;
+}
+function startExp(id){
+  const e=EXP[id];
+  if(S.sci<e.need)return toast('Опыт откроется при '+e.need+' очк. науки');
+  if(S.act.length>=cnt('lab'))return toast('Нет свободной лаборатории');
+  if(freeCrew()<e.c)return toast('Нужно свободных космонавтов: '+e.c);
+  if(S.st.kit<e.kit)return toast('Мало расходников: нужно '+e.kit+' кг');
+  S.st.kit-=e.kit;S.act.push({id,left:e.d,c:e.c});save();render();
+}
+function repair(i){
+  const m=S.mods[i];if(!m||!m.b)return;
+  if(EXTERNAL.includes(m.t)&&cnt('lock')<1)return toast('Ремонт снаружи: нужен рабочий шлюз');
+  if(S.st.spare<1)return toast('Нет запчастей — ждите груз');
+  if(freeCrew()<1)return toast('Все космонавты заняты опытами');
+  S.st.spare--;m.b=0;log('отремонтирован: '+MOD[m.t].n);toast('Отремонтировано: '+MOD[m.t].n);save();render();
+}
+function doWalk(){
+  if(cnt('lock')<1)return toast('Нужен рабочий шлюз');
+  if(S.walkCd>0)return toast('Следующий выход через '+S.walkCd+' дн.');
+  if(freeCrew()<2)return toast('Нужно 2 свободных космонавта');
+  if(S.st.fuel<5)return toast('Нужно 5 кг топлива');
+  S.st.fuel-=5;S.debris=Math.max(0,S.debris-10);S.money+=4000;S.walkCd=3;log('выход в космос: уборка мусора +4 000 ₽');toast('Орбита очищена: риск −10, +4 000 ₽');save();render();
+}
+
+/* ================= ЦУП, ЗАКАЗ ================= */
+function cartInfo(){
+  const c=S.cart;let mass=0,cost=LAUNCH;
+  RKEYS.forEach(k=>{mass+=c[k]*RES[k].m;cost+=c[k]*RES[k].p;});
+  mass+=c.regen*REGEN_MASS;cost+=c.regen*REGEN_COST;cost+=c.crew*CREW_COST;
+  let add=0;BUY.forEach(t=>{const q=c.mods[t]||0;mass+=q*MOD[t].mass;cost+=q*MOD[t].cost;add+=q;});
+  const cap=CAP+S.capBonus,slots=S.mods.length+add,bedsAfter=beds()+3*(c.mods.hab||0);
+  const errs=[];
+  if(mass>cap)errs.push('Перегруз: '+fmt(mass,0)+' кг из '+cap);
+  if(cost>S.money)errs.push('Не хватает денег: нужно '+fm(cost));
+  if(slots>SLOTS)errs.push('Мест на станции: '+slots+' из '+SLOTS);
+  if(S.crew+c.crew>MAXCREW)errs.push('Максимум космонавтов — '+MAXCREW);
+  else if(S.crew+c.crew>bedsAfter)errs.push('Не хватает спальных мест ('+bedsAfter+')');
+  return{mass,cost,cap,slots,errs,pct:mass/cap*100};
+}
+function cartAdd(k,d){
+  const c=S.cart;
+  if(RES[k]){c[k]=Math.max(0,c[k]+d*RES[k].step);}
+  else if(k==='regen'){c.regen=S.regen?0:clamp(c.regen+d,0,1);}
+  else if(k==='crew'){c.crew=clamp(c.crew+d,0,MAXCREW);}
+  else c.mods[k]=Math.max(0,(c.mods[k]||0)+d);
+  save();render();
+}
+function projDays(k){ // на сколько дней хватит запаса с учётом заказа
+  const c=S.cart,crew=S.crew+c.crew,regen=S.regen||c.regen>0,nd=needFor(crew,regen);
+  let d=nd[k];if(k==='food')d-=(cnt('green')+c.mods.green)*GREEN_KG*power().sup;
+  return d<=1e-9?99:(S.st[k]+c[k])/d;
+}
+function coachCart(){
+  if(S.coins<1)return toast('Нужна монета знаний');
+  S.coins--;const c=S.cart,h=nextDock()-S.day,crew=S.crew+c.crew,nd=needFor(crew,S.regen||c.regen>0);
+  const up=(k,v)=>Math.max(0,Math.ceil((v-S.st[k])/RES[k].step)*RES[k].step);
+  c.o2=up('o2',nd.o2*h);c.water=up('water',nd.water*h);
+  c.food=up('food',Math.max(0,nd.food-(cnt('green')+c.mods.green)*GREEN_KG*power().sup)*h);
+  toast('ЦУП подставил припасы на '+h+' дн.');save();render();
+}
+function deliver(){
+  const ci=cartInfo();if(ci.errs.length)return toast(ci.errs[0]);
+  const c=S.cart;S.money-=ci.cost;
+  RKEYS.forEach(k=>S.st[k]+=c[k]);
+  if(c.regen)S.regen=true;
+  BUY.forEach(t=>{for(let i=0;i<(c.mods[t]||0);i++)S.mods.push(mk(t));});
+  S.crew=Math.min(MAXCREW,S.crew+c.crew);
+  S.st.waste=0;S.capBonus=0;S.cart=emptyCart();S.dock=false;S.quiz=null;
+  log('груз принят на '+fm(ci.cost));save();render();
+  modal(`<h2>Груз принят</h2><p>Масса ${fmt(ci.mass,0)} кг, оплачено ${fm(ci.cost)}. Отходы вывезены. Следующая стыковка — на ${nextDock()}-й день${nextDock()>DAYS?' (её не будет, финал на 90-й день)':''}.</p><button class="btn go" data-a="close">Работаем!</button>`);
+}
+function goalsEval(){
+  const L=[];
+  if(S.day===31&&S.goals.g1===null){const ok=S.done>=3&&S.health>=70;S.goals.g1=ok;if(ok)S.money+=15000;
+    L.push(`Этап 1 (3 опыта, здоровье ≥ 70 %): ${ok?'выполнен, +15 000 ₽':'не выполнен'} (опытов ${S.done}, здоровье ${Math.round(S.health)} %).`);}
+  if(S.day===61&&S.goals.g2===null){const ok=S.sci>=25&&S.crew>=4;S.goals.g2=ok;if(ok)S.money+=25000;
+    L.push(`Этап 2 (25 очков науки, 4 космонавта): ${ok?'выполнен, +25 000 ₽':'не выполнен'} (очков ${S.sci}, космонавтов ${S.crew}).`);}
+  return L;
+}
+function makeCalc(){
+  const c=cycleIdx(),pw=power(),n=S.crew;
+  if(c===0)return{q:`На станции ${n} космонавта(ов). Один человек дышит 0,84 кг кислорода в сутки. Сколько кг кислорода нужно на 30 суток?`,ans:n*O2D*30,
+    sol:`${n} × 0,84 = ${fmt(n*O2D)} кг в сутки; ${fmt(n*O2D)} × 30 = ${fmt(n*O2D*30)} кг.`,u:'кг'};
+  if(c===1){
+    if(Math.random()<.5)return{q:`Станция потребляет ${pw.C} кВт. Ночь длится 45 минут (0,75 ч). Один аккумулятор хранит 3 кВт·ч. Сколько аккумуляторов нужно? (округли вверх)`,ans:Math.ceil(pw.C*NIGHT_H/BATT_KWH-1e-9),
+      sol:`${pw.C} × 0,75 = ${fmt(pw.batNeed)} кВт·ч за ночь; ${fmt(pw.batNeed)} ÷ 3 = ${fmt(pw.batNeed/3)} → округляем вверх: ${Math.ceil(pw.batNeed/3-1e-9)}.`,u:'шт'};
+    return{q:`Станция потребляет ${pw.C} кВт. Панель даёт 4 кВт, но светит только половину оборота. Сколько панелей нужно? (округли вверх)`,ans:Math.ceil(pw.C/2-1e-9),
+      sol:`Каждая панель в среднем даёт 4 ÷ 2 = 2 кВт; ${pw.C} ÷ 2 = ${fmt(pw.C/2)} → вверх: ${Math.ceil(pw.C/2-1e-9)}.`,u:'шт'};
+  }
+  if(Math.random()<.5){const m=pick([300,600,750,900,1050,1200,1350]);
+    return{q:`Грузоподъёмность грузовика ${CAP} кг. Загрузили ${m} кг. Сколько процентов грузоподъёмности занято?`,ans:m/CAP*100,sol:`${m} ÷ ${CAP} = ${fmt(m/CAP,2)}; × 100 = ${fmt(m/CAP*100)} %.`,u:'%'};}
+  return{q:`Станция потребляет ${pw.C} кВт. Один радиатор отводит 10 кВт тепла. Сколько радиаторов нужно? (округли вверх)`,ans:Math.ceil(pw.C/RAD_KW-1e-9),
+    sol:`${pw.C} ÷ 10 = ${fmt(pw.C/10)} → округляем вверх: ${Math.ceil(pw.C/RAD_KW-1e-9)}.`,u:'шт'};
+}
+function dockStart(){
+  const gl=goalsEval();save();
+  if(S.quiz&&S.quiz.done){tab='cargo';render();return;}
+  const c=cycleIdx();
+  modal(`<h2>🚀 Стыковка ${c+1} из 3</h2>
+  <p>${S.day===1?'Начинается миссия! Вы командуете станцией 90 суток. Сначала — контроль ЦУПа, потом соберёте заказ для грузовика.':'Грузовик «Прогресс» у станции. Сначала — контроль ЦУПа.'}</p>
+  ${gl.map(x=>`<div class="box">${x}</div>`).join('')}
+  <p class="hint">3 вопроса по космосу и одна задача. Верные ответы увеличивают грузоподъёмность и дают монеты знаний.</p>
+  <button class="btn go" data-a="quizgo">К контролю ЦУПа</button>`);
+}
+function quizGo(){
+  const bank=QB[cycleIdx()];
+  const idx=shuffle(bank.map((_,i)=>i)).slice(0,3);
+  S.quiz={qs:idx,i:0,right:0,stage:'q',calc:makeCalc(),input:'',ans:null,done:false,opts:null};
+  quizShow();
+}
+function quizShow(){
+  const z=S.quiz;
+  if(z.stage==='q'){
+    const q=QB[cycleIdx()][z.qs[z.i]];
+    if(!z.opts)z.opts=shuffle([q[1],q[2],q[3],q[4]]);
+    const picked=z.ans;
+    modal(`<span class="tag">Вопрос ${z.i+1} из 3 · астрономия</span><div class="q">${q[0]}</div>
+    ${z.opts.map((o,i)=>`<button class="opt ${picked!==null?(o===q[1]?'right':(i===picked?'wrong':'')):''}" data-a="ans" data-i="${i}" ${picked!==null?'disabled':''}>${o}</button>`).join('')}
+    ${picked!==null?`<div class="${z.opts[picked]===q[1]?'ok':'bad'}"><b>${z.opts[picked]===q[1]?'Верно! +50 кг к грузоподъёмности':'Не совсем.'}</b><br>${q[5]}</div><button class="btn go" data-a="qnext">Дальше</button>`:''}`);
+  }else if(z.stage==='c'){
+    const c=z.calc;
+    modal(`<span class="tag">Расчёт ЦУПа</span><div class="q">${c.q}</div>
+    <div class="calcin" id="calcIn">${z.input||'&nbsp;'} <small>${c.u}</small></div>
+    <div class="pad">${['7','8','9','⌫','4','5','6',',','1','2','3','0'].map(k=>`<button class="btn alt" data-a="key" data-k="${k}">${k}</button>`).join('')}</div>
+    <button class="btn go" data-a="calcok">Ответить</button>`);
+  }else{
+    const c=z.calc,okc=z.calcRight;
+    modal(`<span class="tag">Итоги контроля</span>
+    <div class="${okc?'ok':'bad'}"><b>${okc?'Расчёт верный: +5 000 ₽ и ◎ +1':'Расчёт неверный.'}</b><br>${c.sol}</div>
+    <p>Верных ответов по космосу: <b>${z.right} из 3</b>. Грузоподъёмность грузовика: <b>${CAP} + ${z.right*50} = ${CAP+z.right*50} кг</b>.${z.right===3?' Все три верно: ◎ +1.':''}</p>
+    <button class="btn go" data-a="toorder">К заказу груза</button>`);
+  }
+}
+function quizAnswer(i){
+  const z=S.quiz,q=QB[cycleIdx()][z.qs[z.i]];if(z.ans!==null)return;
+  z.ans=i;if(z.opts[i]===q[1]){z.right++;S.stats.ok++;}else S.stats.bad++;
+  save();quizShow();
+}
+function quizNext(){
+  const z=S.quiz;z.ans=null;z.opts=null;z.i++;
+  if(z.i>=3){z.stage='c';}
+  quizShow();
+}
+function calcOk(){
+  const z=S.quiz,v=parseFloat((z.input||'').replace(',','.'));
+  if(isNaN(v))return toast('Введи число');
+  z.calcRight=Math.abs(v-z.calc.ans)<=.06;
+  if(z.calcRight){S.money+=5000;S.coins++;S.stats.ok++;}else S.stats.bad++;
+  S.capBonus=z.right*50;if(z.right===3)S.coins++;
+  z.stage='r';z.done=true;save();renderHud();quizShow();
+}
+
+/* ================= ОКНА ================= */
+function modal(h){$('#card').innerHTML=h;$('#ov').classList.remove('hidden');$('#card').scrollTop=0;}
+function closeModal(){$('#ov').classList.add('hidden');}
+function flow(){
+  if(S.over){final();return;}
+  if(S.event){eventModal();return;}
+  if(S.dock){dockStart();return;}
+  closeModal();render();
+}
+function newsModal(list){
+  modal(list.map(n=>`<div class="${n.bad?'bad':'ok'}"><b>${n.h}</b><br>${n.t}</div>`).join('')+'<button class="btn go" data-a="flow">Дальше</button>');
+}
+function eventModal(){
+  const e=S.event;
+  if(e.t==='debris')modal(`<h2>⚠️ Космический мусор</h2><p>ЦУП сообщает: облако обломков сближается со станцией. Что делаем?</p>
+  <button class="btn go" data-a="ev" data-c="move" ${S.st.fuel<10?'disabled':''}>Манёвр уклонения (топливо −10 кг; есть ${fmt(S.st.fuel,0)})</button>
+  <button class="btn red" data-a="ev" data-c="risk">Рискнуть (40 % — поломка внешнего модуля)</button>`);
+}
+function final(){
+  const sc=S.sci,st=starsOf(sc),best=lsGet(BEST_KEY)||0;if(sc>best)lsSet(BEST_KEY,sc);
+  const why={health:'Миссия прервана: экипаж эвакуирован из-за плохого самочувствия.',money:'Миссия прервана: финансирование прекращено (долг больше 20 000 ₽).',done:'Миссия завершена! 90 суток на орбите.'}[S.over];
+  closeModal();
+  modal(`${IMGN.includes('final_win')?'<img class="cover" src="img/final_win.webp" alt="">':''}<h2>Итог миссии</h2><p>${why}</p>
+  <div class="stars">${'★'.repeat(st)}${'☆'.repeat(3-st)}</div>
+  <div class="box"><div class="kv"><span>Очки науки</span><b>${sc}</b></div><div class="kv"><span>Опытов завершено</span><b>${S.done}</b></div><div class="kv"><span>Деньги</span><b>${fm(S.money)}</b></div><div class="kv"><span>Космонавтов</span><b>${S.crew}</b></div><div class="kv"><span>Верных ответов ЦУПа</span><b>${S.stats.ok}</b></div><div class="kv"><span>Рекорд науки</span><b>${Math.max(sc,best)}</b></div></div>
+  <p class="hint">Звёзды по очкам науки: ★ ${STAR_AT[0]}, ★★ ${STAR_AT[1]}, ★★★ ${STAR_AT[2]}.</p>
+  <button class="btn go" data-a="newgame">Играть снова</button>`);
+  lsSet(SAVE_KEY,null);
+}
+function startCard(){
+  const sv=lsGet(SAVE_KEY);
+  modal(`${IMGN.includes('cover_start')?'<img class="cover" src="img/cover_start.webp" alt="">':'<div style="font-size:64px;text-align:center">🛰️🚀🌍</div>'}
+  <h2 style="text-align:center">Космическая станция</h2>
+  <p>Командуй орбитальной станцией 90 суток: следи за воздухом, водой, едой и энергией, заказывай грузовики, ставь опыты и зарабатывай на науке.</p>
+  ${sv&&sv.day&&!sv.over?`<button class="btn go" data-a="cont">Продолжить (день ${Math.min(sv.day,DAYS)})</button><button class="btn alt" data-a="newgame">Новая миссия</button>`:`<button class="btn go" data-a="newgame">Начать миссию</button>`}
+  <button class="btn alt sm" data-a="rules">Правила</button>`);
+}
+function rulesCard(back){
+  modal(`<h2>Правила</h2>
+  <p><b>Цель:</b> набрать очки науки за 90 суток. Опыты приносят деньги и очки.</p>
+  <p><b>Каждые сутки</b> космонавт расходует 0,84 кг кислорода, 3 л воды и 2 кг еды. Грузовик приходит раз в 30 суток (дни 1, 31, 61) — заказ считай заранее!</p>
+  <p><b>Энергия:</b> панель даёт 4 кВт только на свету (45 мин из 90). Ночью станцию кормят аккумуляторы (3 кВт·ч каждый). Радиатор отводит 10 кВт тепла.</p>
+  <p><b>Ломается — чини:</b> нужны запчасть и свободный космонавт.</p>
+  <button class="btn go" data-a="${back}">Понятно</button>`);
+}
+function menuCard(){
+  modal(`<h2>Меню</h2><button class="btn go" data-a="close">Продолжить</button>
+  <button class="btn alt" data-a="reward">Ролик → ◎ +1 монета знаний</button>
+  <button class="btn alt" data-a="rules2">Правила</button>
+  <button class="btn red" data-a="newgame2">Начать заново</button>`);
+}
+
+/* ================= ОТРИСОВКА ИНТЕРФЕЙСА ================= */
+const TABS=[['st','🛰️','Станция'],['sup','📦','Запасы'],['sci','🔬','Наука'],['cargo','🚚','Груз'],['goal','🏆','Цели']];
+function renderHud(){
+  $('#hDay').textContent='День '+Math.min(S.day,DAYS)+'/'+DAYS;
+  $('#hMoney').textContent=fm(S.money);
+  $('#hMoney').style.color=S.money<0?'#b8321f':'#1e6b2c';
+  $('#hCoin').textContent='◎ '+S.coins;
+  const pw=power(),gs=[];
+  const dg=(k,ic)=>{const d=daysLeft(k);gs.push(`<div class="g ${d<3?'bad':d<7?'warn':''}"><i>${ic}</i>${d>=99?'∞':fmt(d,0)+' дн.'}</div>`);};
+  dg('o2','🫁');dg('water','💧');dg('food','🍎');
+  gs.push(`<div class="g ${pw.sup<.5?'bad':pw.sup<1?'warn':''}"><i>⚡</i>${Math.round(pw.sup*100)} %</div>`);
+  gs.push(`<div class="g ${pw.over?'bad':''}"><i>🌡️</i>${Math.round(pw.C/Math.max(1,pw.radCap)*100)} %</div>`);
+  gs.push(`<div class="g ${S.health<40?'bad':S.health<75?'warn':''}"><i>❤️</i>${Math.round(S.health)} %</div>`);
+  $('#gauges').innerHTML=gs.join('');
+  $('#info').textContent=S.log[0]||'Добро пожаловать на борт!';
+  $('#tabs').innerHTML=TABS.map(t=>`<button class="tab ${tab===t[0]?'on':''}" data-a="tab" data-t="${t[0]}"><b>${t[1]}</b>${t[2]}</button>`).join('');
+}
+function renderFoot(){
+  let h='';
+  if(S.over)h='';
+  else if(S.dock)h=tab==='cargo'&&S.quiz&&S.quiz.done?`<button class="btn go" data-a="deliver">✔ Принять груз</button>`:`<button class="btn go" data-a="godock">${S.quiz&&S.quiz.done?'Заказ груза →':'К контролю ЦУПа'}</button>`;
+  else h=`<button class="btn go" data-a="day">День ▶</button><button class="btn alt" data-a="days5">5 дней ▶▶</button>`;
+  $('#pfoot').innerHTML=h;
+}
+function render(){
+  if(!S)return;
+  renderHud();renderFoot();
+  const f={st:viewStation,sup:viewSupply,sci:viewScience,cargo:viewCargo,goal:viewGoals}[tab];
+  const el=$('#pcontent'),sc=el.scrollTop;el.innerHTML=f();el.scrollTop=sc;
+}
+function viewStation(){
+  const pw=power();let h=`<div class="head"><span>Станция</span><span>мест занято ${S.mods.length} из ${SLOTS}</span></div><div class="box">`;
+  Object.keys(MOD).forEach(t=>{const a=tot(t);if(!a)return;const w=cnt(t);
+    h+=`<div class="kv"><span>${imgTag('mod_'+t,'ic','')}${MOD[t].n} ×${a}${w<a?` <span class="warn">(рабочих ${w})</span>`:''}</span><b>${MOD[t].info||'—'}</b></div>`;});
+  h+='</div>';
+  h+=`<div class="box"><b>⚡ Энергия за оборот (90 мин)</b>
+  <div class="kv"><span>Потребление C</span><b>${pw.C} кВт</b></div>
+  <div class="kv"><span>Выработка: ${pw.P} пан. × 4 кВт × 0,75 ч</span><b class="${pw.g<1?'warn':'good'}">${fmt(pw.genE)} кВт·ч</b></div>
+  <div class="kv"><span>Нужно за оборот: ${pw.C} × 1,5 ч</span><b>${fmt(pw.needE)} кВт·ч</b></div>
+  <div class="kv"><span>Ночью: ${pw.C} × 0,75 ч</span><b>${fmt(pw.batNeed)} кВт·ч</b></div>
+  <div class="kv"><span>Аккумуляторы: ${pw.B} × 3 кВт·ч</span><b class="${pw.b<1?'warn':'good'}">${fmt(pw.batCap)} кВт·ч</b></div>
+  <div class="hint">Обеспечено энергией: <b>${Math.round(pw.sup*100)} %</b>. ${pw.sup<1?'Лаборатория и оранжерея работают медленнее!':'Всё в порядке.'}</div></div>
+  <div class="box"><b>🌡️ Тепло</b><div class="kv"><span>Нагрузка ${pw.C} кВт; радиаторы ${pw.R} × 10</span><b class="${pw.over?'warn':'good'}">${pw.radCap} кВт</b></div>
+  <div class="hint">${pw.over?'Перегрев! Опыты идут вдвое медленнее, поломки чаще.':'Охлаждения достаточно.'}</div></div>`;
+  const br=S.mods.map((m,i)=>[m,i]).filter(x=>x[0].b);
+  if(br.length){h+='<div class="head warn">🔧 Неисправно</div>';
+    br.forEach(([m,i])=>{h+=`<div class="cart"><div class="nm"><b>${MOD[m.t].n}</b><small>запчастей: ${S.st.spare} · свободных космонавтов: ${freeCrew()}${EXTERNAL.includes(m.t)?' · нужен шлюз':''}</small></div><button class="btn sm red" data-a="repair" data-i="${i}">Починить</button></div>`;});}
+  return h;
+}
+function viewSupply(){
+  const nd=need(),g=greenKg();
+  let h=`<div class="head"><span>Запасы</span><span>до стыковки: ${Math.max(0,nextDock()-S.day)} дн.</span></div><div class="box">`;
+  const row=(ic,n,st,u,perDay,dl)=>`<div class="kv"><span>${ic} ${n}: <b>${fmt(st,1)} ${u}</b>${perDay?` <small>(−${fmt(perDay)} в сутки)</small>`:''}</span><b class="${dl!==null&&dl<5?'warn':''}">${dl===null?'':(dl>=99?'∞':fmt(dl,1)+' дн.')}</b></div>`;
+  h+=row('🫁','Кислород',S.st.o2,'кг',nd.o2,daysLeft('o2'));
+  h+=row('💧','Вода',S.st.water,'л',nd.water,daysLeft('water'));
+  h+=row('🍎','Еда',S.st.food,'кг',nd.food-g,daysLeft('food'));
+  h+=row('🧪','Расходники',S.st.kit,'кг',0,null);
+  h+=row('🔧','Запчасти',S.st.spare,'шт',0,null);
+  h+=row('⛽','Топливо',S.st.fuel,'кг',0,null);
+  h+=row('🗑️','Отходы',S.st.waste,'кг',0,null);
+  h+=`</div><div class="hint">${S.crew} × 0,84 = ${fmt(nd.o2)} кг кислорода в сутки. Вода: ${S.crew} × 3${S.regen?' × ½ (регенерация)':''} = ${fmt(nd.water)} л. Еда: ${S.crew} × 2 = ${S.crew*2} кг${g?`, оранжерея даёт ${fmt(g)} кг`:''}.</div>`;
+  h+=`<div class="head"><span>Экипаж</span><span>здоровье ${Math.round(S.health)} %</span></div><div class="bar ${S.health<40?'r':S.health<75?'y':''}"><div style="width:${S.health}%"></div></div>`;
+  for(let i=0;i<S.crew;i++){
+    const busy=S.act.reduce((a,x)=>{const s=a.s+x.c;return{s,id:a.id===null&&i<s?x.id:a.id};}, {s:0,id:null});
+    // назначение: люди по порядку закрывают опыты
+    let acc=0,task='свободен';for(const x of S.act){if(i>=acc&&i<acc+x.c){task='🔬 '+EXP[x.id].n;break;}acc+=x.c;}
+    h+=`<div class="cr">${imgTag('cosmo'+(i%4+1),'pic','<span class="pic">🧑‍🚀</span>')||''}<div class="grow"><b>${NAMES[i]}</b><br><small>${task}</small></div></div>`;
+  }
+  h+=`<div class="hint">Спальных мест: ${beds()}. Зарплата: ${S.crew} × ${SAL} = ${fm(S.crew*SAL)} в сутки.</div>`;
+  return h;
+}
+function viewScience(){
+  const labs=cnt('lab'),fc=freeCrew();
+  let h=`<div class="head"><span>Наука</span><span>очков: <b>${S.sci}</b> · опытов: ${S.done}</span></div>
+  <div class="hint">Лабораторий: ${labs} (занято ${S.act.length}) · свободных космонавтов: ${fc} · расходников: ${fmt(S.st.kit,0)} кг</div>`;
+  S.act.forEach((a,i)=>{const e=EXP[a.id],p=clamp(100-a.left/e.d*100,0,100);
+    h+=`<div class="exp"><b>🔬 ${e.n}</b><div class="bar"><div style="width:${p}%"></div></div><small>осталось ≈ ${fmt(a.left,1)} дн. · ${a.c} чел. ${i>=labs?'<span class="warn">лаборатория неисправна</span>':''}</small></div>`;});
+  h+=`<div class="exp"><b>🧑‍🚀 Выход в космос: убрать мусор</b><small>шлюз, 2 космонавта, топливо 5 кг · +4 000 ₽ · риск столкновения сейчас ${fmt(S.debris/10+2,1)} % в сутки (−10 пунктов за выход)${S.walkCd?` · ещё ${S.walkCd} дн.`:''}</small><button class="btn sm alt" data-a="walk">Выйти</button></div>`;
+  h+='<div class="head">Эксперименты</div>';
+  EXP.forEach((e,i)=>{const lock=S.sci<e.need;
+    h+=`<div class="exp ${lock?'lock':''}"><b>${e.n}</b><small>${e.d} дн. · ${e.c} чел. · расходники ${e.kit} кг · награда ${fm(e.rew)} · ${e.sc} очк.${lock?` · откроется при ${e.need} очк.`:''}</small>${lock?'':`<button class="btn sm go" data-a="exp" data-i="${i}">Запустить</button>`}</div>`;});
+  return h;
+}
+function viewCargo(){
+  const c=S.cart,ci=cartInfo();
+  let h=`<div class="head"><span>🚚 Заказ на грузовик</span><span>${S.dock?'<span class="good">грузовик у станции</span>':'придёт на '+nextDock()+'-й день'}</span></div>
+  <div class="box"><div class="kv"><span>Масса</span><b class="${ci.mass>ci.cap?'warn':''}">${fmt(ci.mass,0)} из ${ci.cap} кг (${fmt(ci.pct,0)} %)</b></div>
+  <div class="bar ${ci.mass>ci.cap?'r':''}"><div style="width:${Math.min(100,ci.pct)}%"></div></div>
+  <div class="kv"><span>Стоимость (запуск ${fm(LAUNCH)})</span><b class="${ci.cost>S.money?'warn':''}">${fm(ci.cost)}</b></div>
+  <div class="kv"><span>Деньги</span><b>${fm(S.money)}</b></div>${ci.errs.map(e=>`<div class="warn">⚠ ${e}</div>`).join('')}</div>
+  <button class="btn alt sm" data-a="coach">◎ Помощь ЦУПа: припасы на ${Math.max(1,nextDock()-S.day)} дн. (−1 ◎)</button>
+  <div class="head">Припасы</div>`;
+  RKEYS.forEach(k=>{const r=RES[k],pd=['o2','water','food'].includes(k)?projDays(k):null;
+    h+=`<div class="cart"><div class="nm"><b>${r.ic} ${r.n}</b><small>${r.p} ₽/${r.u}${r.m!==1?`, ${r.m} кг/${r.u}`:''} · на складе ${fmt(S.st[k],0)}${pd!==null?` · хватит на <b class="${pd<nextDock()-S.day?'warn':'good'}">${pd>=99?'∞':fmt(pd,1)} дн.</b>`:''}</small></div>
+    <div class="step"><button class="btn" data-a="cart" data-k="${k}" data-d="-1">−</button><b>${c[k]}</b><button class="btn" data-a="cart" data-k="${k}" data-d="1">+</button></div></div>`;});
+  h+='<div class="head">Модули и улучшения</div>';
+  BUY.forEach(t=>{const m=MOD[t];
+    h+=`<div class="cart"><div class="nm"><b>${imgTag('mod_'+t,'ic','')}${m.n}</b><small>${fm(m.cost)} · ${m.mass} кг · ${m.pw?m.pw+' кВт · ':''}${m.info}</small></div>
+    <div class="step"><button class="btn" data-a="cart" data-k="${t}" data-d="-1">−</button><b>${c.mods[t]}</b><button class="btn" data-a="cart" data-k="${t}" data-d="1">+</button></div></div>`;});
+  h+=`<div class="cart"><div class="nm"><b>♻️ Регенерация воды</b><small>${fm(REGEN_COST)} · ${REGEN_MASS} кг · возвращает 50 % воды ${S.regen?'· <b class="good">уже стоит</b>':''}</small></div>
+    <div class="step"><button class="btn" data-a="cart" data-k="regen" data-d="-1">−</button><b>${c.regen}</b><button class="btn" data-a="cart" data-k="regen" data-d="1" ${S.regen?'disabled':''}>+</button></div></div>
+  <div class="cart"><div class="nm"><b>🧑‍🚀 Новый космонавт</b><small>${fm(CREW_COST)} · зарплата ${SAL} ₽/сут · сейчас ${S.crew}, мест ${beds()}</small></div>
+    <div class="step"><button class="btn" data-a="cart" data-k="crew" data-d="-1">−</button><b>${c.crew}</b><button class="btn" data-a="cart" data-k="crew" data-d="1">+</button></div></div>`;
+  return h;
+}
+function viewGoals(){
+  const g=S.goals,mark=v=>v===null?'⏳':v?'✅':'❌';
+  let h=`<div class="head"><span>Цели</span><span>очки науки: <b>${S.sci}</b></span></div>
+  <div class="box"><div class="kv"><span>${mark(g.g1)} День 31: 3 опыта, здоровье ≥ 70 %</span><b>+15 000 ₽</b></div><small>Сейчас: опытов ${S.done}, здоровье ${Math.round(S.health)} %</small></div>
+  <div class="box"><div class="kv"><span>${mark(g.g2)} День 61: 25 очков, 4 космонавта</span><b>+25 000 ₽</b></div><small>Сейчас: очков ${S.sci}, космонавтов ${S.crew}</small></div>
+  <div class="box"><div class="kv"><span>🏁 День 90: финал</span><b>★ ${STAR_AT[0]} · ★★ ${STAR_AT[1]} · ★★★ ${STAR_AT[2]}</b></div><small>Рекорд науки: ${lsGet(BEST_KEY)||0}</small></div>
+  <div class="head">Журнал</div><div class="box">${S.log.length?S.log.slice(0,15).map(x=>`<div class="hint">${x}</div>`).join(''):'<div class="hint">Пока пусто</div>'}</div>`;
+  return h;
+}
+
+/* ================= СТАНЦИЯ НА КАНВАСЕ ================= */
+const cv=$('#map'),cx=cv.getContext('2d'),CW=750,CH=330;
+const STARS=Array.from({length:55},(_,i)=>({x:(i*173)%750,y:(i*67)%210,r:1+(i%3)*.8}));
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function drawMod(c,t,x,y,w,h,night,ts){
+  c.lineWidth=4;c.strokeStyle='#0e1230';
+  if(IMG['mod_'+t]){const im=IMG['mod_'+t],k=Math.min(w/im.width,h/im.height);c.drawImage(im,x+(w-im.width*k)/2,y+(h-im.height*k)/2,im.width*k,im.height*k);return;}
+  const cxm=x+w/2,cym=y+h/2;
+  if(t==='panel'){rr(c,x+4,y+6,w-8,h-12,6);c.fillStyle=night?'#2b4a9a':'#3a86ff';c.fill();c.stroke();
+    c.lineWidth=2;c.strokeStyle='#bcd6ff';for(let i=1;i<3;i++){c.beginPath();c.moveTo(x+4+(w-8)*i/3,y+6);c.lineTo(x+4+(w-8)*i/3,y+h-6);c.stroke();}
+    c.beginPath();c.moveTo(x+4,cym);c.lineTo(x+w-4,cym);c.stroke();if(!night){c.fillStyle='rgba(255,230,120,.5)';c.fillRect(x+10,y+10,16,8);}}
+  else if(t==='batt'){rr(c,x+12,y+12,w-24,h-24,10);c.fillStyle='#2fbf71';c.fill();c.stroke();
+    c.fillStyle='#fff';c.beginPath();c.moveTo(cxm+4,y+18);c.lineTo(cxm-10,cym+4);c.lineTo(cxm-1,cym+4);c.lineTo(cxm-5,y+h-18);c.lineTo(cxm+10,cym-4);c.lineTo(cxm+1,cym-4);c.closePath();c.fill();}
+  else if(t==='rad'){rr(c,x+8,y+6,w-16,h-12,6);c.fillStyle='#f4f7ff';c.fill();c.stroke();
+    c.strokeStyle='#ff7a3d';c.lineWidth=4;for(let i=1;i<5;i++){c.beginPath();c.moveTo(x+12,y+6+(h-12)*i/5);c.lineTo(x+w-12,y+6+(h-12)*i/5);c.stroke();}}
+  else if(t==='hab'){rr(c,x+4,y+10,w-8,h-20,18);c.fillStyle='#f2c28a';c.fill();c.stroke();
+    [-1,1].forEach(s=>{c.beginPath();c.arc(cxm+s*14,cym,8,0,7);c.fillStyle='#9fd8ff';c.fill();c.lineWidth=3;c.stroke();});}
+  else if(t==='lab'){rr(c,x+4,y+10,w-8,h-20,18);c.fillStyle='#cfe6ff';c.fill();c.stroke();
+    c.beginPath();c.moveTo(cxm-5,cym-14);c.lineTo(cxm+5,cym-14);c.lineTo(cxm+5,cym-4);c.lineTo(cxm+14,cym+13);c.lineTo(cxm-14,cym+13);c.lineTo(cxm-5,cym-4);c.closePath();c.fillStyle='#b266ff';c.fill();c.lineWidth=3;c.stroke();}
+  else if(t==='green'){rr(c,x+4,y+10,w-8,h-20,18);c.fillStyle='#8be08b';c.fill();c.stroke();
+    c.beginPath();c.ellipse(cxm,cym,10,15,.7,0,7);c.fillStyle='#2e9e4a';c.fill();c.lineWidth=3;c.stroke();}
+  else if(t==='lock'){rr(c,x+6,y+10,w-12,h-20,12);c.fillStyle='#b8c2d6';c.fill();c.stroke();
+    c.beginPath();c.arc(cxm,cym,14,0,7);c.fillStyle='#6b7a99';c.fill();c.lineWidth=3;c.stroke();c.beginPath();c.moveTo(cxm-10,cym);c.lineTo(cxm+10,cym);c.stroke();}
+  else{c.beginPath();c.arc(cxm,cym,Math.min(w,h)/2-8,0,7);c.fillStyle='#dfe6f5';c.fill();c.stroke();c.beginPath();c.ellipse(cxm,cym,Math.min(w,h)/2-4,10,0,0,7);c.lineWidth=3;c.stroke();}
+}
+function draw(ts){
+  if(S){
+    const c=cx,ph=(ts/16000)%1,night=ph>=.5;
+    const g=c.createLinearGradient(0,0,0,CH);g.addColorStop(0,'#050a26');g.addColorStop(1,'#1b2a6e');c.fillStyle=g;c.fillRect(0,0,CW,CH);
+    if(IMG.bg_earth){const im=IMG.bg_earth,k=Math.max(CW/im.width,CH/im.height);c.drawImage(im,(CW-im.width*k)/2,(CH-im.height*k)/2,im.width*k,im.height*k);}
+    else{
+      c.fillStyle='#fff';STARS.forEach(s=>{c.globalAlpha=.5+.5*Math.sin(ts/600+s.x);c.beginPath();c.arc(s.x,s.y,s.r,0,7);c.fill();});c.globalAlpha=1;
+      const eg=c.createRadialGradient(375,430,60,375,430,300);eg.addColorStop(0,'#2a7fe0');eg.addColorStop(.85,'#1a5fc0');eg.addColorStop(1,'#7fc4ff');
+      c.fillStyle=eg;c.beginPath();c.arc(375,430,300,0,7);c.fill();
+      c.fillStyle='#3fae5a';[[260,215,50,16],[420,205,60,14],[560,240,40,12],[150,255,36,12]].forEach(b=>{c.beginPath();c.ellipse(b[0],b[1],b[2],b[3],-.2,0,7);c.fill();});
+    }
+    if(night){c.fillStyle='rgba(0,0,30,.4)';c.fillRect(0,0,CW,CH);}
+    // ферма
+    c.fillStyle='#8895b8';c.fillRect(10,96,CW-20,12);c.strokeStyle='#0e1230';c.lineWidth=3;c.strokeRect(10,96,CW-20,12);
+    const cw=CW/8;
+    for(let i=0;i<SLOTS;i++){
+      const col=i%8,row=Math.floor(i/8),x=col*cw+6,y=row?116:12,w=cw-12,h=78,m=S.mods[i];
+      if(!m){c.setLineDash([6,5]);c.lineWidth=2;c.strokeStyle='rgba(180,200,255,.45)';rr(c,x,y,w,h,10);c.stroke();c.setLineDash([]);continue;}
+      drawMod(c,m.t,x,y,w,h,night,ts);
+      if(m.b){c.fillStyle='rgba(239,71,111,'+(.3+.2*Math.sin(ts/200))+')';rr(c,x,y,w,h,10);c.fill();c.strokeStyle='#fff';c.lineWidth=5;c.beginPath();c.moveTo(x+14,y+14);c.lineTo(x+w-14,y+h-14);c.moveTo(x+w-14,y+14);c.lineTo(x+14,y+h-14);c.stroke();}
+    }
+    if(S.dock){const tx=CW-120+Math.sin(ts/500)*4;c.fillStyle='#fff';rr(c,tx,300,100,22,8);c.fill();c.strokeStyle='#0e1230';c.lineWidth=3;c.stroke();c.fillStyle='#ef476f';c.fillRect(tx+70,303,8,16);}
+    // индикатор орбиты
+    c.font='bold 22px sans-serif';c.fillStyle='#fff';c.textAlign='left';
+    const mins=Math.floor((ph%.5)*90);
+    c.fillText((night?'🌙 Ночь':'☀️ Свет')+' · '+mins+' из 45 мин',10,CH-8);
+    c.textAlign='start';
+  }
+  requestAnimationFrame(draw);
+}
+
+/* ================= УПРАВЛЕНИЕ ================= */
+function runDays(n){
+  if(busy||!S||S.dock||S.over)return;
+  busy=true;auto=n;tick();
+}
+function tick(){
+  if(auto<=0){busy=false;render();return;}
+  const news=stepDay();auto--;renderHud();
+  if(news.length||S.event||S.dock||S.over){auto=0;busy=false;render();if(news.length)newsModal(news);else flow();return;}
+  setTimeout(tick,120);
+}
+const ACT={
+  close(){closeModal();render();},
+  flow(){flow();},
+  tab(d){tab=d.t;render();},
+  day(){runDays(1);},
+  days5(){runDays(5);},
+  exp(d){startExp(+d.i);},
+  walk(){doWalk();},
+  repair(d){repair(+d.i);},
+  cart(d){cartAdd(d.k,+d.d);},
+  coach(){coachCart();},
+  deliver(){deliver();},
+  godock(){if(S.quiz&&S.quiz.done){tab='cargo';render();}else if(S.quiz){quizShow();}else dockStart();},
+  quizgo(){quizGo();},
+  ans(d){quizAnswer(+d.i);},
+  qnext(){quizNext();},
+  key(d){const z=S.quiz;if(d.k==='⌫')z.input=z.input.slice(0,-1);else if(d.k===','){if(!z.input.includes(','))z.input+=z.input?',':'0,';}else if(z.input.length<7)z.input+=d.k;$('#calcIn').innerHTML=(z.input||'&nbsp;')+' <small>'+z.calc.u+'</small>';},
+  calcok(){calcOk();},
+  toorder(){closeModal();tab='cargo';render();},
+  ev(d){const t=resolveEvent(d.c);render();modal(`<h2>Итог</h2><div class="ok">${t}</div><button class="btn go" data-a="flow">Дальше</button>`);},
+  newgame(){S=newState();lsSet(SAVE_KEY,S);tab='st';render();flow();},
+  newgame2(){if(confirm('Начать заново? Прогресс будет потерян.'))ACT.newgame();},
+  cont(){S=lsGet(SAVE_KEY);tab='st';render();flow();},
+  rules(){rulesCard('startback');},
+  rules2(){rulesCard('menu');},
+  startback(){startCard();},
+  menu(){menuCard();},
+  reward(){PF.rewarded(()=>{S.coins++;save();renderHud();toast('◎ +1 монета знаний');});}
+};
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
+  const f=ACT[b.dataset.a];if(f)f(b.dataset);
+});
+$('#btnMenu').onclick=()=>{if(S)menuCard();};
+$('#hCoin').onclick=()=>{if(S)toast('Монеты знаний: подсказка ЦУПа в заказе груза (1 ◎)');};
+
+/* ================= СТАРТ ================= */
+window.__game={get S(){return S;},set S(v){S=v;},newState,stepDay,power,need,cartInfo,cartAdd,startExp,repair,doWalk,deliver,resolveEvent,goalsEval,projDays,daysLeft,freeCrew,mk,cnt,EXP,MOD,RES,EMPTY:emptyCart,starsOf,nextDock,makeCalc,render};
+S=newState();render();requestAnimationFrame(draw);startCard();
+</script>
+</body>
+</html>
