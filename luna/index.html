@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<title>Лунная база</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<style>
+:root{--bg:#070b1a;--panel:#111a38;--panel2:#18234a;--line:#2b3a70;--txt:#eaf0ff;--dim:#9fb0e0;--ok:#5be28a;--bad:#ff6b6b;--warn:#ffc857;--warm:#ffb14a;--blue:#4aa8ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#03050d;color:var(--txt);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;overflow:hidden;touch-action:manipulation}
+#app{position:relative;max-width:480px;height:100dvh;margin:0 auto;background:var(--bg);display:flex;flex-direction:column;
+ padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-right,0)}
+#hud{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--panel);border-bottom:1px solid var(--line);font-size:13px}
+#hud b{font-size:15px}
+#phase{flex:1;text-align:center;line-height:1.15}
+#phase small{display:block;color:var(--dim);font-size:11px}
+#bar{height:5px;background:#0b1128}
+#bar i{display:block;height:100%;width:0;background:var(--warm);transition:width .3s}
+#bar.n i{background:var(--blue)}
+canvas{display:block;width:100%;aspect-ratio:375/200;background:#05070f}
+#main{flex:1;overflow-y:auto;padding:8px 10px;-webkit-overflow-scrolling:touch}
+.chips{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:5px 7px;font-size:12px;line-height:1.2;position:relative;overflow:hidden}
+.chip b{font-size:14px;display:block}
+.chip em{font-style:normal;color:var(--dim);font-size:10.5px}
+.chip.low{border-color:var(--bad)}.chip.low b{color:var(--bad)}
+.chip i{position:absolute;left:0;bottom:0;height:3px;background:var(--blue)}
+.crew{display:grid;gap:6px}
+.card{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 8px}
+.av{width:42px;height:42px;border-radius:50%;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:24px;flex:none;overflow:hidden;border:2px solid var(--c,#4aa8ff)}
+.av img{width:100%;height:100%;object-fit:cover}
+.card .nm{flex:1;min-width:0;font-size:13px}
+.card .nm b{font-size:14px}
+.hp{height:6px;background:#0b1128;border-radius:3px;margin-top:3px;overflow:hidden}
+.hp i{display:block;height:100%;background:var(--ok)}
+select{font:inherit;font-size:13px;background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 4px;max-width:150px;min-height:40px}
+#bottom{display:flex;gap:6px;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0));background:var(--panel);border-top:1px solid var(--line)}
+button{font:inherit;font-weight:600;color:var(--txt);background:var(--panel2);border:1px solid var(--line);border-radius:12px;min-height:46px;padding:0 10px;cursor:pointer}
+button:active{transform:scale(.97)}
+button:disabled{opacity:.4}
+button.go{background:linear-gradient(#ffb14a,#e8832a);border-color:#ffd49a;color:#2a1600}
+#bottom button.go{flex:1.6}
+button.blue{background:linear-gradient(#4aa8ff,#2a74d0);border-color:#9bd0ff;color:#04162e}
+#bottom button{flex:1;font-size:13px}
+button.pulse{animation:pl 1.2s infinite}
+@keyframes pl{50%{box-shadow:0 0 0 5px rgba(255,177,74,.35)}}
+#ov{position:absolute;inset:0;background:rgba(3,5,13,.82);display:none;align-items:flex-end;justify-content:center;z-index:10}
+#ov.on{display:flex}
+#sheet{width:100%;max-height:92%;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:18px 18px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0))}
+#sheet h2{margin:0 0 8px;font-size:18px}
+#sheet p{margin:6px 0;font-size:14px;line-height:1.4}
+#sheet .btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+#sheet .btns button{flex:1;min-width:120px}
+.row{display:flex;align-items:center;gap:6px;margin:6px 0;font-size:13px}
+.row .l{flex:1}
+input[type=text]{width:64px;font:inherit;font-size:16px;padding:8px 6px;border-radius:8px;border:1px solid var(--line);background:#0b1128;color:var(--txt);text-align:center}
+input.ok{border-color:var(--ok);background:#0f2b1b}input.no{border-color:var(--bad)}
+.tag{display:inline-block;padding:1px 7px;border-radius:9px;font-size:11px;background:var(--panel2);color:var(--dim)}
+.tag.ok{color:var(--ok)}.tag.bad{color:var(--bad)}.tag.w{color:var(--warn)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:4px 3px;border-bottom:1px solid var(--line);text-align:left}
+.q{display:grid;gap:6px;margin-top:8px}
+.q button{text-align:left;min-height:44px}
+.q button.right{background:#124a2a;border-color:var(--ok)}.q button.wrong{background:#4a1a1a;border-color:var(--bad)}
+#menu{position:absolute;inset:0;z-index:20;background:radial-gradient(circle at 30% 20%,#14306b 0,#070b1a 60%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center}
+#menu h1{margin:0;font-size:34px;letter-spacing:1px;text-shadow:0 0 18px #4aa8ff}
+#menu p{margin:0;color:var(--dim);font-size:14px;max-width:300px;line-height:1.4}
+#menu button{width:240px}
+#menu .cover{width:150px;height:150px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#d7d9df,#7b7e88 70%);box-shadow:0 0 40px rgba(74,168,255,.5);position:relative;display:flex;align-items:center;justify-content:center;font-size:54px}
+#menu .cover img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.small{font-size:12px;color:var(--dim)}
+.toast{position:absolute;left:10px;right:10px;top:50px;background:#1c2b5c;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;z-index:15;display:none}
+</style></head>
+<body>
+<!-- YANDEX_SDK (сборка для площадки вставит сюда <script src="/sdk.js">) -->
+<div id="app">
+ <div id="hud"><div>🌙 <b id="hcy">1/12</b></div><div id="phase">День<small>сутки 0/14</small></div><div>₵ <b id="hcr">0</b></div></div>
+ <div id="bar"><i></i></div>
+ <canvas id="cv" width="750" height="400"></canvas>
+ <div id="main"><div class="chips" id="chips"></div><div class="crew" id="crew"></div></div>
+ <div id="bottom">
+  <button id="bMod">🏗 Модули</button>
+  <button id="bShop">📦 Закупки</button>
+  <button id="bCalc">📐 Расчёт</button>
+  <button id="bGo" class="go">Дальше ▶</button>
+ </div>
+ <div class="toast" id="toast"></div>
+ <div id="ov"><div id="sheet"></div></div>
+ <div id="menu">
+  <div class="cover" id="coverBox">🌕</div>
+  <h1>Лунная база</h1>
+  <p>14 суток дня, 14 суток ночи, −170°. Посчитай запасы — или база замёрзнет.</p>
+  <button class="go" id="mNew">Новая игра</button>
+  <button id="mCont" style="display:none">Продолжить</button>
+  <button id="mHow">Как играть</button>
+ </div>
+</div>
+<script>
+/* Слой платформы: Яндекс Игры SDK, если есть; иначе заглушки. Ключи сохранения начинаются с lunabaza- */
+window.PF=(function(){
+ var ysdk=null,player=null,ok=false,mem={},timer=0,self={};
+ function ls(k,v){try{if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){}}
+ self.get=function(k){if(k in mem)return mem[k];try{return localStorage.getItem(k)}catch(e){return null}};
+ self.put=function(k,v){mem[k]=String(v);ls(k,String(v));sched()};
+ self.del=function(k){delete mem[k];ls(k,null);sched()};
+ function sched(){if(!player||timer)return;timer=setTimeout(function(){timer=0;try{player.setData({v:1,d:mem})}catch(e){}},2500)}
+ self.init=function(){
+  if(!window.YaGames||!window.YaGames.init)return Promise.resolve();
+  return new Promise(function(res){
+   var t=setTimeout(res,4000);
+   window.YaGames.init().then(function(sdk){ysdk=sdk;ok=true;
+    try{var l=sdk.features&&sdk.features.LoadingAPI;if(l)l.ready()}catch(e){}
+    return sdk.getPlayer({scopes:false}).then(function(p){player=p;return p.getData()}).then(function(d){
+     if(d&&d.d&&!self.get('lunabaza-save'))Object.keys(d.d).forEach(function(k){mem[k]=d.d[k];ls(k,d.d[k])})},function(){});
+   }).then(function(){clearTimeout(t);res()},function(){clearTimeout(t);res()});
+  });
+ };
+ self.hasSdk=function(){return ok};
+ self.interstitial=function(done){
+  if(!ok||!ysdk.adv||!ysdk.adv.showFullscreenAdv){done();return}
+  var f=false;function end(){if(f)return;f=true;done()}
+  try{ysdk.adv.showFullscreenAdv({callbacks:{onClose:end,onError:end,onOffline:end}})}catch(e){end()}
+ };
+ return self;
+})();
+</script>
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id)};
+var RU=function(x){return String(Math.round(x*10)/10).replace('.',',')};
+function rnd(a,b){return a+Math.random()*(b-a)}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function r1(x){return Math.round(x*10)/10}
+
+/* ---------- Данные ---------- */
+var T={
+ hab:{n:'Жилой',ic:'🏠',c:50,d:3,nt:5,col:'#e9e2d2',info:'3 места, +50 каждого запаса'},
+ store:{n:'Склад',ic:'📦',c:30,d:1,nt:1,col:'#b7bcc9',info:'+100 каждого запаса'},
+ power:{n:'Энергоблок',ic:'🔋',c:40,d:0,nt:0,col:'#3a78c8',info:'+40 кВт·ч батарея, +16 кВт·ч в сутки днём'},
+ green:{n:'Теплица',ic:'🌱',c:60,d:4,nt:5,col:'#5cc86a',info:'+3 пайки и +2 кг O₂ в сутки, −2 л воды'},
+ drill:{n:'Буровая',ic:'⛏',c:70,d:1,nt:1,col:'#d9a441',info:'60 кг реголита: 6 кг O₂ или 3 л воды; 6 кВт·ч'},
+ recy:{n:'Рециклер',ic:'♻',c:60,d:2,nt:2,col:'#6fd4d0',info:'возвращает 50 % воды'}
+};
+var TASKS={rest:'😴 Отдых',drillO:'⛏ Бур: кислород',drillW:'⛏ Бур: вода',repair:'🔧 Ремонт',roverA:'🚙 Ближний кратер',roverB:'🚙 Дальний кратер'};
+var CRATER={roverA:{km:80,steps:1,ice:30,name:'Ближний'},roverB:{km:180,steps:2,ice:90,name:'Дальний'}};
+var NAMES=['Аня','Тимур','Мира','Лёва','Яна','Глеб'],COLS=['#ff8fb1','#ffd166','#8be9a8','#a0c4ff','#ffb4e6','#caffbf'];
+var GOALS=[
+ {t:'Первая ночь: доживи до рассвета',chk:function(){return true},b:30},
+ {t:'Построй теплицу',chk:function(){return cnt('green')>0},b:40},
+ {t:'Привези 60+ л льда за цикл',chk:function(){return S.st.ice>=60},b:40},
+ {t:'Экипаж из 4 человек',chk:function(){return S.crew.length>=4},b:40},
+ {t:'Воды после ночи не меньше 50 л',chk:function(){return S.res.water>=50},b:40},
+ {t:'Метеоритный сезон: все модули целы',chk:function(){return !S.mods.some(function(m){return m.dmg})},b:50},
+ {t:'Батареи на 200+ кВт·ч',chk:function(){return capE()>=200},b:50},
+ {t:'Запас: 3+ запчасти',chk:function(){return S.res.parts>=3},b:50},
+ {t:'Вспышка: никто не пострадал',chk:function(){return S.st.flareHurt===0},b:50},
+ {t:'Экипаж 6, среднее здоровье 70+',chk:function(){return S.crew.length>=6&&avgHp()>=70},b:60},
+ {t:'150 л льда за цикл',chk:function(){return S.st.ice>=150},b:60},
+ {t:'Финал: пережить главную ночь',chk:function(){return true},b:100}
+];
+var QS=[
+['Сколько земных суток длится лунный день?',['7','14','28','365'],1,'Лунный день и ночь по 14 земных суток: вместе почти месяц.'],
+['За сколько суток Луна обходит вокруг Земли?',['≈ 1','≈ 7','≈ 27','≈ 365'],2,'Около 27–28 суток — отсюда и «месяц».'],
+['Есть ли на Луне атмосфера?',['Да, как на Земле','Почти нет','Только над морями','Есть, но без кислорода'],1,'Воздуха почти нет, поэтому небо чёрное, нет ветра и звука.'],
+['Во сколько раз притяжение Луны слабее земного?',['в 2 раза','в 6 раз','в 10 раз','в 100 раз'],1,'Примерно в 6 раз: человек весил бы там в 6 раз меньше.'],
+['Кто первым ступил на Луну?',['Юрий Гагарин','Нил Армстронг','Алексей Леонов','Бузз Лайтер'],1,'Нил Армстронг, 1969 год («Аполлон-11»).'],
+['Кто был первым человеком в космосе?',['Нил Армстронг','Герман Титов','Юрий Гагарин','Валентина Терешкова'],2,'Юрий Гагарин, 12 апреля 1961 года.'],
+['Сколько планет в Солнечной системе?',['7','8','9','10'],1,'Восемь: от Меркурия до Нептуна.'],
+['Какая планета самая большая?',['Земля','Сатурн','Юпитер','Нептун'],2,'Юпитер — в нём поместилось бы больше тысячи Земель.'],
+['Какую планету называют красной?',['Венеру','Марс','Юпитер','Меркурий'],1,'Марс: его грунт богат окислами железа — «ржавчиной».'],
+['Что такое реголит?',['Лунная вода','Лунная пыль и обломки','Лунный газ','Кратер'],1,'Реголит — пыль и мелкие камни на поверхности Луны.'],
+['Что такое лунные «моря»?',['Водоёмы','Тёмные равнины из застывшей лавы','Кратеры со льдом','Облака'],1,'Это огромные тёмные равнины, воды в них нет.'],
+['Луна — это…',['звезда','планета','спутник Земли','комета'],2,'Луна — естественный спутник Земли.'],
+['За сколько минут свет Солнца доходит до Земли?',['≈ 8','≈ 80','≈ 1','≈ 800'],0,'Около 8 минут: расстояние ≈ 150 млн км.'],
+['До Луны примерно…',['38 тыс. км','384 тыс. км','3 млн км','150 млн км'],1,'Около 384 000 км.'],
+['Ровер едет 10 км/ч. За сколько часов он проедет 80 км?',['6','8','10','80'],1,'80 : 10 = 8 часов.'],
+['Расход базы 8 кВт·ч в сутки. Сколько за 14 суток?',['22','98','112','120'],2,'8 × 14 = 112 кВт·ч.'],
+['Рециклер возвращает половину воды. Выпили 40 л — сколько вернётся?',['10 л','20 л','30 л','40 л'],1,'Половина от 40 — это 20.'],
+['В одной тонне сколько килограммов?',['10','100','1000','10 000'],2,'1 т = 1000 кг.'],
+['Луна всегда повёрнута к Земле…',['разными сторонами','одной стороной','полюсом','не повёрнута'],1,'Луна всегда показывает Земле одну и ту же сторону.'],
+['Что вызывает приливы и отливы на Земле?',['Ветер','Луна','Марс','Течения'],1,'Притяжение Луны (и немного Солнца).'],
+['Когда бывает лунное затмение?',['Луна уходит в тень Земли','Солнце гаснет','Луна ближе к Солнцу','Земля в тени Луны'],0,'Луна проходит через тень Земли.'],
+['Ночью на Луне температура около…',['+20 °C','0 °C','−170 °C','−20 °C'],2,'Около −170 °C: воздуха нет, тепло уходит.'],
+['Какой газ нужен людям для дыхания?',['Азот','Кислород','Водород','Гелий'],1,'Кислород. На Луне его добывают из лунного грунта.'],
+['Где на Луне находят лёд?',['На солнечных равнинах','В тёмных кратерах у полюсов','Под морями','Нигде'],1,'В вечной тени полярных кратеров.'],
+['Сколько суток длится лунная ночь?',['7','14','28','1'],1,'Около 14 земных суток.'],
+['Новолуние — это когда Луну…',['видно полностью','не видно','видно половину','закрыла Земля'],1,'В новолуние освещена невидимая нам сторона.'],
+['Первый искусственный спутник Земли запустили в…',['1941','1957','1969','1991'],1,'«Спутник-1», 4 октября 1957 года.'],
+['Сколько часов в 2 сутках?',['24','36','48','60'],2,'24 × 2 = 48 часов.'],
+['Солнце — это…',['планета','спутник','звезда','комета'],2,'Солнце — звезда, ближайшая к Земле.'],
+['Если на 3 человек нужно 7,5 л воды в сутки, сколько на 1 человека?',['2 л','2,5 л','3 л','3,5 л'],1,'7,5 : 3 = 2,5 л.'],
+['Какой из этих объектов вращается вокруг Земли?',['МКС','Марс','Юпитер','Солнце'],0,'МКС летит по орбите вокруг Земли.'],
+['Что нужно, чтобы растения в теплице росли?',['Вода, свет, тепло','Только лёд','Только пыль','Ничего'],0,'Вода, свет, тепло и воздух (углекислый газ).'],
+['Сколько суток в 2 неделях?',['10','12','14','16'],2,'2 × 7 = 14 суток — как раз лунный день.']
+];
+
+/* ---------- Состояние ---------- */
+var S=null,busy=false,usedQ=[],art={};
+var ARTNAMES=['bg_moon','earth','rover','mod_hab','mod_store','mod_power','mod_green','mod_drill','mod_recy','astro_0','astro_1','astro_2','astro_3','cover'];
+/* картинки: список готовых файлов лежит в img/index.json (пустой список — всё рисуется кодом, запросов к несуществующим файлам нет) */
+fetch('img/index.json').then(function(r){return r.json()}).then(function(list){
+ list.forEach(function(n){if(ARTNAMES.indexOf(n)<0)return;var im=new Image();im.onload=function(){art[n]=im;if(n==='cover')setCover();if(S)$('crew').dataset.sig=''};im.onerror=function(){};im.src='img/'+n+'.webp'});
+}).catch(function(){});
+function setCover(){var b=$('coverBox');if(art.cover){b.innerHTML='';b.appendChild(art.cover.cloneNode())}}
+
+function newState(){
+ var s={v:1,cycle:1,phase:'day',step:0,day:0,credits:100,energy:40,temp:20,stars:0,flare:0,
+  res:{o2:40,water:50,food:70,parts:2,cells:0},
+  mods:[{t:'hab'},{t:'store'},{t:'power'},{t:'power'},{t:'drill'}],
+  crew:[],trip:null,calc:{},st:{ice:0,flareHurt:0},log:[]};
+ for(var i=0;i<3;i++)s.crew.push(mkCrew(i));
+ s.crew[0].task='drillO';s.crew[1].task='roverA';s.crew[2].task='rest';
+ return s;
+}
+function mkCrew(i){return {i:i,name:NAMES[i],hp:100,task:'rest'}}
+function cnt(t){return S.mods.filter(function(m){return m.t===t}).length}
+function cntOk(t){return S.mods.filter(function(m){return m.t===t&&!m.dmg}).length}
+function capE(){return 40*cntOk('power')}
+function capR(){return 50*cnt('hab')+100*cnt('store')}
+function beds(){return 3*cnt('hab')}
+function useDay(){return S.mods.reduce(function(a,m){return a+T[m.t].d},0)}
+function useNight(){return S.mods.reduce(function(a,m){return a+T[m.t].nt},0)}
+function avgHp(){return S.crew.reduce(function(a,c){return a+c.hp},0)/Math.max(1,S.crew.length)}
+function recyF(){return cntOk('recy')>0?0.5:1}
+function needs(){var n=S.crew.length;return {energy:useNight()*14,water:r1(n*2.5*14*recyF()),o2:n*14,food:n*14}}
+function stocks(){return {energy:Math.min(S.energy,capE()),water:S.res.water,o2:S.res.o2,food:S.res.food}}
+function log(m){S.log.push(m);if(S.log.length>40)S.log.shift();toast(m)}
+function save(){if(!S||(S.phase!=='day'&&S.phase!=='prep'))return;PF.put('lunabaza-save',JSON.stringify(S))}
+
+/* ---------- Симуляция суток ---------- */
+function simDay(isDay){
+ var crew=S.crew,n=crew.length,res=S.res,out={lack:[],powered:true};
+ if(isDay)S.energy=Math.min(capE(),S.energy+16*cntOk('power'));
+ else S.energy=Math.min(S.energy,capE());
+ var ops=drillOps(isDay);
+ var use=(isDay?useDay():useNight())+6*ops.length;
+ if(S.energy>=use)S.energy-=use;
+ else{var need=use-S.energy;S.energy=0;if(res.cells>=need)res.cells-=need;else{res.cells=0;out.powered=false}}
+ S.temp=out.powered?Math.min(20,S.temp+10):Math.max(-40,S.temp-8);
+ var cap=capR();
+ function add(k,v){res[k]=r1(Math.min(cap,Math.max(0,res[k]+v)))}
+ if(out.powered){
+  if(cntOk('green')>0&&res.water>=2){add('food',3);add('o2',2);add('water',-2)}
+  ops.forEach(function(c){if(c.task==='drillO')add('o2',6);else add('water',3)});
+ }
+ var leak=S.mods.some(function(m){return m.t==='hab'&&m.dmg})?3:0;
+ function eat(k,need){if(res[k]>=need){res[k]=r1(res[k]-need);return true}res[k]=0;return false}
+ var okO=eat('o2',n+leak),okW=eat('water',r1(n*2.5*(out.powered?recyF():1))),okF=eat('food',n);
+ if(!okO)out.lack.push('кислород');if(!okW)out.lack.push('вода');if(!okF)out.lack.push('еда');
+ if(S.temp<10)out.lack.push('холод');
+ var dead=[];
+ crew.forEach(function(c){
+  var d=0;if(!okO)d-=30;if(!okW)d-=20;if(!okF)d-=10;if(S.temp<0)d-=20;else if(S.temp<10)d-=8;
+  if(d===0&&S.temp>=15)d=c.task==='rest'?10:5;
+  c.hp=Math.max(0,Math.min(100,c.hp+d));
+  if(c.hp<=0)dead.push(c);
+ });
+ dead.forEach(function(c){S.crew.splice(S.crew.indexOf(c),1);log('☠ '+c.name+' погиб(ла)')});
+ out.dead=dead.length;
+ return out;
+}
+function drillOps(isDay){
+ var k=cntOk('drill'),r=[];
+ S.crew.forEach(function(c){if((c.task==='drillO'||c.task==='drillW')&&r.length<k)r.push(c)});
+ return r;
+}
+function tryRepair(){
+ var m=S.mods.filter(function(x){return x.dmg})[0];
+ if(!m)return false;
+ if(S.res.parts<1||S.energy<5)return false;
+ S.res.parts--;S.energy-=5;m.dmg=false;log('🔧 '+T[m.t].n+' отремонтирован');return true;
+}
+function eventRoll(isDay){
+ if(S.cycle===1)return null;
+ var k=S.cycle,m=S.cycle===12?2:1;
+ var r=Math.random();
+ var pm=(0.03+0.005*k)*m,pb=0.03*m,pf=(k>=2?0.02:0)*m;
+ if(r<pm)return 'meteor';
+ if(r<pm+pb)return 'break';
+ if(r<pm+pb+pf)return 'flare';
+ return null;
+}
+
+/* Прогон N суток с остановкой на событиях */
+function runDays(n,isDay,delay,done){
+ var left=n;
+ (function next(){
+  if(left<=0){done();return}
+  left--;S.day++;
+  var o=simDay(isDay);
+  refresh();
+  if(S.crew.length<2){gameOver();return}
+  var ev=eventRoll(isDay);
+  var cont=function(){setTimeout(next,delay)};
+  var after=function(){if(ev)showEvent(ev,isDay,cont);else cont()};
+  var w=warnNeed(o);
+  if(w)alertShortage(w,after);else after();
+ })();
+}
+
+function doStep(){
+ if(busy||S.phase!=='day')return;
+ busy=true;lockUI(true);S.warned={};
+ /* старт задач */
+ var roverBusy=!!S.trip;
+ S.crew.forEach(function(c){
+  if(c.task==='repair'){tryRepair();c.task='rest'}
+  else if(c.task==='roverA'||c.task==='roverB'){
+   var cr=CRATER[c.task];
+   if(S.trip&&S.trip.who===c.i){}
+   else if(S.trip||S.step+cr.steps>7){c.task='rest';toast('Ровер сейчас не может выехать')}
+   else{
+    var e=cr.km*0.1;
+    if(S.energy>=e+12){S.energy-=e;S.trip={who:c.i,key:c.task,left:cr.steps}}
+    else{c.task='rest';toast('Мало энергии для рейса')}
+   }
+  }
+ });
+ runDays(2,true,260,function(){
+  if(S.trip){S.trip.left--;if(S.trip.left<=0){var cr=CRATER[S.trip.key];var add=Math.min(cr.ice,capR()-S.res.water);if(add<0)add=0;S.res.water=r1(S.res.water+add);S.st.ice+=cr.ice;
+   var who=S.crew.filter(function(c){return c.i===S.trip.who})[0];S.trip=null;log('🚙 Ровер привёз лёд: +'+RU(add)+' л воды')}}
+  S.step++;
+  busy=false;
+  if(S.step>=7){S.phase='prep';save();refresh();nightPrep()}
+  else{save();lockUI(false);refresh()}
+ });
+}
+function lockUI(b){['bMod','bShop','bCalc','bGo'].forEach(function(i){$(i).disabled=b});document.querySelectorAll('select').forEach(function(s){s.disabled=b})}
+
+/* ---------- Ночь, рассвет ---------- */
+function nightPrep(){
+ lockUI(false);
+ var nd=needs(),st=stocks(),rows='';
+ [['energy','⚡ Энергия','кВт·ч'],['water','💧 Вода','л'],['o2','🫁 Кислород','кг'],['food','🍲 Еда','пайков']].forEach(function(r){
+  var solved=S.calc[r[0]];
+  rows+='<div class="row"><span class="l">'+r[1]+'</span>'+(solved?(st[r[0]]>=nd[r[0]]?'<span class="tag ok">хватит ('+RU(st[r[0]])+' из '+RU(nd[r[0]])+')</span>':'<span class="tag bad">не хватает '+RU(nd[r[0]]-st[r[0]])+' '+r[2]+'</span>'):'<span class="tag w">не рассчитано</span>')+'</div>';
+ });
+ var dr=drillOps(false).length;
+ modal('Заход Солнца!','<p>Через мгновение начнётся ночь: <b>14 суток</b>, снаружи −170°, панели не дают энергии. Запасы можно ещё пополнить в «Закупках» и «Модулях», расчёт — в «📐 Расчёт».</p>'+(dr?'<p class="tag w">⚠ Бур работает: ещё +6 кВт·ч в сутки на каждый (за ночь +'+dr*84+'). Можно отправить оператора отдыхать.</p>':'')+rows,
+  [{t:'📐 Расчёт',f:function(){closeModal();calcModal(true)}},{t:'🌙 Начать ночь',c:'go',f:function(){closeModal();startNight()}}]);
+}
+function startNight(){
+ S.phase='night';S.day=0;S.warned={};busy=true;lockUI(true);S.crew.forEach(function(c){if(c.task==='roverA'||c.task==='roverB')c.task='rest'});
+ refresh();
+ runDays(14,false,420,function(){busy=false;dawn()});
+}
+function dawn(){
+ var survived=S.crew.length>=2;
+ if(!survived){gameOver();return}
+ var g=GOALS[S.cycle-1],ok=g.chk();
+ if(ok)S.credits+=g.b;
+ var lowest=S.crew.reduce(function(a,c){return Math.min(a,c.hp)},100);
+ var html='<p>Рассвет! Ночь пережили <b>'+S.crew.length+'</b> из экипажа. Самое низкое здоровье: '+Math.round(lowest)+'.</p>'+
+  '<p>Цель цикла: <b>'+g.t+'</b> — '+(ok?'<span class="tag ok">выполнена +'+g.b+' ₵</span>':'<span class="tag bad">не выполнена</span>')+'</p>';
+ if(S.cycle>=12){S.phase='end';modal('Финал',html,[{t:'Дальше',c:'go',f:function(){closeModal();finale()}}]);return}
+ modal('Рассвет, цикл '+S.cycle,html,[{t:'📡 Связь с Землёй',c:'go',f:function(){closeModal();earthCall(2)}}]);
+}
+function earthCall(n){
+ if(n<=0){nextCycle();return}
+ var free=[];QS.forEach(function(_,i){if(usedQ.indexOf(i)<0)free.push(i)});if(!free.length){usedQ=[];QS.forEach(function(_,i){free.push(i)})}
+ var idx=pick(free);usedQ.push(idx);
+ var q=QS[idx];
+ var h='<p>📡 <b>Центр управления:</b> '+q[0]+'</p><div class="q" id="qa"></div><div id="qres"></div>';
+ modal('Связь с Землёй',h,[]);
+ var box=$('qa');
+ q[1].forEach(function(a,i){
+  var b=document.createElement('button');b.textContent=a;
+  b.onclick=function(){
+   if(box.dataset.done)return;box.dataset.done=1;
+   var right=i===q[2];b.classList.add(right?'right':'wrong');
+   if(!right)box.children[q[2]].classList.add('right');
+   if(right)S.credits+=10;
+   $('qres').innerHTML='<p>'+(right?'<span class="tag ok">Верно! +10 ₵</span> ':'<span class="tag bad">Не совсем.</span> ')+q[3]+'</p><div class="btns"><button class="go" id="qn">Дальше</button></div>';
+   $('qn').onclick=function(){closeModal();earthCall(n-1)};
+   refresh();
+  };
+  box.appendChild(b);
+ });
+}
+function nextCycle(){
+ S.cycle++;S.phase='day';S.step=0;S.day=0;S.calc={};S.st={ice:0,flareHurt:0};
+ var target=3+(S.cycle>=4?1:0)+(S.cycle>=7?1:0)+(S.cycle>=10?1:0),msg='';
+ while(S.crew.length<target){
+  if(beds()>S.crew.length){var i=S.crew.length;var used=S.crew.map(function(c){return c.i});var id=0;while(used.indexOf(id)>=0)id++;S.crew.push(mkCrew(id));msg+='Прилетел(а) '+NAMES[id]+'. '}
+  else{msg+='Земля задержала новичка: нет свободной койки (нужен ещё жилой модуль). ';break}
+ }
+ var grant=S.cycle>=4?60:40;
+ S.credits+=grant;
+ var cap=capR();
+ S.res.food=r1(Math.min(cap,S.res.food+30));S.res.o2=r1(Math.min(cap,S.res.o2+20));S.res.water=r1(Math.min(cap,S.res.water+40));S.res.parts+=2;
+ busy=false;lockUI(false);refresh();save();
+ var g=GOALS[S.cycle-1];
+ modal('Цикл '+S.cycle+' из 12',
+  '<p>'+msg+'</p><p>Контейнер с Земли: 30 пайков, 20 кг O₂, 40 л воды, 2 запчасти, грант '+grant+' ₵ (всё, что влезло в склады).</p><p>🎯 Цель: <b>'+g.t+'</b> (+'+g.b+' ₵)</p>'+(S.cycle===12?'<p>⚠ Главная ночь: события вдвое чаще.</p>':''),
+  [{t:'К работе',c:'go',f:function(){closeModal();PF.interstitial(function(){})}}]);
+}
+function finale(){
+ var alive=S.crew.length,stars=S.stars;
+ var rank=alive>=5&&stars>=30?'Командир базы':alive>=4?'Старший инженер':'Выживший';
+ PF.del('lunabaza-save');
+ modal('🌕 12 циклов позади!','<p>База «Селена» выдержала 12 лунных ночей.</p><p>Живы: <b>'+alive+'</b> из экипажа · Звёзд точности: <b>'+stars+'</b> · ₵: <b>'+S.credits+'</b></p><p>Звание: <b>'+rank+'</b></p>',[{t:'В меню',c:'go',f:function(){closeModal();showMenu()}}]);
+}
+function gameOver(){
+ S.phase='over';busy=false;PF.del('lunabaza-save');
+ modal('Миссия провалена','<p>На базе осталось меньше двух человек. Земля отзывает экспедицию.</p><p class="small">Цикл '+S.cycle+'. Главное — считать ночной запас заранее.</p>',[{t:'В меню',c:'go',f:function(){closeModal();showMenu()}}]);
+}
+
+
+function warnNeed(o){
+ if(!S.warned)S.warned={};
+ var list=[];
+ if(o.lack.indexOf('кислород')>=0&&!S.warned.o2){S.warned.o2=1;list.push('кислород')}
+ if(o.lack.indexOf('вода')>=0&&!S.warned.w){S.warned.w=1;list.push('вода')}
+ if(o.lack.indexOf('еда')>=0&&!S.warned.f){S.warned.f=1;list.push('еда')}
+ if(!o.powered&&!S.warned.e){S.warned.e=1;list.push('энергия (батареи пусты, в базе холодает)')}
+ return list.length?list:null;
+}
+function alertShortage(list,after){
+ modal('⚠ Запас закончился!','<p>Не хватает: <b>'+list.join(', ')+'</b>. Экипаж страдает. Срочно закажи с Земли (дорого, но спасает жизни).</p>',
+  [{t:'📦 Закупки',c:'go',f:function(){shopModal(after)}},{t:'Дальше',f:function(){closeModal();after()}}]);
+}
+
+/* ---------- События ---------- */
+function showEvent(ev,isDay,cont){
+ if(ev==='flare'){
+  var out=S.trip||S.crew.some(function(c){return c.task==='repair'});
+  modal('☀ Солнечная вспышка!','<p>Земля предупреждает: поток частиц. Те, кто снаружи ('+(out?'ровер идёт в рейс':'сейчас никого')+'), получат дозу радиации.</p>',
+   [{t:'🛡 Укрыться (рейс +1 шаг)',f:function(){closeModal();if(S.trip)S.trip.left++;cont()}},
+    {t:'Работать дальше',f:function(){closeModal();if(S.trip){var w=S.crew.filter(function(c){return c.i===S.trip.who})[0];if(w){w.hp=Math.max(1,w.hp-30);S.st.flareHurt++;log('☢ '+w.name+' получил(а) дозу')}}cont()}}]);
+  return;
+ }
+ var cands=ev==='meteor'?S.mods.filter(function(m){return !m.dmg}):S.mods.filter(function(m){return !m.dmg&&(m.t==='drill'||m.t==='green'||m.t==='recy'||m.t==='power')});
+ if(!cands.length){cont();return}
+ var m=pick(cands);m.dmg=true;
+ if(ev==='meteor')S.res.o2=Math.max(0,r1(S.res.o2-5));
+ refresh();
+ var can=S.res.parts>=1&&S.energy>=5;
+ modal(ev==='meteor'?'☄ Метеорит!':'⚠ Поломка',
+  '<p>'+(ev==='meteor'?'Микрометеорит попал в модуль «':'Отказало оборудование: «')+T[m.t].n+'». Он не работает'+(ev==='meteor'?', утечка 5 кг кислорода':'')+'.</p><p class="small">Ремонт: 1 запчасть и 5 кВт·ч. Запчастей: '+S.res.parts+'.</p>',
+  [{t:can?'🔧 Ремонт':'🔧 Нет ресурсов',c:can?'go':'',f:function(){if(!can)return false;tryRepair();closeModal();refresh();cont()}},
+   {t:'Отложить',f:function(){closeModal();cont()}}]);
+}
+
+/* ---------- Окна ---------- */
+function modal(title,body,btns){
+ var sh=$('sheet');sh.innerHTML='<h2>'+title+'</h2>'+body+'<div class="btns" id="mb"></div>';
+ var mb=$('mb');
+ btns.forEach(function(b){var e=document.createElement('button');e.innerHTML=b.t;if(b.c)e.className=b.c;e.onclick=function(){if(b.f()===false)return};mb.appendChild(e)});
+ if(!btns.length)mb.remove();
+ $('ov').classList.add('on');sh.scrollTop=0;
+}
+function closeModal(){$('ov').classList.remove('on')}
+function toast(m){var t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(function(){t.style.display='none'},2200)}
+
+function modsModal(){
+ var h='<table><tr><th>Модуль</th><th>День</th><th>Ночь</th><th></th></tr>';
+ S.mods.forEach(function(m,i){h+='<tr><td>'+T[m.t].ic+' '+T[m.t].n+'</td><td>'+T[m.t].d+'</td><td>'+T[m.t].nt+'</td><td>'+(m.dmg?'<span class="tag bad">сломан</span>':'<span class="tag ok">ок</span>')+'</td></tr>'});
+ h+='</table><p class="small">Расход в кВт·ч в сутки. Батарея: '+capE()+' кВт·ч, мест: '+beds()+', запасы до '+capR()+'.</p><h2 style="margin-top:12px">Построить</h2>';
+ Object.keys(T).forEach(function(k){
+  h+='<div class="row"><span class="l">'+T[k].ic+' <b>'+T[k].n+'</b> <span class="small">'+T[k].info+'</span></span><button data-b="'+k+'" '+(S.credits<T[k].c||S.mods.length>=12?'disabled':'')+'>'+T[k].c+' ₵</button></div>';
+ });
+ modal('Модули базы',h,[{t:'Закрыть',f:function(){closeModal()}}]);
+ document.querySelectorAll('#sheet [data-b]').forEach(function(b){b.onclick=function(){var k=b.dataset.b;if(S.credits<T[k].c)return;S.credits-=T[k].c;S.mods.push({t:k});log('Построен модуль: '+T[k].n);refresh();save();modsModal()}});
+}
+function shopModal(cb){
+ var items=[['⚙ Аварийные ячейки','+10 кВт·ч',10,function(){S.res.cells+=10}],['🫁 Кислород','+10 кг',10,function(){S.res.o2=r1(Math.min(capR(),S.res.o2+10))}],['💧 Вода','+20 л',10,function(){S.res.water=r1(Math.min(capR(),S.res.water+20))}],['🍲 Еда','+10 пайков',10,function(){S.res.food=r1(Math.min(capR(),S.res.food+10))}],['🔧 Запчасть','+1 шт',10,function(){S.res.parts++}]];
+ var h='<p class="small">Дорогая доставка с Земли. Склад вмещает не больше '+capR()+' каждого запаса; аварийные ячейки сгорают, когда батареи пусты.</p>';
+ items.forEach(function(it,i){h+='<div class="row"><span class="l">'+it[0]+' <span class="small">'+it[1]+'</span></span><button data-s="'+i+'" '+(S.credits<it[2]?'disabled':'')+'>'+it[2]+' ₵</button></div>'});
+ modal('Закупки с Земли',h,[{t:cb?'Продолжить':'Закрыть',c:cb?'go':'',f:function(){closeModal();if(cb)cb()}}]);
+ document.querySelectorAll('#sheet [data-s]').forEach(function(b){b.onclick=function(){var it=items[+b.dataset.s];if(S.credits<it[2])return;S.credits-=it[2];it[3]();refresh();save();shopModal(cb)}});
+}
+var CALCROWS=[['energy','⚡ Энергия','кВт·ч','Сложи ночной расход всех модулей и умножи на 14.'],['water','💧 Вода','л','Люди × 2,5 л × 14. Рециклер возвращает половину.'],['o2','🫁 Кислород','кг','Люди × 1 кг × 14.'],['food','🍲 Еда','пайков','Люди × 1 × 14.']];
+function calcModal(fromPrep){
+ var nd=needs(),st=stocks();
+ var nightList=S.mods.map(function(m){return T[m.t].ic+T[m.t].nt}).join(' ');
+ var h='<p class="small">Ночь = 14 суток. В «Модулях» расход за ночь: <b>'+nightList+'</b> кВт·ч в сутки (число рядом со значком). Экипаж: <b>'+S.crew.length+'</b>. Рециклер: '+(recyF()<1?'есть':'нет')+'. Работающий бур добавляет +6 кВт·ч в сутки (в расчёт не входит).</p>';
+ CALCROWS.forEach(function(r){
+  var k=r[0];
+  h+='<div class="row"><span class="l"><b>'+r[1]+'</b><br><span class="small">запас '+RU(st[k])+' '+r[2]+(k==='energy'?' (ёмкость '+capE()+')':'')+'</span></span>'+
+   'нужно <input type="text" inputmode="decimal" id="n_'+k+'"> не хватает <input type="text" inputmode="decimal" id="d_'+k+'"> <button data-c="'+k+'" style="min-height:40px">✔</button></div><div class="small" id="h_'+k+'">'+(S.calc[k]?'<span class="tag ok">посчитано</span>':'')+'</div>';
+ });
+ h+='<p class="small">⭐ Звёзд точности: '+S.stars+'. Верный расчёт: +5 ₵ и звезда (раз за цикл на каждый ресурс).</p>';
+ modal('📐 Расчёт ночи',h,[{t:'Закрыть',f:function(){closeModal();if(fromPrep&&S.phase==='prep')nightPrep()}}]);
+ document.querySelectorAll('#sheet [data-c]').forEach(function(b){b.onclick=function(){
+  var k=b.dataset.c,nn=parseFloat(($('n_'+k).value||'').replace(',','.')),dd=parseFloat(($('d_'+k).value||'').replace(',','.'));
+  var nd2=needs(),st2=stocks(),need=nd2[k],def=Math.max(0,r1(need-st2[k]));
+  var okN=Math.abs(nn-need)<0.05,okD=Math.abs(dd-def)<0.05;
+  $('n_'+k).className=okN?'ok':'no';$('d_'+k).className=okD?'ok':'no';
+  var hint=$('h_'+k);
+  if(okN&&okD){
+   if(!S.calc[k]){S.calc[k]=true;S.stars++;S.credits+=5;refresh();save()}
+   hint.innerHTML='<span class="tag ok">Верно! '+(def>0?'Не хватает '+RU(def)+' '+CALCROWS.filter(function(r){return r[0]===k})[0][2]:'Запаса хватает')+'</span>';
+  }else hint.innerHTML='<span class="tag bad">Пока нет.</span> '+CALCROWS.filter(function(r){return r[0]===k})[0][3]+' «Не хватает» = нужно − запас.';
+ }});
+}
+function howModal(){
+ modal('Как играть','<p>🌞 <b>День</b> — 14 суток, 7 шагов по 2 суток. Назначь задачи экипажу и жми «Дальше».</p><p>🌙 <b>Ночь</b> — 14 суток без солнца: батареи, кислород, вода и еда должны <b>заранее</b> лежать на складе.</p><p>📐 <b>Расчёт</b>: посчитай, сколько нужно на ночь и чего не хватает, — и закрой нехватку (лёд ровером, бур, закупки, новые энергоблоки).</p><p>📡 После рассвета Земля задаёт вопросы — верный ответ даёт ₵.</p><p>Цель: пережить 12 лунных ночей.</p>',[{t:'Понятно',c:'go',f:function(){closeModal()}}]);
+}
+
+/* ---------- Интерфейс ---------- */
+function refresh(){
+ if(!S)return;
+ $('hcy').textContent=S.cycle+'/12';$('hcr').textContent=S.credits;
+ var isN=S.phase==='night';
+ var ph=$('phase');
+ if(isN)ph.innerHTML='🌙 Ночь −170°<small>сутки '+S.day+'/14</small>';
+ else if(S.phase==='prep')ph.innerHTML='🌇 Закат<small>до ночи</small>';
+ else ph.innerHTML='☀ День +120°<small>сутки '+S.step*2+'/14 · шаг '+(S.step+1)+'/7</small>';
+ var pr=isN?S.day/14:(S.phase==='prep'?1:S.step/7);
+ $('bar').className=isN?'n':'';$('bar').firstChild.style.width=(pr*100)+'%';
+ var nd=needs(),st=stocks(),R=S.res;
+ function chip(ic,v,sub,low,pct){return '<div class="chip'+(low?' low':'')+'">'+ic+' <b>'+v+'</b><em>'+sub+'</em>'+(pct!=null?'<i style="width:'+Math.min(100,pct*100)+'%"></i>':'')+'</div>'}
+ $('chips').innerHTML=
+  chip('⚡',RU(S.energy),'из '+capE()+' кВт·ч',S.energy<useNight()*3,capE()?S.energy/capE():0)+
+  chip('🫁',RU(R.o2),'кг · '+S.crew.length+'/сут',R.o2<S.crew.length*3,R.o2/capR())+
+  chip('💧',RU(R.water),'л · '+RU(S.crew.length*2.5*recyF())+'/сут',R.water<S.crew.length*8,R.water/capR())+
+  chip('🍲',RU(R.food),'пайков · '+S.crew.length+'/сут',R.food<S.crew.length*3,R.food/capR())+
+  chip('🔧',R.parts,'запчастей · ячейки '+R.cells,R.parts<1)+
+  chip('🌡',Math.round(S.temp)+'°','в базе',S.temp<10);
+ renderCrew();
+ $('bCalc').classList.toggle('pulse',(S.step>=3||S.phase==='prep')&&S.phase!=='night'&&!(S.calc.energy&&S.calc.water&&S.calc.o2&&S.calc.food));
+ $('bGo').textContent=S.phase==='night'?'🌙 …':'Дальше ▶';
+}
+function renderCrew(){
+ var box=$('crew'),isN=S.phase==='night';
+ if(box.dataset.sig===sig()){ // обновить только полоски здоровья
+  S.crew.forEach(function(c,i){var e=box.children[i];if(e){e.querySelector('.hp i').style.width=c.hp+'%';e.querySelector('.hp').nextSibling&&0}});
+  return;
+ }
+ box.dataset.sig=sig();box.innerHTML='';
+ S.crew.forEach(function(c){
+  var d=document.createElement('div');d.className='card';
+  var a=art['astro_'+(c.i%4)];
+  d.innerHTML='<div class="av" style="--c:'+COLS[c.i]+'">'+(a?'':'🧑‍🚀')+'</div><div class="nm"><b>'+c.name+'</b><div class="hp"><i style="width:'+c.hp+'%"></i></div></div>';
+  if(a)d.firstChild.appendChild(a.cloneNode());
+  var sel=document.createElement('select');
+  Object.keys(TASKS).forEach(function(k){
+   if(isN&&(k==='roverA'||k==='roverB'))return;
+   var o=document.createElement('option');o.value=k;o.textContent=TASKS[k]+(CRATER[k]?' '+CRATER[k].km+' км':'');if(c.task===k)o.selected=true;sel.appendChild(o);
+  });
+  sel.disabled=busy;
+  sel.onchange=function(){c.task=sel.value;save()};
+  d.appendChild(sel);box.appendChild(d);
+ });
+}
+function sig(){return S.crew.map(function(c){return c.i+c.task}).join('|')+S.phase+busy}
+
+/* ---------- Сцена ---------- */
+var cv=$('cv'),cx=cv.getContext('2d'),STARS=[];
+for(var si=0;si<70;si++)STARS.push([Math.random()*375,Math.random()*135,Math.random()*1.4+.3,Math.random()*6]);
+var SLOT=[];for(var sj=0;sj<12;sj++)SLOT.push(sj<6?[10+sj*60,106]:[40+(sj-6)*60,140]);
+function drawScene(t){
+ cx.setTransform(2,0,0,2,0,0);
+ var W=375,H=200,night=S&&(S.phase==='night'||S.phase==='prep');
+ if(art.bg_moon){cx.drawImage(art.bg_moon,0,0,W,H)}
+ else{
+  var g=cx.createLinearGradient(0,0,0,150);g.addColorStop(0,'#03050d');g.addColorStop(1,night?'#0b1230':'#14264f');cx.fillStyle=g;cx.fillRect(0,0,W,H);
+  STARS.forEach(function(s){cx.globalAlpha=.5+.5*Math.sin(t/700+s[3]);cx.fillStyle='#fff';cx.fillRect(s[0],s[1],s[2],s[2])});cx.globalAlpha=1;
+  if(art.earth)cx.drawImage(art.earth,30,18,50,50);
+  else{var e=cx.createRadialGradient(52,38,3,58,44,26);e.addColorStop(0,'#8fd0ff');e.addColorStop(.6,'#2a74d0');e.addColorStop(1,'#0b2a66');cx.fillStyle=e;cx.beginPath();cx.arc(58,44,24,0,7);cx.fill();
+   cx.fillStyle='#4cc26a';cx.beginPath();cx.ellipse(52,40,9,6,.5,0,7);cx.ellipse(66,52,6,8,0,0,7);cx.fill();cx.fillStyle='rgba(255,255,255,.55)';cx.beginPath();cx.ellipse(60,34,10,3,-.3,0,7);cx.fill()}
+  if(!night){var sg=cx.createRadialGradient(325,34,2,325,34,40);sg.addColorStop(0,'#fff6c0');sg.addColorStop(.3,'rgba(255,214,102,.6)');sg.addColorStop(1,'rgba(255,214,102,0)');cx.fillStyle=sg;cx.fillRect(280,0,95,80)}
+  var gr=cx.createLinearGradient(0,105,0,H);gr.addColorStop(0,night?'#4a4d58':'#9a9ca6');gr.addColorStop(1,night?'#2a2c35':'#60636d');
+  cx.fillStyle=gr;cx.beginPath();cx.moveTo(0,112);cx.quadraticCurveTo(190,98,375,112);cx.lineTo(375,H);cx.lineTo(0,H);cx.fill();
+  cx.fillStyle='rgba(0,0,0,.18)';[[40,178,22,6],[300,184,28,7],[200,190,16,4],[120,172,10,3]].forEach(function(c){cx.beginPath();cx.ellipse(c[0],c[1],c[2],c[3],0,0,7);cx.fill()});
+ }
+ if(!S){return}
+ S.mods.forEach(function(m,i){drawMod(m,SLOT[i]||SLOT[11],night,t,i)});
+ /* ровер и люди */
+ var ry=170;
+ if(S.trip){cx.fillStyle='#ffd166';cx.font='11px sans-serif';cx.fillText('🚙 ровер в рейсе…',270,ry)}
+ else if(art.rover)cx.drawImage(art.rover,300,ry-16,40,24);
+ else{cx.fillStyle='#d8dbe2';cx.fillRect(300,ry-8,34,10);cx.fillStyle='#4aa8ff';cx.fillRect(316,ry-14,14,7);cx.fillStyle='#222';cx.beginPath();cx.arc(306,ry+3,4,0,7);cx.arc(328,ry+3,4,0,7);cx.fill()}
+ S.crew.forEach(function(c,i){
+  var x=24+i*30+(night?0:Math.sin(t/500+i)*6),y=176+Math.abs(Math.sin(t/300+i))*(night?0:2);
+  cx.fillStyle=COLS[c.i];cx.fillRect(x,y-12,8,12);cx.fillStyle='#f4f6fb';cx.beginPath();cx.arc(x+4,y-15,5,0,7);cx.fill();cx.fillStyle='#223';cx.beginPath();cx.arc(x+5,y-15,3,0,7);cx.fill();
+ });
+ if(night){cx.fillStyle='rgba(2,4,20,.28)';cx.fillRect(0,0,W,H)}
+ if(S.flare){cx.fillStyle='rgba(255,140,40,'+(.15+.1*Math.sin(t/120))+')';cx.fillRect(0,0,W,H)}
+ if(S.temp<5){cx.fillStyle='rgba(120,190,255,'+Math.min(.35,(5-S.temp)/120)+')';cx.fillRect(0,0,W,H)}
+}
+function drawMod(m,p,night,t,i){
+ var x=p[0],y=p[1],w=48,h=30,d=T[m.t],img=art['mod_'+m.t];
+ if(img){cx.drawImage(img,x,y-18,w+6,h+18)}
+ else{
+  cx.fillStyle='rgba(0,0,0,.25)';cx.beginPath();cx.ellipse(x+w/2,y+h+2,w/2,4,0,0,7);cx.fill();
+  if(m.t==='power'){
+   cx.fillStyle='#555';cx.fillRect(x+22,y+10,4,20);cx.fillStyle=d.col;cx.save();cx.translate(x+24,y+8);cx.rotate(-.35);cx.fillRect(-22,-10,44,14);cx.strokeStyle='#9bd0ff';cx.lineWidth=.7;for(var k=-14;k<=14;k+=7){cx.beginPath();cx.moveTo(k,-10);cx.lineTo(k,4);cx.stroke()}cx.restore();
+   cx.fillStyle='#e8e8ee';cx.fillRect(x+34,y+20,10,10);
+  }else if(m.t==='drill'){
+   cx.fillStyle=d.col;cx.fillRect(x+4,y+14,30,16);cx.fillStyle='#444';cx.fillRect(x+36,y-10+Math.sin(t/200)*2*(opsActive()?1:0),4,36);cx.fillRect(x+30,y-12,16,4);
+  }else{
+   cx.fillStyle=d.col;cx.strokeStyle='#2b3350';cx.lineWidth=1;
+   if(m.t==='hab'||m.t==='green'){cx.beginPath();cx.moveTo(x,y+h);cx.lineTo(x,y+12);cx.quadraticCurveTo(x+w/2,y-14,x+w,y+12);cx.lineTo(x+w,y+h);cx.closePath();cx.fill();cx.stroke()}
+   else{cx.fillRect(x,y+6,w,h-6);cx.strokeRect(x,y+6,w,h-6)}
+   cx.fillStyle=night?'#ffd36b':'#7fb7ff';if(night){cx.shadowColor='#ffb14a';cx.shadowBlur=8}
+   cx.fillRect(x+8,y+16,9,8);cx.fillRect(x+w-17,y+16,9,8);cx.shadowBlur=0;
+  }
+ }
+ cx.font='11px sans-serif';cx.fillStyle='#fff';cx.fillText(d.ic,x+w/2-6,y+h+12);
+ if(m.dmg){cx.strokeStyle='#ff4d4d';cx.lineWidth=2;cx.strokeRect(x-2,y-2,w+4,h+4);cx.fillStyle='rgba(120,120,120,.6)';for(var q=0;q<3;q++){cx.beginPath();cx.arc(x+w/2+Math.sin(t/300+q)*4,y-6-q*7-(t/60)%6,3+q,0,7);cx.fill()}}
+}
+function opsActive(){return S&&S.crew.some(function(c){return c.task==='drillO'||c.task==='drillW'})}
+function loop(t){if(!document.hidden)drawScene(t);requestAnimationFrame(loop)}
+
+/* ---------- Запуск ---------- */
+function showMenu(){S=null;busy=false;$('menu').style.display='flex';try{$('mCont').style.display=PF.get('lunabaza-save')?'':'none'}catch(e){}}
+function startGame(){
+ $('menu').style.display='none';busy=false;closeModal();
+ $('crew').dataset.sig='';refresh();lockUI(false);
+ modal('Цель — 12 ночей','<p>Ты командуешь базой «Селена». <b>Первая ночь</b> уже через 14 суток. Назначь экипаж: бур даёт кислород, ровер возит лёд (воду), а в «Модулях» построй всё, что нужно для выживания. Не забудь про <b>📐 Расчёт</b>!</p>',[{t:'Поехали',c:'go',f:function(){closeModal()}}]);
+}
+$('mNew').onclick=function(){S=newState();usedQ=[];S.credits+=0;startGame()};
+$('mCont').onclick=function(){try{S=JSON.parse(PF.get('lunabaza-save'));S.trip=S.trip||null;startGame();if(S.phase==='prep'){nightPrep()}}catch(e){S=newState();startGame()}};
+$('mHow').onclick=howModal;
+$('bMod').onclick=function(){if(S&&!busy)modsModal()};
+$('bShop').onclick=function(){if(S&&!busy)shopModal()};
+$('bCalc').onclick=function(){if(S&&!busy)calcModal(false)};
+$('bGo').onclick=doStep;
+window.__game={get S(){return S},doStep:doStep,simDay:simDay,needs:needs,stocks:stocks,T:T,QS:QS,newState:function(){S=newState();return S},refresh:refresh,startGame:startGame};
+PF.init().then(function(){showMenu();requestAnimationFrame(loop)});
+})();
+</script>
+</body></html>
