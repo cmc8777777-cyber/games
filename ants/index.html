@@ -88,10 +88,33 @@ var QUIZ=[
 ];
 /* ---------- картинки-слоты (запасной вариант — код) ---------- */
 var IMG={},USE_ART=true;/* false — всё рисуется кодом; картинки: game/img/*.webp (tools/make_art.py) */
-function art(n){if(!USE_ART)return null;var o=IMG[n];if(!o){o=IMG[n]={i:new Image(),ok:false};o.i.onload=function(){o.ok=true};o.i.onerror=function(){o.ok=false};o.i.src='img/'+n+'.webp';}return o.ok?o.i:null}
-/* ---------- Yandex SDK: слой с заглушкой ---------- */
-var YA={sdk:null,init:function(){if(!window.YaGames||!window.YaGames.init)return;try{window.YaGames.init().then(function(s){YA.sdk=s;if(s.features&&s.features.LoadingAPI)s.features.LoadingAPI.ready()}).catch(function(){})}catch(e){}},
- rewarded:function(cb){if(YA.sdk&&YA.sdk.adv){try{YA.sdk.adv.showRewardedVideo({callbacks:{onRewarded:function(){cb(true)},onError:function(){cb(false)},onClose:function(){}}});return}catch(e){}}cb(true)}};
+function imgSrc(n){return IMGDATA?IMGDATA[n]:'img/'+n+'.webp'}
+function art(n){if(!USE_ART)return null;var o=IMG[n];if(!o){o=IMG[n]={i:new Image(),ok:false};o.i.onload=function(){o.ok=true};o.i.onerror=function(){o.ok=false};o.i.src=imgSrc(n);}return o.ok?o.i:null}
+/* ---------- Слой платформы: Яндекс Игры SDK (без SDK — заглушки) ---------- */
+var YANDEX=false,IMGDATA=null;/*BUILD-FLAGS: сборка подставляет значения*/
+var PF=(function(){var y=null,ok=false,ready=false,wantReady=false,adBusy=false,hid=false,apiP=false,gp=false,wantGp=false,lastAd=0,born=Date.now(),AD1=120000,GAP=180000,self={onPause:function(){}};
+ function paused(){return adBusy||hid||apiP}
+ function applyGp(){if(!ok||!ready)return;var sh=wantGp&&!paused();if(sh===gp)return;gp=sh;try{var g=y.features&&y.features.GameplayAPI;if(g){if(sh)g.start();else g.stop()}}catch(e){}}
+ function ch(){applyGp();try{self.onPause(paused())}catch(e){}}
+ function tryReady(){if(ready||!wantReady||!ok)return;ready=true;try{var l=y.features&&y.features.LoadingAPI;if(l)l.ready()}catch(e){}applyGp()}
+ self.paused=paused;self.hasSdk=function(){return ok};
+ self.setPlaying=function(on){wantGp=!!on;applyGp()};
+ self.ready=function(){wantReady=true;tryReady()};
+ self.init=function(){try{document.addEventListener('visibilitychange',function(){hid=!!document.hidden;ch()})}catch(e){}
+  if(!window.YaGames||!window.YaGames.init)return Promise.resolve();
+  return new Promise(function(res){var tm=setTimeout(res,4000);
+   try{window.YaGames.init().then(function(sdk){y=sdk;ok=true;try{sdk.on('game_api_pause',function(){apiP=true;ch()});sdk.on('game_api_resume',function(){apiP=false;ch()})}catch(e){}tryReady();clearTimeout(tm);res()},function(){clearTimeout(tm);res()})}catch(e){clearTimeout(tm);res()}})};
+ function adEnd(){adBusy=false;ch()}
+ /* полноэкранная реклама: первая не раньше 2 мин после загрузки, дальше не чаще раза в 3 мин; done — ровно один раз */
+ self.interstitial=function(done){var now=Date.now(),at=lastAd?lastAd+GAP:born+AD1;if(adBusy)return;if(!ok||!y.adv||!y.adv.showFullscreenAdv||now<at){done();return}
+  var fin=false;function end(sh){if(fin)return;fin=true;if(sh)lastAd=Date.now();adEnd();done()}
+  adBusy=true;ch();try{y.adv.showFullscreenAdv({callbacks:{onClose:function(w){end(w)},onError:function(){end(false)},onOffline:function(){end(false)}}})}catch(e){end(false)}};
+ self.canReward=function(){return ok?!!(!adBusy&&y.adv&&y.adv.showRewardedVideo):!YANDEX};
+ /* ролик за награду: done(true) только если награда засчитана; вне Яндекса (сайт, артефакт) — заглушка с мгновенной наградой */
+ self.rewarded=function(done){if(!ok){done(!YANDEX);return}if(!self.canReward()){done(false);return}
+  var fin=false,got=false;function end(){if(fin)return;fin=true;if(got)lastAd=Date.now();adEnd();done(got)}
+  adBusy=true;ch();try{y.adv.showRewardedVideo({callbacks:{onRewarded:function(){got=true},onClose:end,onError:end}})}catch(e){end()}};
+ return self})();
 /* ---------- состояние ---------- */
 var s,tab='tasks',Q=[],busy=false,over=false,rnd=Math.random;
 function fresh(){return{day:1,food:150,ants:{work:18,sold:5,nurse:7},brood:[0,0,0,0],
@@ -116,10 +139,10 @@ function nextCm(){return s.project?s.project.left:0}
 function toast(t){s.log.unshift(t);if(s.log.length>12)s.log.pop()}
 /* ---------- модальные окна и очередь ---------- */
 function enq(f){Q.push(f);if(!busy)pump()}
-function pump(){if(over)return;if(!Q.length){busy=false;$('modal').style.display='none';render();return}busy=true;var f=Q.shift();f(pump)}
+function pump(){if(over)return;if(!Q.length){busy=false;$('modal').style.display='none';PF.setPlaying(true);render();return}busy=true;PF.setPlaying(false);var f=Q.shift();f(pump)}
 function show(html,btns,done){$('mcard').innerHTML=html+'<div id="mb"></div>';$('modal').style.display='flex';var c=$('mb');
  btns.forEach(function(b){var e=document.createElement('button');e.className='btn opt'+(b.alt?' alt':'');e.textContent=b.t;if(b.off)e.disabled=true;e.onclick=function(){if(b.f)b.f();done()};c.appendChild(e)})}
-function pimg(n){return USE_ART?'<img src="img/'+n+'.webp" alt="" style="display:block;margin:0 auto 6px;height:96px" onerror="this.style.display=\'none\'">':''}
+function pimg(n){return USE_ART?'<img src="'+imgSrc(n)+'" alt="" style="display:block;margin:0 auto 6px;height:96px" onerror="this.style.display=\'none\'">':''}
 function info(h,t,done,label){show('<h2>'+h+'</h2><p>'+t+'</p>',[{t:label||'Дальше'}],done)}
 function quiz(i,onres){return function(done){var q=QUIZ[i],idx=[0,1,2,3].sort(function(){return rnd()-.5});
  $('mcard').innerHTML='<h2>🔬 Урок природоведа</h2><p><b>'+q[0]+'</b></p><div id="mb"></div>';$('modal').style.display='flex';var c=$('mb'),answered=false;
@@ -140,7 +163,7 @@ function mathQ(){var t=Math.floor(rnd()*5),W=s.ants.work,A=adults(),q,ans,sol;
    var p=document.createElement('p');p.innerHTML=(ok?'<span class="good">Верно! +30 крошек.</span>':'<span class="bad">Ответ: '+ans+'.</span>')+'<br>'+sol;$('mb').appendChild(p);
    var n=document.createElement('button');n.className='btn opt alt';n.textContent='Дальше';n.onclick=done;$('mb').appendChild(n)};$('mb').appendChild(b)}}
 /* ---------- ход ---------- */
-function nextDay(){if(busy||over)return;var d=s.day,se=sOf(d),yr=yOf(d),mods={forage:1,hide:false};
+function nextDay(){if(busy||over||PF.paused())return;var d=s.day,se=sOf(d),yr=yOf(d),mods={forage:1,hide:false};
  if(d%10==1)enq(mathQ());
  if(se<3&&rnd()<.12){mods.forage=.3;toast('🌧 Дождь: добыча ×0,3')}
  if(se==1&&rnd()<.08)enq(function(done){show(pimg('en_lens')+'<h2>🔍 Дети с лупой!</h2><p>На поверхности дети разглядывают насекомых. Что делать?</p>',[{t:'Затаиться (день без добычи)',f:function(){mods.hide=true}},{t:'Рискнуть (−4 добытчика, добыча как обычно)',f:function(){s.ants.work=Math.max(0,s.ants.work-4);toast('Дети поймали 4 добытчиков')}}],done)});
@@ -185,6 +208,7 @@ function simDay(mods){var d=s.day,se=sOf(d),yr=yOf(d),r={d:d,lines:[]},c=split()
   enq(quiz(Math.floor(rnd()*QUIZ.length),function(o){if(o){c2++;s.food+=20}}));
   enq(quiz(Math.floor(rnd()*QUIZ.length),function(o){if(o){c2++;s.food+=20}}));
   enq(function(done){s.knowl=c2==2?1.1:1;info('Итог урока','Верных ответов: '+c2+' из 2 (+20 крошек за каждый).'+(c2==2?' Знание — сила: в следующем сезоне добыча +10 %.':''),done)});
+  if(nd2<=120)enq(function(done){PF.interstitial(done)});
   if(sn==3){s.winters++;enq(function(done){info('❄️ Зима позади','Колония пережила зиму! Запасов осталось: '+Math.floor(s.food)+' крошек. Зим пережито: '+s.winters+'.',done)})}
   if((nd2-1)%40==0){var yy=(nd2-1)/40,tg=GOALS[yy-1];enq(function(done){var ok=adults()>=tg;if(ok)s.food+=100;info('🎯 Итоги года '+yy,'Цель: '+tg+' муравьёв. У тебя '+adults()+(ok?' — цель выполнена, +100 крошек!':' — цель не выполнена. Играем дальше!'),done)})}}
  if(nd2>120){enq(function(done){endGame(true);done()})}
@@ -215,14 +239,14 @@ function panelInfo(){var se=sOf(s.day),A=adults(),wNeed=Math.ceil((A*0.5+1)*10),
  h+='<div class="card"><b>🍞 Запасы</b>: '+Math.floor(s.food)+' / '+capStore()+'<div class="bar"><i style="width:'+Math.min(100,100*s.food/capStore())+'%"></i></div><span class="small">На зиму нужно ≈ (взрослые × 0,5 + королева 1) × 10 = <b>'+wNeed+'</b>'+(s.food>=wNeed?' <span class="good">— хватает</span>':' <span class="bad">— не хватает '+Math.ceil(wNeed-s.food)+'</span>')+'; вместимость склада '+capStore()+'</span></div>';
  var g=GOALS[Math.min(2,yOf(s.day)-1)];h+='<div class="card"><b>🎯 Цель года '+yOf(s.day)+'</b>: '+g+' муравьёв (сейчас '+A+')<div class="bar"><i style="width:'+Math.min(100,100*A/g)+'%"></i></div></div>';
  if(s.last){var r=s.last;h+='<div class="card"><b>Вчера (день '+r.d+')</b><br>Добыто '+r.forage+(r.milk?' + тля '+r.milk:'')+' · съедено '+r.need+(r.eggs?' · яиц '+r.eggs:'')+(r.hatched?' · вылупилось '+r.hatched:'')+(r.dug?' · прокопано '+r.dug+' см':'')+(r.lines.length?'<br><span class="small">'+r.lines.join('<br>')+'</span>':'')+'</div>'}
- h+='<button class="btn" id="adbtn"'+(s.ads>=2?' disabled':'')+'>🎬 Ролик: +50 крошек (осталось '+(2-s.ads)+')</button>';return h}
+ h+='<button class="btn" id="adbtn"'+(s.ads>=3||!PF.canReward()?' disabled':'')+'>🎬 Ролик: +100 крошек на зиму (осталось '+(3-s.ads)+')</button>';return h}
 function render(){var se=sOf(s.day),yr=Math.min(3,yOf(s.day));
  $('top').innerHTML='<span>'+SICO[se]+' '+SEAS[se]+' · г.'+yr+' · д.'+((s.day-1)%10+1)+'/10</span><span>🍞 '+Math.floor(s.food)+'/'+capStore()+'</span><span>🐜 '+adults()+'</span>';
  $('banner').innerHTML=s.forecast?'🔭 Разведка: завтра <b>'+s.forecast.e+' '+s.forecast.n+'</b>, сила '+s.forecast.p+'. Нужно солдат ≥ '+Math.ceil(s.forecast.p/sp())+' (у тебя '+s.ants.sold+', сила '+sp()+' каждый)':(se==3?'❄️ Зима: добычи нет, колония ест запас':'Тихо. Разведчики врагов не видят.');
  var p=$('panel'),top=p.scrollTop;p.innerHTML=tab=='tasks'?panelTasks():tab=='build'?panelBuild():panelInfo();p.scrollTop=top;
  [].forEach.call(document.querySelectorAll('#tabs button'),function(b){b.className=b.dataset.t==tab?'on':''})}
 $('panel').addEventListener('click',function(e){var t=e.target;if(t.dataset.g)bump(t.dataset.g,t.dataset.k,+t.dataset.d);else if(t.dataset.b)startBuild(t.dataset.b);
- else if(t.id=='adbtn'&&s.ads<2)YA.rewarded(function(ok){if(ok){s.ads++;s.food=Math.min(capStore(),s.food+50);save();render()}})});
+ else if(t.id=='adbtn'&&s.ads<3&&!PF.paused())PF.rewarded(function(ok){if(ok){s.ads++;s.food=Math.min(capStore(),s.food+100);toast('Ролик: +100 крошек на зиму');save();render()}})});
 $('tabs').addEventListener('click',function(e){if(e.target.dataset.t){tab=e.target.dataset.t;render()}});
 $('next').onclick=nextDay;
 /* ---------- рисунок разреза ---------- */
@@ -263,15 +287,16 @@ function rr(x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r)
 /* ---------- старт ---------- */
 function newGame(){s=fresh();over=false;busy=false;Q=[];tab='tasks';save();$('modal').style.display='none';render();
  enq(function(done){info('🐜 Муравейник','Ты — королева-основательница. Три года (120 дней) веди колонию: добывай еду, копай камеры, расти солдат и нянек, отбивайся от врагов и переживи три зимы. Между сезонами — урок природоведа и расчёт.',done,'Начать')})}
-function start(){YA.init();var o=load();var img=art('cover');
+function start(){var o=load();var img=art('cover');
  $('mcard').innerHTML='<img id="cover" alt=""><h2>🐜 Муравейник</h2><p>Стратегия про муравьиную колонию: еда, камеры, враги и три зимы.</p><div id="mb"></div>';$('modal').style.display='flex';busy=true;
- var im=$('cover');im.onload=function(){im.style.display='block'};if(USE_ART)im.src='img/cover.webp';
+ var im=$('cover');im.onload=function(){im.style.display='block'};if(USE_ART)im.src=imgSrc('cover');
  var mb=$('mb');function add(t,f,alt){var b=document.createElement('button');b.className='btn opt'+(alt?' alt':'');b.textContent=t;b.onclick=f;mb.appendChild(b)}
  if(o)add('Продолжить (день '+o.day+')',function(){s=o;busy=false;$('modal').style.display='none';render()});
  add('Новая игра',function(){busy=false;newGame()},!!o);
- s=o||fresh();render();frame()}
+ s=o||fresh();render();frame();PF.ready()}
 window.__game={get s(){return s},nextDay:nextDay,newGame:newGame,render:render,setRnd:function(f){rnd=f},sim:function(){return{adults:adults(),food:s.food,day:s.day}}};
-start();
+PF.onPause=function(p){var n=$('next');if(n)n.style.opacity=p?.5:1};
+PF.init().then(start,start);
 })();
 </script>
 </body>

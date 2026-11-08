@@ -547,7 +547,7 @@ var B = null, battleSeq = 0;
 function heroPerks() {
   var h = SAVE.hero; return { shield: h === 'knight', hint: h === 'fox' ? 2 : 0, time: h === 'robot' ? 3 : 0, hearts: h === 'dragon' ? 6 : 5 };
 }
-function startLevel(n) {
+function startLevel(n, bonus) {
   var lv = LV[n - 1]; if (!lv) return;
   var W = WORLDS[lv.w], pk = heroPerks(), mons = [];
   if (lv.boss) { mons = [W.mons[lv.j % 3], W.boss]; }
@@ -555,7 +555,7 @@ function startLevel(n) {
   var pools = buildPools(lv), keys = {}; pools.m.concat(pools.d).forEach(function (f) { keys[factKey(f)] = 1; });
   B = {
     id: ++battleSeq, lv: lv, W: W, pk: pk, mons: mons, ei: 0, ehp: 0, emax: 0,
-    hp: pk.hearts, hpMax: pk.hearts, combo: 0, best: 0, errs: 0, oks: 0, errList: [],
+    hp: pk.hearts + (bonus ? 1 : 0), hpMax: pk.hearts + (bonus ? 1 : 0), combo: 0, best: 0, errs: 0, oks: 0, errList: [],
     pools: pools, keys: keys, queue: [], qn: 0, lastKey: '', q: null, phase: 'intro',
     tmax: (lv.t + pk.time) * 1000, left: 0, shield: pk.shield, hints: pk.hint, paused: false, lastTs: 0, qStart: 0, rage: false
   };
@@ -777,14 +777,14 @@ function renderResult() {
   h += '<div class="rbtns">';
   if (r.won && next && unlocked(next)) h += '<button class="btn green" id="rs-next">Дальше</button>';
   h += '<button class="btn ' + (r.won ? 'gray' : 'green') + '" id="rs-again">Ещё раз</button>';
-  if (!r.won && PF.canReward()) h += '<button class="btn blue" id="rs-heart">+1 сердце за ролик</button>';
+  if (!r.won && PF.canReward()) h += '<button class="btn blue" id="rs-heart">Ещё раз с +1 сердцем (ролик)</button>';
   h += '<button class="btn gray" id="rs-map">Карта</button></div></div>';
   s.innerHTML = h; swapArt(s); show('s-result');
   var lvn = lv.n;
   var nx = $('rs-next'); if (nx) nx.onclick = function () { PF.interstitial(function () { startLevel(lvn + 1); }); };
   $('rs-again').onclick = function () { startLevel(lvn); };
   $('rs-map').onclick = function () { PF.interstitial(renderMap); };
-  var hb = $('rs-heart'); if (hb) hb.onclick = function () { PF.rewarded(function (ok) { if (ok) toast('Награда получена'); }); };
+  var hb = $('rs-heart'); if (hb) hb.onclick = function () { PF.rewarded(function (ok) { if (ok) startLevel(lvn, true); }); };
 }
 function renderHeroes() {
   var h = '<div class="topbar"><button class="btn-ic" id="he-back" aria-label="Назад">' + icon('back') + '</button><span class="pill">' + icon('star') + totalStars() + '</span></div><div class="scroll">';

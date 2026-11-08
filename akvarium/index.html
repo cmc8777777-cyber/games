@@ -120,7 +120,135 @@ const nf=n=>Math.round(n).toLocaleString('ru-RU');
 const f1=x=>String(Math.round(x*10)/10).replace('.',',');
 const $=id=>document.getElementById(id);
 // ---- слой Yandex SDK (заглушка)
-const YG={ready:false,rewarded(cb){cb(true)},init(){this.ready=true}};
+/* Слой платформы: Яндекс Игры SDK (если страница запущена на площадке), пауза, реклама, облачное сохранение.
+   Без SDK (сайт, артефакт, локально) все вызовы работают как заглушки, игра играбельна полностью.
+   Хранилище игры ходит через PF.get/put/del: localStorage + зеркало в памяти + облако. Образец: kugosvetka\src\data\platform.js */
+window.PF = (function () {
+  "use strict";
+  var ysdk = null, player = null;
+  var sdkOk = false, cloudOk = false, gaveUp = false;
+  var wantReady = false, readyDone = false;
+  var adBusy = false, tabHidden = false, apiPaused = false;
+  var gpOn = false, wantGp = false;
+  var lastAdAt = 0, bornAt = Date.now();
+  var AD_FIRST_MS = 120000, AD_GAP_MS = 180000;   // первая полноэкранная не раньше 2 минут после загрузки, дальше не чаще раза в 3 минуты
+  var INIT_TIMEOUT_MS = 4000, SYNC_DELAY_MS = 2500;
+  var T_KEY = "akv-syncT";
+  var mem = {}, dirty = false, syncTimer = 0;
+  var self = { onPause: function () {} };
+
+  function isSynced(k) { return k === "akvarium-save-v1" || k === "akvarium-best"; }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+  function seedMem() {
+    try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (isSynced(k) || k === T_KEY) mem[k] = localStorage.getItem(k); } } catch (e) {}
+  }
+  function localT() { return Number(mem[T_KEY]) || 0; }
+  function schedule() { if (!syncTimer && player && cloudOk) syncTimer = setTimeout(function () { flush(false); }, SYNC_DELAY_MS); }
+  function touch() { var t = String(Date.now()); mem[T_KEY] = t; lsSet(T_KEY, t); dirty = true; schedule(); }
+  self.get = function (k) {
+    if (Object.prototype.hasOwnProperty.call(mem, k)) return mem[k];
+    try { return localStorage.getItem(k); } catch (e) { return null; }
+  };
+  self.put = function (k, raw) { mem[k] = raw; lsSet(k, raw); if (isSynced(k)) touch(); };
+  self.del = function (k) { delete mem[k]; lsDel(k); if (isSynced(k)) touch(); };
+
+  function importCloud(data) {
+    var d = data && typeof data === "object" ? data : {};
+    var ct = Number(d._t) || 0, blob = d.d && typeof d.d === "object" ? d.d : null;
+    if (blob && ct > localT()) {
+      Object.keys(mem).forEach(function (k) { if (isSynced(k)) { delete mem[k]; lsDel(k); } });
+      Object.keys(blob).forEach(function (k) { if (isSynced(k) && typeof blob[k] === "string") { mem[k] = blob[k]; lsSet(k, blob[k]); } });
+      mem[T_KEY] = String(ct); lsSet(T_KEY, String(ct));
+      dirty = false;
+    } else if (localT() > ct) { dirty = true; }
+    cloudOk = true;
+    if (dirty) schedule();
+  }
+  function flush(now) {
+    clearTimeout(syncTimer); syncTimer = 0;
+    if (!dirty || !player || !cloudOk) return;
+    var d = {};
+    Object.keys(mem).forEach(function (k) { if (isSynced(k) && mem[k] != null) d[k] = mem[k]; });
+    dirty = false;
+    try {
+      var p = player.setData({ v: 1, _t: localT(), d: d }, !!now);
+      if (p && p.catch) p.catch(function () { dirty = true; });
+    } catch (e) { dirty = true; }
+  }
+
+  self.paused = function () { return adBusy || tabHidden || apiPaused; };
+  function applyGp() {
+    if (!sdkOk || !readyDone) return;
+    var should = wantGp && !self.paused();
+    if (should === gpOn) return;
+    gpOn = should;
+    try { var g = ysdk.features && ysdk.features.GameplayAPI; if (g) { if (should) g.start(); else g.stop(); } } catch (e) {}
+  }
+  function changed() { applyGp(); try { self.onPause(self.paused()); } catch (e) {} }
+  function onVis() { tabHidden = !!document.hidden; if (tabHidden) flush(true); changed(); }
+  self.setPlaying = function (on) { wantGp = !!on; applyGp(); };
+
+  function tryReady() {
+    if (readyDone || !wantReady || !sdkOk) return;
+    readyDone = true;
+    try { var l = ysdk.features && ysdk.features.LoadingAPI; if (l) l.ready(); } catch (e) {}
+    applyGp();
+  }
+  self.ready = function () { wantReady = true; tryReady(); };
+  self.init = function () {
+    seedMem();
+    try { document.addEventListener("visibilitychange", onVis); window.addEventListener("pagehide", function () { flush(true); }); } catch (e) {}
+    if (!window.YaGames || !window.YaGames.init) return Promise.resolve();
+    return new Promise(function (resolve) {
+      var timer = setTimeout(function () { gaveUp = true; resolve(); }, INIT_TIMEOUT_MS);
+      function fin() { clearTimeout(timer); resolve(); }
+      window.YaGames.init().then(function (sdk) {
+        ysdk = sdk; sdkOk = true;
+        try {
+          sdk.on("game_api_pause", function () { apiPaused = true; changed(); });
+          sdk.on("game_api_resume", function () { apiPaused = false; changed(); });
+        } catch (e) {}
+        tryReady();
+        return sdk.getPlayer({ scopes: false }).then(function (p) { player = p; return p.getData(); })
+          .then(function (data) { if (!gaveUp) importCloud(data); }, function () {});
+      }).then(fin, fin);
+    });
+  };
+  self.hasSdk = function () { return sdkOk; };
+
+  function adBegin() { adBusy = true; changed(); }
+  function adEnd() { adBusy = false; changed(); }
+  /* Полноэкранная реклама в логической паузе; done вызывается ровно один раз (или сразу, если рекламы нет / рано). */
+  self.interstitial = function (done) {
+    if (adBusy) return;
+    var now = Date.now(), allowedAt = lastAdAt ? lastAdAt + AD_GAP_MS : bornAt + AD_FIRST_MS;
+    if (!sdkOk || !ysdk.adv || !ysdk.adv.showFullscreenAdv || now < allowedAt) { done(); return; }
+    var fin = false;
+    function end(shown) { if (fin) return; fin = true; if (shown) lastAdAt = Date.now(); adEnd(); done(); }
+    adBegin();
+    try {
+      ysdk.adv.showFullscreenAdv({ callbacks: {
+        onClose: function (wasShown) { end(wasShown); },
+        onError: function () { end(false); },
+        onOffline: function () { end(false); }
+      } });
+    } catch (e) { end(false); }
+  };
+  self.canReward = function () { return !!(sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo); };
+  /* Ролик за награду: done(got) — got === true, только если досмотрел. */
+  self.rewarded = function (done) {
+    if (!self.canReward()) { done(false); return; }
+    var fin = false, got = false;
+    function end() { if (fin) return; fin = true; if (got) lastAdAt = Date.now(); adEnd(); done(got); }
+    adBegin();
+    try {
+      ysdk.adv.showRewardedVideo({ callbacks: { onRewarded: function () { got = true; }, onClose: end, onError: end } });
+    } catch (e) { end(); }
+  };
+  return self;
+})();
+
 // ---- состояние
 let S=null,L=[],anim=[];
 const KEY='akvarium-save-v1',BEST='akvarium-best';
@@ -131,9 +259,9 @@ function newGame(){
  startDay();save();
 }
 function mkTank(V,salt){return {id:S.nid++,V,salt,temp:salt?25:25,fish:{},pl:{},eq:{},N:0,feed:0,sick:false}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-function load(){try{const j=localStorage.getItem(KEY);if(j){S=JSON.parse(j);return true}}catch(e){}return false}
-function bestGet(){try{return +localStorage.getItem(BEST)||0}catch(e){return 0}}
+function save(){PF.put(KEY,JSON.stringify(S))}
+function load(){try{const j=PF.get(KEY);if(j){S=JSON.parse(j);return true}}catch(e){}return false}
+function bestGet(){try{return +PF.get(BEST)||0}catch(e){return 0}}
 // ---- расчёты аквариума
 const lpc=t=>t.salt?2:1;
 const fl=t=>Object.keys(t.fish).filter(i=>t.fish[i]>0).map(i=>({sp:SP[i],i:+i,n:t.fish[i]}));
@@ -295,6 +423,7 @@ function startAnim(){
 let raf=0,last=0;
 function loop(ts){
  const dt=Math.min(50,ts-last||16);last=ts;
+ if(PF.paused()){raf=requestAnimationFrame(loop);return}
  for(const a of anim){
   a.x+=a.dir*a.sp*dt*0.06;
   if(a.x<0){a.x=0;a.dir=1}if(a.x>a.W-a.w){a.x=a.W-a.w;a.dir=-1}
@@ -325,7 +454,7 @@ function render(){
  startAnim();
  drawL();
 }
-const hasSave=()=>{try{return !!localStorage.getItem(KEY)}catch(e){return false}};
+const hasSave=()=>{try{return !!PF.get(KEY)}catch(e){return false}};
 function pushL(fn){L.push(fn);drawL()}
 function popL(){L.pop();drawL()}
 function drawL(){
@@ -348,7 +477,8 @@ function tankL(id){return function(o){
  b+=`<div class="row"><b>Масса рыб:</b> ${nf(massTot(t))} г</div>`;
  b+=`<div class="row"><b>Корм, г:</b>${t.eq.feeder?'<span>🤖 автокормушка: ровно норма</span>':`<button class="b-sm" data-fd="-1">−</button><input type="text" id="fd" inputmode="decimal" value="${f1(t.feed)}"><button class="b-sm" data-fd="1">+</button>`}</div>`;
  if(ok){const c=cap(t),l=load_(t);b+=`<div class="hint">🔍 Проверка ихтиолога: вместимость ${f1(c)} см (норма ${lpc(t)} л на 1 см, растения +${nPl(t)*6} %${t.eq.aer?', аэратор +30 %':''}). Сейчас ${f1(cmTot(t))} см = ${Math.round(l*100)} %. Норма корма: 2 % от ${nf(massTot(t))} г = <b>${f1(normFeed(t))} г</b>. ${tooSmall(t)?'⚠ Для крупных рыб аквариум мал (нужен больший объём).':''} <button class="b-sm" id="bNorm">Поставить норму</button></div>`}
- else b+=`<button id="bHint" style="width:100%;margin:6px 0">🔍 Проверка ихтиолога (1 🪙) — вместимость и норма корма</button>`;
+ else b+=`<button id="bHint" style="width:100%;margin:6px 0">🔍 Проверка ихтиолога (1 🪙) — вместимость и норма корма</button>`+(PF.canReward()?`<button id="bHintAd" style="width:100%;margin:0 0 6px">🎬 Проверка за ролик (бесплатно)</button>`:'');
+ if(PF.canReward()&&S.adWc!==S.day)b+=`<button id="bWcAd" style="width:100%;margin:6px 0" class="b-ok">🎬 Бесплатная подмена 25 % за ролик (1 раз в день)</button>`;
  b+=`<h3 style="margin:10px 0 4px">Рыбы</h3>`;
  const f=fl(t);
  if(!f.length)b+='<div class="small">Пока никого.</div>';
@@ -363,6 +493,8 @@ function tankL(id){return function(o){
  o.querySelectorAll('[data-fd]').forEach(e=>e.onclick=()=>{const st=feedStep(normFeed(t)||t.feed||1);t.feed=Math.max(0,Math.round((t.feed+ +e.dataset.fd*st)*10)/10);save();drawL()});
  const fd=o.querySelector('#fd');if(fd)fd.onchange=()=>{const v=parseFloat(fd.value.replace(',','.'));t.feed=isNaN(v)?0:Math.max(0,v);save();drawL()};
  const hb=o.querySelector('#bHint');if(hb)hb.onclick=()=>{if(S.coins<1)return toast('Нужна монета знаний — решайте задачи!');S.coins--;S.hint[t.id]=S.day;save();drawL()};
+ const ha=o.querySelector('#bHintAd');if(ha)ha.onclick=()=>PF.rewarded(g=>{if(g){S.hint[t.id]=S.day;save();drawL()}});
+ const wa=o.querySelector('#bWcAd');if(wa)wa.onclick=()=>PF.rewarded(g=>{if(g){S.adWc=S.day;t.N*=0.75;save();toast('Бесплатно заменено '+f1(t.V*0.25)+' л');drawL()}});
  const nb=o.querySelector('#bNorm');if(nb)nb.onclick=()=>{t.feed=normFeed(t);save();drawL()};
  o.querySelectorAll('[data-sell]').forEach(e=>e.onclick=()=>{const sp=SP[+e.dataset.sell];t.fish[sp.i]--;S.money+=Math.round(sp.price*0.6);t.feed=Math.min(t.feed,normFeed(t)>0?t.feed:0);save();drawL()});
  o.querySelectorAll('[data-eq]').forEach(e=>e.onclick=()=>{const q=EQ[e.dataset.eq];if(S.money<q[1])return toast('Не хватает денег');S.money-=q[1];t.eq[e.dataset.eq]=1;save();drawL()});
@@ -462,13 +594,11 @@ function goalsL(o){
 }
 function menuL(o){
  overlay(o,'Меню',`<div class="card">Капитал сейчас: <b>${nf(capital())} ₽</b><br>Рекорд: <b>${nf(bestGet())} ₽</b></div>
- <button class="opt" id="mAd">🎬 Посмотреть ролик: +2 🪙 (заглушка)</button>
  <button class="opt" id="mSave">💾 Сохранить</button>
  <button class="opt" id="mNew">🔄 Новая игра</button>
  <p class="small">Версия прототипа 0.1. Картинки — запасные, нарисованы кодом.</p>`);
- o.querySelector('#mAd').onclick=()=>YG.rewarded(ok=>{if(ok){S.coins+=2;save();toast('+2 монеты');render()}});
- o.querySelector('#mSave').onclick=()=>{save();toast('Сохранено')};
- o.querySelector('#mNew').onclick=()=>{if(confirm('Начать заново? Прогресс будет стёрт.')){try{localStorage.removeItem(KEY)}catch(e){}L=[];S=null;render()}};
+  o.querySelector('#mSave').onclick=()=>{save();toast('Сохранено')};
+ {let armed=false;const nb=o.querySelector('#mNew');nb.onclick=()=>{if(!armed){armed=true;nb.textContent='⚠ Точно стереть прогресс? Нажмите ещё раз';return}PF.del(KEY);L=[];S=null;render()}}
 }
 // ---- день: события, задача, отчёт
 function afterLoad(){L=[];if(!S.evSeen&&S.ev)showEvent();else if(!S.taskDone)showTask()}
@@ -508,10 +638,10 @@ function openDay(){
  if(all.length)h+=`<div class="card small">${all.join('<br>')}</div>`;
  h+=`<p><b>Вопрос:</b> какую долю выручки (в %) съели расходы? <small>(целым числом)</small></p><input type="text" id="an" inputmode="decimal"> <button class="b-go" id="ok">Ответить</button> <button class="b-sm" id="sk">Пропустить</button>`;
  modal(o,h);
- const next=()=>{o.remove();S.day++;S.tanks.forEach(t=>{t.feed=Math.min(t.feed,t.feed)});
+ const next=()=>PF.interstitial(()=>{o.remove();S.day++;S.tanks.forEach(t=>{t.feed=Math.min(t.feed,t.feed)});
   if(S.money<0){endGame(true);return}
   if(S.day>DAYS){endGame(false);return}
-  startDay();save();render();afterLoad()};
+  startDay();save();render();afterLoad()});
  o.querySelector('#ok').onclick=()=>{const v=parseFloat(o.querySelector('#an').value.replace(',','.'));if(isNaN(v))return;const good=Math.abs(v-pct)<=1;if(good){S.coins++;S.rep=Math.min(100,S.rep+1)}
   const m=o.querySelector('.modal');m.insertAdjacentHTML('afterbegin',`<div class="hint">${good?'✅ Верно! +1 🪙, репутация +1':'❌ Правильно: '+pct+' % (расходы '+nf(R.expT)+' ÷ выручка '+nf(R.rev)+')'}</div>`);o.querySelector('#ok').remove();o.querySelector('#an').remove();o.querySelector('#sk').textContent='Дальше →';o.querySelector('#sk').onclick=next};
  o.querySelector('#sk').onclick=next;
@@ -520,15 +650,16 @@ function openDay(){
 function endGame(bankrupt){
  S.over=true;const cap_=capital(),sp=Object.keys(S.seen).length;
  const st=bankrupt?0:(cap_>=80000?1:0)+(cap_>=160000?1:0)+(cap_>=160000&&sp>=25?1:0);
- try{if(cap_>bestGet())localStorage.setItem(BEST,cap_)}catch(e){}
- try{localStorage.removeItem(KEY)}catch(e){}
+ try{if(cap_>bestGet())PF.put(BEST,String(cap_))}catch(e){}
+ PF.del(KEY);
  render();
  const o=document.createElement('div');o.id='ov';$('app').appendChild(o);
  modal(o,`<h2>${bankrupt?'😢 Магазин закрыт':'🏆 60 дней позади!'}</h2><p style="font-size:30px;text-align:center;margin:4px">${'⭐'.repeat(st)}${'☆'.repeat(3-st)}</p><p>Капитал: <b>${nf(cap_)} ₽</b><br>Видов в коллекции: <b>${sp}/40</b><br>Прибыль за всё время: ${nf(S.stats.profit)} ₽<br>Рекорд: ${nf(bestGet())} ₽</p><button class="b-go" id="nw" style="width:100%">Играть снова</button>`);
  o.querySelector('#nw').onclick=()=>{S=null;L=[];render()};
 }
 // ---- запуск
-try{YG.init()}catch(e){}
 window.__game={get S(){return S},SP,simDay,newGame,capital,render,cap,load_,normFeed,nf,fl,startDay,genTask,mkTank,TANKS,goalsCheck,examQs};
-render();raf=requestAnimationFrame(loop);
+raf=requestAnimationFrame(loop);
+PF.init().then(()=>{render();PF.ready()});
+setInterval(()=>PF.setPlaying(!!S&&!S.over&&!document.querySelector('.modal')&&!document.querySelector('.cover')),500);
 </script></body></html>

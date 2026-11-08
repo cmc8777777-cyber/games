@@ -8,6 +8,7 @@
 :root{--bg:#e9f8f4;--ink:#23364a;--teal:#1fae9d;--teal2:#14867a;--red:#ff6b6b;--yel:#ffd23f;--card:#fff;--line:#cfe9e3;--mut:#6a7f8f;--ok:#2fb35a;--bad:#e5484d}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:#cfeee8;color:var(--ink);font:16px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;overscroll-behavior:none}
+[hidden]{display:none!important}
 button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulation}
 #app{position:relative;height:100%;max-width:480px;margin:0 auto;background:var(--bg);overflow:hidden}
 .scr{position:absolute;inset:0;display:flex;flex-direction:column}
@@ -340,8 +341,10 @@ function submitTreat() {
 function rollDie(q, r, diag, acts, frac) {
   const m = $('mdl'); m.className = 'modal mid';
   m.innerHTML = '<div class="sheet"><div class="bd center">' + img('doctor_think', '', 'docimg') + '<h2>Лечение почти верное!</h2><p>Диагноз правильный, но назначения неполные или с лишним. Судьба решится кубиком: <b>чётное — вылечен</b>, нечётное — станет хуже.</p><div class="die" id="die">' + dieFace(6) + '</div><div id="dieTx" class="mut">&nbsp;</div></div><div class="ft"><button class="btn" id="dieGo">🎲 Бросить кубик</button></div></div>';
-    $('dieGo').onclick = () => {
-    $('dieGo').disabled = true;
+  $('dieGo').insertAdjacentHTML('afterend', '<button class="btn alt" id="dieRe" hidden>🎬 Бросить ещё раз (ролик)</button>');
+  let rerolled = false;
+  const roll = () => {
+    $('dieGo').disabled = true; $('dieRe').hidden = true;
     const die = $('die'); die.classList.add('roll');
     const iv = setInterval(() => { die.innerHTML = dieFace(1 + rnd(6)); }, 90);
     setTimeout(() => {
@@ -351,8 +354,14 @@ function rollDie(q, r, diag, acts, frac) {
       $('dieTx').innerHTML = '<b class="' + (ok ? 'good' : 'badc') + '">Выпало ' + n + ' — ' + (ok ? 'чётное, вылечен!' : 'нечётное, стало хуже') + '</b>';
       $('dieGo').disabled = false; $('dieGo').textContent = 'Дальше';
       $('dieGo').onclick = () => finishPt(q, ok ? 'cured' : 'worse', r, diag, acts, frac, n);
+      /* второй бросок за ролик: только если площадка даёт рекламу и бросок не удался */
+      if (!ok && !rerolled && PF.canReward()) {
+        $('dieRe').hidden = false;
+        $('dieRe').onclick = () => PF.rewarded(got => { if (got) { rerolled = true; roll(); } });
+      }
     }, 1300);
   };
+  $('dieGo').onclick = roll;
 }
 function finishPt(q, st, r, diag, acts, frac, die) {
   const d = q.dis, half = r.v === 'half', full = r.v === 'full';

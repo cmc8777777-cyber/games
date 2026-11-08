@@ -173,13 +173,57 @@ const fm=n=>Math.round(n).toLocaleString('ru-RU')+' ₽';
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2400);}
 function lsGet(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
-const PF={rewarded(cb){toast('Ролик (заглушка SDK)…');setTimeout(cb,900);}};
+/* Слой платформы: Яндекс Игры SDK (на площадке подключается /sdk.js). Без SDK (сайт, артефакт, локально) — заглушки,
+   игра играбельна полностью; ролик за награду без SDK имитируется (для просмотра). */
+const PF=(function(){
+  let ysdk=null,sdkOk=false,wantReady=false,readyDone=false,adBusy=false,hidden=false,apiPaused=false,gpOn=false,wantGp=false,lastAdAt=0;
+  const born=Date.now(),FIRST=120000,GAP=180000,TMO=4000,self={onPause(){}};
+  const apply=()=>{if(!sdkOk||!readyDone)return;const on=wantGp&&!self.paused();if(on===gpOn)return;gpOn=on;try{const g=ysdk.features&&ysdk.features.GameplayAPI;if(g){on?g.start():g.stop();}}catch(e){}};
+  const changed=()=>{apply();try{self.onPause(self.paused());}catch(e){}};
+  const tryReady=()=>{if(readyDone||!wantReady||!sdkOk)return;readyDone=true;try{const l=ysdk.features&&ysdk.features.LoadingAPI;if(l)l.ready();}catch(e){}apply();};
+  self.paused=()=>adBusy||hidden||apiPaused;
+  self.setPlaying=on=>{wantGp=!!on;apply();};
+  self.ready=()=>{wantReady=true;tryReady();};
+  self.hasSdk=()=>sdkOk;
+  self.init=()=>{
+    try{document.addEventListener('visibilitychange',()=>{hidden=!!document.hidden;changed();});}catch(e){}
+    if(!window.YaGames||!window.YaGames.init)return Promise.resolve();
+    return new Promise(res=>{
+      const t=setTimeout(res,TMO);
+      window.YaGames.init().then(sdk=>{
+        ysdk=sdk;sdkOk=true;
+        try{sdk.on('game_api_pause',()=>{apiPaused=true;changed();});sdk.on('game_api_resume',()=>{apiPaused=false;changed();});}catch(e){}
+        tryReady();
+      }).then(()=>{clearTimeout(t);res();},()=>{clearTimeout(t);res();});
+    });
+  };
+  const begin=()=>{adBusy=true;changed();},end=()=>{adBusy=false;changed();};
+  /* полноэкранная реклама: не раньше 2 мин после загрузки и не чаще раза в 3 мин; done вызывается один раз */
+  self.interstitial=done=>{
+    if(adBusy)return;
+    const now=Date.now(),at=lastAdAt?lastAdAt+GAP:born+FIRST;
+    if(!sdkOk||!ysdk.adv||!ysdk.adv.showFullscreenAdv||now<at){done();return;}
+    let fin=false;const e=shown=>{if(fin)return;fin=true;if(shown)lastAdAt=Date.now();end();done();};
+    begin();
+    try{ysdk.adv.showFullscreenAdv({callbacks:{onClose:e,onError:()=>e(false),onOffline:()=>e(false)}});}catch(x){e(false);}
+  };
+  /* ролик за награду: done(true) только если награда засчитана */
+  self.rewarded=done=>{
+    if(!sdkOk){toast('Ролик (имитация: на площадке будет настоящий)…');begin();setTimeout(()=>{end();done(true);},900);return;}
+    if(adBusy||!ysdk.adv||!ysdk.adv.showRewardedVideo){done(false);return;}
+    let fin=false,got=false;const e=()=>{if(fin)return;fin=true;if(got)lastAdAt=Date.now();end();done(got);};
+    begin();
+    try{ysdk.adv.showRewardedVideo({callbacks:{onRewarded:()=>{got=true;},onClose:e,onError:e}});}catch(x){e();}
+  };
+  return self;
+})();
 
 /* картинки (WebP в img/, нарезаны tools/make_art.py). Нет файла — рисуется кодом */
 const IMGN=/*IMGN*/['bg_earth','cosmo1','cosmo2','cosmo3','cosmo4','cover_start','ic_food','ic_health','ic_heat','ic_o2','ic_power','ic_water','mod_batt','mod_core','mod_green','mod_hab','mod_lab','mod_lock','mod_panel','mod_rad']/*END*/;
 const IMG={};
-IMGN.forEach(n=>{const i=new Image();i.onload=()=>{IMG[n]=i;if(S)render();};i.src='img/'+n+'.webp';});
-const imgTag=(n,cls,fb)=>!IMGN.includes(n)?(fb||''):`<img class="${cls||'ic'}" src="img/${n}.webp" alt="" onerror="this.outerHTML=decodeURIComponent('${encodeURIComponent(fb||'')}')">`;
+const IMGSRC=n=>(window.IMGD&&window.IMGD[n])||'img/'+n+'.webp';
+IMGN.forEach(n=>{const i=new Image();i.onload=()=>{IMG[n]=i;if(S)render();};i.src=IMGSRC(n);});
+const imgTag=(n,cls,fb)=>!IMGN.includes(n)?(fb||''):`<img class="${cls||'ic'}" src="${IMGSRC(n)}" alt="" onerror="this.outerHTML=decodeURIComponent('${encodeURIComponent(fb||'')}')">`;
 const ICO=(k,e)=>imgTag('ic_'+k,'ic',e);
 
 /* ================= СОСТОЯНИЕ ================= */
@@ -190,7 +234,7 @@ function newState(){
   return {v:1,day:1,money:START_MONEY,coins:2,health:100,crew:3,
     mods:['core','hab','lab','panel','panel','panel','batt','batt','rad'].map(mk),
     st:{o2:25.2,water:90,food:60,kit:20,spare:2,fuel:10,waste:0},
-    regen:false,act:[],done:0,sci:0,capBonus:0,debris:10,walkCd:0,flare:0,
+    regen:false,act:[],done:0,sci:0,capBonus:0,rush:false,debris:10,walkCd:0,flare:0,
     cart:emptyCart(),dock:true,quiz:null,event:null,log:[],warned:{},
     goals:{g1:null,g2:null},stats:{ok:0,bad:0,earned:0},over:null};
 }
@@ -254,7 +298,7 @@ function stepDay(){
   if(S.day<=DAYS)for(const k of['o2','water','food']){const dl=daysLeft(k);
     if(dl<=3&&(S.warned[k]===undefined||S.day-S.warned[k]>=4)){S.warned[k]=S.day;news.push({h:'Запас на исходе',t:`${RES[k].n}: хватит ещё на ${fmt(dl,1)} дн. Следующая стыковка — на ${nextDock()}-й день.`,bad:1});}}
   if(S.health<=0)S.over='health';else if(S.money<-20000)S.over='money';else if(S.day>DAYS)S.over='done';
-  else if(DOCKS.includes(S.day)){S.dock=true;S.money+=GRANT;S.quiz=null;S.capBonus=0;news.push({h:'Стыковка!',t:`Грузовик «Прогресс» у станции. Получено финансирование ${fm(GRANT)}.`});log('стыковка, финансирование '+fm(GRANT));}
+  else if(DOCKS.includes(S.day)){S.dock=true;S.money+=GRANT;S.quiz=null;S.capBonus=0;S.rush=false;news.push({h:'Стыковка!',t:`Грузовик «Прогресс» у станции. Получено финансирование ${fm(GRANT)}.`});log('стыковка, финансирование '+fm(GRANT));}
   save();return news;
 }
 function resolveEvent(c){
@@ -299,7 +343,7 @@ function cartInfo(){
   RKEYS.forEach(k=>{mass+=c[k]*RES[k].m;cost+=c[k]*RES[k].p;});
   mass+=c.regen*REGEN_MASS;cost+=c.regen*REGEN_COST;cost+=c.crew*CREW_COST;
   let add=0;BUY.forEach(t=>{const q=c.mods[t]||0;mass+=q*MOD[t].mass;cost+=q*MOD[t].cost;add+=q;});
-  const cap=CAP+S.capBonus,slots=S.mods.length+add,bedsAfter=beds()+3*(c.mods.hab||0);
+  const cap=CAP+S.capBonus+(S.rush?100:0),slots=S.mods.length+add,bedsAfter=beds()+3*(c.mods.hab||0);
   const errs=[];
   if(mass>cap)errs.push('Перегруз: '+fmt(mass,0)+' кг из '+cap);
   if(cost>S.money)errs.push('Не хватает денег: нужно '+fm(cost));
@@ -336,7 +380,7 @@ function deliver(){
   if(c.regen)S.regen=true;
   BUY.forEach(t=>{for(let i=0;i<(c.mods[t]||0);i++)S.mods.push(mk(t));});
   S.crew=Math.min(MAXCREW,S.crew+c.crew);
-  S.st.waste=0;S.capBonus=0;S.cart=emptyCart();S.dock=false;S.quiz=null;
+  S.st.waste=0;S.capBonus=0;S.rush=false;S.cart=emptyCart();S.dock=false;S.quiz=null;
   log('груз принят на '+fm(ci.cost));save();render();
   modal(`<h2>Груз принят</h2><p>Масса ${fmt(ci.mass,0)} кг, оплачено ${fm(ci.cost)}. Отходы вывезены. Следующая стыковка — на ${nextDock()}-й день${nextDock()>DAYS?' (её не будет, финал на 90-й день)':''}.</p><button class="btn go" data-a="close">Работаем!</button>`);
 }
@@ -363,7 +407,8 @@ function makeCalc(){
   return{q:`Станция потребляет ${pw.C} кВт. Один радиатор отводит 10 кВт тепла. Сколько радиаторов нужно? (округли вверх)`,ans:Math.ceil(pw.C/RAD_KW-1e-9),
     sol:`${pw.C} ÷ 10 = ${fmt(pw.C/10)} → округляем вверх: ${Math.ceil(pw.C/RAD_KW-1e-9)}.`,u:'шт'};
 }
-function dockStart(){
+function dockStart(adDone){
+  if(!adDone&&!S.quiz){PF.interstitial(()=>dockStart(true));return;}
   const gl=goalsEval();save();
   if(S.quiz&&S.quiz.done){tab='cargo';render();return;}
   const c=cycleIdx();
@@ -440,10 +485,11 @@ function eventModal(){
   <button class="btn red" data-a="ev" data-c="risk">Рискнуть (40 % — поломка внешнего модуля)</button>`);
 }
 function final(){
+  PF.setPlaying(false);
   const sc=S.sci,st=starsOf(sc),best=lsGet(BEST_KEY)||0;if(sc>best)lsSet(BEST_KEY,sc);
   const why={health:'Миссия прервана: экипаж эвакуирован из-за плохого самочувствия.',money:'Миссия прервана: финансирование прекращено (долг больше 20 000 ₽).',done:'Миссия завершена! 90 суток на орбите.'}[S.over];
   closeModal();
-  modal(`${IMGN.includes('final_win')?'<img class="cover" src="img/final_win.webp" alt="">':''}<h2>Итог миссии</h2><p>${why}</p>
+  modal(`${IMGN.includes('final_win')?'<img class="cover" src="'+IMGSRC('final_win')+'" alt="">':''}<h2>Итог миссии</h2><p>${why}</p>
   <div class="stars">${'★'.repeat(st)}${'☆'.repeat(3-st)}</div>
   <div class="box"><div class="kv"><span>Очки науки</span><b>${sc}</b></div><div class="kv"><span>Опытов завершено</span><b>${S.done}</b></div><div class="kv"><span>Деньги</span><b>${fm(S.money)}</b></div><div class="kv"><span>Космонавтов</span><b>${S.crew}</b></div><div class="kv"><span>Верных ответов ЦУПа</span><b>${S.stats.ok}</b></div><div class="kv"><span>Рекорд науки</span><b>${Math.max(sc,best)}</b></div></div>
   <p class="hint">Звёзды по очкам науки: ★ ${STAR_AT[0]}, ★★ ${STAR_AT[1]}, ★★★ ${STAR_AT[2]}.</p>
@@ -452,7 +498,7 @@ function final(){
 }
 function startCard(){
   const sv=lsGet(SAVE_KEY);
-  modal(`${IMGN.includes('cover_start')?'<img class="cover" src="img/cover_start.webp" alt="">':'<div style="font-size:64px;text-align:center">🛰️🚀🌍</div>'}
+  modal(`${IMGN.includes('cover_start')?'<img class="cover" src="'+IMGSRC('cover_start')+'" alt="">':'<div style="font-size:64px;text-align:center">🛰️🚀🌍</div>'}
   <h2 style="text-align:center">Космическая станция</h2>
   <p>Командуй орбитальной станцией 90 суток: следи за воздухом, водой, едой и энергией, заказывай грузовики, ставь опыты и зарабатывай на науке.</p>
   ${sv&&sv.day&&!sv.over?`<button class="btn go" data-a="cont">Продолжить (день ${Math.min(sv.day,DAYS)})</button><button class="btn alt" data-a="newgame">Новая миссия</button>`:`<button class="btn go" data-a="newgame">Начать миссию</button>`}
@@ -563,6 +609,7 @@ function viewCargo(){
   <div class="bar ${ci.mass>ci.cap?'r':''}"><div style="width:${Math.min(100,ci.pct)}%"></div></div>
   <div class="kv"><span>Стоимость (запуск ${fm(LAUNCH)})</span><b class="${ci.cost>S.money?'warn':''}">${fm(ci.cost)}</b></div>
   <div class="kv"><span>Деньги</span><b>${fm(S.money)}</b></div>${ci.errs.map(e=>`<div class="warn">⚠ ${e}</div>`).join('')}</div>
+  ${S.dock&&!S.rush?'<button class="btn alt sm" data-a="rush">📺 Срочный груз: +100 кг (ролик)</button>':S.dock?'<div class="good" style="text-align:center">Срочный груз: +100 кг к этому грузовику</div>':''}
   <button class="btn alt sm" data-a="coach">◎ Помощь ЦУПа: припасы на ${Math.max(1,nextDock()-S.day)} дн. (−1 ◎)</button>
   <div class="head">Припасы</div>`;
   RKEYS.forEach(k=>{const r=RES[k],pd=['o2','water','food'].includes(k)?projDays(k):null;
@@ -650,6 +697,7 @@ function runDays(n){
   busy=true;auto=n;tick();
 }
 function tick(){
+  if(PF.paused()&&auto>0){setTimeout(tick,300);return;}
   if(auto<=0){busy=false;render();return;}
   const news=stepDay();auto--;renderHud();
   if(news.length||S.event||S.dock||S.over){auto=0;busy=false;render();if(news.length)newsModal(news);else flow();return;}
@@ -675,14 +723,15 @@ const ACT={
   calcok(){calcOk();},
   toorder(){closeModal();tab='cargo';render();},
   ev(d){const t=resolveEvent(d.c);render();modal(`<h2>Итог</h2><div class="ok">${t}</div><button class="btn go" data-a="flow">Дальше</button>`);},
-  newgame(){S=newState();lsSet(SAVE_KEY,S);tab='st';render();flow();},
-  newgame2(){if(confirm('Начать заново? Прогресс будет потерян.'))ACT.newgame();},
-  cont(){S=lsGet(SAVE_KEY);tab='st';render();flow();},
+  newgame(){S=newState();lsSet(SAVE_KEY,S);tab='st';PF.setPlaying(true);render();flow();},
+  newgame2(){modal(`<h2>Начать заново?</h2><p>Текущий прогресс будет потерян.</p><button class="btn red" data-a="newgame">Да, заново</button><button class="btn alt" data-a="menu">Отмена</button>`);},
+  cont(){S=lsGet(SAVE_KEY);tab='st';PF.setPlaying(true);render();flow();},
   rules(){rulesCard('startback');},
   rules2(){rulesCard('menu');},
   startback(){startCard();},
   menu(){menuCard();},
-  reward(){PF.rewarded(()=>{S.coins++;save();renderHud();toast('◎ +1 монета знаний');});}
+  rush(){PF.rewarded(ok=>{if(!ok)return toast('Ролик не засчитан');S.rush=true;save();render();toast('Срочный груз: +100 кг');});},
+  reward(){PF.rewarded(ok=>{if(!ok)return toast('Ролик не засчитан');S.coins++;save();renderHud();toast('◎ +1 монета знаний');});}
 };
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b||b.disabled)return;
@@ -693,7 +742,7 @@ $('#hCoin').onclick=()=>{if(S)toast('Монеты знаний: подсказк
 
 /* ================= СТАРТ ================= */
 window.__game={get S(){return S;},set S(v){S=v;},newState,stepDay,power,need,cartInfo,cartAdd,startExp,repair,doWalk,deliver,resolveEvent,goalsEval,projDays,daysLeft,freeCrew,mk,cnt,EXP,MOD,RES,EMPTY:emptyCart,starsOf,nextDock,makeCalc,render};
-S=newState();render();requestAnimationFrame(draw);startCard();
+PF.init().then(()=>{S=newState();render();requestAnimationFrame(draw);startCard();PF.ready();});
 </script>
 </body>
 </html>

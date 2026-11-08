@@ -118,13 +118,103 @@ const money=n=>Math.round(n).toLocaleString('ru-RU')+' ₽';
 const num=n=>String(n).replace('.',',');
 const plur=(n,f)=>{const a=n%100,b=n%10;return(a>10&&a<15)?f[2]:b===1?f[0]:(b>1&&b<5)?f[1]:f[2];};
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2400);}
-function lsGet(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}
-function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
-function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
+function lsGet(k){try{const v=PF.get(k);return v==null?null:JSON.parse(v);}catch(e){return null;}}
+function lsSet(k,v){try{PF.put(k,JSON.stringify(v));}catch(e){}}
+function lsDel(k){try{PF.del(k);}catch(e){}}
 const INK='#3b2a1a';
 
-/* заглушка платформы (Яндекс Игры SDK подключается здесь) */
-const PF={rewarded(cb){toast('Ролик (заглушка SDK)…');setTimeout(cb,900);}};
+/* Слой платформы (как в «Кругосветке»): Яндекс Игры SDK, если страница запущена на площадке; иначе заглушки.
+   Хранилище идёт через PF.get/put/del: localStorage + зеркало в памяти + облако (player.setData). */
+const PF=(function(){
+  "use strict";
+  var ysdk=null,player=null,sdkOk=false,cloudOk=false,gaveUp=false,wantReady=false,readyDone=false;
+  var adBusy=false,tabHidden=false,apiPaused=false,gpOn=false,wantGp=false,lastAdAt=0,bornAt=Date.now();
+  var AD_FIRST_MS=120000,AD_GAP_MS=180000,INIT_TIMEOUT_MS=4000,SYNC_DELAY_MS=2500,T_KEY="zoopark-syncT";
+  var mem={},dirty=false,syncTimer=0,self={onPause:function(){}};
+  function isSynced(k){return k!==T_KEY&&k.indexOf("zoopark-")===0;}
+  function lsSetRaw(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+  function lsDelRaw(k){try{localStorage.removeItem(k);}catch(e){}}
+  function seedMem(){try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(isSynced(k)||k===T_KEY)mem[k]=localStorage.getItem(k);}}catch(e){}}
+  function localT(){return Number(mem[T_KEY])||0;}
+  function schedule(){if(!syncTimer&&player&&cloudOk)syncTimer=setTimeout(function(){flush(false);},SYNC_DELAY_MS);}
+  function touch(){var t=String(Date.now());mem[T_KEY]=t;lsSetRaw(T_KEY,t);dirty=true;schedule();}
+  self.get=function(k){if(Object.prototype.hasOwnProperty.call(mem,k))return mem[k];try{return localStorage.getItem(k);}catch(e){return null;}};
+  self.put=function(k,raw){mem[k]=raw;lsSetRaw(k,raw);if(isSynced(k))touch();};
+  self.del=function(k){delete mem[k];lsDelRaw(k);if(isSynced(k))touch();};
+  function importCloud(data){
+    var d=data&&typeof data==="object"?data:{},ct=Number(d._t)||0,blob=d.d&&typeof d.d==="object"?d.d:null;
+    if(blob&&ct>localT()){
+      Object.keys(mem).forEach(function(k){if(isSynced(k)){delete mem[k];lsDelRaw(k);}});
+      Object.keys(blob).forEach(function(k){if(isSynced(k)&&typeof blob[k]==="string"){mem[k]=blob[k];lsSetRaw(k,blob[k]);}});
+      mem[T_KEY]=String(ct);lsSetRaw(T_KEY,String(ct));dirty=false;
+    }else if(localT()>ct){dirty=true;}
+    cloudOk=true;if(dirty)schedule();
+  }
+  function flush(now){
+    clearTimeout(syncTimer);syncTimer=0;
+    if(!dirty||!player||!cloudOk)return;
+    var d={};Object.keys(mem).forEach(function(k){if(isSynced(k)&&mem[k]!=null)d[k]=mem[k];});
+    dirty=false;
+    try{var p=player.setData({v:1,_t:localT(),d:d},!!now);if(p&&p.catch)p.catch(function(){dirty=true;});}catch(e){dirty=true;}
+  }
+  self.paused=function(){tabHidden=!!document.hidden;return adBusy||tabHidden||apiPaused;};
+  function applyGp(){
+    if(!sdkOk||!readyDone)return;
+    var should=wantGp&&!self.paused();if(should===gpOn)return;gpOn=should;
+    try{var g=ysdk.features&&ysdk.features.GameplayAPI;if(g){if(should)g.start();else g.stop();}}catch(e){}
+  }
+  function changed(){applyGp();try{self.onPause(self.paused());}catch(e){}}
+  function onVis(){tabHidden=!!document.hidden;if(tabHidden)flush(true);changed();}
+  self.setPlaying=function(on){wantGp=!!on;applyGp();};
+  function tryReady(){
+    if(readyDone||!wantReady||!sdkOk)return;readyDone=true;
+    try{var l=ysdk.features&&ysdk.features.LoadingAPI;if(l)l.ready();}catch(e){}
+    applyGp();
+  }
+  self.ready=function(){wantReady=true;tryReady();};
+  self.init=function(){
+    seedMem();
+    try{document.addEventListener("visibilitychange",onVis);window.addEventListener("pagehide",function(){flush(true);});}catch(e){}
+    if(!window.YaGames||!window.YaGames.init)return Promise.resolve();
+    return new Promise(function(resolve){
+      var timer=setTimeout(function(){gaveUp=true;resolve();},INIT_TIMEOUT_MS);
+      function fin(){clearTimeout(timer);resolve();}
+      window.YaGames.init().then(function(sdk){
+        ysdk=sdk;sdkOk=true;
+        try{sdk.on("game_api_pause",function(){apiPaused=true;changed();});sdk.on("game_api_resume",function(){apiPaused=false;changed();});}catch(e){}
+        tryReady();
+        return sdk.getPlayer({scopes:false}).then(function(p){player=p;return p.getData();}).then(function(data){if(!gaveUp)importCloud(data);},function(){});
+      }).then(fin,fin);
+    });
+  };
+  self.hasSdk=function(){return sdkOk;};
+  function adBegin(){adBusy=true;changed();}
+  function adEnd(){adBusy=false;changed();}
+  /* Полноэкранная реклама между днями: не чаще раза в 3 минуты, первая не раньше 2 минут после загрузки. done вызывается один раз. */
+  self.interstitial=function(done){
+    if(adBusy)return;
+    var now=Date.now(),allowedAt=lastAdAt?lastAdAt+AD_GAP_MS:bornAt+AD_FIRST_MS;
+    if(!sdkOk||!ysdk.adv||!ysdk.adv.showFullscreenAdv||now<allowedAt){done();return;}
+    var fin=false;
+    function end(shown){if(fin)return;fin=true;if(shown)lastAdAt=Date.now();adEnd();done();}
+    adBegin();
+    try{ysdk.adv.showFullscreenAdv({callbacks:{onClose:function(w){end(w);},onError:function(){end(false);},onOffline:function(){end(false);}}});}catch(e){end(false);}
+  };
+  /* Ролик за награду. done(got): true, только если досмотрен. Без платформы (сайт, демо) награда засчитывается сразу. */
+  self.rewarded=function(done){
+    if(!sdkOk){var demo=!window.YaGames;setTimeout(function(){done(demo);},demo?700:0);return;}
+    if(adBusy||!ysdk.adv||!ysdk.adv.showRewardedVideo){done(false);return;}
+    var fin=false,got=false;
+    function end(){if(fin)return;fin=true;if(got)lastAdAt=Date.now();adEnd();done(got);}
+    adBegin();
+    try{ysdk.adv.showRewardedVideo({callbacks:{onRewarded:function(){got=true;},onClose:end,onError:end}});}catch(e){end();}
+  };
+  return self;
+})();
+
+function watchAd(){PF.rewarded(got=>{if(got){coin(1);toast('+1 монета знаний');}else toast('Реклама сейчас недоступна');});}
+let YN=null;
+function yesNo(msg,fn){YN=fn;mode='over';card(`<h2>Подтверди</h2><p>${msg}</p><div class="row"><button class="btn red grow" data-act="yes">Да</button><button class="btn alt grow" data-act="no">Нет</button></div>`);}
 
 /* картинки (WebP в img/, нарезаны tools/make_art.py). Нет файла — рисуется кодом */
 const IMGN=/*IMGN*/['an_giraf','an_goat','an_lion','an_monk','an_peng','an_rab','an_slon','an_zebra','bg_grass','bg_path','cafe','coin_know','cover_start','ev_epi','ev_exc','ev_heat','ev_insp','fence_h','fence_post','final_win','food_bag','ic_bank','ic_enc','ic_price','ic_staff','ic_stock','kassa','vet','vis_boy','vis_girl','vis_man','vis_woman','worker']/*END*/;
@@ -726,8 +816,7 @@ function doAct(a,b){
     simpleAsk(`Добавить: ${A.name}`,'Сколько животных','шт',`${money(A.price)} за штуку. Сейчас ${e.n}, вольер ${e.w*e.h} м², норма ${A.area} м² на особь.`,x=>{const c=x*A.price;if(c>S.money){toast(`Не хватает ${money(c-S.money)}`);return false;}S.money-=c;e.n+=x;save();renderAll();closeCard();mode='idle';return true;});break;}
   case 'sellan':{const e=S.enc.find(x=>x.id===selId);if(!e)break;const A=ANI[e.k];
     simpleAsk(`Продать: ${A.name}`,'Сколько животных','шт',`Возврат 70 % цены: ${money(A.price*SELL_K)} за штуку. Сейчас ${e.n}.`,x=>{if(x>e.n){toast('Столько нет');return false;}S.money+=Math.round(x*A.price*SELL_K);e.n-=x;e.sick=Math.min(e.sick,e.n);if(e.n===0){S.enc=S.enc.filter(z=>z!==e);selId=0;}save();renderAll();closeCard();mode='idle';return true;});break;}
-  case 'demol':{const e=S.enc.find(x=>x.id===selId);if(!e)break;if(!confirm('Снести вольер? Животные продаются за 70 %, забор вернётся на склад.'))break;
-    S.money+=Math.round(e.n*ANI[e.k].price*SELL_K);S.stock.fence+=2*(e.w+e.h);S.enc=S.enc.filter(z=>z!==e);selId=0;save();renderAll();break;}
+  case 'demol':{const e=S.enc.find(x=>x.id===selId);if(!e)break;yesNo('Снести вольер? Животные продаются за 70 %, забор вернётся на склад.',()=>{S.money+=Math.round(e.n*ANI[e.k].price*SELL_K);S.stock.fence+=2*(e.w+e.h);S.enc=S.enc.filter(z=>z!==e);selId=0;save();renderAll();});break;}
   case 'hire':{const t=b.dataset.t;if(S.staff.w+S.staff.v>=14){toast('Не больше 14 сотрудников');break;}S.staff[t]++;save();renderAll();break;}
   case 'fire':{const t=b.dataset.t;if(S.staff[t]<=0)break;const d=S.duty;if(t==='w'&&S.staff.w-1<d.feed+d.clean+d.kassa+d.cafe){toast('Сначала сними человека с поручения');break;}S.staff[t]--;save();renderAll();break;}
   case 'dp':{const d=S.duty,k=b.dataset.d;if(k==='cafe'&&!S.cafe){toast('Сначала построй кафе');break;}if(d.feed+d.clean+d.kassa+d.cafe>=S.staff.w){toast('Нет свободных работников — найми ещё');break;}d[k]++;save();renderAll();break;}
@@ -748,7 +837,7 @@ function doAct(a,b){
   case 'repay':if(S.money<S.loan.total){toast(`Не хватает ${money(S.loan.total-S.money)}`);break;}S.money-=S.loan.total;S.loan=null;save();renderAll();toast('Кредит погашен');break;
   case 'check':runCheck();break;
   case 'open':
-    if(S.duty.kassa<1&&!confirm('На кассе никого нет — гостей не будет. Всё равно открыть?'))break;
+    if(S.duty.kassa<1){yesNo('На кассе никого нет — гостей не будет. Всё равно открыть день?',()=>startSim());break;}
     startSim();break;
   case 'speed':sim.speed=sim.speed===1?2:1;renderFoot();break;
   }
@@ -769,6 +858,7 @@ function runCheck(){
 
 /* ================= ДЕНЬ: утро, события, задача ================= */
 function startDay(){
+  PF.setPlaying(true);
   if(S.day>DAYS){showFinal();return;}
   if(S.day>=3&&!S.morning){
     // события
@@ -859,9 +949,10 @@ function askReportQ(){
 function nextDay(){
   S.morning=false;
   if(S.day>DAYS||S.money<-50000){showFinal();return;}
-  closeCard();startDay();
+  PF.interstitial(()=>{closeCard();startDay();});
 }
 function showFinal(){
+  PF.setPlaying(false);
   const cap=capital(),st=starsOf(cap),best=lsGet(BEST_KEY),isBest=!best||cap>best.capital;
   if(isBest)lsSet(BEST_KEY,{capital:cap,stars:st});
   lsDel(SAVE_KEY);mode='over';
@@ -873,6 +964,7 @@ function showFinal(){
     <p>${isBest?'Новый рекорд! ':''}${st===3?'Зоопарк мечты!':st===2?'Отличный зоопарк!':st===1?'Зоопарк на плаву.':'В следующий раз выйдет лучше.'}</p><button class="btn go" data-act="new">Сыграть ещё</button>`);
 }
 function showStart(){
+  PF.setPlaying(false);
   const sv=lsGet(SAVE_KEY),best=lsGet(BEST_KEY);mode='over';
   card(`${hero('cover_start','Зоопарк',44)}<p style="text-align:center">Управляй зоопарком 60 дней: бюджет, земля, работники, цены. Считай — и зоопарк процветёт.</p>
     ${best?`<p style="text-align:center">Рекорд: <b>${money(best.capital)}</b> ${'★'.repeat(best.stars)}</p>`:''}
@@ -901,15 +993,17 @@ document.addEventListener('click',e=>{
   case 'excask':excAsk();return;
   case 'repq':askReportQ();return;
   case 'nextday':nextDay();return;
-  case 'ad':PF.rewarded(()=>{coin(1);toast('+1 монета знаний');});return;
+  case 'ad':watchAd();return;
   case 'new':startGame();return;
-  case 'continue':{const sv=lsGet(SAVE_KEY);if(sv&&sv.v===2){S=sv;fitCanvas();renderAll();if(!S.taskDone)showMorning();else{closeCard();mode='idle';renderAll();}}else startGame();return;}
-  case 'restart':if(confirm('Начать заново? Весь прогресс будет потерян.'))startGame();return;
+  case 'continue':{const sv=lsGet(SAVE_KEY);if(sv&&sv.v===2){S=sv;PF.setPlaying(true);fitCanvas();renderAll();if(!S.taskDone)showMorning();else{closeCard();mode='idle';renderAll();}}else startGame();return;}
+  case 'restart':yesNo('Начать заново? Весь прогресс будет потерян.',startGame);return;
+  case 'yes':{const f=YN;YN=null;closeCard();mode='idle';if(f)f();return;}
+  case 'no':YN=null;closeCard();mode=S?'idle':'over';if(S)renderAll();return;
   }
   doAct(a,b);
 });
 $('#btnMenu').addEventListener('click',()=>{if(S&&mode!=='sim')showMenu();});
-$('#hCoin').addEventListener('click',()=>{if(S&&mode!=='sim')PF.rewarded(()=>{coin(1);toast('+1 монета знаний');});});
+$('#hCoin').addEventListener('click',()=>{if(S&&mode!=='sim')watchAd();});
 cv.addEventListener('click',ev=>{
   if(!S||mode==='sim'||mode==='over')return;
   const r=cv.getBoundingClientRect(),x=Math.floor((ev.clientX-r.left)/r.width*COLS),y=Math.floor((ev.clientY-r.top)/r.height*S.rows);
@@ -919,14 +1013,14 @@ cv.addEventListener('click',ev=>{
 
 /* ================= ЦИКЛ ================= */
 let last=0;
-function frame(ts){requestAnimationFrame(frame);const dt=Math.min(.05,(ts-last)/1000||0);last=ts;if(sim)updateSim(dt);render(ts/1000);}
+function frame(ts){requestAnimationFrame(frame);const dt=Math.min(.05,(ts-last)/1000||0);last=ts;if(sim&&!PF.paused())updateSim(dt);render(ts/1000);}
 window.addEventListener('resize',()=>{if(S)fitCanvas();});
 requestAnimationFrame(frame);
 
 /* Отладка: window.__zoo (в публикационной сборке вырезать) */
 window.__zoo={get S(){return S;},set S(v){S=v;},ANI,TK,genTask,computeDay,commitDay,capital,doBuild,findSpot,startGame,tier,newState,reportQuestion,
   day(){const r=computeDay(false);commitDay(r);return r;},fast(){if(sim)sim.T=.2;},showFinal,startDay};
-showStart();
+PF.init().then(()=>{showStart();PF.ready();});
 </script>
 </body>
 </html>

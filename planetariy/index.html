@@ -274,10 +274,10 @@ var Q=[null,
 ];
 /* ===== утилиты ===== */
 function $(id){return document.getElementById(id);}
-var IM={};['bg_w1','bg_w2','sun','cover','mira','mira_think','mira_win','kometa','kometa_hint','stars_pop'].forEach(function(n){var i=new Image();i.onload=function(){IM[n]=i;if(n==='cover')coverOn();if(n==='mira')setAv('mira');};i.src='img/'+n+'.webp';});
+var IM={};['bg_w1','bg_w2','sun','cover','mira','mira_think','mira_win','kometa','kometa_hint','stars_pop'].forEach(function(n){var i=new Image();i.onload=function(){IM[n]=i;if(n==='cover')coverOn();if(n==='mira')setAv('mira');};i.src=(window.IMGDATA&&window.IMGDATA[n])||'img/'+n+'.webp';});
 var AVF={mira:'🧑‍🚀',mira_think:'🤔',mira_win:'🎉',kometa:'🐱',kometa_hint:'💡'};
-function setAv(n){var el=$('av');if(!el)return;el.innerHTML=IM[n]?'<img src="img/'+n+'.webp" alt="">':AVF[n];}
-function coverOn(){var t=$('scrTitle');if(IM.cover){t.classList.add('cov');t.style.backgroundImage='linear-gradient(rgba(5,8,32,.15),rgba(5,8,32,.55)),url(img/cover.webp)';}}
+function setAv(n){var el=$('av');if(!el)return;el.innerHTML=IM[n]?'<img src="'+IM[n].src+'" alt="">':AVF[n];}
+function coverOn(){var t=$('scrTitle');if(IM.cover){t.classList.add('cov');t.style.backgroundImage='linear-gradient(rgba(5,8,32,.15),rgba(5,8,32,.55)),url('+IM.cover.src+')';}}
 function mod(a,n){return ((a%n)+n)%n;}
 function cd(a,b){var d=mod(a-b,24);return Math.min(d,24-d);}
 function fmt(h){h=mod(h,24);var m=Math.round(h*60)%1440;return Math.floor(m/60)+':'+('0'+(m%60)).slice(-2);}
@@ -332,14 +332,15 @@ function openLevel(id){
  $('msg').innerHTML=L.txt;$('hn').textContent=3;setAv('mira');
  buildCtl();show('game');
 }
+function rewBtn(){return PF.canReward()?'<div class="row"><button class="sm" id="bRew">🎬 Показать ответ за ролик</button></div>':'';}
 function buildCtl(){
  var L=G.L,c=$('ctl'),h='';
  if(L.t==='spin'){
-  h='<div class="row"><button class="sm" data-d="-1">⟲ −1 ч</button><button class="sm" data-d="-.25">−15 мин</button><button class="sm" data-d=".25">+15 мин</button><button class="sm" data-d="1">+1 ч ⟳</button></div><div class="row"><button class="btn" id="bOk" style="width:70%">Готово ✓</button></div>';
+  h='<div class="row"><button class="sm" data-d="-1">⟲ −1 ч</button><button class="sm" data-d="-.25">−15 мин</button><button class="sm" data-d=".25">+15 мин</button><button class="sm" data-d="1">+1 ч ⟳</button></div><div class="row"><button class="btn" id="bOk" style="width:70%">Готово ✓</button></div>'+rewBtn();
  }else{
   h='<div class="cards" id="cards">';
   L.items.forEach(function(it,i){h+='<div class="ccard" data-i="'+i+'"><div class="cn">'+CITIES[it.c].n+'</div><div class="clk"></div><div class="dg"></div><div class="cr"><button data-s="-1">−</button><button data-s="1">+</button></div><button class="dy" data-dy="1"></button></div>';});
-  h+='</div><div class="row"><button class="btn" id="bOk" style="width:70%">Готово ✓</button></div>';
+  h+='</div><div class="row"><button class="btn" id="bOk" style="width:70%">Готово ✓</button></div>'+rewBtn();
  }
  c.innerHTML=h;if(L.t==='clock')renderCards();
 }
@@ -353,6 +354,7 @@ function renderCards(){var cs=document.querySelectorAll('.ccard');G.ans.forEach(
 $('ctl').addEventListener('click',function(e){
  if(!G||G.done)return;var b=e.target.closest('button');if(!b)return;
  if(b.id==='bOk'){check();return;}
+ if(b.id==='bRew'){PF.rewarded(function(ok){if(!ok||!G||G.done)return;G.free=true;G.hint=3;$('hn').textContent=0;setAv('kometa_hint');var L=G.L;if(L.t==='spin'){G.anim={to:G.sol};$('msg').innerHTML='🎬 Комета повернула Землю. Нажми «Готово».';}else{L.items.forEach(function(it,i){G.ans[i]={h:it.h,day:it.day||0};});renderCards();$('msg').innerHTML='🎬 Комета показала ответ. Нажми «Готово».';}b.hidden=true;});return;}
  if(b.hasAttribute('data-d')){G.anim=null;G.t=mod(G.t+parseFloat(b.getAttribute('data-d')),24);return;}
  var card=b.closest('.ccard');if(!card)return;var a=G.ans[+card.getAttribute('data-i')];card.classList.remove('ok','no');
  if(b.hasAttribute('data-s'))a.h=mod(a.h+parseInt(b.getAttribute('data-s')),24);
@@ -384,31 +386,34 @@ function check(){
   if(!all){SV.err.zones=(SV.err.zones||0)+1;save();setAv('kometa');$('msg').innerHTML='🐱 Есть ошибка. Прикинь по Земле: ближе к Солнцу — значит время больше (идём на восток — прибавляем час).';return;}
   st=G.tries===1?3:G.tries===2?2:1;
  }
- st=Math.max(1,st-G.hint);finish(L,st);
+ st=Math.max(1,st-(G.free?0:G.hint));finish(L,st);
 }
 function finish(L,st){
- G.done=true;if(st>(SV.stars[L.id]||0))SV.stars[L.id]=st;SV.journal[L.id]=1;save();
+ G.done=true;markDone(false);if(st>(SV.stars[L.id]||0))SV.stars[L.id]=st;SV.journal[L.id]=1;save();
  showRes(L,st);
 }
 function showRes(L,st,title){
- $('rTitle').textContent=title||'Отлично!';$('rHero').innerHTML=IM[st?'mira_win':'mira_think']?'<img class=hero src="img/'+(st?'mira_win':'mira_think')+'.webp" alt="">':'';
+ $('rTitle').textContent=title||'Отлично!';$('rHero').innerHTML=IM[st?'mira_win':'mira_think']?'<img class=hero src="'+IM[st?'mira_win':'mira_think'].src+'" alt="">':'';
  $('rStars').innerHTML='★★★'.slice(0,st)+'<i>'+'★★★'.slice(0,3-st)+'</i>';
  $('rFact').innerHTML='<b>📖 Журнал наблюдений:</b><br>'+L.fact;
  var nxt=nextAfter(L.id);$('rNext').style.display=nxt?'':'none';$('rNext').textContent=Q_ADAPT&&Q_ADAPT.length?'Дальше (повтор)':'Дальше';
  $('scrRes').hidden=false;
 }
 function nextAfter(id){if(Q_ADAPT&&Q_ADAPT.length)return Q_ADAPT[0];var n=id+1;return (n<=20&&unlocked(n))?n:0;}
-$('rNext').addEventListener('click',function(){var L=G&&G.L||curBoss;var n;if(Q_ADAPT&&Q_ADAPT.length){n=Q_ADAPT.shift();}else n=nextAfter(L.id);$('scrRes').hidden=true;PF.interstitial(function(){if(n)openLevel(n);else show('map');});});
+$('rNext').addEventListener('click',function(){var L=G&&G.L||curBoss;var n;if(Q_ADAPT&&Q_ADAPT.length){n=Q_ADAPT.shift();}else n=nextAfter(L.id);$('scrRes').hidden=true;adGate(function(){if(n)openLevel(n);else show('map');});});
 $('rAgain').addEventListener('click',function(){var L=G&&G.L||curBoss;$('scrRes').hidden=true;openLevel(L.id);});
-$('rMap').addEventListener('click',function(){$('scrRes').hidden=true;Q_ADAPT=null;PF.interstitial(function(){show('map');});});
+$('rMap').addEventListener('click',function(){$('scrRes').hidden=true;Q_ADAPT=null;adGate(function(){show('map');});});
 $('gBack').addEventListener('click',function(){show('map');});
 /* ===== викторина ===== */
+var doneCount=0,adDue=false;
+function adGate(done){if(adDue){adDue=false;PF.interstitial(done);}else done();}
+function markDone(isBoss){doneCount++;if(isBoss||doneCount%5===0)adDue=true;}
 var curBoss=null,qs=[],qi=0,qok=0,qlock=false;
 function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var x=a[i];a[i]=a[j];a[j]=x;}return a;}
 function openQuiz(L){curBoss=L;G=null;qs=shuffle(L.pool).slice(0,L.n);qi=0;qok=0;$('qTitle').textContent='👑 '+(L.id/10)+'-й босс';show('quiz');nextQ();}
 function nextQ(){
  if(qi>=qs.length){var pass=qok>=4,st=pass?(qok===5?3:2):0;
-  if(pass){if(st>(SV.stars[curBoss.id]||0))SV.stars[curBoss.id]=st;SV.journal[curBoss.id]=1;save();showRes(curBoss,st,'Босс побеждён! '+qok+' из 5');}
+  if(pass){markDone(true);if(st>(SV.stars[curBoss.id]||0))SV.stars[curBoss.id]=st;SV.journal[curBoss.id]=1;save();showRes(curBoss,st,'Босс побеждён! '+qok+' из 5');}
   else{showRes(curBoss,0,'Верных ответов: '+qok+' из 5. Нужно 4');$('rNext').style.display='none';$('rFact').innerHTML='Не страшно! Пройди уровни ещё раз и попробуй снова — вопросы каждый раз новые.';}
   return;}
  var q=Q[qs[qi]],ord=shuffle([0,1,2]);qlock=false;$('qProg').textContent=(qi+1)+'/'+qs.length;$('qq').textContent=q.q;$('qExp').textContent='';$('qNext').hidden=true;
@@ -509,7 +514,7 @@ document.addEventListener('keydown',function(e){if(cur!=='game'||!G||G.L.t!=='sp
 $('bPlay').addEventListener('click',function(){show('map');});
 $('bJournal').addEventListener('click',function(){show('journal');});
 $('bRepeat').addEventListener('click',startRepeat);
-$('bReset').addEventListener('click',function(){if(confirm('Стереть весь прогресс?')){SV={v:1,stars:{},journal:{},err:{day:0,zones:0}};save();}});
+var rsT=0;$('bReset').addEventListener('click',function(){var b=$('bReset');if(!rsT){b.textContent='Точно стереть? Нажми ещё раз';rsT=setTimeout(function(){rsT=0;b.textContent='Сбросить прогресс';},3500);return;}clearTimeout(rsT);rsT=0;SV={v:1,stars:{},journal:{},err:{day:0,zones:0}};save();b.textContent='Прогресс стёрт';setTimeout(function(){b.textContent='Сбросить прогресс';},2000);});
 /* ===== старт ===== */
 PF.onPause=function(){};
 PF.onCloud=function(){load();if(cur==='map')buildMap();};

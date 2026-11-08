@@ -96,28 +96,66 @@ table{width:100%;border-collapse:collapse;font-size:12.5px}td,th{padding:4px 3px
 <script>
 /* Слой платформы: Яндекс Игры SDK, если есть; иначе заглушки. Ключи сохранения начинаются с lunabaza- */
 window.PF=(function(){
- var ysdk=null,player=null,ok=false,mem={},timer=0,self={};
- function ls(k,v){try{if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){}}
- self.get=function(k){if(k in mem)return mem[k];try{return localStorage.getItem(k)}catch(e){return null}};
- self.put=function(k,v){mem[k]=String(v);ls(k,String(v));sched()};
- self.del=function(k){delete mem[k];ls(k,null);sched()};
- function sched(){if(!player||timer)return;timer=setTimeout(function(){timer=0;try{player.setData({v:1,d:mem})}catch(e){}},2500)}
+ "use strict";
+ var ysdk=null,player=null,ok=false,cloudOk=false,gaveUp=false,mem={},timer=0,self={onPause:function(){}};
+ var wantReady=false,readyDone=false,adBusy=false,tabHidden=false,apiPaused=false,gpOn=false,wantGp=false;
+ var lastAdAt=0,bornAt=Date.now(),AD_FIRST_MS=120000,AD_GAP_MS=180000;
+ function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+ function lsDel(k){try{localStorage.removeItem(k)}catch(e){}}
+ self.get=function(k){if(Object.prototype.hasOwnProperty.call(mem,k))return mem[k];try{return localStorage.getItem(k)}catch(e){return null}};
+ self.put=function(k,v){mem[k]=String(v);lsSet(k,String(v));sched()};
+ self.del=function(k){delete mem[k];lsDel(k);sched()};
+ function sched(){if(!player||!cloudOk||timer)return;timer=setTimeout(flush,2500)}
+ function flush(){clearTimeout(timer);timer=0;if(!player||!cloudOk)return;try{var p=player.setData({v:1,d:mem});if(p&&p.catch)p.catch(function(){})}catch(e){}}
+ /* пауза и GameplayAPI */
+ self.paused=function(){return adBusy||tabHidden||apiPaused};
+ function applyGp(){
+  if(!ok||!readyDone)return;
+  var should=wantGp&&!self.paused();if(should===gpOn)return;gpOn=should;
+  try{var g=ysdk.features&&ysdk.features.GameplayAPI;if(g){if(should)g.start();else g.stop()}}catch(e){}
+ }
+ function changed(){applyGp();try{self.onPause(self.paused())}catch(e){}}
+ self.setPlaying=function(on){wantGp=!!on;applyGp()};
+ function tryReady(){
+  if(readyDone||!wantReady||!ok)return;readyDone=true;
+  try{var l=ysdk.features&&ysdk.features.LoadingAPI;if(l)l.ready()}catch(e){}
+  applyGp();
+ }
+ self.ready=function(){wantReady=true;tryReady()};
  self.init=function(){
+  try{document.addEventListener('visibilitychange',function(){tabHidden=!!document.hidden;if(tabHidden)flush();changed()});window.addEventListener('pagehide',flush)}catch(e){}
   if(!window.YaGames||!window.YaGames.init)return Promise.resolve();
   return new Promise(function(res){
-   var t=setTimeout(res,4000);
-   window.YaGames.init().then(function(sdk){ysdk=sdk;ok=true;
-    try{var l=sdk.features&&sdk.features.LoadingAPI;if(l)l.ready()}catch(e){}
+   var t=setTimeout(function(){gaveUp=true;res()},4000);
+   window.YaGames.init().then(function(sdk){
+    ysdk=sdk;ok=true;
+    try{sdk.on('game_api_pause',function(){apiPaused=true;changed()});sdk.on('game_api_resume',function(){apiPaused=false;changed()})}catch(e){}
+    tryReady();
     return sdk.getPlayer({scopes:false}).then(function(p){player=p;return p.getData()}).then(function(d){
-     if(d&&d.d&&!self.get('lunabaza-save'))Object.keys(d.d).forEach(function(k){mem[k]=d.d[k];ls(k,d.d[k])})},function(){});
+     if(!gaveUp&&d&&d.d&&!self.get('lunabaza-save'))Object.keys(d.d).forEach(function(k){mem[k]=d.d[k];lsSet(k,d.d[k])});
+     cloudOk=true;
+    },function(){});
    }).then(function(){clearTimeout(t);res()},function(){clearTimeout(t);res()});
   });
  };
  self.hasSdk=function(){return ok};
+ /* реклама: полноэкранная не чаще раза в 3 минуты (первая не раньше чем через 2 минуты после загрузки) */
+ function adBegin(){adBusy=true;changed()}
+ function adEnd(){adBusy=false;changed()}
  self.interstitial=function(done){
-  if(!ok||!ysdk.adv||!ysdk.adv.showFullscreenAdv){done();return}
-  var f=false;function end(){if(f)return;f=true;done()}
-  try{ysdk.adv.showFullscreenAdv({callbacks:{onClose:end,onError:end,onOffline:end}})}catch(e){end()}
+  if(adBusy)return;
+  var now=Date.now(),allowed=lastAdAt?lastAdAt+AD_GAP_MS:bornAt+AD_FIRST_MS;
+  if(!ok||!ysdk.adv||!ysdk.adv.showFullscreenAdv||now<allowed){done();return}
+  var fin=false;function end(shown){if(fin)return;fin=true;if(shown)lastAdAt=Date.now();adEnd();done()}
+  adBegin();
+  try{ysdk.adv.showFullscreenAdv({callbacks:{onClose:function(w){end(w)},onError:function(){end(false)},onOffline:function(){end(false)}}})}catch(e){end(false)}
+ };
+ self.canReward=function(){return !!(ok&&!adBusy&&ysdk.adv&&ysdk.adv.showRewardedVideo)};
+ self.rewarded=function(done){
+  if(!self.canReward()){done(false);return}
+  var fin=false,got=false;function end(){if(fin)return;fin=true;if(got)lastAdAt=Date.now();adEnd();done(got)}
+  adBegin();
+  try{ysdk.adv.showRewardedVideo({callbacks:{onRewarded:function(){got=true},onClose:end,onError:end}})}catch(e){end()}
  };
  return self;
 })();
@@ -292,7 +330,7 @@ function runDays(n,isDay,delay,done){
   refresh();
   if(S.crew.length<2){gameOver();return}
   var ev=eventRoll(isDay);
-  var cont=function(){setTimeout(next,delay)};
+  var cont=function(){(function w(){if(PF.paused())setTimeout(w,200);else setTimeout(next,delay)})()};
   var after=function(){if(ev)showEvent(ev,isDay,cont);else cont()};
   var w=warnNeed(o);
   if(w)alertShortage(w,after);else after();
@@ -354,7 +392,9 @@ function dawn(){
  var html='<p>Рассвет! Ночь пережили <b>'+S.crew.length+'</b> из экипажа. Самое низкое здоровье: '+Math.round(lowest)+'.</p>'+
   '<p>Цель цикла: <b>'+g.t+'</b> — '+(ok?'<span class="tag ok">выполнена +'+g.b+' ₵</span>':'<span class="tag bad">не выполнена</span>')+'</p>';
  if(S.cycle>=12){S.phase='end';modal('Финал',html,[{t:'Дальше',c:'go',f:function(){closeModal();finale()}}]);return}
- modal('Рассвет, цикл '+S.cycle,html,[{t:'📡 Связь с Землёй',c:'go',f:function(){closeModal();earthCall(2)}}]);
+ PF.interstitial(function(){
+  modal('Рассвет, цикл '+S.cycle,html,[{t:'📡 Связь с Землёй',c:'go',f:function(){closeModal();earthCall(2)}}]);
+ });
 }
 function earthCall(n){
  if(n<=0){nextCycle();return}
@@ -393,7 +433,7 @@ function nextCycle(){
  var g=GOALS[S.cycle-1];
  modal('Цикл '+S.cycle+' из 12',
   '<p>'+msg+'</p><p>Контейнер с Земли: 30 пайков, 20 кг O₂, 40 л воды, 2 запчасти, грант '+grant+' ₵ (всё, что влезло в склады).</p><p>🎯 Цель: <b>'+g.t+'</b> (+'+g.b+' ₵)</p>'+(S.cycle===12?'<p>⚠ Главная ночь: события вдвое чаще.</p>':''),
-  [{t:'К работе',c:'go',f:function(){closeModal();PF.interstitial(function(){})}}]);
+  [{t:'К работе',c:'go',f:function(){closeModal()}}]);
 }
 function finale(){
  var alive=S.crew.length,stars=S.stars;
@@ -418,7 +458,7 @@ function warnNeed(o){
 }
 function alertShortage(list,after){
  modal('⚠ Запас закончился!','<p>Не хватает: <b>'+list.join(', ')+'</b>. Экипаж страдает. Срочно закажи с Земли (дорого, но спасает жизни).</p>',
-  [{t:'📦 Закупки',c:'go',f:function(){shopModal(after)}},{t:'Дальше',f:function(){closeModal();after()}}]);
+  [{t:'📦 Закупки',c:'go',f:function(){shopModal(after)}}].concat(PF.canReward()?[{t:'🎬 Аварийная батарея (ролик, +20 кВт·ч)',c:'go',f:function(){PF.rewarded(function(got){if(got){S.res.cells+=20;refresh();toast('🔋 +20 кВт·ч в аварийные ячейки')}else toast('Ролик не показан')});return false}}]:[],[{t:'Дальше',f:function(){closeModal();after()}}]));
 }
 
 /* ---------- События ---------- */
@@ -448,9 +488,10 @@ function modal(title,body,btns){
  var mb=$('mb');
  btns.forEach(function(b){var e=document.createElement('button');e.innerHTML=b.t;if(b.c)e.className=b.c;e.onclick=function(){if(b.f()===false)return};mb.appendChild(e)});
  if(!btns.length)mb.remove();
- $('ov').classList.add('on');sh.scrollTop=0;
+ $('ov').classList.add('on');sh.scrollTop=0;gp();
 }
-function closeModal(){$('ov').classList.remove('on')}
+function closeModal(){$('ov').classList.remove('on');gp()}
+function gp(){try{PF.setPlaying(!!S&&S.phase!=='over'&&S.phase!=='end'&&!$('ov').classList.contains('on')&&$('menu').style.display==='none')}catch(e){}}
 function toast(m){var t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(function(){t.style.display='none'},2200)}
 
 function modsModal(){
@@ -606,7 +647,7 @@ function opsActive(){return S&&S.crew.some(function(c){return c.task==='drillO'|
 function loop(t){if(!document.hidden)drawScene(t);requestAnimationFrame(loop)}
 
 /* ---------- Запуск ---------- */
-function showMenu(){S=null;busy=false;$('menu').style.display='flex';try{$('mCont').style.display=PF.get('lunabaza-save')?'':'none'}catch(e){}}
+function showMenu(){S=null;busy=false;$('menu').style.display='flex';gp();try{$('mCont').style.display=PF.get('lunabaza-save')?'':'none'}catch(e){}}
 function startGame(){
  $('menu').style.display='none';busy=false;closeModal();
  $('crew').dataset.sig='';refresh();lockUI(false);
@@ -620,7 +661,7 @@ $('bShop').onclick=function(){if(S&&!busy)shopModal()};
 $('bCalc').onclick=function(){if(S&&!busy)calcModal(false)};
 $('bGo').onclick=doStep;
 window.__game={get S(){return S},doStep:doStep,simDay:simDay,needs:needs,stocks:stocks,T:T,QS:QS,newState:function(){S=newState();return S},refresh:refresh,startGame:startGame};
-PF.init().then(function(){showMenu();requestAnimationFrame(loop)});
+PF.init().then(function(){showMenu();requestAnimationFrame(loop);PF.ready()});
 })();
 </script>
 </body></html>

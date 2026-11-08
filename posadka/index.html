@@ -89,6 +89,7 @@ h2{font-size:26px;margin:4px 0 10px;text-align:center;color:#ffd84a;text-shadow:
     <div class="panel"><div class="q" id="br-q"></div><div id="br-ans"></div></div>
     <div class="panel hint" id="br-hint" style="display:none"></div>
     <button class="btn" id="b-go" style="display:none">🚀 К посадке!</button>
+    <button class="btn org small" id="b-reward" style="display:none">📺 Ролик: +25 % топлива</button>
     <button class="btn blue small" id="b-skip" style="margin-top:auto">Пропустить вопрос</button>
   </div>
 
@@ -98,6 +99,7 @@ h2{font-size:26px;margin:4px 0 10px;text-align:center;color:#ffd84a;text-shadow:
     <div class="panel hint" id="r-text"></div>
     <button class="btn" id="r-next">Дальше ▶</button>
     <button class="btn org" id="r-retry">↻ Ещё раз</button>
+    <button class="btn" id="r-reward" style="display:none">📺 Ещё раз с +25 % топлива</button>
     <button class="btn blue small" data-go="lv">☰ К площадкам</button>
   </div>
 
@@ -118,25 +120,62 @@ h2{font-size:26px;margin:4px 0 10px;text-align:center;color:#ffd84a;text-shadow:
 'use strict';
 /* ===== Платформа: заглушка Яндекс Игр (без SDK всё работает как есть) ===== */
 var PF = (function () {
-  var ys = null, ok = false;
+  var ys = null, ok = false, adBusy = false, tabHidden = false, apiPaused = false, lastAdAt = Date.now(), gpOn = false, wantGp = false, readyDone = false, wantReady = false;
+  var AD_GAP_MS = 180000;   // полноэкранная реклама не чаще раза в 3 минуты
   var self = { onPause: function () {} };
   self.get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
   self.put = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
-  self.ready = function () { try { if (ok && ys.features && ys.features.LoadingAPI) ys.features.LoadingAPI.ready(); } catch (e) {} };
-  try {
-    if (window.YaGames && window.YaGames.init) window.YaGames.init().then(function (s) { ys = s; ok = true; self.ready(); }).catch(function () {});
-  } catch (e) {}
-  document.addEventListener('visibilitychange', function () { self.onPause(document.hidden); });
+  self.paused = function () { return adBusy || tabHidden || apiPaused; };
+  function applyGp() {
+    if (!ok || !readyDone) return;
+    var should = wantGp && !self.paused(); if (should === gpOn) return; gpOn = should;
+    try { var g = ys.features && ys.features.GameplayAPI; if (g) { if (should) g.start(); else g.stop(); } } catch (e) {}
+  }
+  function changed() { applyGp(); try { self.onPause(self.paused()); } catch (e) {} }
+  function tryReady() { if (readyDone || !wantReady || !ok) return; readyDone = true; try { var l = ys.features && ys.features.LoadingAPI; if (l) l.ready(); } catch (e) {} applyGp(); }
+  self.init = function () {
+    try {
+      if (!window.YaGames || !window.YaGames.init) return;
+      window.YaGames.init().then(function (s) {
+        ys = s; ok = true;
+        try { if (ys.on) { ys.on('game_api_pause', function () { apiPaused = true; changed(); }); ys.on('game_api_resume', function () { apiPaused = false; changed(); }); } } catch (e) {}
+        tryReady(); changed();
+      }).catch(function () {});
+    } catch (e) {}
+  };
+  self.ready = function () { wantReady = true; tryReady(); };
+  self.gameplay = function (on) { wantGp = !!on; applyGp(); };
+  /* межстраничная: вызывать в естественной паузе (после итога уровня); по окончании вызывается done */
+  self.fullscreen = function (done) {
+    var fin = false;
+    function end() { if (fin) return; fin = true; adBusy = false; lastAdAt = Date.now(); changed(); done(); }
+    if (!ok || adBusy || Date.now() - lastAdAt < AD_GAP_MS || !ys.adv || !ys.adv.showFullscreenAdv) { done(); return; }
+    adBusy = true; changed();
+    try { ys.adv.showFullscreenAdv({ callbacks: { onClose: end, onError: end, onOffline: end } }); } catch (e) { end(); }
+  };
+  self.canReward = function () { return !!(ok && !adBusy && ys.adv && ys.adv.showRewardedVideo); };
+  /* ролик за награду: cb(true) только если игрок досмотрел */
+  self.reward = function (cb) {
+    if (!self.canReward()) { cb(false); return; }
+    var got = false, fin = false;
+    function end() { if (fin) return; fin = true; adBusy = false; lastAdAt = Date.now(); changed(); cb(got); }
+    adBusy = true; changed();
+    try { ys.adv.showRewardedVideo({ callbacks: { onRewarded: function () { got = true; }, onClose: end, onError: end } }); } catch (e) { end(); }
+  };
+  document.addEventListener('visibilitychange', function () { tabHidden = !!document.hidden; changed(); });
+  self.init();
   return self;
 })();
 
 /* ===== Картинки (WebP из art\ → game\img\). Нет файла или не загрузился — рисуем кодом ===== */
 var IMG_LIST = /*IMGN*/['ship_0','ship_1','ship_2','ship_3','pad','chute','flame','boom','beacon','flag','ic_fuel','ic_star','ic_lock','ic_wind','ic_quiz','ic_chute','cover','bg_moon','bg_mars','bg_venus','bg_jupiter']/*END*/;
+var IMGDATA = window.IMGDATA || {};
+function U(n) { return IMGDATA[n] || 'img/' + n + '.webp'; }
 var IM = {};
-IMG_LIST.forEach(function (n) { var i = new Image(); i.onload = function () { IM[n] = i; if (n === 'cover') coverReady(); if (n === 'ic_chute') $('chute').innerHTML = '<img src=\"img/ic_chute.webp\" style=\"height:22px;vertical-align:middle;margin-right:6px\">Парашют'; }; i.src = 'img/' + n + '.webp'; });
+IMG_LIST.forEach(function (n) { var i = new Image(); i.onload = function () { IM[n] = i; if (n === 'cover') coverReady(); if (n === 'ic_chute') $('chute').innerHTML = '<img src=\"' + U('ic_chute') + '\" style=\"height:22px;vertical-align:middle;margin-right:6px\">Парашют'; }; i.src = U(n); });
 function img(n) { return IM[n] && IM[n].naturalWidth ? IM[n] : null; }
-function starsHTML(n) { var a = img('ic_star'), h = ''; for (var i = 0; i < 3; i++) h += a ? '<img src=\"img/ic_star.webp\" style=\"height:30px;margin:0 2px;' + (i < n ? '' : 'filter:grayscale(1) brightness(.5);') + '\">' : (i < n ? '★' : '☆'); return h; }
-function lockHTML() { return img('ic_lock') ? '<img src=\"img/ic_lock.webp\" style=\"height:40px\">' : '🔒'; }
+function starsHTML(n) { var a = img('ic_star'), h = ''; for (var i = 0; i < 3; i++) h += a ? '<img src=\"' + U('ic_star') + '\" style=\"height:30px;margin:0 2px;' + (i < n ? '' : 'filter:grayscale(1) brightness(.5);') + '\">' : (i < n ? '★' : '☆'); return h; }
+function lockHTML() { return img('ic_lock') ? '<img src=\"' + U('ic_lock') + '\" style=\"height:40px\">' : '🔒'; }
 
 /* ===== Данные ===== */
 var BODIES = [
@@ -203,7 +242,7 @@ var Snd = (function () {
     } catch (e) { ac = null; }
   }
   function tone(f, t, type, vol, slide) {
-    if (!ac || !save.snd) return;
+    if (!ac || !save.snd || PF.paused()) return;
     try {
       var o = ac.createOscillator(), g = ac.createGain(); o.type = type || 'sine'; o.frequency.value = f;
       if (slide) o.frequency.linearRampToValueAtTime(slide, ac.currentTime + t);
@@ -213,7 +252,7 @@ var Snd = (function () {
   }
   return {
     init: init,
-    engine: function (on) { if (engG) engG.gain.value = (on && save.snd) ? 0.18 : 0; },
+    engine: function (on) { if (engG) engG.gain.value = (on && save.snd && !PF.paused()) ? 0.18 : 0; },
     ok: function () { tone(523, .15, 'triangle'); setTimeout(function () { tone(659, .15, 'triangle'); }, 140); setTimeout(function () { tone(784, .3, 'triangle'); }, 280); },
     boom: function () { tone(160, .6, 'sawtooth', .25, 30); },
     click: function () { tone(660, .06, 'square', .06); },
@@ -228,8 +267,8 @@ function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 function fmt(v, d) { return v.toFixed(d == null ? 0 : d).replace('.', ','); }
 
 /* ===== Экраны ===== */
-var cur = 'menu', selB = 0, selL = 0, bonusFuel = 0, attempts = 0;
-function coverReady() { $('s-menu').style.backgroundImage = 'url(img/cover.webp)'; $('s-menu').style.backgroundSize = '100% auto'; $('s-menu').style.backgroundPosition = 'center top'; $('s-menu').classList.add('cov'); $('menuShip').style.display = 'none'; }
+var cur = 'menu', selB = 0, selL = 0, bonusFuel = 0, rewardFuel = 0, attempts = 0;
+function coverReady() { $('s-menu').style.backgroundImage = 'url(' + U('cover') + ')'; $('s-menu').style.backgroundSize = '100% auto'; $('s-menu').style.backgroundPosition = 'center top'; $('s-menu').classList.add('cov'); $('menuShip').style.display = 'none'; }
 function show(id) {
   cur = id;
   ['menu', 'map', 'lv', 'brief', 'res', 'ships'].forEach(function (s) { $('s-' + s).classList.toggle('on', s === id); });
@@ -239,6 +278,7 @@ function show(id) {
   if (id === 'map') buildMap();
   if (id === 'lv') buildLv();
   if (id === 'ships') buildShips();
+  PF.gameplay(play);
   if (id !== 'play') { G.run = false; Snd.engine(false); }
 }
 document.addEventListener('click', function (e) {
@@ -284,7 +324,7 @@ function buildShips() {
   var h = '';
   SHIPS.forEach(function (s, i) {
     var o = t >= s.need;
-    h += '<div class="card' + (o ? '' : ' lock') + '" data-s="' + i + '" style="' + (save.ship === i ? 'border-color:#ffd84a' : '') + '">' + (img('ship_' + i) ? '<img class="ship" style="object-fit:contain" src="img/ship_' + i + '.webp">' : '<svg class="ship" viewBox="-40 -50 80 100">' + shipSVG(s, false) + '</svg>') + '<b>' + s.name + '</b><i>' + (o ? 'бак ' + s.fuel + ' %' + (save.ship === i ? ' · выбран' : '') : '🔒 нужно ' + s.need + ' ★') + '</i></div>';
+    h += '<div class="card' + (o ? '' : ' lock') + '" data-s="' + i + '" style="' + (save.ship === i ? 'border-color:#ffd84a' : '') + '">' + (img('ship_' + i) ? '<img class="ship" style="object-fit:contain" src="' + U('ship_' + i) + '">' : '<svg class="ship" viewBox="-40 -50 80 100">' + shipSVG(s, false) + '</svg>') + '<b>' + s.name + '</b><i>' + (o ? 'бак ' + s.fuel + ' %' + (save.ship === i ? ' · выбран' : '') : '🔒 нужно ' + s.need + ' ★') + '</i></div>';
   });
   $('shgrid').innerHTML = h;
   Array.prototype.forEach.call($('shgrid').querySelectorAll('.card'), function (el) {
@@ -298,10 +338,10 @@ $('b-snd').onclick = function () { Snd.init(); save.snd = save.snd ? 0 : 1; pers
 /* ===== Брифинг ===== */
 var curQ = null;
 function openBrief() {
-  var b = BODIES[selB]; curQ = b.qs[selL % b.qs.length]; bonusFuel = 0;
+  var b = BODIES[selB]; curQ = b.qs[selL % b.qs.length]; bonusFuel = 0; rewardFuel = 0;
   show('brief');
   $('br-sub').textContent = b.name + ', площадка ' + (selL + 1) + ' — ' + LV[selL].txt + '. Ответь верно: подсказка и +10 % топлива!';
-  $('br-q').textContent = curQ.q; $('br-hint').style.display = 'none'; $('b-go').style.display = 'none'; $('b-skip').style.display = 'block';
+  $('b-reward').style.display = PF.canReward() ? 'block' : 'none'; $('br-q').textContent = curQ.q; $('br-hint').style.display = 'none'; $('b-go').style.display = 'none'; $('b-skip').style.display = 'block';
   var h = ''; curQ.a.forEach(function (t, i) { h += '<button class="ans" data-a="' + i + '">' + t + '</button>'; });
   $('br-ans').innerHTML = h;
   Array.prototype.forEach.call($('br-ans').querySelectorAll('.ans'), function (el) {
@@ -318,6 +358,9 @@ function openBrief() {
     };
   });
 }
+$('b-reward').onclick = function () {
+  PF.reward(function (got) { if (got) { rewardFuel = 0.25; $('b-reward').style.display = 'none'; toast('+25 % топлива!', 1500); } });
+};
 $('b-go').onclick = function () { Snd.init(); startGame(); };
 $('b-skip').onclick = function () { Snd.init(); bonusFuel = 0; startGame(); };
 
@@ -360,7 +403,7 @@ function startGame() {
   var T = makeTerrain(b, selB, selL);
   G.H = T.H; G.padX = T.padX; G.padY = T.padY; G.padW = lv.padW; G.stars = T.stars; G.body = b; G.lv = lv;
   G.x = clamp(T.padX + (T.r() - 0.5) * 160, 40, 335); G.y = 80; G.vx = (T.r() - 0.5) * 24; G.vy = 14; G.ang = 0;
-  G.fuel0 = ship.fuel * lv.fuel * (1 + bonusFuel); G.fuel = G.fuel0;
+  G.fuel0 = ship.fuel * lv.fuel * (1 + bonusFuel + rewardFuel); G.fuel = G.fuel0;
   G.chute = false; G.parts = []; G.t = 0; G.ending = 0; G.over = null; G.paused = false; G.thrust = false; G.tilt = 0; G.wphase = T.r() * 6;
   G.lastWarn = 0;
   show('play'); G.run = true; $('pause').classList.remove('on'); $('chute').disabled = false; $('chute').style.opacity = 1;
@@ -429,13 +472,16 @@ function finish() {
       (o.s === 3 ? '🌟 Идеально!' : o.s === 2 ? 'Ещё ★: сохрани хотя бы 30 % топлива.' : 'Ещё ★: сядь тише (до ' + K.vy2 + ') и ровнее (до 6°).');
     var nxt = $('r-next'); nxt.style.display = (selL < 4) ? 'block' : 'block';
     nxt.textContent = selL < 4 ? 'Дальше ▶' : 'К планетам ▶';
-    nxt.onclick = function () { Snd.click(); if (selL < 4) { selL++; openBrief(); } else show('map'); };
+    nxt.onclick = function () { Snd.click(); PF.fullscreen(function () { if (selL < 4) { selL++; openBrief(); } else show('map'); }); };
+    $('r-reward').style.display = 'none';
   } else {
-    $('r-title').textContent = 'Авария!'; $('r-stars').innerHTML = img('boom') ? '<img src="img/boom.webp" style="height:90px">' : '💥';
+    $('r-title').textContent = 'Авария!'; $('r-stars').innerHTML = img('boom') ? '<img src="' + U('boom') + '" style="height:90px">' : '💥';
     $('r-text').textContent = o.why; $('r-next').style.display = 'none';
     attempts++;
+    $('r-reward').style.display = PF.canReward() ? 'block' : 'none';
   }
-  $('r-retry').onclick = function () { Snd.click(); bonusFuel = 0; openBrief(); };
+  $('r-retry').onclick = function () { Snd.click(); bonusFuel = 0; PF.fullscreen(function () { openBrief(); }); };
+  $('r-reward').onclick = function () { PF.reward(function (got) { if (got) { bonusFuel = 0; rewardFuel = 0.25; startGame(); } }); };
 }
 
 /* ===== Рисование ===== */
@@ -578,8 +624,8 @@ requestAnimationFrame(frame);
   $('chute').addEventListener('click', function () {
     if (!G.run || G.chute) return; G.chute = true; this.style.opacity = .4; Snd.click(); toast(G.body.chuteMsg, 2200);
   });
-  $('hud-pause').onclick = function () { G.paused = true; $('pause').classList.add('on'); Snd.engine(false); };
-  $('p-res').onclick = function () { G.paused = false; $('pause').classList.remove('on'); last = performance.now(); };
+  $('hud-pause').onclick = function () { PF.gameplay(false); G.paused = true; $('pause').classList.add('on'); Snd.engine(false); };
+  $('p-res').onclick = function () { PF.gameplay(true); G.paused = false; $('pause').classList.remove('on'); last = performance.now(); };
   $('p-quit').onclick = function () { $('pause').classList.remove('on'); show('lv'); };
   PF.onPause = function (h) { if (h && G.run && !G.paused) $('hud-pause').onclick(); };
   window.addEventListener('keydown', function (e) {
@@ -599,6 +645,7 @@ function fit() {
 }
 window.addEventListener('resize', fit); fit();
 drawMenuShip();
+PF.ready();
 window.__game = { G: G, K: K, save: save, BODIES: BODIES, step: step, start: function (b, l) { selB = b; selL = l; bonusFuel = 0; startGame(); }, show: show, groundY: groundY, finish: finish, setSel: function (b, l) { selB = b; selL = l; } };
 </script>
 </body>
