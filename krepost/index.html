@@ -288,6 +288,12 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
 .fbtn small{display:block;font-family:var(--f-body);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap}
 .fbtn.ready{border-color:var(--gold-hi);background:var(--panel);box-shadow:0 0 0 2px var(--gold-hi),0 0 12px rgba(231,196,108,.45)}
 .fbtn.ready small{color:var(--good);font-weight:700}
+.fbtn.big{min-height:64px;padding:6px 8px;gap:8px;font-size:19px;border-width:2px;border-color:var(--gold)}
+.fbtn.big img{width:44px;height:44px}
+.fbtn.big span{flex:1}
+.fbtn.big small{font-size:12.5px}
+.fbtn.big.ready{animation:fpulse 1.6s ease-in-out infinite}
+@keyframes fpulse{50%{box-shadow:0 0 0 3px var(--gold-hi),0 0 18px rgba(231,196,108,.75)}}
 .adbtn.fc{border-style:solid;display:flex;align-items:center;gap:8px;text-align:left}
 .adbtn.fc .ii{flex:none;width:30px;height:30px;vertical-align:0}
 .adbtn.fc.ready{border-color:#b4852b;box-shadow:0 0 0 2px #e7c46c}
@@ -295,19 +301,27 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
 .fortw .xx{position:absolute;top:2px;right:2px;z-index:1;width:44px;height:44px;border:0;background:transparent;font-size:26px;color:var(--muted)}
 .fortw h2{margin:0 0 2px}
 .wheelbox{display:flex;justify-content:center;margin:0 0 2px}
-#fortCv{display:block;width:min(270px,100%);height:auto}
+#fortCv{display:block;width:min(270px,100%,40vh);height:auto}
 #fortCtl .cta{min-width:220px}
 #fortCtl .cta:disabled,#chestCtl .cta:disabled{background:var(--panel-2);color:var(--muted);border-color:var(--line);box-shadow:none;cursor:default}
 .fres{margin:8px 0 2px!important;font-size:14.5px!important;line-height:1.4!important}
 .fres b{font-family:var(--f-cyr);font-weight:400;font-size:19px;color:var(--accent);display:block}
-.chestbox{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
-.chestbox h3{font-family:var(--f-cyr);font-weight:400;font-size:21px;margin:0 0 6px}
+.chestbox{margin:4px 0 8px;border-bottom:1px solid var(--line);padding-bottom:8px}
+.streakh{font-family:var(--f-cyr);font-size:20px;margin:0 0 6px;color:var(--accent)}
+.streakh small{display:block;font-family:var(--f-body);font-size:12.5px;color:var(--muted);margin-top:1px}
 .streak{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:0 0 6px}
-.pip{height:30px;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:14px;color:var(--muted)}
+.pip{height:42px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--muted)}
+.pip b{font-family:var(--f-display);font-weight:700;font-size:14px;line-height:1}
+.pip i{font-style:normal;font-size:11px;line-height:1;font-variant-numeric:tabular-nums}
 .pip.on{background:linear-gradient(180deg,var(--gold-hi),var(--gold));border-color:var(--gold);color:#3a2616}
-.pip.next{border:2px solid var(--accent);color:var(--accent)}
+.pip.today{border:2px solid var(--accent);box-shadow:0 0 0 2px rgba(157,43,31,.18);color:var(--accent)}
+.pip.on.today{color:#3a2616}
 .chestrow{display:flex;align-items:center;gap:8px;justify-content:center}
-#chestCv{flex:none;width:120px;height:90px}
+.chestbtn{flex:none;padding:0;border:0;background:transparent;border-radius:12px;min-width:44px;min-height:44px;cursor:pointer}
+.chestbtn:disabled{cursor:default}
+.chestbtn:focus-visible{outline:2px solid var(--accent)}
+#chestCv{display:block;width:120px;height:90px}
+#fortGo{margin-top:10px}
 #chestCtl{min-width:0;text-align:left}
 #chestCtl .cta{margin:0;padding:0 16px}
 #chestCtl p{margin:0;font-size:14px}
@@ -359,8 +373,7 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
       </div>
       <div id="startBtns"><button class="cta" id="btnStart">Защищать Рим</button></div>
       <div class="fbar">
-        <button class="fbtn" id="fbWheel"><img data-ic="wheel" alt=""><span>Колесо Фортуны<small class="ftime">можно крутить!</small></span></button>
-        <button class="fbtn" id="fbChest"><img data-ic="chest" alt=""><span>Сундук дня<small id="fbChestT">день 1 из 7</small></span></button>
+        <button class="fbtn big" id="fbFort"><img data-ic="wheel" alt=""><span>Фортуна<small>Колесо: <span class="ftime">можно крутить!</span></small><small id="fbChestT">Сундук: день 1 из 7</small></span><img data-ic="chest" alt=""></button>
       </div>
       <div class="best" id="best"></div>
       <details class="intro"><summary>Об игре</summary>
@@ -399,17 +412,18 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
     </div>
   </div>
   <div class="screen" id="scrFort" hidden style="z-index:21">
-    <div class="scard marble fortw" role="dialog" aria-label="Колесо Фортуны">
+    <div class="scard marble fortw" role="dialog" aria-label="Дары Фортуны">
       <button class="xx" id="fortClose" aria-label="Закрыть">×</button>
       <div class="sub">Дары богини удачи</div>
-      <h2>Колесо Фортуны</h2>
+      <h2>Дары Фортуны</h2>
+      <div class="chestbox">
+        <div class="streakh" id="streakT"></div>
+        <div class="streak" id="streak" aria-label="Серия дней: награда сундука за каждый день подряд"></div>
+        <div class="chestrow"><button class="chestbtn" id="chestBtn" aria-label="Открыть сундук дня"><canvas id="chestCv" width="120" height="90"></canvas></button><div id="chestCtl"></div></div>
+      </div>
       <div class="wheelbox"><canvas id="fortCv" width="270" height="270" aria-label="Колесо Фортуны: девять секторов с наградами"></canvas></div>
       <div id="fortCtl"></div>
-      <div class="chestbox">
-        <h3>Сундук дня</h3>
-        <div class="streak" id="streak" aria-label="Серия дней"></div>
-        <div class="chestrow"><canvas id="chestCv" width="120" height="90" aria-label="Сундук"></canvas><div id="chestCtl"></div></div>
-      </div>
+      <button class="cta2" id="fortGo">В игру</button>
       <p class="fnote" id="fortNote"></p>
     </div>
   </div>
@@ -2482,14 +2496,23 @@ function renderFort(){
   $('fortCtl').innerHTML = h;
   const c = chestState(f);
   let p = '';
-  for (let i=1;i<=7;i++) { const on = c.ready ? i < c.day : i <= c.day, nx = c.ready && i === c.day; p += '<span class="pip' + (on ? ' on' : '') + (nx ? ' next' : '') + '" aria-label="День ' + i + '">' + i + '</span>'; }
+  for (let i=1;i<=7;i++) {
+    const on = c.ready ? i < c.day : i <= c.day, td = i === c.day, rr = CHEST_DAYS[i-1];
+    const extra = (rr.walls ? ', +2 стены' : '') + (rr.recharge ? ', перезарядка' : '') + (rr.unit ? ', воин даром' : '');
+    p += '<span class="pip' + (on ? ' on' : '') + (td ? ' today' : '') + '" title="День ' + i + ': +' + rr.coins + extra + '" aria-label="День ' + i + ': ' + rr.coins + ' денариев' + extra + (td ? ', сегодня' : '') + '"><b>' + i + '</b><i>' + rr.coins + (extra ? '+' : '') + '</i></span>';
+  }
   $('streak').innerHTML = p;
+  const broke = c.ready && c.day === 1 && f.n > 0;
+  $('streakT').innerHTML = (c.ready ? 'Сегодня ' + c.day + '-й день подряд' : c.day + '-й день подряд')
+    + '<small>' + (broke ? 'Серия прервалась — начинаем с первого дня. ' : '') + 'Заходи каждый день — сундук всё богаче, на 7-й день +150 и воин даром.</small>';
+  $('chestBtn').disabled = !c.ready || CH.busy;
   const r = CHEST_DAYS[(c.ready ? c.day : c.day % 7 + 1) - 1];
   const rText = '+' + r.coins + ' денариев' + (r.walls ? ', +2 стены' : '') + (r.recharge ? ', перезарядка' : '') + (r.unit ? ', воин даром' : '');
   $('chestCtl').innerHTML = c.ready
-    ? '<button class="cta two" data-chest>Открыть<small>день ' + c.day + ' из 7</small></button><p style="margin-top:4px">' + rText + '</p>'
-    : '<p><b>' + (CH.got ? 'В сундуке: ' + esc(CH.got.join(', ')) + '.' : 'Сундук уже открыт сегодня.') + '</b></p><p style="margin-top:4px">Завтра день ' + (c.day % 7 + 1) + ': ' + rText + '. Пропустишь день — серия начнётся заново.</p>';
+    ? '<button class="cta two" data-chest>Открыть<small>или нажми на сундук</small></button><p style="margin-top:4px">' + rText + '</p>'
+    : '<p><b>' + (CH.got ? 'В сундуке: ' + esc(CH.got.join(', ')) + '.' : 'Сундук уже открыт сегодня.') + '</b></p><p style="margin-top:4px">Завтра день ' + (c.day % 7 + 1) + ': ' + rText + '. Пропустишь день — серия заново.</p>';
   const pt = pendText(f);
+  $('fortGo').textContent = fortInGame() ? 'К битве' : 'В игру';
   $('fortNote').textContent = (pt ? (fortInGame() ? 'В запасе на следующие партии: ' : 'Ждут первого верного ответа в партии: ') + pt + '. ' : '') + 'Бонусных денариев — не больше ' + FORT_CAP + ' за партию. Колесо — раз в 5 часов, сундук — раз в день.';
   drawWheel(); drawChest();
 }
@@ -2510,8 +2533,8 @@ function fortCardHTML(){
 let fortWasReady = null;
 function fortUI(){
   const f = fRead(), r = fortReady(f), c = chestState(f);
-  $('fbWheel').classList.toggle('ready', r); $('fbChest').classList.toggle('ready', c.ready);
-  $('fbChestT').textContent = c.ready ? 'день ' + c.day + ' из 7' : 'серия ' + c.day + ' из 7';
+  $('fbFort').classList.toggle('ready', r || c.ready);
+  $('fbChestT').textContent = c.ready ? 'Сундук: открыть! День ' + c.day : 'Сундук: серия ' + c.day + ' из 7';
   fortTick(f);
 }
 function fortTick(f){
@@ -2521,15 +2544,21 @@ function fortTick(f){
   if (fortWasReady !== null && r !== fortWasReady) { fortWasReady = r; fortUI(); if (!scrFort.hidden && !FS.busy) renderFort(); if (fortInGame() && !ui.card.hidden && !quizOpen()) showWaveCard(); }
   fortWasReady = r;
 }
-$('fbWheel').addEventListener('click', openFort);
-$('fbChest').addEventListener('click', openFort);
+$('fbFort').addEventListener('click', openFort);
 $('fortClose').addEventListener('click', closeFort);
+$('fortGo').addEventListener('click', closeFort);
+// при запуске игры: если сундук или колесо доступны — «Дары Фортуны» первым экраном, поверх стартового меню
+function fortAuto(){
+  if (G.state !== 'menu' || !scrFort.hidden) return false;
+  const f = fRead(); if (!fortReady(f) && !chestState(f).ready) return false;
+  openFort(); return true;
+}
 scrFort.addEventListener('click', ev => {
   if (ev.target === scrFort) { closeFort(); return; }
   const b = ev.target.closest('button'); if (!b) return;
   if (b.hasAttribute('data-spin')) fortSpin(false);
   else if (b.hasAttribute('data-adspin')) fortAdSpin();
-  else if (b.hasAttribute('data-chest')) chestOpen();
+  else if (b.hasAttribute('data-chest') || b.id === 'chestBtn') chestOpen();
 });
 fortUI();
 
@@ -2726,7 +2755,7 @@ requestAnimationFrame(frame);
 // платформа: SDK и облачное сохранение (не дольше 4 с), потом LoadingAPI.ready; если в облаке прогресс новее — перечитать стартовый экран
 PF.onCloud = () => { if (G.state === 'menu') { pickMode(); reset(); refreshUI(); renderStart(); } fortUI(); if (!scrFort.hidden && !FS.busy) renderFort(); };
 PF.onPause = p => { if (p) saveNow(); };
-PF.init().then(() => PF.ready());
+PF.init().then(() => { PF.ready(); fortAuto(); });
 // DEBUG_BEGIN — объект для автотестов и автоигрока; build\make-store.ps1 вырезает его из магазинной сборки
 window.__game = {BAL, manual:v=>{MANUAL=!!v;}, setCamera:y=>{CAM.tgt=null;CAM.vel=0;return setCamera(y);}, camera:()=>({y:CAM.y,max:CAM.max,viewH:VIEW_H}), drawMini, refreshCamUI, CHAPTERS, G, update, startGame, startWave, build, upgrade, sell, useAbility, upgradeCost, TOWERS, ENEMIES, WAVES, PADS, PATH, SEG, PATH_LEN, draw, refreshUI,
   CONTENT, ENC, quizFor, eventAfter, answerQuiz, skipQuiz, chooseEvent, closeEvent, quizOpen, eventOpen, quizCorrect,
@@ -2734,7 +2763,7 @@ window.__game = {BAL, manual:v=>{MANUAL=!!v;}, setCamera:y=>{CAM.tgt=null;CAM.ve
   snapshot, readSave, saveNow, clearSave, continueGame, renderStart, get SAVE_KEY(){ return SAVE_KEY; }, get BEST_KEY(){ return BEST_KEY; },
   MODES, setMode, get MODE(){ return MODE.id; }, WAVES_ALL, finish,
   // Колесо Фортуны: fortunaReset() — сбросить таймер колеса (и, если day=true, сундук дня), чтобы проверить без ожидания 5 часов
-  FORT_SECT, CHEST_DAYS, FORT_CAP, fRead, fWrite, fortSpin, chestOpen, openFort, closeFort, fortApplyPending, chestState,
+  FORT_SECT, CHEST_DAYS, FORT_CAP, fRead, fWrite, fortSpin, chestOpen, openFort, closeFort, fortApplyPending, chestState, fortAuto,
   fortunaReset:(day) => { const f = fRead(); f.next = 0; if (day) f.last = ''; fWrite(f); fortUI(); if (!scrFort.hidden) renderFort(); return f; }};
 // DEBUG_END
 })();
