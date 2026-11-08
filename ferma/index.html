@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Ферма</title>
+<style>
+:root{--ink:#3b2a1a;--paper:#fff4d6;--paper2:#ffe9b0;--sun:#ffcf4a;--red:#e8604c;--blue:#4aa8d8;--green:#5cb85c;--bg:#cfe8a0}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS","Segoe UI",Roboto,Arial,sans-serif;overscroll-behavior:none}
+body{touch-action:manipulation}
+#app{max-width:430px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;padding:5px 7px 6px;gap:5px}
+#hud{display:flex;gap:4px;flex:none}
+.chip{background:var(--paper);border:3px solid var(--ink);border-radius:11px;padding:4px 6px;font-weight:800;font-size:13px;box-shadow:0 3px 0 var(--ink);display:flex;align-items:center;justify-content:center;white-space:nowrap;color:var(--ink);font-family:inherit}
+#hDay{flex:1.5}#hMoney{flex:1.4;color:#1e6b2c}#hAp{flex:1;color:#7a4db3}
+#btnMenu{font-size:19px;padding:2px 10px;cursor:pointer}
+#info{flex:none;background:var(--paper2);border:3px solid var(--ink);border-radius:11px;padding:4px 9px;font-size:12.5px;line-height:1.3;min-height:46px}
+#info .warn{color:#b8321f;font-weight:800}
+#pcontent{flex:1;min-height:0;overflow:auto;background:var(--paper);border:3px solid var(--ink);border-radius:13px;padding:7px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;line-height:1.35}
+#pfoot{flex:none;display:flex;gap:6px}#pfoot .btn{flex:1}#pfoot .btn.go{flex:2}
+#tabs{flex:none;display:flex;gap:3px}
+.tab{flex:1;font:inherit;font-weight:800;font-size:10.5px;color:var(--ink);background:var(--paper);border:3px solid var(--ink);border-radius:11px;padding:3px 0;min-height:42px;cursor:pointer;box-shadow:0 2px 0 var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.tab i{font-style:normal;font-size:17px}
+.tab.on{background:var(--sun);transform:translateY(1px);box-shadow:0 1px 0 var(--ink)}
+.btn{font:inherit;font-weight:800;font-size:15px;color:var(--ink);background:var(--sun);border:3px solid var(--ink);border-radius:13px;padding:6px 10px;min-height:42px;box-shadow:0 4px 0 var(--ink);cursor:pointer}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.btn.go{background:var(--green);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35);font-size:17px}
+.btn.alt{background:var(--paper2)}.btn.red{background:var(--red);color:#fff}.btn.sm{min-height:34px;padding:2px 9px;font-size:13px;box-shadow:0 3px 0 var(--ink)}
+.btn[disabled]{opacity:.45}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.row>.grow{flex:1}
+.head{font-weight:800;font-size:15px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.kv{display:flex;justify-content:space-between;gap:8px;border-bottom:2px dashed #d9c48a;padding:2px 0}.kv b{text-align:right}
+.hint{font-size:12.5px;opacity:.88;line-height:1.35}
+.warn{color:#b8321f;font-weight:800}.good{color:#1e6b2c;font-weight:800}
+.beds{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.bed{font:inherit;color:var(--ink);background:#b98a56;border:3px solid var(--ink);border-radius:9px;min-height:54px;padding:1px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;cursor:pointer;position:relative}
+.bed.sh{background:#8a6a45}.bed.g{background:#c9b27a}.bed .em{font-size:22px}.bed small{font-size:10px;font-weight:800}
+.bed .fl{position:absolute;top:0;right:1px;font-size:11px}
+.bed.sel{outline:4px solid var(--blue);outline-offset:-1px}.bed.rd{background:#9ad46a}
+.bar{height:5px;width:80%;background:#0003;border-radius:3px;margin-top:1px;overflow:hidden}.bar b{display:block;height:100%;background:#fff}
+.card2{background:#fff;border:3px solid var(--ink);border-radius:11px;padding:6px 8px;display:flex;flex-direction:column;gap:4px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.item{font:inherit;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:11px;padding:3px 1px 4px;display:flex;flex-direction:column;align-items:center;cursor:pointer;line-height:1.12;box-shadow:0 3px 0 var(--ink)}
+.item .em{font-size:26px}.item b{font-size:11px}.item small{font-size:10px;opacity:.8}.item.on{background:#fff2b8}
+#ov{position:fixed;inset:0;background:rgba(59,42,26,.55);display:flex;align-items:center;justify-content:center;padding:8px;z-index:10;overflow:auto}
+#ov.hidden{display:none}
+#card{background:var(--paper);border:4px solid var(--ink);border-radius:18px;box-shadow:0 6px 0 var(--ink);padding:12px;width:100%;max-width:400px;max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:8px}
+#card h2{margin:0;font-size:21px}#card p{margin:0;line-height:1.4;font-size:14.5px}
+.q{font-size:16px;line-height:1.4;font-weight:700;background:#fff;border:3px solid var(--ink);border-radius:11px;padding:8px}
+.ok{background:#dff3d2;border:3px solid var(--ink);border-radius:11px;padding:8px}.bad{background:#ffdcd3;border:3px solid var(--ink);border-radius:11px;padding:8px}
+input.in{font:inherit;font-size:20px;font-weight:800;text-align:center;width:100%;border:3px solid var(--ink);border-radius:11px;padding:6px;background:#fff;color:var(--ink)}
+.tag{display:inline-block;font-size:11.5px;font-weight:800;background:var(--blue);color:#fff;border:2px solid var(--ink);border-radius:20px;padding:1px 8px}
+.ic{width:24px;height:24px;object-fit:contain;vertical-align:middle}
+.cover{width:100%;max-height:40dvh;object-fit:cover;border-radius:12px;border:3px solid var(--ink);display:block}
+table.t{width:100%;border-collapse:collapse;font-size:13px}table.t td{padding:3px 2px;border-bottom:2px dashed #cdb57d;vertical-align:middle}table.t td:last-child{text-align:right}
+#toast{position:fixed;left:50%;bottom:62px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:20px;padding:7px 14px;font-weight:700;font-size:13.5px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:20;max-width:92%;text-align:center}
+#toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <div class="chip" id="hDay"></div>
+    <div class="chip" id="hMoney"></div>
+    <div class="chip" id="hAp"></div>
+    <button class="chip" id="btnMenu" aria-label="Меню">≡</button>
+  </div>
+  <div id="info"></div>
+  <div id="pcontent"></div>
+  <div id="pfoot"></div>
+  <div id="tabs"></div>
+</div>
+<div id="ov" class="hidden"><div id="card"></div></div>
+<div id="toast"></div>
+<script>
+'use strict';
+/* ================= ДАННЫЕ ================= */
+const SD=12,TOTAL=144,BEDM=5,SAVE_KEY='ferma-save-v1',BEST_KEY='ferma-best-v1';
+const SEAS=['Весна','Лето','Осень','Зима'],SEMO=['🌸','☀️','🍂','❄️'];
+const SPF=[1.15,.85,.95,1.3];
+const GOALS=[50000,90000,140000],STAR_AT=[100000,150000,250000];
+const WAGE=500,WAGE_AGRO=900,P_WATER=.2,P_GRAIN=30,P_HAY=12;
+/* картинки: WebP в img/ (нарезаны tools/make_art.py). Нет файла — рисуется эмодзи */
+const IMGN=/*IMGN*/[]/*END*/;
+const IMG={};
+function imgTag(n,fb,cls){return IMGN.includes(n)?`<img class="${cls||'ic'}" src="img/${n}.webp" alt="" onerror="this.outerHTML='${fb}'">`:fb;}
+const FAM={cru:'Крестоцветные',com:'Сложноцветные',leg:'Бобовые',alm:'Луковые',umb:'Зонтичные',ama:'Амарантовые',sol:'Паслёновые',cuc:'Тыквенные',ros:'Розоцветные'};
+const C={
+ rad:{n:'Редис',e:'🔴',fam:'cru',d:5,L:'half',w:3,need:30,take:6,minT:5,y:2,p:90,seed:100,pack:30,pol:0,aph:0,D:8,spoil:.08},
+ sal:{n:'Салат',e:'🥬',fam:'com',d:6,L:'half',w:3,need:30,take:6,minT:5,y:2.5,p:100,seed:50,pack:40,pol:0,aph:1,D:8,spoil:.12},
+ pea:{n:'Горох',e:'🫛',fam:'leg',d:8,L:'sun',w:3,need:20,take:-8,minT:6,y:1.5,p:120,seed:60,pack:50,pol:0,aph:1,D:10,spoil:.08},
+ onion:{n:'Лук',e:'🧅',fam:'alm',d:9,L:'sun',w:2,need:30,take:8,minT:6,y:2.5,p:60,seed:40,pack:80,pol:0,aph:0,D:15,spoil:.005},
+ car:{n:'Морковь',e:'🥕',fam:'umb',d:10,L:'sun',w:3,need:40,take:10,minT:8,y:4,p:50,seed:150,pack:20,pol:0,aph:0,D:20,spoil:.01},
+ beet:{n:'Свёкла',e:'🟣',fam:'ama',d:10,L:'sun',w:3,need:40,take:10,minT:8,y:4,p:45,seed:40,pack:25,pol:0,aph:1,D:15,spoil:.01},
+ pot:{n:'Картофель',e:'🥔',fam:'sol',d:11,L:'sun',w:4,need:50,take:15,minT:10,y:5,p:40,seed:6,pack:1200,pol:0,aph:0,D:30,spoil:.005},
+ cab:{n:'Капуста',e:'🥦',fam:'cru',d:12,L:'sun',w:5,need:70,take:16,minT:8,y:5,p:35,seed:3,pack:900,pol:0,aph:1,D:20,spoil:.01},
+ cuc:{n:'Огурец',e:'🥒',fam:'cuc',d:8,L:'sun',w:6,need:60,take:15,minT:15,y:5,p:70,seed:4,pack:600,pol:1,aph:1,D:15,spoil:.06},
+ tom:{n:'Томат',e:'🍅',fam:'sol',d:12,L:'sun',w:5,need:70,take:18,minT:15,y:6,p:90,seed:3,pack:1500,pol:1,aph:1,D:18,spoil:.06},
+ str:{n:'Клубника',e:'🍓',fam:'ros',d:9,L:'half',w:4,need:60,take:10,minT:10,y:1.5,p:300,seed:6,pack:2500,pol:1,aph:1,D:6,spoil:.15},
+ pum:{n:'Тыква',e:'🎃',fam:'cuc',d:14,L:'sun',w:4,need:60,take:14,minT:12,y:8,p:30,seed:1,pack:1000,pol:1,aph:1,D:12,spoil:.005}
+};
+const CIDS=Object.keys(C);
+/* товары рынка: p — базовая цена, D — спрос кг/день */
+const ITEMS={};
+CIDS.forEach(k=>ITEMS[k]={n:C[k].n,e:C[k].e,u:'кг',p:C[k].p,D:C[k].D,spoil:C[k].spoil,sea:1});
+Object.assign(ITEMS,{
+ egg:{n:'Яйца',e:'🥚',u:'шт',p:12,D:40,spoil:.01,sea:0},
+ milk:{n:'Молоко коровье',e:'🥛',u:'л',p:40,D:50,spoil:.25,sea:0},
+ gmilk:{n:'Молоко козье',e:'🐐',u:'л',p:60,D:12,spoil:.25,sea:0},
+ honey:{n:'Мёд',e:'🍯',u:'кг',p:400,D:3,spoil:0,sea:0},
+ apple:{n:'Яблоки',e:'🍎',u:'кг',p:70,D:15,spoil:.02,sea:1},
+ cherry:{n:'Вишня',e:'🍒',u:'кг',p:120,D:8,spoil:.08,sea:1}
+});
+const AN={
+ hen:{n:'Курица',e:'🐔',price:400,w:.1,feed:'grain',kg:.1,water:.3,bld:'coop',prod:'egg'},
+ cow:{n:'Корова',e:'🐄',price:24000,w:1,feed:'hay',kg:10,water:60,bld:'barn',prod:'milk'},
+ goat:{n:'Коза',e:'🐐',price:7000,w:.5,feed:'hay',kg:2.5,water:8,bld:'goatshed',prod:'gmilk'},
+ hive:{n:'Улей',e:'🐝',price:5000,w:.3,feed:null,kg:0,water:0,bld:'apiary',prod:'honey'}
+};
+const BLD={
+ coop:{n:'Птичник 8 м²',e:'🏠',price:6000,cap:{hen:24},info:'3 курицы на м² → до 24 кур'},
+ barn:{n:'Коровник 32 м²',e:'🏚',price:20000,cap:{cow:4},info:'8 м² на корову → до 4 коров'},
+ goatshed:{n:'Козлятник 12 м²',e:'🛖',price:9000,cap:{goat:6},info:'2 м² на козу → до 6 коз'},
+ apiary:{n:'Пасека',e:'🌼',price:2000,cap:{hive:6},info:'до 6 ульев'},
+ gh:{n:'Теплица 24 м²',e:'🏡',price:12000,info:'6 тёплых грядок, работают зимой'},
+ garden:{n:'Сад (6 мест)',e:'🌳',price:8000,info:'яблони и вишни'},
+ heap:{n:'Компостная куча',e:'♻️',price:1500,info:'+1 компост за 2 дня и за каждую убранную грядку'},
+ flowers:{n:'Цветочная полоса',e:'🌻',price:1500,info:'божьи коровки и пчёлы'}
+};
+const TECH={tractor:{n:'Трактор',e:'🚜',price:40000,info:'посадка и уборка 0,5 ОД'},spr:{n:'Поливалка',e:'💦',price:12000,info:'полив без действий, воды ×1,2'},cool:{n:'Холодильная камера',e:'❄️',price:15000,info:'порча урожая ×0,4'}};
+const TREES={apple:{n:'Яблоня',e:'🍎',price:3000,from:4,kg:25,prod:'apple'},cherry:{n:'Вишня',e:'🍒',price:2500,from:3,kg:15,prod:'cherry'}};
+
+/* ===== Энциклопедия ===== */
+const ENC={};
+CIDS.forEach(k=>{const c=C[k];ENC[k]=[c.e+' '+c.n,`Семейство: ${FAM[c.fam]}. Созревает за ${c.d} дн., растёт от ${c.minT}°, ${c.L==='sun'?'любит солнце':'любит полутень'}, поливать по ${c.w} л/м² в день, нужно плодородие почвы ${c.need}.`+(c.pol?' Цветки опыляют пчёлы.':'')+(c.take<0?' Бобовое: на корнях живут клубеньковые бактерии, они обогащают почву азотом.':'')];});
+Object.assign(ENC,{
+ light:['☀️ Свет','Растению нужен свет для фотосинтеза: из воды и углекислого газа в зелёных листьях образуются сахара и кислород. В тени солнцелюбивые культуры растут хуже.'],
+ water:['💧 Вода','Корни впитывают воду с минеральными солями, лист испаряет её через устьица. В жару испарение больше — воды нужно больше. Без полива урожай падает.'],
+ soil:['🟤 Почва','Плодородие создаёт перегной (гумус): остатки растений и животных, переработанные бактериями и червями. Урожай уносит питательные вещества, их надо возвращать компостом.'],
+ rot:['🔁 Севооборот','На одной грядке нельзя сажать растения одного семейства подряд: копятся их болезни и вредители, а почва истощается одними и теми же веществами.'],
+ leg:['🫛 Бобовые','Клубеньковые бактерии на корнях гороха связывают азот воздуха. После гороха почва богаче азотом — следующая культура растёт лучше.'],
+ pol:['🐝 Опыление','У огурцов, томатов, тыкв и клубники плоды завязываются только после опыления: пчёлы переносят пыльцу с тычинок на пестик. Нет пчёл — плодов мало.'],
+ aph:['🐛 Тля','Тля — мелкие насекомые, сосут сок молодых листьев и размножаются очень быстро. Заметил рано — остановить легче.'],
+ lady:['🐞 Божья коровка','Божьи коровки и их личинки едят тлю. Цветочная полоса привлекает их. Химия убивает и вредителей, и полезных насекомых.'],
+ comp:['♻️ Компост','Компост — перегной из ботвы и навоза: гнилостные бактерии и черви превращают отходы в питательную землю. Бесплатное удобрение.'],
+ frost:['🥶 Заморозок','Теплолюбивые растения (томат, огурец) гибнут при 0°: в клетках замерзает вода. Плёнка удерживает тепло.'],
+ heat:['🔥 Жара','При жаре и засухе вода испаряется быстрее, редис и салат «стреляют» (выбрасывают цветоносы), а корове жарко — молока меньше.'],
+ hail:['🌨 Град','Град ломает листья и стебли. Укрытий в поле нет — помогает страховой запас денег и разные культуры.'],
+ hen:['🐔 Куры','Куры — птицы, питаются зерном, зеленью и насекомыми. Несутся лучше при длинном световом дне (около 14 ч): зимой помогает лампа.'],
+ cow:['🐄 Корова','Корова — травоядное жвачное млекопитающее: питается сеном и травой, много пьёт (до 60 л в день), даёт молоко для выкармливания телёнка.'],
+ goat:['🐐 Коза','Коза выносливая, неприхотливая, ест траву и ветки; молока меньше, чем у коровы, и места нужно меньше.'],
+ bee:['🍯 Пчёлы','Пчёлы собирают нектар, превращают его в мёд, опыляют цветки. Яды (пестициды) для них смертельны.'],
+ spoil:['📦 Порча','Свежие продукты портятся: размножаются бактерии и плесень. Холод замедляет это.'],
+ mkt:['🏪 Рынок','Цена зависит от сезона и предложения. Скидка увеличивает продажи, но уменьшает выручку с каждой единицы.']
+});
+const ENCN=Object.keys(ENC).length;
+
+/* ===== вопросы агронома ===== */
+const QS=[
+ ['Что нужно листьям для фотосинтеза?',['Свет, вода и углекислый газ','Только почва','Только тепло'],0,'В зелёных листьях из воды и углекислого газа на свету образуются сахара и кислород.','light'],
+ ['Какая часть растения впитывает воду из почвы?',['Лист','Корень','Цветок'],1,'Корни с корневыми волосками всасывают воду и соли.','water'],
+ ['Через что лист испаряет воду?',['Через устьица','Через жилки','Через корень'],0,'Устьица — крошечные отверстия, через них идёт и газообмен.','water'],
+ ['Зачем в почву вносят компост?',['Чтобы она стала твёрже','Он возвращает почве перегной и минеральные вещества','Чтобы отпугнуть дождь'],1,'Компост — готовый перегной, источник питания растений.','comp'],
+ ['Что делают клубеньковые бактерии на корнях гороха?',['Съедают корень','Связывают азот воздуха','Защищают от мороза'],1,'Они превращают азот воздуха в доступную растению форму.','leg'],
+ ['Почему нельзя сажать томаты после картофеля?',['У них общие болезни и вредители (оба паслёновые)','Им нужна разная вода','Картофель вырастает выше'],0,'Одно семейство — одни болезни, они копятся в почве.','rot'],
+ ['Кто ест тлю?',['Божья коровка','Пчела','Дождевой червь'],0,'Божья коровка и её личинки — естественные враги тли.','lady'],
+ ['Зачем на ферме нужны пчёлы?',['Только для мёда','Они опыляют цветки, и завязываются плоды','Они удобряют почву'],1,'Пчёлы переносят пыльцу, без опыления плодов мало.','pol'],
+ ['Что такое севооборот?',['Сбор урожая за один день','Чередование культур на одной грядке','Полив по расписанию'],1,'Чередование культур сохраняет почву здоровой.','rot'],
+ ['Какая из этих культур — бобовая?',['Морковь','Горох','Капуста'],1,'Горох — бобовое растение.','leg'],
+ ['Когда лучше поливать в жару?',['В полдень','Рано утром или вечером','Не поливать'],1,'Меньше испарение — вода доходит до корней.','water'],
+ ['Зачем рыхлить почву?',['Чтобы воздух дошёл до корней','Чтобы почва стала тяжелее','Чтобы пришли вредители'],0,'Корням нужен воздух, чтобы дышать.','soil'],
+ ['Почему зимой куры несутся хуже?',['Им нечего пить','Световой день короткий','У них растут зубы'],1,'Для яйценоскости нужен длинный световой день.','hen'],
+ ['Чем питается корова?',['Сеном и травой','Мясом','Нектаром'],0,'Корова — травоядное жвачное животное.','cow'],
+ ['Что опасно для пчёл на ферме?',['Цветочная полоса','Ядохимикаты (пестициды)','Тёплая погода'],1,'Яды убивают и вредителей, и полезных насекомых.','bee'],
+ ['Почему томаты в тени дают меньше урожая?',['Меньше света — меньше фотосинтеза','Тень их замораживает','В тени много воды'],0,'Мало света — мало сахаров, мало плодов.','light'],
+ ['Что собирают пчёлы для мёда?',['Росу','Нектар цветков','Пыльцу и мёд из улья соседей'],1,'Нектар в улье перерабатывается в мёд.','bee'],
+ ['Что нужно семени, чтобы прорасти?',['Вода, тепло и воздух','Только свет','Только удобрение'],0,'Влага, тепло и воздух запускают рост зародыша.','water'],
+ ['Съедобная часть моркови — это...',['Видоизменённый корень (корнеплод)','Клубень','Плод'],0,'Морковь — корнеплод, запасает питательные вещества в корне.','soil'],
+ ['Картофельный клубень — это...',['Видоизменённый корень','Видоизменённый побег','Плод'],1,'Клубень — утолщённый подземный побег.','soil'],
+ ['Зачем нужна мульча (слой соломы, листьев)?',['Сохраняет влагу и не даёт сорнякам расти','Греет и сушит почву','Привлекает град'],0,'Мульча уменьшает испарение.','water'],
+ ['Чем опасна тля?',['Сосёт сок листьев и размножается','Опыляет цветки','Ест корни'],0,'Тля ослабляет растения и переносит болезни.','aph'],
+ ['Зачем плёнка во время заморозка?',['Удерживает тепло у растений','Привлекает пчёл','Поливает растения'],0,'Плёнка защищает теплолюбивые культуры от гибели.','frost'],
+ ['Чем коза отличается от коровы на ферме?',['Меньше места и корма, меньше молока','Она не даёт молока','Она питается мясом'],0,'Коза мельче, неприхотливее; молока меньше.','goat']
+];
+
+/* ================= УТИЛИТЫ ================= */
+const $=s=>document.querySelector(s);
+const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const r1=x=>Math.round(x*10)/10;
+const num=n=>String(r1(n)).replace('.',',');
+const money=n=>Math.round(n).toLocaleString('ru-RU')+' ₽';
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=ri(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;}
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2600);}
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
+const PF={rewarded(cb){toast('Ролик (заглушка SDK)…');setTimeout(cb,900);}};
+
+/* ================= СОСТОЯНИЕ ================= */
+let S=null,tab='beds',modal=false;
+function mkBed(t,shade){return{t,shade:!!shade,crop:null,prog:0,fert:60,last:'',dry:0,w:false,pest:0,dmg:0,sf:1,rot:1,f0:60,cold:0,hot:0,over:0,ready:false,plantedAt:0};}
+function addBeds(n,t){for(let i=0;i<n;i++)S.beds.push(mkBed(t,false));}
+function newState(){
+  const s={v:1,day:1,money:40000,workers:1,agro:0,tech:{tractor:0,spr:0,cool:0},
+    bld:{coop:1,barn:0,goatshed:0,apiary:0,gh:0,garden:0,heap:0,flowers:0},lamp:0,
+    land:2,landBuys:0,beds:[],trees:[],an:{hen:8,cow:0,goat:0,hive:0},stock:{},feed:{grain:20,hay:0},
+    compost:2,lady:0,heat:false,cover:false,wx:null,next:null,drought:0,ap:0,apCap:0,
+    task:null,enc:{},stats:{right:0,wrong:0,harv:0,rev:0,exp:0},bonusQ:0,pn:{},sold:{},disc:10,sel:[],
+    log:[],qUsed:[],pl:null,wasChem:false,goalsHit:0,over:false,tabBed:'f'};
+  for(let i=0;i<20;i++)s.beds.push(mkBed('f',i%5===4&&i<20));
+  s.beds.forEach(b=>{if(b.t==='f')b.shade=false;});
+  [4,9,14,19].forEach(i=>s.beds[i].shade=true);
+  return s;
+}
+const seasonOf=d=>Math.floor(((d-1)%48)/SD);
+const yearOf=d=>Math.floor((d-1)/48)+1;
+const dayIn=d=>(d-1)%SD+1;
+const winter=()=>seasonOf(S.day)===3;
+function save(){if(S&&!S.over)lsSet(SAVE_KEY,S);}
+const hives=()=>S.an.hive;
+const care=()=>Math.ceil(Object.keys(AN).reduce((a,k)=>a+S.an[k]*AN[k].w,0)-1e-9);
+const cap=()=>6+8*(S.workers+S.agro);
+function itemPrice(id){return Math.round(ITEMS[id].p*(ITEMS[id].sea?SPF[seasonOf(S.day)]:1)*(S.pn[id]||1));}
+function stockVal(){return Object.keys(S.stock).reduce((a,k)=>a+(S.stock[k]||0)*ITEMS[k].p,0);}
+function capital(){
+  let c=S.money+stockVal()+S.feed.grain*P_GRAIN+S.feed.hay*P_HAY;
+  Object.keys(AN).forEach(k=>c+=S.an[k]*AN[k].price*.7);
+  Object.keys(BLD).forEach(k=>c+=S.bld[k]*BLD[k].price*.7);
+  Object.keys(TECH).forEach(k=>c+=S.tech[k]*TECH[k].price*.6);
+  S.trees.forEach(t=>c+=TREES[t.k].price*.7);
+  c+=S.landBuys*0+(S.land-2)*15000*.8;
+  return Math.round(c);
+}
+const landPrice=()=>15000+2000*S.landBuys;
+function unlock(id){if(ENC[id]&&!S.enc[id]){S.enc[id]=1;toast('📖 Новая запись: '+ENC[id][0]);}}
+function logl(t){S.log.push(t);if(S.log.length>6)S.log.shift();}
+
+/* ================= ПОГОДА ================= */
+function genWx(day){
+  const s=seasonOf(day),i=dayIn(day)-1,base=[12,24,8,-8][s];
+  const ramp=s===0?-4+8*i/11:s===2?4-8*i/11:0;
+  let T=Math.round(base+ramp+ri(-3,3)),rain=Math.random()<[.3,.15,.35,.25][s],ev=null;
+  if(S.drought>0){T+=7;rain=false;S.drought--;ev='drought';}
+  else if(s===1&&Math.random()<.04){S.drought=2;T+=7;rain=false;ev='drought';}
+  if(s===0&&i<5&&Math.random()<.3){T=ri(-3,0);rain=false;ev='frost';}
+  const fair=s<3&&Math.random()<.04&&day>2;
+  return{T,rain,heat:T>=28,frost:T<=0&&s!==3,ev,fair,hail:false};
+}
+const wxIcon=w=>w.frost?'🥶':w.heat?'🔥':w.rain?'🌧':w.T<4?'☁️':'☀️';
+const wxTxt=w=>`${wxIcon(w)} ${w.T}°${w.rain?', дождь':''}${w.heat?', жара':''}${w.frost?', заморозок':''}${w.fair?', ярмарка':''}`;
+
+/* ================= ДЕЙСТВИЯ ================= */
+function spend(ap){
+  if(S.ap+1e-9<ap){toast(`Не хватает действий (нужно ${num(ap)}, есть ${num(S.ap)}). Нужен работник или техника.`);return false;}
+  S.ap=r1(S.ap-ap);return true;
+}
+function pay(m,why){
+  if(S.money<m){toast('Не хватает денег'+(why?' на '+why:'')+'.');return false;}
+  S.money-=m;S.stats.exp+=m;return true;
+}
+const apPlant=()=>S.tech.tractor?.5:1;
+const gbeds=()=>S.beds.map((b,i)=>({b,i})).filter(o=>o.b.t==='g');
+const fbeds=()=>S.beds.map((b,i)=>({b,i})).filter(o=>o.b.t==='f');
+function selBeds(filter){return S.sel.map(i=>S.beds[i]).filter(b=>b&&(!filter||filter(b)));}
+
+function fertAfter(b,c){b.fert=clamp(b.fert-c.take,0,100);}
+function bedFx(b){
+  const c=C[b.crop],fx=[],push=(k,v,t)=>{fx.push({k,v,t});};
+  let F=1;
+  const fl=(c.L==='sun'&&b.shade)?.6:1;F*=fl;if(fl<.98)push('light',fl,`Грядка в тени, а ${c.n.toLowerCase()} любит солнце: света мало, фотосинтез слабее (×0,6).`);
+  const fw=Math.max(.3,1-.07*b.dry);F*=fw;if(fw<.98)push('water',fw,`${b.dry} дн. без полива: корням не хватило воды (×${num(r1(fw*100)/100)}).`);
+  const fs=b.f0>=c.need?1:.4+.6*b.f0/c.need;F*=fs;if(fs<.98)push('soil',fs,`Почва бедна: плодородие ${Math.round(b.f0)}, а нужно ${c.need}. Помогает компост.`);
+  let ft=1-.5*Math.min(1,b.cold/c.d);if(c.L==='half')ft*=1-.5*Math.min(1,b.hot/c.d);
+  F*=ft;if(ft<.98)push('temp',ft,b.cold>=b.hot?`Было холоднее ${c.minT}° — рост замедлился.`:`Жара от 30°: ${c.n.toLowerCase()} любит прохладу и «стреляет».`);
+  F*=b.rot;if(b.rot<.98)push('rot',b.rot,`Севооборот: до этого на грядке росло то же семейство (${FAM[c.fam]}). Копятся болезни, почва истощена.`);
+  if(b.rot>1.01)push('rotgood',b.rot,`После бобовых почва богата азотом — бонус ×1,15.`);
+  if(c.pol){const cov=Math.min(1,(hives()/S.land)+(S.bld.flowers?.1:0)),fp=.65+.35*cov;F*=fp;if(fp<.98)push('pol',fp,`Мало пчёл: ${hives()} ульев на ${S.land} сот., опыление ${Math.round(cov*100)}%. Нужно по улью на сотку.`);}
+  const fpe=1-Math.min(.7,b.dmg);F*=fpe;if(fpe<.98)push('aph',fpe,`Тля сосала сок листьев (−${Math.round(b.dmg*100)}%).`);
+  F*=b.sf;if(b.sf<.98)push('seed',b.sf,'Высеяно меньше нормы: растений мало.');if(b.sf<1&&b.sf>=.8&&false)0;
+  if(b.sf<1&&b.sf>.8&&b.sfOver)push('seed',b.sf,'Загущено: растения мешают друг другу.');
+  const fo=Math.max(.4,1-.15*b.over);F*=fo;if(fo<.98)push('over',fo,`Перезрело: урожай ждал ${b.over} дн.`);
+  const bonus=1+S.bonusQ+(S.agro?.06:0);F*=bonus;
+  return{F,fx,kg:r1(BEDM*c.y*F)};
+}
+const REASON_ENC={light:'light',water:'water',soil:'soil',rot:'rot',rotgood:'leg',pol:'pol',aph:'aph',temp:'heat'};
+
+/* ================= ДЕНЬ ================= */
+function startDay(){
+  S.sold={};S.ap=Math.max(0,cap()-care());S.apCap=cap();
+  CIDS.concat(['egg','milk','gmilk','honey','apple','cherry']).forEach(k=>S.pn[k]=1+(Math.random()-.5)*.16);
+  S.beds.forEach(b=>b.w=false);
+}
+function endDay(){
+  const W=S.wx,s=seasonOf(S.day),log=[];
+  // события
+  if(W.ev==='drought')unlock('heat');
+  if(W.frost)unlock('frost');
+  if(s>=1&&s<=2&&Math.random()<.015){W.hail=true;}
+  if(W.hail){let n=0;S.beds.forEach(b=>{if(b.t==='f'&&b.crop){b.dmg+=.3;n++;}});if(n){unlock('hail');log.push(`🌨 Град! Побиты листья на ${n} грядках (−30%).`);}}
+  // грядки
+  let died=0;
+  S.beds.forEach((b,i)=>{
+    if(!b.crop)return;
+    const c=C[b.crop],g=b.t==='g';
+    const gh=g?(S.heat?22:(s===1?3:10)):0,eT=W.T+gh;
+    if(!g&&W.frost&&c.minT>=8&&!S.cover){b.crop=null;b.prog=0;b.ready=false;b.pest=0;b.dmg=0;died++;return;}
+    if(!b.w&&!W.rain&&!(b.ready))b.dry++;
+    if(b.ready){b.over++;}
+    else{
+      const gr=eT>=c.minT?1:eT>=c.minT-5?.4:.1;
+      if(eT<c.minT)b.cold++;
+      if(eT>=30)b.hot++;
+      b.prog+=gr;if(b.prog>=c.d){b.prog=c.d;b.ready=true;}
+    }
+    if(b.pest){b.dmg+=.07;}
+  });
+  if(died){log.push(`🥶 Заморозок убил растения на ${died} грядках. Теплолюбивым нужна плёнка.`);unlock('frost');}
+  // тля и божьи коровки
+  if(s<=2){
+    const p=([.15,.25,.15][s])/(1+S.lady);
+    if(Math.random()<p){
+      const cand=S.beds.map((b,i)=>i).filter(i=>S.beds[i].crop&&C[S.beds[i].crop].aph&&!S.beds[i].pest&&S.beds[i].t==='f');
+      if(cand.length){const i=pick(cand);S.beds[i].pest=1;log.push(`🐛 Тля на грядке ${i+1}!`);unlock('aph');}
+    }
+    S.beds.forEach((b,i)=>{
+      if(!b.pest||b.t!=='f')return;
+      if(Math.random()<.35&&S.lady<2){const n=S.beds[i+1];if(n&&n.t==='f'&&n.crop&&C[n.crop].aph&&!n.pest){n.pest=1;}}
+      if(S.lady>=2&&Math.random()<.3){b.pest=0;log.push(`🐞 Божьи коровки съели тлю на грядке ${i+1}.`);unlock('lady');}
+    });
+    if(Math.random()<(S.bld.flowers?.15:.03)&&S.lady<3){S.lady++;if(S.bld.flowers)unlock('lady');}
+  }
+  // животные
+  const heatDay=W.heat;
+  ['hen','cow','goat'].forEach(k=>{
+    const n=S.an[k];if(!n)return;
+    const a=AN[k],need=n*a.kg,have=S.feed[a.feed];
+    const fed=need?Math.min(1,have/need):1;
+    S.feed[a.feed]=Math.max(0,have-need);
+    S.money-=n*a.water*(heatDay?1.5:1)*P_WATER;S.stats.exp+=n*a.water*(heatDay?1.5:1)*P_WATER;
+    let rate=k==='hen'?.8*(s===3?(S.lamp?.9:.5):s===0?.9:s===2?.8:1):k==='cow'?10*(heatDay?.85:1):2;
+    const prod=n*rate*fed;
+    S.stock[a.prod]=(S.stock[a.prod]||0)+prod;
+    if(fed<.98){log.push(`${a.e} Голодные ${a.n.toLowerCase()}: корма хватило на ${Math.round(fed*100)}% — продукта меньше.`);}
+    unlock(k);
+  });
+  if(S.an.hive)unlock('bee');
+  // порча
+  Object.keys(S.stock).forEach(k=>{const sp=ITEMS[k].spoil*(S.tech.cool&&C[k]?.4:1);S.stock[k]*=1-sp;if(S.stock[k]<.01)delete S.stock[k];});
+  if(Object.keys(S.stock).length)unlock('spoil');
+  // расходы
+  const wages=S.workers*WAGE+S.agro*WAGE_AGRO;
+  const heat=S.heat?gbeds().length*60:0;
+  S.money-=wages+heat;S.stats.exp+=wages+heat;
+  if(S.bld.heap&&S.day%2===0)S.compost++;
+  S.cover=false;
+  S.log=log.length?log:S.log;
+  // следующий день
+  S.day++;
+  if(S.day>TOTAL){return finish();}
+  const ns=seasonOf(S.day),prev=s;
+  S.wx=S.next;S.next=genWx(S.day+1);
+  startDay();
+  if(S.money<-15000){return bankrupt();}
+  if(ns!==prev||S.day===1){seasonStart(prev,ns);}
+  save();
+}
+function seasonEndProd(s){
+  // мёд и деревья
+  const msgs=[];
+  if(S.an.hive){
+    const base=[1.5,3,1.5,0][s];
+    if(base){const h=S.an.hive*base*(S.bld.flowers?1.25:1);S.stock.honey=(S.stock.honey||0)+h;msgs.push(`🍯 Мёд: ${num(h)} кг от ${S.an.hive} ульев.`);}
+  }
+  S.trees.forEach(t=>{t.age++;});
+  if(s===2){
+    const cov=Math.min(1,hives()/S.land)+(S.bld.flowers?.1:0);
+    S.trees.forEach(t=>{const T=TREES[t.k];if(t.age>=T.from){const kg=r1(T.kg*(.5+.5*Math.min(1,cov))*(t.pr?1.1:1));S.stock[T.prod]=(S.stock[T.prod]||0)+kg;t.pr=0;msgs.push(`${T.e} ${T.n}: ${num(kg)} кг${cov<1?' (опыления мало)':''}.`);}});
+  }
+  return msgs;
+}
+function seasonStart(prev,ns){
+  const msgs=seasonEndProd(prev);
+  if(ns===3){
+    let n=0;S.beds.forEach(b=>{if(b.t==='f'&&b.crop){b.crop=null;b.prog=0;b.ready=false;b.pest=0;b.dmg=0;n++;}});
+    if(n)msgs.push(`❄️ Зима: на открытых грядках погибло ${n} культур. Снимайте урожай до холодов!`);
+  }
+  S.bonusQ=0;
+  if(ns===0)S.beds.forEach(b=>{if(b.t==='f'){b.over=0;}});
+  const needGoal=(S.day-1)%48===0&&S.day>1;
+  const after=()=>{
+    const q=()=>askQ(0,()=>askQ(1,()=>seasonCard(ns,msgs)));
+    if(needGoal)goalCard(q);else q();
+  };
+  after();
+}
+function goalCard(next){
+  const y=yearOf(S.day)-1,cp=capital(),goal=GOALS[y-1],ok=cp>=goal;
+  if(ok){S.money+=3000;}
+  openCard(`<h2>🏁 Итоги года ${y}</h2><p>Капитал: <b>${money(cp)}</b> · цель: ${money(goal)}.</p>
+    <div class="${ok?'ok':'bad'}">${ok?'Цель достигнута! Премия +3 000 ₽.':'До цели не хватило '+money(goal-cp)+'. Продолжаем — впереди ещё год.'}</div>
+    <p class="hint">Следующая цель: ${money(GOALS[y])}.</p><button class="btn go" data-a="next">Дальше</button>`,next);
+}
+function seasonCard(s,msgs){
+  const tips=['Весна: холодные ночи и заморозки. Смотрите прогноз и укрывайте томаты и огурцы. Сеять всё, что успеет созреть до зимы!','Лето: жарко и сухо, воды надо больше (×1,5 в жару). Появляется тля. Пчёлы опыляют огурцы, томаты, тыкву, клубнику.','Осень: время урожая и сада. Успейте убрать всё до первых морозов — с началом зимы поле замерзает.','Зима: открытый грунт спит. Теплица, животные, обрезка деревьев и планирование: на что потратить деньги весной?'];
+  openCard(`<h2>${SEMO[s]} ${SEAS[s]}, год ${yearOf(S.day)}</h2><p>${tips[s]}</p>${msgs.length?`<div class="ok">${msgs.join('<br>')}</div>`:''}
+    <p class="hint">Сегодня: ${wxTxt(S.wx)}<br>Завтра: ${wxTxt(S.next)}</p><button class="btn go" data-a="next">Вперёд!</button>`,()=>{maybeTask();});
+}
+function bankrupt(){S.over=true;lsDel(SAVE_KEY);openCard(`<h2>💸 Банкрот</h2><p>Деньги ушли в минус больше 15 000 ₽. Бывает у всех фермеров. Подумайте о расходах на работников, корм и воду — и начните заново!</p><button class="btn go" data-a="newgame">Заново</button>`);}
+function finish(){
+  S.over=true;lsDel(SAVE_KEY);
+  const cp=capital(),st=STAR_AT.filter(x=>cp>=x).length,ec=Object.keys(S.enc).length;
+  const best=lsGet(BEST_KEY)||0;if(cp>best)lsSet(BEST_KEY,cp);
+  openCard(`${imgTag('final_win','','cover')}<h2>🏆 Три года позади!</h2><div class="stars" style="font-size:34px;text-align:center">${'★'.repeat(st)}${'☆'.repeat(3-st)}</div>
+    <p>Капитал фермы: <b>${money(cp)}</b> ${cp>best?'(новый рекорд!)':''}<br>Энциклопедия фермера: <b>${ec} из ${ENCN}</b><br>Верных ответов агроному: ${S.stats.right}</p>
+    <button class="btn go" data-a="newgame">Играть снова</button>`);
+}
+
+/* ================= КАРТОЧКИ ================= */
+let cardNext=null;
+function openCard(html,next){modal=true;cardNext=next||null;$('#card').innerHTML=html;$('#ov').classList.remove('hidden');}
+function closeCard(){modal=false;$('#ov').classList.add('hidden');const n=cardNext;cardNext=null;render();if(n)n();}
+function askQ(i,next){
+  let pool=QS.map((q,k)=>k).filter(k=>!S.qUsed.includes(k));
+  if(!pool.length){S.qUsed=[];pool=QS.map((q,k)=>k);}
+  const k=pick(pool);S.qUsed.push(k);
+  const q=QS[k],order=shuffle([0,1,2]);
+  openCard(`<span class="tag">🧑‍🌾 Агроном · вопрос ${i+1} из 2</span><div class="q">${q[0]}</div>`+
+    order.map(o=>`<button class="btn alt" data-a="ans" data-k="${k}" data-o="${o}">${q[1][o]}</button>`).join('')+
+    `<p class="hint">Верный ответ: +6% к урожаю до конца сезона.</p>`,null);
+  askQ.next=next;
+}
+function answerQ(k,o){
+  const q=QS[k],ok=o===q[2];
+  if(ok){S.stats.right++;S.bonusQ=Math.min(.12,S.bonusQ+.06);unlock(q[4]);}else S.stats.wrong++;
+  openCard(`<div class="${ok?'ok':'bad'}"><b>${ok?'Верно! +6% к урожаю.':'Не совсем.'}</b><br>Правильный ответ: ${q[1][q[2]]}.<br>${q[3]}</div><button class="btn go" data-a="next">Дальше</button>`,askQ.next);
+}
+
+/* ===== задачи-расчёты ===== */
+function maybeTask(){
+  if(S.over||modal)return;
+  if(S.day%4!==3||S.task&&S.task.day===S.day)return;
+  const y=yearOf(S.day),rew=[300,600,900][y-1],t=genTask();
+  S.task={day:S.day,q:t.q,a:t.a,tol:t.tol||0,rew,why:t.why};
+  openCard(`<span class="tag">📋 Задача фермера</span><div class="q">${t.q}</div><input class="in" id="tin" type="number" inputmode="decimal" placeholder="ответ"><div class="row"><button class="btn go grow" data-a="task">Ответить</button><button class="btn alt" data-a="taskskip">Пропустить</button></div><p class="hint">Награда: ${money(rew)}</p>`);
+}
+function genTask(){
+  const ty=ri(0,7),c=C[pick(CIDS)];
+  if(ty===0){const b=ri(6,15);return{q:`Сажаем ${c.n.toLowerCase()} на ${b} грядок по ${BEDM} м². Норма: ${c.seed} шт. на м². Сколько семян нужно?`,a:b*BEDM*c.seed,why:`${b} × ${BEDM} м² × ${c.seed} шт. = ${b*BEDM*c.seed}.`};}
+  if(ty===1){const n=S.an.hen||ri(6,12),a=r1(n*.1*7);return{q:`У нас ${n} кур, каждая съедает 0,1 кг зерна в день. Сколько кг зерна нужно на неделю?`,a,tol:.05,why:`${n} × 0,1 × 7 = ${num(a)} кг.`};}
+  if(ty===2){const b=2*ri(2,8),w=pick([2,3,4,5,6]),a=w*BEDM*b*1.5;return{q:`Жара! Грядка ${BEDM} м², норма полива ${w} л на м² в день, при жаре воды в 1,5 раза больше. Сколько литров в день нужно на ${b} грядок?`,a,why:`${w} × ${BEDM} × ${b} × 1,5 = ${a} л.`};}
+  if(ty===3){const d0=ri(1,10);return{q:`Посадили ${c.n.toLowerCase()} в ${d0}-й день сезона. Она созревает за ${c.d} дн. На какой день сезона будет урожай?`,a:d0+c.d,why:`${d0} + ${c.d} = ${d0+c.d}. (Если больше 12 — это уже следующий сезон!)`};}
+  if(ty===4){const m=2*ri(2,6)*BEDM/2,a=m*c.y*c.p;return{q:`С ${m} м² собрали ${c.n.toLowerCase()} по ${num(c.y)} кг с м². Цена ${c.p} ₽/кг. Выручка?`,a,why:`${m} × ${num(c.y)} кг × ${c.p} ₽ = ${a} ₽.`};}
+  if(ty===5){const kg=5*ri(2,8),d=pick([10,20,25,30]),a=kg*c.p*(100-d)/100;return{q:`Ярмарка: ${c.n.toLowerCase()} по ${c.p} ₽/кг со скидкой ${d}%. Продали ${kg} кг. Сколько выручили?`,a,why:`Цена со скидкой: ${c.p} × ${(100-d)/100} = ${c.p*(100-d)/100} ₽. × ${kg} кг = ${a} ₽.`};}
+  if(ty===6){if(Math.random()<.5){const s=ri(2,5);return{q:`Участок ${s} сотки. Сколько это квадратных метров? (1 сотка = 100 м²)`,a:s*100,why:`${s} × 100 = ${s*100} м².`};}const n=3*ri(3,8);return{q:`В птичник ставят ${n} кур, по норме 3 курицы на м². Сколько м² птичника нужно?`,a:n/3,why:`${n} ÷ 3 = ${n/3} м².`};}
+  const b=ri(2,6)*2,seeds=b*BEDM*c.seed,cost=seeds*c.pack/100,rev=b*BEDM*c.y*c.p;
+  return{q:`Посадили ${c.n.toLowerCase()} на ${b} грядок: семена стоили ${money(cost)}, выручка с урожая ${money(rev)}. Какая прибыль?`,a:rev-cost,why:`${rev} − ${cost} = ${rev-cost} ₽.`};
+}
+function answerTask(skip){
+  const t=S.task;if(!t)return closeCard();
+  if(skip){S.task=null;return closeCard();}
+  const v=parseFloat(String($('#tin').value).replace(',','.'));
+  if(isNaN(v))return toast('Введите число');
+  const ok=Math.abs(v-t.a)<=Math.max(.06,t.tol||0)+.5*(t.a>1000?0:0);
+  if(ok){S.money+=t.rew;S.stats.right++;}else S.stats.wrong++;
+  openCard(`<div class="${ok?'ok':'bad'}"><b>${ok?'Верно! +'+money(t.rew):'Не совсем.'}</b><br>${t.why}</div><button class="btn go" data-a="next">Дальше</button>`);
+}
+
+/* ================= ПОСАДКА ================= */
+function openPlant(){
+  const ids=S.sel.filter(i=>S.beds[i]&&!S.beds[i].crop);
+  if(!ids.length)return toast('Выберите свободные грядки (кнопка «Пустые» выберет все).');
+  if(ids.some(i=>S.beds[i].t==='f')&&winter()){return toast('Зимой открытый грунт спит: сажать можно только в теплице.');}
+  S.pl={ids,crop:null};plantStep1();
+}
+function plantStep1(){
+  const n=S.pl.ids.length;
+  openCard(`<h2>🌱 Посадка: ${n} гр.</h2><div class="grid">`+CIDS.map(k=>{const c=C[k];return `<button class="item" data-a="pcrop" data-k="${k}"><span class="em">${imgTag('c_'+k,c.e,'ic')}</span><b>${c.n}</b><small>${c.d} дн.</small></button>`;}).join('')+`</div><button class="btn alt" data-a="close">Отмена</button>`);
+}
+function plantStep2(k){
+  const c=C[k],ids=S.pl.ids,n=ids.length;S.pl.crop=k;
+  const out=ids.some(i=>S.beds[i].t==='f');
+  const rotBad=ids.filter(i=>S.beds[i].last===c.fam).length,rotGood=ids.filter(i=>S.beds[i].last==='leg').length;
+  const poor=ids.filter(i=>S.beds[i].fert<c.need).length,shade=ids.filter(i=>S.beds[i].shade&&c.L==='sun').length;
+  const ripe=S.day+c.d,lastOut=Math.floor((S.day-1)/48)*48+37;
+  const warns=[];
+  if(rotBad)warns.push(`🔁 На ${rotBad} гр. раньше росли ${FAM[c.fam].toLowerCase()} — болезни, урожай ×0,7.`);
+  if(rotGood)warns.push(`🫛 На ${rotGood} гр. раньше был горох — почва богата азотом.`);
+  if(poor)warns.push(`🟤 На ${poor} гр. плодородие ниже ${c.need} — добавьте компост.`);
+  if(shade)warns.push(`🌑 ${shade} гр. в тени: ${c.n.toLowerCase()} любит солнце.`);
+  if(out&&ripe>lastOut)warns.push(`❄️ Не успеет до зимы! Созреет на ${ripe}-й день, а зима с ${lastOut+1}-го.`);
+  if(out&&seasonOf(S.day)===0&&c.minT>=15)warns.push(`🥶 Тепла мало (нужно от ${c.minT}°), весной возможны заморозки.`);
+  if(c.pol&&hives()<S.land)warns.push(`🐝 Нужен улей на сотку: у вас ${hives()} на ${S.land}.`);
+  openCard(`<h2>${c.e} ${c.n}</h2>
+    <div class="card2"><div class="kv"><span>Семейство</span><b>${FAM[c.fam]}</b></div><div class="kv"><span>Свет</span><b>${c.L==='sun'?'солнце':'полутень'}</b></div>
+    <div class="kv"><span>Вода на грядку</span><b>${num(c.w*BEDM)} л в день</b></div><div class="kv"><span>Созреет</span><b>через ${c.d} дн. (день ${ripe})</b></div>
+    <div class="kv"><span>Растёт от</span><b>${c.minT}°</b></div><div class="kv"><span>Норма семян</span><b>${c.seed} шт. на м², пачка 100 шт. = ${money(c.pack)}</b></div></div>
+    ${warns.map(w=>`<div class="hint warn">${w}</div>`).join('')}
+    <p><b>Сколько семян купить на ${n} гр. по ${BEDM} м²?</b></p>
+    <input class="in" id="seedin" type="number" inputmode="numeric" placeholder="число семян">
+    <div class="hint" id="seedcost"></div>
+    <div class="row"><button class="btn go grow" data-a="doplant">Посадить</button><button class="btn alt sm" data-a="phint">Подсказка</button><button class="btn alt sm" data-a="plantback">Назад</button></div>`);
+  const inp=$('#seedin');inp.oninput=()=>{const v=parseInt(inp.value)||0;$('#seedcost').textContent=v?`Стоимость: ${money(v*c.pack/100)}`:'';};
+}
+function doPlant(){
+  const k=S.pl.crop,c=C[k],ids=S.pl.ids,n=ids.length;
+  const v=parseInt($('#seedin').value);
+  if(!v||v<1)return toast('Введите число семян');
+  const need=n*BEDM*c.seed,ratio=v/need,cost=v*c.pack/100;
+  if(S.money<cost)return toast('Не хватает денег на семена: '+money(cost));
+  if(S.ap+1e-9<apPlant()*n)return toast(`Не хватает действий: нужно ${num(apPlant()*n)}, есть ${num(S.ap)}.`);
+  S.money-=cost;S.stats.exp+=cost;S.ap=r1(S.ap-apPlant()*n);
+  const sf=ratio<1?ratio:ratio>1.2?.85:1;
+  ids.forEach(i=>{const b=S.beds[i];
+    b.crop=k;b.prog=0;b.ready=false;b.dry=0;b.dmg=0;b.pest=0;b.cold=0;b.hot=0;b.over=0;b.sf=sf;b.sfOver=ratio>1.2;b.f0=b.fert;b.plantedAt=S.day;
+    b.rot=b.last===c.fam?(c.fam==='sol'?.6:.7):b.last==='leg'?1.15:1;
+    if(b.rot<1)unlock('rot');});
+  S.sel=[];S.pl=null;
+  const msg=ratio<.98?`Семян меньше нормы (${v} из ${need}): растений мало.`:ratio>1.2?`Семян слишком много (${v} при норме ${need}): загущено.`:'Норма семян выдержана.';
+  closeCard();toast(`${c.e} Посажено ${n} гр. · ${msg}`);
+  save();render();
+}
+
+/* ================= УБОРКА, ПОЛИВ ================= */
+function harvest(){
+  const idx=(S.sel.length?S.sel:S.beds.map((b,i)=>i)).filter(i=>S.beds[i].ready&&S.beds[i].crop);
+  if(!idx.length)return toast('Нет готовых грядок (выберите их или ждите созревания).');
+  const cost=apPlant()*idx.length;
+  if(S.ap+1e-9<cost){const can=Math.floor(S.ap/apPlant());if(can<1)return toast(`Не хватает действий (нужно ${num(cost)}).`);idx.length=can;}
+  S.ap=r1(S.ap-apPlant()*idx.length);
+  const tot={},reasons={};let kg=0;
+  idx.forEach(i=>{const b=S.beds[i],c=C[b.crop],r=bedFx(b);
+    S.stock[b.crop]=(S.stock[b.crop]||0)+r.kg;tot[b.crop]=(tot[b.crop]||0)+r.kg;kg+=r.kg;S.stats.harv+=r.kg;
+    r.fx.forEach(f=>{if(!reasons[f.k])reasons[f.k]={t:f.t,n:0,v:f.v};reasons[f.k].n++;if(REASON_ENC[f.k])unlock(REASON_ENC[f.k]);});
+    unlock(b.crop);
+    fertAfter(b,c);b.last=c.fam;b.crop=null;b.prog=0;b.ready=false;b.pest=0;b.dmg=0;
+    if(S.bld.heap)S.compost++;
+  });
+  S.sel=[];
+  const pot=idx.length;
+  openCard(`<h2>🧺 Урожай собран</h2><div class="ok">${Object.keys(tot).map(k=>`${C[k].e} ${C[k].n}: <b>${num(tot[k])} кг</b>`).join('<br>')}</div>
+    ${Object.keys(reasons).length?`<p><b>Почему не максимум:</b></p>`+Object.keys(reasons).map(k=>`<div class="${reasons[k].v>1?'ok':'bad'}" style="font-size:13px">${reasons[k].t}${reasons[k].n>1?` <i>(на ${reasons[k].n} гр.)</i>`:''}</div>`).join(''):'<p class="good">Все условия выполнены — максимальный урожай!</p>'}
+    <button class="btn go" data-a="close">Отлично</button>`);
+  save();
+}
+function waterAll(){
+  const idx=S.beds.map((b,i)=>i).filter(i=>S.beds[i].crop&&!S.beds[i].ready&&!S.beds[i].w);
+  const W=S.wx;
+  if(W.rain)return toast('Идёт дождь: полив не нужен.');
+  if(!idx.length)return toast('Поливать нечего.');
+  let apc=S.tech.spr?0:Math.ceil(idx.length/4);
+  const mult=(W.heat?1.5:1)*(S.tech.spr?1.2:1);
+  const L=idx.reduce((a,i)=>a+C[S.beds[i].crop].w*BEDM*mult,0),cost=L*P_WATER;
+  if(S.money<cost)return toast('Не хватает денег на воду');
+  if(!spend(apc))return;
+  S.money-=cost;S.stats.exp+=cost;
+  idx.forEach(i=>S.beds[i].w=true);
+  unlock('water');
+  toast(`💧 Полито ${idx.length} гр.: ${num(L)} л (${money(cost)})${W.heat?' — жара ×1,5':''}`);
+  save();render();
+}
+function composting(){
+  const bs=S.sel.length?S.sel:[];
+  if(!bs.length)return toast('Выберите грядки для компоста.');
+  let did=0;
+  for(const i of bs){const b=S.beds[i];if(b.crop)continue;
+    if(S.ap<.5)break;
+    if(S.compost<1){if(!pay(150,'навоз'))break;}else S.compost--;
+    b.fert=Math.min(100,b.fert+25);S.ap=r1(S.ap-.5);did++;}
+  if(did){unlock('comp');toast(`♻️ Компост на ${did} гр.: плодородие +25`);}else toast('Компост вносят на пустые грядки (хватит ОД).');
+  save();render();
+}
+function treat(kind){
+  const bs=(S.sel.length?S.sel:S.beds.map((b,i)=>i)).filter(i=>S.beds[i].pest);
+  if(!bs.length)return toast('Тли нет на выбранных грядках.');
+  const unit=kind==='soap'?30:100,cost=unit*bs.length;
+  if(S.ap<.5*bs.length)return toast('Не хватает действий');
+  if(!pay(cost,'лечение'))return;
+  S.ap=r1(S.ap-.5*bs.length);
+  bs.forEach(i=>S.beds[i].pest=0);
+  if(kind==='chem'){S.lady=0;const s=seasonOf(S.day);
+    if(S.an.hive&&s<=1){let d=0;for(let i=0;i<S.an.hive;i++)if(Math.random()<.5)d++;S.an.hive-=d;if(d)toast(`☠️ Химия убила ${d} ульев пчёл!`);}
+    unlock('lady');}
+  toast(kind==='soap'?'🧼 Грядки обработаны мылом':'🧪 Химия: тля убита, но и божьи коровки тоже');
+  S.sel=[];save();render();
+}
+function buyBld(k,info){
+  const b=BLD[k];if(S.bld[k])return;
+  if(!pay(b.price,b.n))return;
+  S.bld[k]=1;
+  if(k==='gh')addBeds(6,'g');
+  toast(`${b.e} Построено: ${b.n}`);save();render();
+}
+function buyAnimal(k,n){
+  const a=AN[k],b=BLD[a.bld];
+  if(!S.bld[a.bld])return toast('Сначала постройте: '+b.n);
+  const cap=b.cap[k];
+  if(n>0){if(S.an[k]+n>cap)return toast(`Не влезет: места на ${cap} (${b.info}).`);if(!pay(a.price*n,a.n))return;S.an[k]+=n;}
+  else{if(S.an[k]<1)return;S.an[k]--;S.money+=a.price*.7;}
+  save();render();
+}
+function buyFeed(k,kg,price){
+  if(!pay(price,'корм'))return;S.feed[k]+=kg;save();render();
+}
+function sell(ids){
+  const mult=1+1.5*S.disc/100;let tot=0,lines=[];
+  ids.forEach(k=>{
+    const st=S.stock[k]||0;if(st<.5||S.sold[k])return;
+    const D=ITEMS[k].D*mult*(S.wx.fair?2:1);
+    const q=Math.min(Math.floor(st),Math.floor(D));if(q<1)return;
+    const price=itemPrice(k)*(1-S.disc/100);
+    S.stock[k]=st-q;S.sold[k]=1;tot+=q*price;lines.push(`${ITEMS[k].e}${q}`);
+  });
+  if(!tot)return toast('Нечего продать (товар кончился или спрос на сегодня исчерпан).');
+  S.money+=tot;S.stats.rev+=tot;unlock('mkt');
+  toast(`Продано ${lines.join(' ')} → +${money(tot)}`);save();render();
+}
+
+/* ================= ОТРИСОВКА ================= */
+function renderHud(){
+  const s=seasonOf(S.day);
+  $('#hDay').textContent=`${SEMO[s]} ${SEAS[s]} ${dayIn(S.day)}/12 · г.${yearOf(S.day)}`;
+  $('#hMoney').textContent=money(S.money);
+  $('#hAp').textContent=`⚡ ${num(S.ap)}/${S.apCap}`;
+  const w=S.wx,n=S.next;
+  $('#info').innerHTML=`<b>Сегодня:</b> ${wxTxt(w)}<br><b>Завтра:</b> ${wxTxt(n)}`+(n.frost?` <span class="warn">— укройте плёнкой!</span>`:n.ev==='drought'?' <span class="warn">— засуха</span>':'')+(S.money<3000?`<br><span class="warn">⚠ Деньги на исходе: зарплаты и вода списываются каждый день. Продайте урожай!</span>`:'')+(S.log.length?`<br><span class="hint">${S.log.slice(-2).join(' ')}</span>`:'');
+}
+function bedHtml(i){
+  const b=S.beds[i],c=b.crop?C[b.crop]:null;
+  const thirsty=c&&!b.ready&&!b.w&&!S.wx.rain;
+  const fl=(b.pest?'🐛':'')+(thirsty?'💧':'')+(b.shade?'🌑':'');
+  return `<button class="bed ${b.t==='g'?'g':b.shade?'sh':''} ${S.sel.includes(i)?'sel':''} ${b.ready?'rd':''}" data-a="bed" data-i="${i}">
+   <span class="fl">${fl}</span><span class="em">${c?imgTag('c_'+b.crop,c.e,'ic'):'▫️'}</span><small>${c?(b.ready?'готово':Math.max(0,Math.ceil(c.d-b.prog))+' дн.'):(Math.round(b.fert))}</small>${c?`<div class="bar"><b style="width:${Math.min(100,b.prog/c.d*100)}%"></b></div>`:''}</button>`;
+}
+function tBeds(){
+  const f=fbeds(),g=gbeds(),w=winter();
+  let h=`<div class="row"><button class="btn sm alt" data-a="selempty">Пустые</button><button class="btn sm alt" data-a="selall">Все</button><button class="btn sm alt" data-a="selnone">Сброс</button><span class="hint grow" style="text-align:right">${S.sel.length?`выбрано ${S.sel.length}`:'нажмите грядки'}</span></div>`;
+  h+=`<div class="head"><span>Поле · ${S.land} сот. · ${f.length} гр.</span><span class="hint">число = плодородие</span></div>`;
+  if(w)h+=`<div class="hint warn">❄️ Зима: поле спит. Ждите весны, работайте в теплице и с животными.</div>`;
+  h+=`<div class="beds">${f.map(o=>bedHtml(o.i)).join('')}</div>`;
+  if(g.length)h+=`<div class="head"><span>🏡 Теплица</span><button class="btn sm ${S.heat?'red':'alt'}" data-a="heat">Обогрев: ${S.heat?'вкл':'выкл'}</button></div><div class="beds">${g.map(o=>bedHtml(o.i)).join('')}</div>`;
+  // информация по одной выбранной
+  if(S.sel.length===1){
+    const b=S.beds[S.sel[0]],c=b.crop?C[b.crop]:null;
+    h+=`<div class="card2"><b>Грядка ${S.sel[0]+1}${b.shade?' · тень':''}</b>
+      <div class="kv"><span>Плодородие</span><b>${Math.round(b.fert)}</b></div><div class="kv"><span>Раньше росло</span><b>${b.last?FAM[b.last]:'—'}</b></div>`+
+      (c?`<div class="kv"><span>${c.e} ${c.n}</span><b>${b.ready?'готово':'ещё '+Math.ceil(c.d-b.prog)+' дн.'}</b></div><div class="kv"><span>Дней без полива</span><b class="${b.dry>1?'warn':''}">${b.dry}</b></div>${b.pest?'<div class="warn">🐛 Тля!</div>':''}<div class="hint">Прогноз урожая сейчас: ${num(bedFx(b).kg)} кг</div>`:'')+`</div>`;
+  }
+  h+=`<div class="row"><button class="btn sm go" data-a="plant">🌱 Посадить</button><button class="btn sm go" data-a="harvest">🧺 Собрать</button><button class="btn sm" data-a="water">💧 Полить</button><button class="btn sm alt" data-a="compost">♻️ Компост (${S.compost})</button></div>`;
+  h+=`<div class="row"><button class="btn sm alt" data-a="soap">🧼 Мыло</button><button class="btn sm alt" data-a="chem">🧪 Химия</button><button class="btn sm alt" data-a="film">🛡 Плёнка 300 ₽</button></div>`;
+  h+=`<div class="hint">Действия: посадка и уборка ${num(apPlant())} ОД за грядку, полив ${S.tech.spr?'0':'1 ОД на 4 гр.'}, компост и обработка 0,5 ОД. Животные сегодня заняли ${care()} ОД.</div>`;
+  return h;
+}
+function tGarden(){
+  let h='';
+  if(!S.bld.garden)h+=`<div class="card2"><b>🌳 Сад</b><div class="hint">${BLD.garden.info}. Яблоня плодоносит с 4-го сезона, вишня с 3-го; нужны пчёлы.</div><button class="btn sm go" data-a="bld" data-k="garden">Построить за ${money(BLD.garden.price)}</button></div>`;
+  else{
+    h+=`<div class="head"><span>🌳 Сад: ${S.trees.length}/6</span></div>`;
+    S.trees.forEach((t,i)=>{const T=TREES[t.k];h+=`<div class="card2"><div class="head"><span>${T.e} ${T.n}</span><span class="hint">${t.age>=T.from?'плодоносит':'растёт: '+t.age+'/'+T.from+' сез.'}</span></div>${winter()?`<button class="btn sm alt" data-a="prune" data-i="${i}" ${t.pr?'disabled':''}>${t.pr?'Обрезано ✓':'Обрезать (1 ОД) → +10%'}</button>`:''}</div>`;});
+    if(S.trees.length<6)h+=`<div class="row">`+Object.keys(TREES).map(k=>`<button class="btn sm" data-a="tree" data-k="${k}">${TREES[k].e} ${TREES[k].n} ${money(TREES[k].price)}</button>`).join('')+`</div>`;
+  }
+  h+=`<div class="head"><span>🐞 Борьба с тлёй</span></div><div class="card2"><div class="kv"><span>Божьи коровки (уровень)</span><b>${S.lady}/3</b></div><div class="hint">При уровне 2+ они сами съедают тлю. Химия их убивает.</div><button class="btn sm" data-a="lady">Выпустить за 500 ₽</button></div>`;
+  ['heap','flowers'].forEach(k=>{h+=bldCard(k);});
+  h+=`<div class="hint">Охват опыления: ${S.land} сот., ${hives()} ульев → ${Math.round(Math.min(1,hives()/S.land)*100)}%.</div>`;
+  return h;
+}
+function bldCard(k){const b=BLD[k];return `<div class="card2"><div class="head"><span>${b.e} ${b.n}</span>${S.bld[k]?'<span class="good">есть</span>':`<button class="btn sm" data-a="bld" data-k="${k}">${money(b.price)}</button>`}</div><div class="hint">${b.info}</div></div>`;}
+function tAnimals(){
+  let h=`<div class="hint">Животные заберут ${care()} ОД в день. Корм и вода списываются сами; не хватает корма — продукта меньше.</div>`;
+  Object.keys(AN).forEach(k=>{
+    const a=AN[k],b=BLD[a.bld],has=S.bld[a.bld];
+    h+=`<div class="card2"><div class="head"><span>${a.e} ${a.n}: <b>${S.an[k]}</b>${has?` / ${b.cap[k]}`:''}</span><span class="hint">${money(a.price)}</span></div>`;
+    if(!has)h+=`<div class="hint">${b.e} ${b.n}: ${b.info}</div><button class="btn sm go" data-a="bld" data-k="${a.bld}">Построить за ${money(b.price)}</button>`;
+    else h+=`<div class="hint">${a.feed?`Корм ${num(a.kg)} кг/день · `:''}${a.water?`вода ${a.water} л/день`:''}${k==='hive'?'мёд в конце сезона; опыляют огород и сад':''}</div><div class="row"><button class="btn sm" data-a="an" data-k="${k}" data-n="1">+1</button><button class="btn sm" data-a="an" data-k="${k}" data-n="5">+5</button><button class="btn sm alt" data-a="an" data-k="${k}" data-n="-1">Продать 1</button></div>`;
+    h+='</div>';
+  });
+  h+=`<div class="head"><span>🌾 Склад кормов</span></div><div class="card2"><div class="kv"><span>Зерно</span><b>${num(S.feed.grain)} кг</b></div><div class="kv"><span>Сено</span><b>${num(S.feed.hay)} кг</b></div>
+    <div class="kv"><span>Нужно в день</span><b>зерна ${num(S.an.hen*.1)} · сена ${num(S.an.cow*10+S.an.goat*2.5)} кг</b></div>
+    <div class="row"><button class="btn sm" data-a="feed" data-k="grain" data-kg="10" data-p="300">Зерно +10 кг · 300 ₽</button><button class="btn sm" data-a="feed" data-k="grain" data-kg="100" data-p="2400">Мешок 100 кг · 2 400 ₽</button></div>
+    <div class="row"><button class="btn sm" data-a="feed" data-k="hay" data-kg="10" data-p="120">Сено +10 кг · 120 ₽</button><button class="btn sm" data-a="feed" data-k="hay" data-kg="50" data-p="500">Тюк 50 кг · 500 ₽</button></div></div>`;
+  if(S.bld.coop)h+=`<div class="card2"><div class="head"><span>💡 Лампа в птичнике</span>${S.lamp?'<span class="good">есть</span>':'<button class="btn sm" data-a="lamp">1 500 ₽</button>'}</div><div class="hint">Зимой световой день короткий: без лампы яйца ×0,5, с лампой ×0,9.</div></div>`;
+  return h;
+}
+function tMarket(){
+  const keys=Object.keys(S.stock).filter(k=>S.stock[k]>=.5);
+  const mult=1+1.5*S.disc/100;
+  let h=`<div class="head"><span>🏪 Рынок${S.wx.fair?' · <span class="good">ЯРМАРКА: спрос ×2!</span>':''}</span></div>
+   <div class="card2"><div class="head"><span>Скидка: <b>${S.disc}%</b></span><span class="row"><button class="btn sm alt" data-a="disc" data-d="-10">−</button><button class="btn sm alt" data-a="disc" data-d="10">+</button></span></div>
+   <div class="hint">Скидка ${S.disc}% → покупатели возьмут в ${num(mult)} раза больше, а цена за штуку ×${num(1-S.disc/100)}. В день каждый товар продаётся один раз.</div></div>`;
+  if(!keys.length)h+=`<div class="hint">На складе пусто. Соберите урожай или дождитесь молока и яиц.</div>`;
+  else{
+    h+=`<table class="t">`+keys.map(k=>{const st=Math.floor(S.stock[k]),D=ITEMS[k].D*mult*(S.wx.fair?2:1),q=Math.min(st,Math.floor(D)),p=itemPrice(k);
+      return `<tr><td>${ITEMS[k].e} <b>${ITEMS[k].n}</b><br><span class="hint">${st} ${ITEMS[k].u} · цена ${money(p*(1-S.disc/100))}/${ITEMS[k].u} · спрос до ${Math.floor(D)}${S.sold[k]?' · продано':''}</span></td><td><button class="btn sm" data-a="sell" data-k="${k}" ${S.sold[k]?'disabled':''}>+${money(q*p*(1-S.disc/100))}</button></td></tr>`;}).join('')+`</table>`;
+    h+=`<button class="btn go" data-a="sellall">Продать всё, что можно</button>`;
+  }
+  h+=`<div class="hint">Порча в день: ${keys.map(k=>`${ITEMS[k].e}${num(ITEMS[k].spoil*(S.tech.cool&&C[k]?.4:1)*100)}%`).join(' ')||'—'}</div>`;
+  return h;
+}
+function tFarm(){
+  let h=`<div class="head"><span>👥 Люди</span><span class="hint">ОД в день: ${S.apCap}</span></div>
+   <div class="card2"><div class="head"><span>Работники: <b>${S.workers}</b>/5</span><span class="row"><button class="btn sm" data-a="hire" data-k="w">+ ${money(WAGE)}/день</button><button class="btn sm alt" data-a="fire" data-k="w">−</button></span></div>
+   <div class="head"><span>Агроном: <b>${S.agro}</b>/1</span><span class="row"><button class="btn sm" data-a="hire" data-k="a">+ ${money(WAGE_AGRO)}/день</button><button class="btn sm alt" data-a="fire" data-k="a">−</button></span></div>
+   <div class="hint">Каждый +8 ОД; агроном ещё +6% к урожаю. Зарплата платится каждый день.</div></div>`;
+  h+=`<div class="head"><span>🚜 Техника</span></div>`;
+  Object.keys(TECH).forEach(k=>{const t=TECH[k];h+=`<div class="card2"><div class="head"><span>${t.e} ${t.n}</span>${S.tech[k]?'<span class="good">есть</span>':`<button class="btn sm" data-a="tech" data-k="${k}">${money(t.price)}</button>`}</div><div class="hint">${t.info}</div></div>`;});
+  h+=`<div class="head"><span>🏗 Постройки</span></div>`;
+  ['gh','apiary'].forEach(k=>{h+=bldCard(k);});
+  h+=`<div class="head"><span>🌍 Земля</span></div><div class="card2"><div class="kv"><span>Участок</span><b>${S.land} сот. = ${S.land*100} м² · ${S.beds.filter(b=>b.t==='f').length} грядок</b></div><button class="btn sm" data-a="land">Купить сотку: ${money(landPrice())}</button></div>`;
+  h+=`<div class="card2"><div class="kv"><span>Капитал</span><b>${money(capital())}</b></div><div class="kv"><span>Цель года ${yearOf(S.day)}</span><b>${money(GOALS[yearOf(S.day)-1])}</b></div></div>`;
+  return h;
+}
+function tBook(){
+  const ks=Object.keys(ENC);
+  return `<div class="head"><span>📖 Энциклопедия фермера</span><span class="hint">${Object.keys(S.enc).length}/${ENCN}</span></div>`+ks.map(k=>S.enc[k]?`<div class="card2"><b>${ENC[k][0]}</b><div class="hint">${ENC[k][1]}</div></div>`:`<div class="card2" style="opacity:.5"><b>🔒 ???</b></div>`).join('');
+}
+const TABS=[['beds','🌱','Грядки',tBeds],['garden','🌳','Сад',tGarden],['an','🐔','Звери',tAnimals],['mkt','🏪','Рынок',tMarket],['farm','🏗','Ферма',tFarm],['book','📖','Книга',tBook]];
+function render(){
+  if(!S)return;
+  renderHud();
+  const t=TABS.find(x=>x[0]===tab)||TABS[0];
+  const pc=$('#pcontent'),top=pc.scrollTop;
+  pc.innerHTML=t[3]();pc.scrollTop=top;
+  $('#tabs').innerHTML=TABS.map(x=>`<button class="tab ${x[0]===tab?'on':''}" data-a="tab" data-k="${x[0]}"><i>${x[1]}</i>${x[2]}</button>`).join('');
+  $('#pfoot').innerHTML=`<button class="btn" data-a="skip3">+3 дня</button><button class="btn go" data-a="next1">Следующий день ▶</button>`;
+}
+function advance(n){
+  for(let i=0;i<n&&!modal&&S&&!S.over;i++){
+    endDay();
+    if(modal||S.over)break;
+  }
+  render();
+}
+
+/* ================= СТАРТ / МЕНЮ ================= */
+function startNew(){
+  S=newState();S.next=null;
+  S.wx=genWx(1);S.wx.frost=false;S.wx.ev=null;S.wx.T=Math.max(S.wx.T,6);S.next=genWx(2);
+  startDay();tab='beds';
+  const nx=()=>askQ(0,()=>askQ(1,()=>seasonCard(0,[])));
+  render();nx();
+}
+function loadGame(){const s=lsGet(SAVE_KEY);if(!s)return false;S=s;tab='beds';modal=false;render();return true;}
+function titleCard(){
+  const best=lsGet(BEST_KEY),has=!!lsGet(SAVE_KEY);
+  openCard(`${imgTag('cover_start','','cover')}<h2>🌾 Ферма</h2><p>Три года на своей ферме: грядки, теплица, сад, куры и коровы. Выращивайте овощи, считайте семена, воду и корм, продавайте на рынке — и узнавайте, как всё это устроено в природе.</p>${best?`<p class="hint">Рекорд капитала: ${money(best)}</p>`:''}
+   <button class="btn go" data-a="newgame">Новая игра</button>${has?'<button class="btn" data-a="cont">Продолжить</button>':''}`);
+}
+function menuCard(){openCard(`<h2>Меню</h2><button class="btn" data-a="close">Продолжить</button><button class="btn alt" data-a="help">Как играть</button><button class="btn red" data-a="newgame">Новая игра</button>`);}
+function helpCard(){openCard(`<h2>Как играть</h2><p>⚡ Каждый день есть очки действий (ОД): посадка, уборка, полив съедают их. Нанимайте работников, чтобы успевать.<br>🌱 Выберите грядки → «Посадить» → посчитайте семена по норме.<br>💧 Поливайте (в дождь не нужно, в жару — на 50% больше).<br>🧺 После созревания собирайте — игра объяснит, почему урожай мог быть меньше.<br>🏪 Продавайте на рынке: скидка помогает продать больше, но снижает цену.<br>🎓 Перед сезоном агроном задаёт вопросы.</p><button class="btn go" data-a="close">Понятно</button>`);}
+
+/* ================= ОБРАБОТКА НАЖАТИЙ ================= */
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-a]');if(!el)return;
+  const a=el.dataset.a,d=el.dataset;
+  if(a==='next'){return closeCard();}
+  if(a==='close'){return closeCard();}
+  if(a==='ans'){return answerQ(+d.k,+d.o);}
+  if(a==='task'){return answerTask(false);}
+  if(a==='taskskip'){return answerTask(true);}
+  if(a==='newgame'){$('#ov').classList.add('hidden');modal=false;cardNext=null;return startNew();}
+  if(a==='cont'){$('#ov').classList.add('hidden');modal=false;return loadGame();}
+  if(a==='help'){return helpCard();}
+  if(a==='pcrop'){return plantStep2(d.k);}
+  if(a==='plantback'){return plantStep1();}
+  if(a==='phint'){const c=C[S.pl.crop];$('#seedin').value=S.pl.ids.length*BEDM*c.seed;$('#seedin').oninput();return;}
+  if(a==='doplant'){return doPlant();}
+  if(modal)return;
+  switch(a){
+    case 'tab':tab=d.k;render();break;
+    case 'bed':{const i=+d.i,k=S.sel.indexOf(i);if(k>=0)S.sel.splice(k,1);else S.sel.push(i);render();break;}
+    case 'selempty':S.sel=S.beds.map((b,i)=>i).filter(i=>!S.beds[i].crop&&(!winter()||S.beds[i].t==='g'));render();break;
+    case 'selall':S.sel=S.beds.map((b,i)=>i).filter(i=>!winter()||S.beds[i].t==='g');render();break;
+    case 'selnone':S.sel=[];render();break;
+    case 'plant':openPlant();break;
+    case 'harvest':harvest();render();break;
+    case 'water':waterAll();break;
+    case 'compost':composting();break;
+    case 'soap':treat('soap');break;
+    case 'chem':treat('chem');break;
+    case 'film':if(!S.next.frost&&!S.wx.frost)return toast('Заморозка в прогнозе нет.');if(S.cover)return toast('Уже укрыто.');if(!pay(300,'плёнку'))break;if(!spend(1)){S.money+=300;break;}S.cover=true;toast('🛡 Грядки укрыты плёнкой на ночь');save();render();break;
+    case 'heat':S.heat=!S.heat;render();break;
+    case 'bld':buyBld(d.k);break;
+    case 'an':buyAnimal(d.k,+d.n);break;
+    case 'feed':buyFeed(d.k,+d.kg,+d.p);break;
+    case 'lamp':if(pay(1500,'лампу')){S.lamp=1;render();}break;
+    case 'disc':S.disc=clamp(S.disc+(+d.d),0,30);render();break;
+    case 'sell':sell([d.k]);break;
+    case 'sellall':sell(Object.keys(S.stock));break;
+    case 'hire':if(d.k==='w'){if(S.workers>=5)return toast('Максимум 5 работников');S.workers++;}else{if(S.agro)return toast('Агроном уже есть');S.agro=1;}S.apCap=cap();S.ap+=8;render();break;
+    case 'fire':if(d.k==='w'){if(S.workers<1)return;S.workers--;}else{if(!S.agro)return;S.agro=0;}S.apCap=cap();S.ap=Math.max(0,S.ap-8);render();break;
+    case 'tech':{const t=TECH[d.k];if(pay(t.price,t.n)){S.tech[d.k]=1;render();}break;}
+    case 'land':{const p=landPrice();if(pay(p,'землю')){S.land++;S.landBuys++;addBeds(10,'f');toast('🌍 Куплена сотка: +10 грядок');save();render();}break;}
+    case 'tree':{const T=TREES[d.k];if(S.trees.length>=6)return toast('Сад заполнен');if(pay(T.price,T.n)){S.trees.push({k:d.k,age:0,pr:0});render();}break;}
+    case 'prune':{const t=S.trees[+d.i];if(t&&!t.pr&&spend(1)){t.pr=1;render();}break;}
+    case 'lady':if(pay(500,'божьих коровок')){S.lady=Math.min(3,S.lady+2);unlock('lady');toast('🐞 Выпущены божьи коровки');render();}break;
+    case 'skip3':advance(3);break;
+    case 'next1':advance(1);maybeTask();break;
+  }
+});
+$('#btnMenu').addEventListener('click',()=>{if(!modal)menuCard();});
+window.__game={get S(){return S;},C,ITEMS,AN,BLD,TECH,startNew,endDay,advance,harvest,bedFx,sell,spend,render,closeCard,get modal(){return modal;},capital,startDay,itemPrice,GOALS};
+/* старт */
+S=newState();S.wx=genWx(1);S.next=genWx(2);S.wx.frost=false;S.wx.ev=null;startDay();render();titleCard();
+</script>
+</body>
+</html>
