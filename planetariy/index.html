@@ -41,7 +41,7 @@ h1,h2{margin:0}
 #gTop{display:flex;align-items:center;gap:8px;padding:8px 10px}
 #gTitle{flex:1;font-weight:800;font-size:15px}
 #bubble{display:flex;gap:8px;align-items:center;margin:0 10px;background:rgba(255,255,255,.1);border-radius:16px;padding:8px 10px;min-height:76px}
-#bubble .av{font-size:34px;line-height:1}
+#bubble .av{font-size:34px;line-height:1;width:64px;text-align:center}#bubble .av img{width:64px;height:72px;object-fit:contain;display:block}.pane .hero{height:110px;margin:-4px auto 0;display:block}#scrTitle.cov{background-size:cover;background-position:center;justify-content:flex-start;gap:10px;padding-top:34px}#scrTitle.cov .planet{display:none}#scrTitle.cov .sub{margin-bottom:auto;text-shadow:0 2px 6px #000}#scrTitle.cov .btn.ghost{background:rgba(10,14,60,.7)}
 #bubble .tx{flex:1;font-size:15px;line-height:1.25}
 #bubble .tx b{color:var(--gold)}
 #stage{position:relative;flex:1;min-height:0;margin:4px 0}
@@ -95,7 +95,7 @@ h1,h2{margin:0}
 
  <div class="screen" id="scrGame" hidden>
   <div id="gTop"><button class="ib" id="gBack">←</button><div id="gTitle"></div><button class="ib" id="gHint">💡 <span id="hn">3</span></button></div>
-  <div id="bubble"><div class="av">🧑‍🚀</div><div class="tx" id="msg"></div></div>
+  <div id="bubble"><div class="av" id="av">🧑‍🚀</div><div class="tx" id="msg"></div></div>
   <div id="stage"><canvas id="cv"></canvas></div>
   <div id="ctl"></div>
  </div>
@@ -112,7 +112,7 @@ h1,h2{margin:0}
 
  <div class="screen modal" id="scrRes" hidden>
   <div class="pane">
-   <h2 id="rTitle"></h2>
+   <div id="rHero"></div><h2 id="rTitle"></h2>
    <div class="stars" id="rStars"></div>
    <div class="fact" id="rFact"></div>
    <div class="row"><button class="btn ghost" id="rAgain">Ещё раз</button><button class="btn" id="rNext">Дальше</button></div>
@@ -274,6 +274,10 @@ var Q=[null,
 ];
 /* ===== утилиты ===== */
 function $(id){return document.getElementById(id);}
+var IM={};['bg_w1','bg_w2','sun','cover','mira','mira_think','mira_win','kometa','kometa_hint','stars_pop'].forEach(function(n){var i=new Image();i.onload=function(){IM[n]=i;if(n==='cover')coverOn();if(n==='mira')setAv('mira');};i.src='img/'+n+'.webp';});
+var AVF={mira:'🧑‍🚀',mira_think:'🤔',mira_win:'🎉',kometa:'🐱',kometa_hint:'💡'};
+function setAv(n){var el=$('av');if(!el)return;el.innerHTML=IM[n]?'<img src="img/'+n+'.webp" alt="">':AVF[n];}
+function coverOn(){var t=$('scrTitle');if(IM.cover){t.classList.add('cov');t.style.backgroundImage='linear-gradient(rgba(5,8,32,.15),rgba(5,8,32,.55)),url(img/cover.webp)';}}
 function mod(a,n){return ((a%n)+n)%n;}
 function cd(a,b){var d=mod(a-b,24);return Math.min(d,24-d);}
 function fmt(h){h=mod(h,24);var m=Math.round(h*60)%1440;return Math.floor(m/60)+':'+('0'+(m%60)).slice(-2);}
@@ -325,7 +329,7 @@ function openLevel(id){
  if(L.t==='spin'){G.sol=solve(L);G.t=mod(G.sol+7.3+id*1.7,24);}
  else{var g=L.given;G.t=mod(g.h-CITIES[g.c].off,24);G.ans=L.items.map(function(it){return {h:mod(it.h+5,24),day:0};});}
  $('gTitle').textContent='Уровень '+id+' · '+(id<=10?'Сутки':'Пояса');
- $('msg').innerHTML=L.txt;$('hn').textContent=3;
+ $('msg').innerHTML=L.txt;$('hn').textContent=3;setAv('mira');
  buildCtl();show('game');
 }
 function buildCtl(){
@@ -358,6 +362,7 @@ $('ctl').addEventListener('click',function(e){
 /* подсказки */
 $('gHint').addEventListener('click',function(){
  if(!G||G.done)return;var L=G.L;if(G.hint>=3)return;G.hint++;$('hn').textContent=3-G.hint;
+ setAv(G.hint===3?'kometa_hint':'mira_think');
  if(G.hint===1)$('msg').innerHTML='💡 '+L.h1;
  else if(G.hint===2){$('msg').innerHTML=L.t==='spin'?'💡 Золотое кольцо на Земле показывает, где должен стоять город.':'💡 Теперь на Земле видно время в нужных городах. Поставь такое же на часах.';}
  else{if(L.t==='spin'){G.anim={to:G.sol};$('msg').innerHTML='💡 Комета сама повернула Землю. Нажми «Готово».';}
@@ -372,11 +377,11 @@ function check(){
   var worst=-1,wc=null;L.conds.forEach(function(c){var e=condErr(c,L,G.t);if(e>worst){worst=e;wc=c;}});
   st=baseStars(worst);
   if(!st){SV.err[L.topic]=(SV.err[L.topic]||0)+1;save();var tgt=wc.h!=null?fmt(wc.h):('между '+fmt(wc.from)+' и '+fmt(wc.to));
-   $('msg').innerHTML='🐱 Не совсем. В городе «'+CITIES[wc.c].n+'» сейчас <b>'+fmt(localT(wc.c,G.t,L.mode))+'</b>, а нужно <b>'+tgt+'</b>. Покрути ещё!';return;}
+   setAv('kometa');$('msg').innerHTML='🐱 Не совсем. В городе «'+CITIES[wc.c].n+'» сейчас <b>'+fmt(localT(wc.c,G.t,L.mode))+'</b>, а нужно <b>'+tgt+'</b>. Покрути ещё!';return;}
  }else{
   var cs=document.querySelectorAll('.ccard'),all=true;
   L.items.forEach(function(it,i){var ok=G.ans[i].h===it.h&&G.ans[i].day===(it.day||0);cs[i].classList.remove('ok','no');cs[i].classList.add(ok?'ok':'no');if(!ok)all=false;});
-  if(!all){SV.err.zones=(SV.err.zones||0)+1;save();$('msg').innerHTML='🐱 Есть ошибка. Прикинь по Земле: ближе к Солнцу — значит время больше (идём на восток — прибавляем час).';return;}
+  if(!all){SV.err.zones=(SV.err.zones||0)+1;save();setAv('kometa');$('msg').innerHTML='🐱 Есть ошибка. Прикинь по Земле: ближе к Солнцу — значит время больше (идём на восток — прибавляем час).';return;}
   st=G.tries===1?3:G.tries===2?2:1;
  }
  st=Math.max(1,st-G.hint);finish(L,st);
@@ -386,7 +391,7 @@ function finish(L,st){
  showRes(L,st);
 }
 function showRes(L,st,title){
- $('rTitle').textContent=title||'Отлично!';
+ $('rTitle').textContent=title||'Отлично!';$('rHero').innerHTML=IM[st?'mira_win':'mira_think']?'<img class=hero src="img/'+(st?'mira_win':'mira_think')+'.webp" alt="">':'';
  $('rStars').innerHTML='★★★'.slice(0,st)+'<i>'+'★★★'.slice(0,3-st)+'</i>';
  $('rFact').innerHTML='<b>📖 Журнал наблюдений:</b><br>'+L.fact;
  var nxt=nextAfter(L.id);$('rNext').style.display=nxt?'':'none';$('rNext').textContent=Q_ADAPT&&Q_ADAPT.length?'Дальше (повтор)':'Дальше';
@@ -439,13 +444,14 @@ function frame(now){
 function draw(T){
  var L=G.L;ctx.setTransform(dpr,0,0,dpr,0,0);
  var gr=ctx.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#070b2e');gr.addColorStop(1,'#16206a');ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
+ var bg=IM[L.id<=10?'bg_w1':'bg_w2'];if(bg){var k=Math.max(W/bg.width,H/bg.height),bw=bg.width*k,bh=bg.height*k;ctx.globalAlpha=.8;ctx.drawImage(bg,(W-bw)/2,(H-bh)/2,bw,bh);ctx.globalAlpha=1;}
  STARS.forEach(function(s){ctx.globalAlpha=.4+.5*Math.abs(Math.sin(T*1.3+s[3]));ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s[0]*W,s[1]*H,s[2],0,6.3);ctx.fill();});ctx.globalAlpha=1;
  var R=Math.min(W*.28,H*.38),cx=W*.40,cy=H*.5,sr=Math.min(W*.2,H*.3),sx=W+sr*.1,sy=cy;
  // Солнце
  var sg=ctx.createRadialGradient(sx,sy,sr*.3,sx,sy,sr*1.7);sg.addColorStop(0,'rgba(255,220,80,.95)');sg.addColorStop(.5,'rgba(255,150,40,.25)');sg.addColorStop(1,'rgba(255,150,40,0)');
  ctx.fillStyle=sg;ctx.beginPath();ctx.arc(sx,sy,sr*1.7,0,6.3);ctx.fill();
- ctx.fillStyle='#ffd23f';ctx.beginPath();ctx.arc(sx,sy,sr,0,6.3);ctx.fill();
- ctx.fillStyle='#ffb21f';ctx.beginPath();ctx.arc(sx-sr*.25,sy-sr*.2,sr*.5,0,6.3);ctx.fill();
+ if(IM.sun){var ss=sr*2.5;ctx.drawImage(IM.sun,sx-ss/2,sy-ss/2,ss,ss*IM.sun.height/IM.sun.width);}else{ctx.fillStyle='#ffd23f';ctx.beginPath();ctx.arc(sx,sy,sr,0,6.3);ctx.fill();
+ ctx.fillStyle='#ffb21f';ctx.beginPath();ctx.arc(sx-sr*.25,sy-sr*.2,sr*.5,0,6.3);ctx.fill();}
  // лучи
  ctx.strokeStyle='rgba(255,224,110,.75)';ctx.fillStyle='rgba(255,224,110,.75)';ctx.lineWidth=2.5;
  [-.7,-.35,0,.35,.7].forEach(function(k){var y=cy+k*R,x1=sx-sr-4,x2=cx+R*Math.sqrt(Math.max(0,1-k*k))+10;if(x1-x2<14)return;ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x2,y);ctx.stroke();ctx.beginPath();ctx.moveTo(x2,y);ctx.lineTo(x2+9,y-5);ctx.lineTo(x2+9,y+5);ctx.fill();});
