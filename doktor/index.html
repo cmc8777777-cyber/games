@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Доктор</title>
+<style>
+:root{--bg:#e9f8f4;--ink:#23364a;--teal:#1fae9d;--teal2:#14867a;--red:#ff6b6b;--yel:#ffd23f;--card:#fff;--line:#cfe9e3;--mut:#6a7f8f;--ok:#2fb35a;--bad:#e5484d}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#cfeee8;color:var(--ink);font:16px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;overscroll-behavior:none}
+button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulation}
+#app{position:relative;height:100%;max-width:480px;margin:0 auto;background:var(--bg);overflow:hidden}
+.scr{position:absolute;inset:0;display:flex;flex-direction:column}
+.scr[hidden],.modal[hidden]{display:none}
+.top{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--teal);color:#fff;font-weight:700}
+.top .sp{flex:1}
+.pill{background:rgba(255,255,255,.22);border-radius:14px;padding:3px 10px;font-size:14px;white-space:nowrap}
+.bar{height:10px;background:rgba(255,255,255,.3);border-radius:6px;overflow:hidden;flex:1;min-width:60px}
+.bar i{display:block;height:100%;background:var(--yel);transition:width .1s linear}
+.bar.low i{background:var(--red)}
+.body{flex:1;overflow:auto;padding:10px;-webkit-overflow-scrolling:touch}
+.btn{display:block;width:100%;min-height:48px;padding:10px 14px;border-radius:14px;background:var(--teal);color:#fff;font-weight:700;font-size:17px;box-shadow:0 3px 0 var(--teal2);margin:8px 0}
+.btn.alt{background:#fff;color:var(--teal2);box-shadow:0 3px 0 var(--line);border:2px solid var(--line)}
+.btn.red{background:var(--red);box-shadow:0 3px 0 #c94b4b}
+.btn[disabled]{opacity:.45;box-shadow:none}
+.btn.sm{display:inline-block;width:auto;min-height:40px;font-size:15px;margin:0}
+.card{background:var(--card);border-radius:16px;padding:10px;margin:0 0 10px;box-shadow:0 2px 0 var(--line);position:relative}
+.pt{display:flex;gap:10px;width:100%;text-align:left;background:var(--card)}
+.av{flex:0 0 76px;height:76px;border-radius:50%;background:var(--yel);display:flex;align-items:center;justify-content:center;font-size:44px;position:relative;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover}
+.av b{position:absolute;right:-2px;bottom:-2px;font-size:22px}
+.pt h3{margin:0;font-size:17px}
+.pt .say{margin:2px 0 4px;color:var(--mut);font-style:italic;font-size:14px}
+.sym{display:flex;flex-wrap:wrap;gap:4px}
+.sym span{background:#fff4c9;border-radius:10px;padding:2px 8px;font-size:13px}
+.tag{position:absolute;top:8px;right:8px;border-radius:10px;padding:2px 8px;font-size:12px;font-weight:700;color:#fff}
+.tag.ok{background:var(--ok)}.tag.bad{background:var(--bad)}.tag.wait{background:var(--teal)}
+.pt.done{opacity:.7}
+.modal{position:absolute;inset:0;background:rgba(20,40,60,.55);display:flex;align-items:flex-end;z-index:20}
+.modal.mid{align-items:center;padding:0 14px}
+.sheet{background:var(--bg);width:100%;max-height:92%;display:flex;flex-direction:column;border-radius:20px 20px 0 0;overflow:hidden}
+.mid .sheet{border-radius:20px}
+.sheet .hd{display:flex;align-items:center;padding:10px 12px;font-weight:800;background:#fff;gap:8px}
+.sheet .hd .sp{flex:1}
+.x{background:#eef;border-radius:50%;width:36px;height:36px;font-size:18px}
+.sheet .bd{overflow:auto;padding:10px 12px;flex:1}
+.sheet .ft{padding:6px 12px 12px;background:#fff}
+input[type=search],input[type=text]{width:100%;min-height:44px;border-radius:12px;border:2px solid var(--line);padding:8px 12px;font:inherit;margin:0 0 8px}
+.lst{display:flex;flex-direction:column;gap:6px}
+.opt{background:#fff;border:2px solid var(--line);border-radius:12px;padding:9px 12px;text-align:left;min-height:44px}
+.opt.sel{border-color:var(--teal);background:#dff7f2;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:#fff;border:2px solid var(--line);border-radius:14px;padding:7px 10px;font-size:14px;min-height:40px}
+.chip.sel{border-color:var(--teal);background:#dff7f2;font-weight:700}
+.chip.hint{box-shadow:0 0 0 3px var(--yel)}
+h2{margin:6px 0}
+.step{font-weight:800;margin:8px 0 6px;color:var(--teal2)}
+.big{font-size:56px;text-align:center;margin:6px 0}
+.die{font-size:96px;text-align:center;line-height:1}
+.die.roll{animation:sh .25s infinite}
+@keyframes sh{0%{transform:rotate(-12deg)}50%{transform:rotate(12deg) scale(1.1)}100%{transform:rotate(-12deg)}}
+.center{text-align:center}.mut{color:var(--mut);font-size:14px}
+.ent{background:#fff;border-radius:12px;padding:8px 10px;margin:0 0 8px;box-shadow:0 2px 0 var(--line)}
+.ent b{display:block}
+.good{color:var(--ok);font-weight:700}.badc{color:var(--bad);font-weight:700}
+.start{justify-content:center;align-items:center;text-align:center;padding:24px;background:linear-gradient(#bff0e6,#e9f8f4)}
+.logo{font-size:84px}
+.start h1{margin:0 0 4px;font-size:40px;color:var(--teal2)}
+.start .btn{max-width:300px}
+.note{font-size:12px;color:var(--mut);margin-top:12px;max-width:300px}
+.rank{font-size:26px;font-weight:800;color:var(--teal2);text-align:center;margin:4px 0}
+.row2{display:flex;gap:8px}.row2>*{flex:1}
+.acc{background:#fff;border-radius:12px;margin:0 0 6px;box-shadow:0 2px 0 var(--line);overflow:hidden}
+.acc>button{width:100%;text-align:left;background:#fff;padding:10px 12px;font-weight:700;min-height:46px}
+.acc .in{padding:0 12px 10px;font-size:14px}
+.acc .in p{margin:4px 0}
+.toast{position:absolute;left:50%;top:70px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:8px 14px;border-radius:14px;z-index:40;font-weight:700}
+</style>
+</head>
+<body>
+<div id="app">
+  <section class="scr start" id="scrStart"></section>
+  <section class="scr" id="scrPlay" hidden></section>
+  <section class="scr" id="scrEnd" hidden></section>
+  <div class="modal" id="mdl" hidden></div>
+</div>
+
+<!-- YANDEX_SDK (магазинная сборка вставит сюда <script src="/sdk.js">) -->
+<script>
+/* Слой платформы: Яндекс Игры SDK, если игра запущена на площадке; без SDK — заглушки. Ключи сохранения: doktor-* */
+window.PF = (function () {
+  'use strict';
+  var ysdk = null, player = null, sdkOk = false, cloudOk = false, adBusy = false, tabHidden = false, apiPaused = false;
+  var lastAdAt = 0, bornAt = Date.now(), AD_FIRST_MS = 120000, AD_GAP_MS = 180000, mem = {}, syncT = 0;
+  var self = { onPause: function () {} };
+  function isK(k) { return k.indexOf('doktor-') === 0; }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  self.get = function (k) { if (k in mem) return mem[k]; try { return localStorage.getItem(k); } catch (e) { return null; } };
+  self.put = function (k, v) { v = String(v); mem[k] = v; lsSet(k, v); if (isK(k) && player && cloudOk) { clearTimeout(syncT); syncT = setTimeout(flush, 2500); } };
+  self.del = function (k) { delete mem[k]; try { localStorage.removeItem(k); } catch (e) {} };
+  function flush() { if (!player || !cloudOk) return; var d = {}; Object.keys(mem).forEach(function (k) { if (isK(k)) d[k] = mem[k]; }); try { var p = player.setData({ v: 1, d: d }, false); if (p && p.catch) p.catch(function () {}); } catch (e) {} }
+  self.paused = function () { return adBusy || tabHidden || apiPaused; };
+  function changed() { try { self.onPause(self.paused()); } catch (e) {} }
+  self.init = function () {
+    try { document.addEventListener('visibilitychange', function () { tabHidden = !!document.hidden; if (tabHidden) flush(); changed(); }); } catch (e) {}
+    if (!window.YaGames || !window.YaGames.init) return Promise.resolve();
+    return new Promise(function (resolve) {
+      var timer = setTimeout(resolve, 4000);
+      window.YaGames.init().then(function (sdk) {
+        ysdk = sdk; sdkOk = true;
+        try { sdk.on('game_api_pause', function () { apiPaused = true; changed(); }); sdk.on('game_api_resume', function () { apiPaused = false; changed(); }); } catch (e) {}
+        return sdk.getPlayer({ scopes: false }).then(function (p) { player = p; return p.getData(); }).then(function (data) {
+          var d = data && data.d; if (d && typeof d === 'object' && !self.get('doktor-save')) Object.keys(d).forEach(function (k) { if (isK(k) && typeof d[k] === 'string') { mem[k] = d[k]; lsSet(k, d[k]); } });
+          cloudOk = true;
+        }, function () {});
+      }).then(function () { clearTimeout(timer); resolve(); }, function () { clearTimeout(timer); resolve(); });
+    });
+  };
+  self.ready = function () { try { var l = sdkOk && ysdk.features && ysdk.features.LoadingAPI; if (l) l.ready(); } catch (e) {} };
+  self.setPlaying = function (on) { try { var g = sdkOk && ysdk.features && ysdk.features.GameplayAPI; if (g) { if (on) g.start(); else g.stop(); } } catch (e) {} };
+  self.interstitial = function (done) {
+    var now = Date.now(), allowed = lastAdAt ? lastAdAt + AD_GAP_MS : bornAt + AD_FIRST_MS;
+    if (!sdkOk || !ysdk.adv || !ysdk.adv.showFullscreenAdv || now < allowed || adBusy) { done(); return; }
+    var fin = false; function end(s) { if (fin) return; fin = true; if (s) lastAdAt = Date.now(); adBusy = false; changed(); done(); }
+    adBusy = true; changed();
+    try { ysdk.adv.showFullscreenAdv({ callbacks: { onClose: function (w) { end(w); }, onError: function () { end(false); }, onOffline: function () { end(false); } } }); } catch (e) { end(false); }
+  };
+  self.canReward = function () { return !!(sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo); };
+  self.rewarded = function (done) {
+    if (!self.canReward()) { done(false); return; }
+    var fin = false, got = false; function end() { if (fin) return; fin = true; adBusy = false; changed(); done(got); }
+    adBusy = true; changed();
+    try { ysdk.adv.showRewardedVideo({ callbacks: { onRewarded: function () { got = true; }, onClose: end, onError: end } }); } catch (e) { end(); }
+  };
+  return self;
+})();
+</script>
+<script>
+/*DATA_START*/
+const ACT = {"rest":["Покой, отдых","🛋️"],"cold":["Холод через ткань","🧊"],"cool_water":["Охладить прохладной водой","🚿"],"water":["Обильное питьё","💧"],"warm_drink":["Тёплое питьё","🍵"],"rinse":["Промыть чистой водой","🫧"],"antiseptic":["Обработать антисептиком","🧴"],"bandage":["Повязка или пластырь","🩹"],"fix":["Зафиксировать, не двигать","🧣"],"tilt":["Наклонить голову","🙇"],"gargle":["Полоскать тёплой водой","🫗"],"humid":["Проветрить и увлажнить воздух","🌫️"],"warm":["Согреться в тепле","🧦"],"shade":["В тень, в прохладу","🌳"],"fresh_air":["Свежий воздух","🌬️"],"antihist":["Антигистаминное (по назначению врача)","💊"],"antipyretic":["Жаропонижающее (по совету взрослого)","🌡️"],"cream":["Успокаивающее средство (по совету врача)","🧪"],"tweezers":["Аккуратно убрать (чистый пинцет)","🔍"],"brush":["Почистить зубы","🪥"],"dentist":["К стоматологу","🦷"],"eyes_rest":["Отдых глазам, смотреть вдаль","👀"],"shoes":["Удобная обувь","👟"],"exercise":["Лёгкая зарядка, упражнения","🤸"],"diet":["Лёгкая еда","🥣"],"hands":["Вымыть руки","🧼"],"isolate":["Остаться дома, не заражать других","🏠"],"adults":["Сказать взрослым","🗣️"],"doctor":["К врачу","🩺"],"calm":["Успокоиться, подышать","😌"]};
+const DIS = [{"n":"Простуда","e":"🤧","t":1,"g":"resp","s":["насморк","першит в горле","чихание","немного болит голова","температура чуть выше обычной"],"c":"Апчхи! Нос заложило, горло першит.","w":"Вирусы, которые передаются по воздуху и через грязные руки.","d":["rest","warm_drink","humid"],"b":[],"x":"Не гулять долго на морозе, не пить ледяное. Если температура высокая или не лучше через 3–4 дня — к врачу.","f":"Вирусов простуды больше двухсот, поэтому простудиться можно много раз."},{"n":"Ушиб","e":"🤕","t":1,"g":"limb","s":["болит место удара","шишка или синяк","больно трогать","двигать можно, но неприятно"],"c":"Я ударился коленом об стол!","w":"Удар: под кожей повредились мелкие сосуды, поэтому появляется синяк.","d":["cold","rest"],"b":["warm"],"x":"Не греть и не растирать в первый день. Ушиб головы или сильная боль — сказать взрослым и к врачу.","f":"Синяк меняет цвет: красный, синий, зелёный, жёлтый — так тело убирает кровь из-под кожи."},{"n":"Ссадина","e":"🩹","t":1,"g":"skin","s":["содрана кожа","саднит и жжёт","вокруг грязь","выступают капельки крови"],"c":"Упал с самоката и содрал локоть.","w":"Трение о землю стёрло верхний слой кожи.","d":["rinse","antiseptic","bandage"],"b":[],"x":"Не сдирать корочку, не трогать грязными руками. Если рана глубокая или покраснела и болит сильнее — к врачу.","f":"Кожа — самый большой орган тела, она полностью обновляется примерно за месяц."},{"n":"Кровь из носа","e":"👃","t":1,"g":"nose","s":["капает кровь из носа","началось после чихания, жары или ковыряния","голова не кружится","идёт из одной ноздри"],"c":"У меня из носа капает!","w":"В носу много тонких сосудов близко к поверхности, сухой воздух или лёгкий удар их повреждает.","d":["tilt","cold","calm"],"b":[],"x":"Не запрокидывать голову и не ложиться. Если кровь идёт дольше 15–20 минут — к врачу.","f":"Нос согревает и увлажняет воздух, поэтому он так богат сосудами."},{"n":"Заноза","e":"🪵","t":1,"g":"skin","s":["болит кончик пальца","видна тёмная точка под кожей","трогал деревянный забор","больно давить"],"c":"Заноза в пальце, ай!","w":"Тонкая щепка вошла под кожу.","d":["hands","tweezers","antiseptic"],"b":[],"x":"Не ковырять глубоко иглой. Если не вынимается или палец покраснел — к врачу.","f":"Раньше занозы вынимали иглой над огнём, а сегодня хватает чистого пинцета и мытья рук."},{"n":"Лёгкий ожог","e":"🔥","t":1,"g":"burn","s":["покраснела кожа","жжёт","небольшой участок","пузыря нет"],"c":"Схватил горячую кружку!","w":"Горячая вода, пар или предмет повредили верхний слой кожи.","d":["cool_water","bandage","adults"],"b":["cold","cream"],"x":"Не мазать маслом, не класть лёд, не прокалывать пузыри. Большой ожог или пузыри — сразу к врачу.","f":"Охлаждать ожог нужно прохладной (не ледяной!) водой 10–15 минут."},{"n":"Укус пчелы","e":"🐝","t":1,"g":"bite","s":["острая боль в одном месте","красное пятно и отёк","видно маленькое жало","жжёт и чешется"],"c":"Меня ужалила пчела!","w":"Пчела оставила в коже жало с каплей яда.","d":["tweezers","cold","adults"],"b":[],"x":"Не давить на жало, не чесать. Если отекло лицо или трудно дышать — срочно вызвать скорую (112).","f":"Пчела после укуса погибает, поэтому жалит, только когда защищается."},{"n":"Солнечный удар","e":"☀️","t":1,"g":"heat","s":["болит и кружится голова","лицо красное, жарко","тошнит","долго был на солнце без панамы"],"c":"Мне плохо... весь день на солнце.","w":"Голова перегрелась на солнце.","d":["shade","cool_water","water"],"b":["warm"],"x":"Не оставаться на солнце. Если стало хуже или потерял сознание — скорая (112).","f":"Панама или кепка заметно снижают риск солнечного удара."},{"n":"Пищевое отравление","e":"🤢","t":1,"g":"tummy","s":["тошнит","болит живот","слабость","ел что-то сомнительное"],"c":"Живот крутит после уличной шаурмы.","w":"Микробы или их яды в несвежей или плохо помытой еде.","d":["water","rest","diet"],"b":[],"x":"Не есть жирное и острое, не принимать лекарства без взрослых. Температура, кровь или долго не проходит — к врачу.","f":"Мытьё рук перед едой — лучшая защита от большинства кишечных микробов."},{"n":"Зубная боль","e":"🦷","t":1,"g":"mouth","s":["болит зуб","больно от сладкого и холодного","видна тёмная дырочка","щека может припухнуть"],"c":"Зуб болит, не могу есть!","w":"Микробы во рту превращают сахар в кислоту, она разрушает эмаль (кариес).","d":["gargle","brush","dentist"],"b":["warm"],"x":"Не греть щёку и не откладывать визит к стоматологу.","f":"Эмаль — самая твёрдая ткань человеческого тела, но кислоте она уступает."},{"n":"Ангина","e":"😮","t":2,"g":"resp","s":["сильно болит горло, больно глотать","высокая температура","белые налёты на миндалинах","увеличились узлы на шее"],"c":"Не могу глотать, горло как в огне.","w":"Бактерии или вирусы поражают миндалины.","d":["doctor","rest","warm_drink"],"b":[],"x":"Не лечиться самому: при ангине нужен врач. Не ходить в школу.","f":"Миндалины — часть иммунитета: они ловят микробов у входа в горло."},{"n":"Ветрянка","e":"🔴","t":2,"g":"rash","s":["сыпь пузырьками с жидкостью","сильно чешется","температура","новые пятна каждый день"],"c":"Весь в красных пузырьках!","w":"Очень заразный вирус.","d":["isolate","cream","doctor"],"b":[],"x":"Не расчёсывать пузырьки, не ходить в школу. Врача лучше вызвать на дом.","f":"Ветрянкой обычно болеют один раз, а прививка защищает заранее."},{"n":"Сезонная аллергия","e":"🌼","t":2,"g":"rash","s":["чихает много раз подряд","слезятся и чешутся глаза","нет температуры","началось на цветущем лугу"],"c":"Чихаю, глаза текут, а я не болею!","w":"Иммунитет бурно реагирует на безобидную пыльцу.","d":["rinse","antihist","adults"],"b":[],"x":"Не тереть глаза грязными руками, не гулять на цветущем лугу в ветер. Лекарство — только по назначению врача.","f":"Аллергия — ошибка иммунитета: пыльцу он принимает за врага."},{"n":"Крапивница","e":"🟠","t":2,"g":"rash","s":["розовые волдыри на коже","сильно чешутся","появились за час","ел новое или играл с чем-то необычным"],"c":"Все руки в красных пятнах, чешутся!","w":"Реакция организма на продукт, укус или вещество.","d":["antihist","adults","cool_water"],"b":[],"x":"Не расчёсывать и не есть то, на что подозреваешь реакцию. Трудно дышать или отекло лицо — скорая (112).","f":"Название — от крапивы: волдыри похожи на её ожог."},{"n":"Растяжение связок","e":"🦶","t":2,"g":"limb","s":["подвернул ногу","болит сустав","опухоль","наступать больно, но можно"],"c":"Подвернул ногу на физкультуре.","w":"Связки растянулись при резком движении.","d":["rest","cold","bandage"],"b":["warm","exercise"],"x":"Не греть в первый день, не нагружать ногу. Если опухоль растёт или нельзя наступить — к врачу.","f":"Связки — как крепкие резинки, которые держат кости рядом."},{"n":"Подозрение на вывих","e":"💪","t":2,"g":"limb","s":["сильная боль в суставе","сустав выглядит неправильно","нельзя пошевелить","упал на руку"],"c":"Упал, рука повисла!","w":"Концы костей сместились в суставе.","d":["fix","cold","doctor"],"b":["exercise","warm"],"x":"Никогда не вправлять самому и не двигать больное место.","f":"Вправлять вывих может только врач — самому можно навредить."},{"n":"Обморожение","e":"🥶","t":2,"g":"cold","s":["побелели щёки, нос или пальцы","онемение","потом покалывание","долго был на морозе"],"c":"Нос и пальцы белые и ничего не чувствуют.","w":"Холод сузил сосуды, коже не хватает крови.","d":["warm","warm_drink","adults"],"b":["cold"],"x":"Не тереть снегом, не совать в горячую воду. Появились пузыри — к врачу.","f":"Нос, щёки и пальцы мёрзнут первыми: туда кровь доходит хуже всего."},{"n":"Укачивание","e":"🚗","t":2,"g":"tummy","s":["тошнит в машине или автобусе","кружится голова","бледное лицо","холодный пот","читал в дороге"],"c":"В автобусе мне ужасно плохо.","w":"Мозг получает разные сигналы от глаз и от внутреннего уха.","d":["fresh_air","eyes_rest","rest"],"b":[],"x":"Не читать и не смотреть в телефон в дороге, не ехать на полный желудок.","f":"Укачивание — не болезнь: от него страдают даже космонавты."},{"n":"Близорукость","e":"👓","t":2,"g":"eye","s":["плохо видит доску","щурится","подносит книгу близко","к вечеру болит голова"],"c":"Не вижу, что написано на доске.","w":"Глаз немного вытянут, и изображение фокусируется не на сетчатке.","d":["doctor","eyes_rest","fresh_air"],"b":[],"x":"Не читать лёжа и в темноте, не сидеть часами с экраном.","f":"Очки не портят зрение, они просто помогают видеть чётко."},{"n":"Плоскостопие","e":"👣","t":2,"g":"limb","s":["быстро устают ноги","стопа почти без свода","обувь стаптывается внутрь","к вечеру болят ноги"],"c":"Ноги гудят уже к обеду.","w":"Свод стопы опустился, и стопа хуже смягчает шаги.","d":["shoes","exercise","doctor"],"b":[],"x":"Не носить жёсткую плоскую обувь целый день, не лечиться самому.","f":"У малышей стопа плоская у всех: свод формируется до 5–6 лет."},{"n":"Конъюнктивит","e":"👁️","t":2,"g":"eye","s":["красные глаза","ресницы слипаются по утрам","чешется и слезится","ощущение песка"],"c":"Глаза красные, утром не открыть.","w":"Воспаление оболочки глаза от микробов или вирусов; заразно.","d":["doctor","hands","isolate"],"b":[],"x":"Не тереть глаза, не пользоваться чужим полотенцем.","f":"Конъюнктива — тонкая прозрачная плёнка, что покрывает белок глаза."},{"n":"Грипп","e":"🤒","t":2,"g":"resp","s":["резко высокая температура","ломит всё тело","болит голова","сухой кашель","сильная слабость"],"c":"Всё тело ломит, жарко и холодно.","w":"Вирус гриппа; передаётся по воздуху.","d":["rest","antipyretic","doctor"],"b":[],"x":"Не ходить в школу и не геройствовать «на ногах». Лекарства — только по совету взрослого или врача.","f":"Вирус гриппа меняется, поэтому прививку делают каждую осень."},{"n":"Острый бронхит","e":"😷","t":2,"g":"resp","s":["кашель несколько дней","откашливается мокрота","хрипы в груди","температура невысокая","болит грудь от кашля"],"c":"Кашляю уже неделю.","w":"Воспаление бронхов (трубок, по которым воздух идёт в лёгкие).","d":["doctor","warm_drink","humid"],"b":[],"x":"Не гулять на сильном морозе и не дышать табачным дымом.","f":"Кашель — защита: так лёгкие выталкивают лишнее."},{"n":"Боль в ухе (отит)","e":"👂","t":2,"g":"ear","s":["стреляет в ухе","температура","слышит хуже","начало после насморка"],"c":"Ухо болит и стреляет!","w":"Воспаление в ухе: инфекция попадает из носа по узкой трубке.","d":["doctor","rest","adults"],"b":[],"x":"Не капать, не греть и не чистить ухо палочкой без врача.","f":"Ухо соединено с носоглоткой, поэтому после насморка оно может заболеть."},{"n":"Натёртость","e":"🦶","t":2,"g":"skin","s":["пузырёк на пятке","больно при ходьбе","новая обувь","кожа красная"],"c":"Новые кроссовки натёрли пятку.","w":"Трение жёсткой обуви о кожу.","d":["shoes","bandage","rinse"],"b":[],"x":"Не прокалывать пузырь, не ходить в той же обуви.","f":"Пузырь — это природный пластырь: внутри жидкость, под которой кожа заживает."}];
+/*DATA_END*/
+</script>
+<script>
+(function () {
+'use strict';
+/* ---------- Слоты под картинки ----------
+   Когда картинки готовы (WebP в game/img/), перечислить имена здесь: тогда игра подставит их, иначе рисует код. */
+const ART = {};   // например { pat_vanya_sick: 1, ... }
+function artImg(name, alt) { return ART[name] ? '<img src="img/' + name + '.webp" alt="' + (alt || '') + '">' : ''; }
+
+const SEASON = 20, MAXPICK = 4;
+const PAT = [ // k, имя, возраст, пол, значок
+  ['vanya', 'Ваня', 8, 'm', '👦'], ['timur', 'Тимур', 10, 'm', '🧒'], ['artem', 'Артём', 12, 'm', '🧑'], ['misha', 'Миша', 5, 'm', '👶'],
+  ['masha', 'Маша', 7, 'f', '👧'], ['sonya', 'Соня', 9, 'f', '👧'], ['katya', 'Катя', 12, 'f', '🧒'], ['liza', 'Лиза', 13, 'f', '👩'],
+  ['sergey', 'Сергей Иванович', 38, 'm', '👨'], ['anna', 'Анна Петровна', 34, 'f', '👩'], ['nikolay', 'Николай Петрович', 70, 'm', '👴'], ['nina', 'Нина Ивановна', 68, 'f', '👵']
+];
+const MASC = /упал|ударился|схватил|содрал|подвернул|замёрз|нашёл|попал|объелся|съел|потерял/i;
+const RANKS = [['Санитар', '🧹'], ['Фельдшер', '🩹'], ['Доктор', '🩺'], ['Главврач', '🏥'], ['Профессор', '🎓']];
+const MAXTIER = DIS.reduce((m, d) => Math.max(m, d.t), 1);
+
+const $ = id => document.getElementById(id);
+const rnd = n => Math.floor(Math.random() * n);
+const shuf = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1), t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ---------- Состояние ---------- */
+let S = fresh();
+function fresh() { return { shift: 1, rep: 50, cured: 0, total: 0, speedSum: 0, notes: [], seen: [], hints: 3, best: 0 }; }
+let G = null;   // текущая смена: { pts, t, T, tier, pool, open, modal, done }
+function save() { PF.put('doktor-save', JSON.stringify(S)); }
+function load() { try { const o = JSON.parse(PF.get('doktor-save')); if (o && o.shift) { S = Object.assign(fresh(), o); return true; } } catch (e) {} return false; }
+
+/* ---------- Правила ---------- */
+function tierOf(shift) { return Math.min(shift <= 6 ? 1 : shift <= 14 ? 2 : 3, MAXTIER); }
+function poolOf(tier) { return DIS.map((d, i) => Object.assign({ i }, d)).filter(d => d.t <= tier); }
+function countOf(shift) { return shift >= 15 && shift % 3 !== 0 ? 3 : 2; }
+function timeOf(shift) { return shift <= 6 ? 90 : shift <= 14 ? 80 : 75; }
+function judge(d, diag, acts) {
+  if (diag !== d.i) return { v: 'wrong', why: 'diag' };
+  const k = acts.filter(a => d.d.includes(a)).length, w = acts.filter(a => d.b.includes(a)).length, e = acts.length - k - w;
+  if (k === d.d.length && w === 0 && e <= 1) return { v: 'full' };
+  if (k >= 1) return { v: 'half', k, w, e };
+  return { v: 'wrong', why: 'acts' };
+}
+function accuracy() { return S.total ? S.cured / S.total * 100 : 0; }
+function speed() { return S.total ? S.speedSum / S.total * 100 : 0; }
+function score() { return 0.8 * accuracy() + 0.2 * speed(); }
+function rankIdx(final) { const p = score(); if (p >= 90 && S.rep >= 80) return 4; if (p >= 75) return 3; if (p >= 60) return 2; if (p >= 40) return 1; return 0; }
+function rankName() { const r = RANKS[Math.min(rankIdx(), 4)]; return r[1] + ' ' + r[0]; }
+
+/* ---------- Смена ---------- */
+function startShift() {
+  const tier = tierOf(S.shift), pool = poolOf(tier), n = countOf(S.shift), picks = [];
+  let first = pool[rnd(pool.length)]; picks.push(first);
+  while (picks.length < n) {
+    let cand = null;
+    if (tier > 1 && Math.random() < 0.55) { const sim = pool.filter(d => d.g === picks[picks.length - 1].g && !picks.includes(d)); if (sim.length) cand = sim[rnd(sim.length)]; }
+    if (!cand) { const rest = pool.filter(d => !picks.includes(d)); cand = rest[rnd(rest.length)]; }
+    picks.push(cand);
+  }
+  const used = [], pts = picks.map(d => {
+    const male = MASC.test(d.c);
+    let opts = PAT.filter(p => !used.includes(p[0]) && (!male || p[3] === 'm'));
+    if (!opts.length) opts = PAT.filter(p => !used.includes(p[0]));
+    const p = opts[rnd(opts.length)]; used.push(p[0]);
+    return { dis: d, p, st: 'wait', res: null };
+  });
+  const T = timeOf(S.shift);
+  G = { pts, t: T, T, tier, pool, open: -1, modal: false, done: false, last: 0 };
+  show('scrPlay'); renderPlay(); PF.setPlaying(true); closeModal();
+  if (S.shift === 1 && !S.seenTutorial) { S.seenTutorial = 1; save(); howTo(); }
+}
+let lastTick = performance.now();
+setInterval(function () {
+  const now = performance.now(), dt = (now - lastTick) / 1000; lastTick = now;
+  if (!G || G.done || G.modal || PF.paused() || $('scrPlay').hidden) return;
+  G.t -= dt * (G.tier === 1 ? 0.75 : 1);
+  if (G.t <= 0) { G.t = 0; timeUp(); } else updateBar();
+}, 100);
+function updateBar() { const b = $('bar'); if (!b) return; const f = Math.max(0, G.t / G.T); b.firstChild.style.width = f * 100 + '%'; b.classList.toggle('low', f < 0.25); $('tl').textContent = Math.ceil(G.t) + ' с'; }
+function timeUp() {
+  closeModal();
+  G.pts.forEach(p => { if (p.st === 'wait') { p.st = 'gone'; p.res = { v: 'timeout' }; S.rep = Math.max(0, S.rep - 4); S.total++; note(p, [], -1, 'timeout'); } });
+  toast('Время вышло!'); endShift();
+}
+function note(p, acts, diag, verdict) { S.notes.unshift({ s: S.shift, di: p.dis.i, pick: diag, acts: acts, v: verdict }); if (S.notes.length > 60) S.notes.length = 60; }
+
+function renderPlay() {
+  const el = $('scrPlay');
+  el.innerHTML =
+    '<div class="top"><span class="pill">Смена ' + S.shift + '/' + SEASON + '</span><div class="bar" id="bar"><i></i></div><span class="pill" id="tl"></span></div>' +
+    '<div class="top" style="background:var(--teal2);padding:4px 10px;font-size:14px"><span>⭐ ' + S.rep + '</span><span class="sp"></span><span>' + rankName() + '</span><span class="sp"></span><span>📖 ' + G.pool.length + '</span></div>' +
+    '<div class="body" id="pl"></div>' +
+    '<div style="display:flex;gap:8px;padding:8px 10px;background:#fff"><button class="btn alt sm" style="flex:1" id="bBook">📖 Справочник</button><button class="btn alt sm" style="flex:1" id="bNote">📓 Тетрадь</button></div>';
+  $('bBook').onclick = () => openBook(); $('bNote').onclick = () => openNotes();
+  const pl = $('pl');
+  pl.innerHTML = G.pts.map((q, i) => ptCard(q, i)).join('');
+  pl.querySelectorAll('.pt').forEach(b => b.onclick = () => { const q = G.pts[+b.dataset.i]; if (q.st === 'wait') openTreat(+b.dataset.i); });
+  updateBar();
+}
+function avatar(q) {
+  const mood = q.st === 'wait' ? '😷' : q.st === 'cured' ? '😊' : q.st === 'worse' ? '😣' : '🚶';
+  const k = 'pat_' + q.p[0] + '_' + (q.st === 'wait' ? 'sick' : q.st === 'cured' ? 'happy' : 'worse');
+  return '<div class="av">' + (artImg(k, q.p[1]) || q.p[4]) + '<b>' + mood + '</b></div>';
+}
+function ptCard(q, i) {
+  const tag = q.st === 'wait' ? '<span class="tag wait">ждёт</span>' : q.st === 'cured' ? '<span class="tag ok">вылечен</span>' : q.st === 'worse' ? '<span class="tag bad">хуже</span>' : '<span class="tag bad">ушёл</span>';
+  return '<div class="card"><button class="pt' + (q.st === 'wait' ? '' : ' done') + '" data-i="' + i + '">' + avatar(q) +
+    '<div style="flex:1"><h3>' + esc(q.p[1]) + ', ' + q.p[2] + '</h3><div class="say">«' + esc(q.dis.c) + '»</div><div class="sym">' + q.dis.s.map(s => '<span>' + esc(s) + '</span>').join('') + '</div></div></button>' + tag + '</div>';
+}
+
+/* ---------- Лечение ---------- */
+let T = null;   // { i, diag, acts, hintAct }
+function openTreat(i) {
+  T = { i, diag: -1, acts: [], hint: null, q: '' };
+  G.modal = true; drawTreat();
+}
+function actList() { // Л1: только назначения, нужные для 10 состояний уровня; дальше все
+  if (G.tier > 1) return Object.keys(ACT);
+  const set = new Set(); G.pool.forEach(d => d.d.concat(d.b).forEach(a => set.add(a))); return Object.keys(ACT).filter(a => set.has(a));
+}
+function drawTreat() {
+  const q = G.pts[T.i], m = $('mdl'); m.hidden = false; m.className = 'modal';
+  m.innerHTML = '<div class="sheet"><div class="hd"><span style="font-size:28px">' + q.p[4] + '</span><span>' + esc(q.p[1]) + '</span><span class="sp"></span><button class="x" id="tClose" aria-label="Закрыть">✕</button></div><div class="bd" id="tBd"></div><div class="ft"><div class="row2"><button class="btn alt sm" id="tBook">📖 Справочник</button><button class="btn sm" id="tGo">Назначить</button></div></div></div>';
+  $('tClose').onclick = () => { T = null; closeModal(); };
+  $('tBook').onclick = () => openBook(true);
+  $('tGo').onclick = submitTreat;
+  drawTreatBody();
+}
+function drawTreatBody() {
+  const q = G.pts[T.i];
+  $('tBd').innerHTML = '<div class="say mut">«' + esc(q.dis.c) + '»</div><div class="sym" style="margin-bottom:6px">' + q.dis.s.map(s => '<span>' + esc(s) + '</span>').join('') + '</div>' +
+    '<div class="step">1. Что с пациентом?</div><input type="search" id="tQ" placeholder="Поиск по названию" value="' + esc(T.q) + '"><div class="lst" id="tDx"></div>' +
+    '<div class="step">2. Что назначить? (до ' + MAXPICK + ') <span id="tCnt" class="mut"></span></div>' +
+    '<div class="chips" id="tAc"></div><div style="margin-top:8px"><button class="btn alt sm" id="tHint">💡 Подсказка (' + S.hints + ')</button></div>';
+  $('tQ').oninput = e => { T.q = e.target.value; drawDx(); };
+  $('tHint').onclick = useHint;
+  drawDx(); drawAc();
+}
+function drawDx() {
+  if (T.diag >= 0 && !T.change) {
+    const d = DIS[T.diag]; $('tQ').hidden = true;
+    $('tDx').innerHTML = '<button class="opt sel">' + d.e + ' ' + esc(d.n) + '</button><button class="btn alt sm" id="tChg">↩ Изменить диагноз</button>';
+    $('tChg').onclick = () => { T.change = true; $('tQ').hidden = false; drawDx(); }; updGo(); return;
+  }
+  const q = T.q.trim().toLowerCase();
+  const list = G.pool.filter(d => !q || d.n.toLowerCase().includes(q)).sort((a, b) => a.n.localeCompare(b.n, 'ru'));
+  $('tDx').innerHTML = list.map(d => '<button class="opt' + (T.diag === d.i ? ' sel' : '') + '" data-i="' + d.i + '">' + d.e + ' ' + esc(d.n) + '</button>').join('') || '<div class="mut">Ничего не найдено</div>';
+  $('tDx').querySelectorAll('.opt').forEach(b => b.onclick = () => { T.diag = +b.dataset.i; T.change = false; drawDx(); updGo(); });
+  updGo();
+}
+function drawAc() {
+  $('tAc').innerHTML = actList().map(a => '<button class="chip' + (T.acts.includes(a) ? ' sel' : '') + (T.hint === a ? ' hint' : '') + '" data-a="' + a + '">' + ACT[a][1] + ' ' + esc(ACT[a][0]) + '</button>').join('');
+  $('tAc').querySelectorAll('.chip').forEach(b => b.onclick = () => {
+    const a = b.dataset.a, k = T.acts.indexOf(a);
+    if (k >= 0) T.acts.splice(k, 1); else if (T.acts.length < MAXPICK) T.acts.push(a); else toast('Не больше ' + MAXPICK);
+    drawAc(); updGo();
+  });
+  $('tCnt').textContent = T.acts.length + '/' + MAXPICK;
+}
+function updGo() { const b = $('tGo'); if (b) b.disabled = T.diag < 0 || !T.acts.length; }
+function useHint() {
+  if (S.hints <= 0) { PF.rewarded(ok => { if (ok) { S.hints++; save(); drawTreatBody(); } else toast('Подсказки закончились'); }); return; }
+  const d = G.pts[T.i].dis, left = d.d.filter(a => !T.acts.includes(a) && actList().includes(a));
+  if (!left.length) { toast('Всё нужное уже выбрано'); return; }
+  T.hint = left[0]; S.hints--; save(); drawTreatBody();
+}
+function submitTreat() {
+  const q = G.pts[T.i], acts = T.acts.slice(), diag = T.diag, frac = G.t / G.T;
+  const r = judge(q.dis, diag, acts);
+  G.modal = true;
+  if (r.v === 'half') rollDie(q, r, diag, acts, frac); else finishPt(q, r.v === 'full' ? 'cured' : 'gone', r, diag, acts, frac, null);
+}
+function rollDie(q, r, diag, acts, frac) {
+  const m = $('mdl'); m.className = 'modal mid';
+  m.innerHTML = '<div class="sheet"><div class="bd center"><h2>Лечение почти верное!</h2><p>Диагноз правильный, но назначения неполные или с лишним. Судьба решится кубиком: <b>чётное — вылечен</b>, нечётное — станет хуже.</p><div class="die" id="die">🎲</div><div id="dieTx" class="mut">&nbsp;</div></div><div class="ft"><button class="btn" id="dieGo">🎲 Бросить кубик</button></div></div>';
+  const faces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+  $('dieGo').onclick = () => {
+    $('dieGo').disabled = true;
+    const die = $('die'); die.classList.add('roll');
+    const iv = setInterval(() => { die.textContent = faces[rnd(6)]; }, 90);
+    setTimeout(() => {
+      clearInterval(iv); die.classList.remove('roll');
+      const n = 1 + rnd(6); die.textContent = faces[n - 1];
+      const ok = n % 2 === 0;
+      $('dieTx').innerHTML = '<b class="' + (ok ? 'good' : 'badc') + '">Выпало ' + n + ' — ' + (ok ? 'чётное, вылечен!' : 'нечётное, стало хуже') + '</b>';
+      $('dieGo').disabled = false; $('dieGo').textContent = 'Дальше';
+      $('dieGo').onclick = () => finishPt(q, ok ? 'cured' : 'worse', r, diag, acts, frac, n);
+    }, 1300);
+  };
+}
+function finishPt(q, st, r, diag, acts, frac, die) {
+  const d = q.dis, half = r.v === 'half', full = r.v === 'full';
+  q.st = st; q.res = r; S.total++; S.speedSum += frac;
+  let dr = 0;
+  if (st === 'cured') { S.cured++; dr = full ? 3 + (frac >= 0.5 ? 1 : 0) : 1; }
+  else if (st === 'worse') dr = -3; else dr = -5;
+  S.rep = Math.max(0, Math.min(100, S.rep + dr));
+  if (st !== 'cured' || half) note(q, acts, diag, st === 'cured' ? 'half-ok' : st === 'worse' ? 'worse' : 'wrong');
+  if (!S.seen.includes(d.i)) S.seen.push(d.i);
+  save();
+  showFeedback(q, st, r, diag, acts, dr);
+}
+function showFeedback(q, st, r, diag, acts, dr) {
+  const d = q.dis, m = $('mdl'); m.hidden = false; m.className = 'modal mid';
+  const head = st === 'cured' ? (r.v === 'full' ? '🎉 Вылечен!' : '😅 Повезло — вылечен') : st === 'worse' ? '😣 Стало хуже' : '🚪 Ушёл к другому врачу';
+  const diagTx = diag === d.i ? '<span class="good">Диагноз верный: ' + esc(d.n) + '</span>' : '<span class="badc">Диагноз неверный.</span> Было: <b>' + esc(d.n) + '</b>' + (diag >= 0 ? ' (вы выбрали: ' + esc(DIS[diag].n) + ')' : '');
+  const need = d.d.map(a => '<span class="chip ' + (acts.includes(a) ? 'sel' : '') + '">' + (acts.includes(a) ? '✔ ' : '') + ACT[a][1] + ' ' + esc(ACT[a][0]) + '</span>').join('');
+  const wrong = acts.filter(a => !d.d.includes(a)).map(a => ACT[a][1] + ' ' + ACT[a][0]);
+  m.innerHTML = '<div class="sheet"><div class="bd"><h2 class="center">' + head + '</h2><div class="center mut">Репутация ' + (dr >= 0 ? '+' : '') + dr + '</div><p>' + diagTx + '</p>' +
+    '<div class="step">Нужно было</div><div class="chips">' + need + '</div>' +
+    (wrong.length ? '<p class="mut">Лишнее или вредное: ' + esc(wrong.join('; ')) + '</p>' : '') +
+    '<p><b>Чего не делать:</b> ' + esc(d.x) + '</p><p class="mut">💡 ' + esc(d.f) + '</p></div><div class="ft"><button class="btn" id="fbNext">Дальше</button></div></div>';
+  $('fbNext').onclick = () => { T = null; closeModal(); renderPlay(); if (G.pts.every(p => p.st !== 'wait')) endShift(); };
+}
+function closeModal() { const m = $('mdl'); m.hidden = true; m.innerHTML = ''; if (G) G.modal = false; }
+
+/* ---------- Конец смены ---------- */
+function endShift() {
+  G.done = true; PF.setPlaying(false);
+  const prevRank = S.prevRank;
+  const last = S.shift === SEASON;
+  S.shift++; save();
+  const ok = G.pts.filter(p => p.st === 'cured').length;
+  const el = $('scrEnd');
+  el.innerHTML = '<div class="top"><span>Итог смены ' + (S.shift - 1) + '</span><span class="sp"></span><span class="pill">⭐ ' + S.rep + '</span></div><div class="body">' +
+    '<div class="big">' + (ok === G.pts.length ? '🌟' : ok ? '👍' : '💪') + '</div><div class="center"><b>Вылечено: ' + ok + ' из ' + G.pts.length + '</b></div>' +
+    G.pts.map(p => '<div class="ent"><b>' + p.p[4] + ' ' + esc(p.p[1]) + ' — ' + esc(p.dis.n) + '</b><span class="' + (p.st === 'cured' ? 'good' : 'badc') + '">' + ({ cured: 'вылечен', worse: 'стало хуже', gone: 'ушёл', wait: 'ушёл' }[p.st]) + '</span></div>').join('') +
+    '<div class="card center"><div class="mut">Звание сейчас</div><div class="rank">' + rankName() + '</div><div class="mut">Точность ' + Math.round(accuracy()) + '% · Скорость ' + Math.round(speed()) + '%</div></div>' +
+    '<button class="btn" id="eNext">' + (last ? '🏁 Итоги сезона' : 'Следующая смена') + '</button><button class="btn alt" id="eNote">📓 Тетрадь ошибок</button></div>';
+  show('scrEnd');
+  $('eNext').onclick = () => PF.interstitial(() => { if (last) finalScr(); else startShift(); });
+  $('eNote').onclick = () => openNotes();
+}
+function finalScr() {
+  const r = rankIdx(true), el = $('scrEnd');
+  S.best = Math.max(S.best || 0, Math.round(score()));
+  const ro = RANKS[r];
+  el.innerHTML = '<div class="top"><span>Сезон окончен</span></div><div class="body center"><div class="logo">' + ro[1] + '</div><h2>Ваше звание:</h2><div class="rank" style="font-size:36px">' + ro[0] + '</div>' +
+    '<div class="card"><p>Принято пациентов: <b>' + S.total + '</b></p><p>Вылечено: <b>' + S.cured + '</b> (' + Math.round(accuracy()) + '%)</p><p>Скорость: <b>' + Math.round(speed()) + '%</b> времени оставалось</p><p>Репутация: <b>' + S.rep + '</b></p><p>Балл: <b>' + Math.round(score()) + '</b></p></div>' +
+    '<div class="mut">Санитар &lt;40 · Фельдшер 40–59 · Доктор 60–74 · Главврач 75–89 · Профессор ≥90 и репутация ≥80</div>' +
+    '<button class="btn" id="fAgain">Новый сезон</button><button class="btn alt" id="fNote">📓 Тетрадь ошибок</button></div>';
+  PF.del('doktor-save');
+  $('fAgain').onclick = () => { S = fresh(); save(); startShift(); };
+  $('fNote').onclick = () => openNotes();
+}
+
+/* ---------- Справочник и тетрадь ---------- */
+function openBook(fromTreat) {
+  const m = $('mdl'); m.hidden = false; m.className = 'modal'; if (G) G.modal = true;
+  const tier = G ? G.tier : MAXTIER, vis = DIS.map((d, i) => Object.assign({ i }, d)).filter(d => d.t <= tier);
+  let q = '';
+  m.innerHTML = '<div class="sheet" style="max-height:96%"><div class="hd"><span>📖 Справочник (' + vis.length + ')</span><span class="sp"></span><button class="x" id="bkClose">✕</button></div><div class="bd"><input type="search" id="bkQ" placeholder="Поиск: болезнь или симптом"><div id="bkL"></div><p class="mut">Игра учит основам. Если плохо себя чувствуешь — скажи взрослым и сходи к врачу.</p></div></div>';
+  const draw = () => {
+    const f = vis.filter(d => !q || (d.n + ' ' + d.s.join(' ')).toLowerCase().includes(q)).sort((a, b) => a.n.localeCompare(b.n, 'ru'));
+    $('bkL').innerHTML = f.map(d => '<div class="acc"><button data-i="' + d.i + '">' + d.e + ' ' + esc(d.n) + '</button><div class="in" hidden>' +
+      '<p><b>Симптомы:</b> ' + esc(d.s.join('; ')) + '.</p><p><b>Причина:</b> ' + esc(d.w) + '</p><p class="good">Что делать: ' + esc(d.d.map(a => ACT[a][0]).join('; ')) + '.</p><p class="badc">Не делать: ' + esc(d.x) + '</p><p class="mut">💡 ' + esc(d.f) + '</p></div></div>').join('') || '<div class="mut">Ничего не найдено</div>';
+    $('bkL').querySelectorAll('.acc>button').forEach(b => b.onclick = () => { const n = b.nextElementSibling; n.hidden = !n.hidden; });
+  };
+  $('bkQ').oninput = e => { q = e.target.value.trim().toLowerCase(); draw(); };
+  draw();
+  $('bkClose').onclick = () => { if (fromTreat && T) drawTreat(); else closeModal(); };
+}
+function openNotes() {
+  const m = $('mdl'); m.hidden = false; m.className = 'modal'; if (G) G.modal = true;
+  const VL = { wrong: 'ошибка', worse: 'стало хуже', timeout: 'не успел', 'half-ok': 'повезло с кубиком' };
+  m.innerHTML = '<div class="sheet" style="max-height:96%"><div class="hd"><span>📓 Тетрадь ошибок</span><span class="sp"></span><button class="x" id="ntClose">✕</button></div><div class="bd">' +
+    (S.notes.length ? S.notes.map(n => { const d = DIS[n.di]; return '<div class="ent"><b>' + d.e + ' ' + esc(d.n) + '</b><span class="badc">' + VL[n.v] + ' · смена ' + n.s + '</span>' +
+      (n.pick >= 0 && n.pick !== n.di ? '<div class="mut">Выбрано: ' + esc(DIS[n.pick].n) + '</div>' : '') +
+      (n.acts.length ? '<div class="mut">Назначено: ' + esc(n.acts.map(a => ACT[a][0]).join('; ')) + '</div>' : '') +
+      '<div class="good">Нужно: ' + esc(d.d.map(a => ACT[a][0]).join('; ')) + '</div><div class="mut">Не делать: ' + esc(d.x) + '</div></div>'; }).join('') : '<p class="center mut">Пока ошибок нет. Так держать!</p>') + '</div></div>';
+  $('ntClose').onclick = () => { closeModal(); if (G && !G.done && !$('scrPlay').hidden) G.modal = false; };
+}
+function howTo() {
+  const m = $('mdl'); m.hidden = false; m.className = 'modal mid'; if (G) G.modal = true;
+  m.innerHTML = '<div class="sheet"><div class="bd"><h2 class="center">Как играть</h2><p>1️⃣ К вам приходят пациенты. Читайте жалобу и симптомы.</p><p>2️⃣ Нажмите на пациента: выберите <b>диагноз</b> и до 4 <b>назначений</b>. Подсмотреть можно в 📖 Справочнике.</p><p>3️⃣ Всё верно — вылечен. Почти верно — бросаем 🎲: чётное — вылечен, нечётное — хуже. Ошибка — пациент уйдёт.</p><p>⏱ Время на смену ограничено. В конце сезона (20 смен) вы получите звание.</p><p class="mut">Игра учит основам. Если плохо себя чувствуешь — скажи взрослым.</p></div><div class="ft"><button class="btn" id="hwOk">Понятно!</button></div></div>';
+  $('hwOk').onclick = () => { closeModal(); };
+}
+
+/* ---------- Экраны ---------- */
+function show(id) { ['scrStart', 'scrPlay', 'scrEnd'].forEach(s => $(s).hidden = s !== id); }
+function toast(t) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; $('app').appendChild(d); setTimeout(() => d.remove(), 1600); }
+function startScr() {
+  const has = load() && (S.shift > 1 || S.total > 0);
+  $('scrStart').innerHTML = '<div class="logo">' + (artImg('logo', 'Доктор') || '🩺') + '</div><h1>Доктор</h1><p class="mut" style="margin:0 0 16px">Лечи пациентов за 90 секунд и стань Профессором!</p>' +
+    (has ? '<button class="btn" id="sCont">▶ Продолжить (смена ' + S.shift + ')</button><button class="btn alt" id="sNew">Новая игра</button>' : '<button class="btn" id="sNew">▶ Играть</button>') +
+    '<button class="btn alt" id="sBook">📖 Справочник</button><button class="btn alt" id="sNote">📓 Тетрадь ошибок</button><button class="btn alt" id="sHow">Как играть</button>' +
+    '<div class="note">Игра учит основам первой помощи. Она не заменяет врача: если плохо себя чувствуешь, скажи взрослым.</div>';
+  if (has) $('sCont').onclick = () => startShift();
+  $('sNew').onclick = () => { S = fresh(); save(); startShift(); };
+  $('sBook').onclick = () => openBook(); $('sNote').onclick = () => openNotes(); $('sHow').onclick = () => howTo();
+  show('scrStart');
+}
+PF.onPause = function () {};
+window.__game = { get S() { return S; }, get G() { return G; }, DIS, ACT, judge, startShift, finishPt, endShift, timeUp, score, rankName, rankIdx, fresh, setS: o => { S = Object.assign(fresh(), o); }, openTreat, submitTreat, get T() { return T; } };
+PF.init().then(function () { startScr(); PF.ready(); });
+})();
+</script>
+</body>
+</html>
