@@ -44,7 +44,7 @@ h2{font-size:26px;margin:4px 0 10px;text-align:center;color:#ffd84a;text-shadow:
 #chute{position:absolute;left:14px;bottom:160px;margin:0;z-index:6;display:none}
 #toast{position:absolute;left:16px;right:16px;top:150px;text-align:center;z-index:7;font-size:20px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);border-radius:16px;padding:10px;display:none}
 #pause{background:rgba(5,3,26,.85);z-index:9}
-.big{font-size:56px;letter-spacing:6px;color:#ffd84a;text-shadow:0 3px 0 #b34a00;margin:6px 0}
+.cov{background-color:#150f4d;background-repeat:no-repeat}.cov h1{margin-top:2px}.cov .sub{display:none}.cov #m-total{display:block;margin-top:0;font-size:13px}.cov #b-play{margin-top:auto;margin-bottom:4px;font-size:24px;min-width:260px}.big{font-size:56px;letter-spacing:6px;color:#ffd84a;text-shadow:0 3px 0 #b34a00;margin:6px 0}
 .ship{width:72px;height:72px;flex:none}
 .row{display:flex;gap:10px;align-items:center;width:100%;z-index:2}
 </style>
@@ -65,10 +65,9 @@ h2{font-size:26px;margin:4px 0 10px;text-align:center;color:#ffd84a;text-shadow:
     <svg width="150" height="150" viewBox="-40 -50 80 100" id="menuShip"></svg>
     <h1>ПОСАДКА<br>НА ПЛАНЕТУ</h1>
     <div class="sub" style="margin-top:12px">Посади модуль мягко на площадку.<br>У каждой планеты свой вес и свой воздух!</div>
-    <button class="btn" id="b-play" style="margin-top:22px">▶ Играть</button>
-    <button class="btn blue" id="b-ships">🚀 Корабли</button>
-    <button class="btn blue small" id="b-snd">🔊 Звук: вкл</button>
-    <div class="sub" style="margin-top:auto" id="m-total"></div>
+    <button class="btn" id="b-play">▶ Играть</button>
+    <div class="row" style="justify-content:center;gap:12px"><button class="btn blue small" id="b-ships">🚀 Корабли</button><button class="btn blue small" id="b-snd">🔊 Звук: вкл</button></div>
+    <div class="sub" id="m-total"></div>
   </div>
 
   <div class="screen" id="s-map"><div class="stars"></div>
@@ -130,6 +129,14 @@ var PF = (function () {
   document.addEventListener('visibilitychange', function () { self.onPause(document.hidden); });
   return self;
 })();
+
+/* ===== Картинки (WebP из art\ → game\img\). Нет файла или не загрузился — рисуем кодом ===== */
+var IMG_LIST = /*IMGN*/['ship_0','ship_1','ship_2','ship_3','pad','chute','flame','boom','beacon','flag','ic_fuel','ic_star','ic_lock','ic_wind','ic_quiz','ic_chute','cover','bg_moon','bg_mars','bg_venus','bg_jupiter']/*END*/;
+var IM = {};
+IMG_LIST.forEach(function (n) { var i = new Image(); i.onload = function () { IM[n] = i; if (n === 'cover') coverReady(); if (n === 'ic_chute') $('chute').innerHTML = '<img src=\"img/ic_chute.webp\" style=\"height:22px;vertical-align:middle;margin-right:6px\">Парашют'; }; i.src = 'img/' + n + '.webp'; });
+function img(n) { return IM[n] && IM[n].naturalWidth ? IM[n] : null; }
+function starsHTML(n) { var a = img('ic_star'), h = ''; for (var i = 0; i < 3; i++) h += a ? '<img src=\"img/ic_star.webp\" style=\"height:30px;margin:0 2px;' + (i < n ? '' : 'filter:grayscale(1) brightness(.5);') + '\">' : (i < n ? '★' : '☆'); return h; }
+function lockHTML() { return img('ic_lock') ? '<img src=\"img/ic_lock.webp\" style=\"height:40px\">' : '🔒'; }
 
 /* ===== Данные ===== */
 var BODIES = [
@@ -222,6 +229,7 @@ function fmt(v, d) { return v.toFixed(d == null ? 0 : d).replace('.', ','); }
 
 /* ===== Экраны ===== */
 var cur = 'menu', selB = 0, selL = 0, bonusFuel = 0, attempts = 0;
+function coverReady() { $('s-menu').style.backgroundImage = 'url(img/cover.webp)'; $('s-menu').style.backgroundSize = '100% auto'; $('s-menu').style.backgroundPosition = 'center top'; $('s-menu').classList.add('cov'); $('menuShip').style.display = 'none'; }
 function show(id) {
   cur = id;
   ['menu', 'map', 'lv', 'brief', 'res', 'ships'].forEach(function (s) { $('s-' + s).classList.toggle('on', s === id); });
@@ -264,7 +272,7 @@ function buildLv() {
   var h = '';
   for (var i = 0; i < 5; i++) {
     var o = lvOpen(selB, i), s = stars(b.id, i);
-    h += '<div class="lv' + (o ? '' : ' lock') + '" data-l="' + i + '">' + (o ? (i + 1) + '<small>' + '★'.repeat(s) + '☆'.repeat(3 - s) + '</small>' : '🔒') + '</div>';
+    h += '<div class="lv' + (o ? '' : ' lock') + '" data-l="' + i + '">' + (o ? (i + 1) + '<small>' + (img('ic_star') ? starsHTML(s).replace(/30px/g, '16px') : '★'.repeat(s) + '☆'.repeat(3 - s)) + '</small>' : lockHTML()) + '</div>';
   }
   $('lvgrid').innerHTML = h;
   Array.prototype.forEach.call($('lvgrid').querySelectorAll('.lv'), function (el) {
@@ -276,7 +284,7 @@ function buildShips() {
   var h = '';
   SHIPS.forEach(function (s, i) {
     var o = t >= s.need;
-    h += '<div class="card' + (o ? '' : ' lock') + '" data-s="' + i + '" style="' + (save.ship === i ? 'border-color:#ffd84a' : '') + '"><svg class="ship" viewBox="-40 -50 80 100">' + shipSVG(s, false) + '</svg><b>' + s.name + '</b><i>' + (o ? 'бак ' + s.fuel + ' %' + (save.ship === i ? ' · выбран' : '') : '🔒 нужно ' + s.need + ' ★') + '</i></div>';
+    h += '<div class="card' + (o ? '' : ' lock') + '" data-s="' + i + '" style="' + (save.ship === i ? 'border-color:#ffd84a' : '') + '">' + (img('ship_' + i) ? '<img class="ship" style="object-fit:contain" src="img/ship_' + i + '.webp">' : '<svg class="ship" viewBox="-40 -50 80 100">' + shipSVG(s, false) + '</svg>') + '<b>' + s.name + '</b><i>' + (o ? 'бак ' + s.fuel + ' %' + (save.ship === i ? ' · выбран' : '') : '🔒 нужно ' + s.need + ' ★') + '</i></div>';
   });
   $('shgrid').innerHTML = h;
   Array.prototype.forEach.call($('shgrid').querySelectorAll('.card'), function (el) {
@@ -415,7 +423,7 @@ function finish() {
   show('res');
   if (o.win) {
     var was = save.stars[key] || 0; if (o.s > was) save.stars[key] = o.s; persist();
-    $('r-title').textContent = 'Мягкая посадка!'; $('r-stars').textContent = '★'.repeat(o.s) + '☆'.repeat(3 - o.s);
+    $('r-title').textContent = 'Мягкая посадка!'; $('r-stars').innerHTML = starsHTML(o.s);
     var left = Math.round(G.fuel / G.fuel0 * 100);
     $('r-text').innerHTML = 'Скорость при касании: <b>' + fmt(o.vy) + '</b> (можно до ' + K.vy + '), наклон <b>' + fmt(o.an * 180 / Math.PI, 1) + '°</b>. Топлива осталось <b>' + left + ' %</b>.<br>' +
       (o.s === 3 ? '🌟 Идеально!' : o.s === 2 ? 'Ещё ★: сохрани хотя бы 30 % топлива.' : 'Ещё ★: сядь тише (до ' + K.vy2 + ') и ровнее (до 6°).');
@@ -423,7 +431,7 @@ function finish() {
     nxt.textContent = selL < 4 ? 'Дальше ▶' : 'К планетам ▶';
     nxt.onclick = function () { Snd.click(); if (selL < 4) { selL++; openBrief(); } else show('map'); };
   } else {
-    $('r-title').textContent = 'Авария!'; $('r-stars').textContent = '💥';
+    $('r-title').textContent = 'Авария!'; $('r-stars').innerHTML = img('boom') ? '<img src="img/boom.webp" style="height:90px">' : '💥';
     $('r-text').textContent = o.why; $('r-next').style.display = 'none';
     attempts++;
   }
@@ -432,6 +440,8 @@ function finish() {
 
 /* ===== Рисование ===== */
 function drawSky(b) {
+  var bg = img('bg_' + b.id);
+  if (bg) { var sc = K.H / bg.naturalHeight, w = bg.naturalWidth * sc; ctx.drawImage(bg, (K.W - w) / 2, 0, w, K.H); return; }
   var g = ctx.createLinearGradient(0, 0, 0, 600); g.addColorStop(0, b.sky[0]); g.addColorStop(1, b.sky[1]);
   ctx.fillStyle = g; ctx.fillRect(0, 0, K.W, K.H);
   if (b.stars) { G.stars.forEach(function (s) { ctx.globalAlpha = 0.5 + 0.5 * Math.sin(G.t * 2 + s[3] * 9); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s[0], s[1], s[2], 0, 6.3); ctx.fill(); }); ctx.globalAlpha = 1;
@@ -455,6 +465,11 @@ function drawGround(b) {
   drawPad();
 }
 function drawPad() {
+  var pi = img('pad');
+  if (pi) {
+    var pw = G.padW / 0.8, ph = pw * pi.naturalHeight / pi.naturalWidth;
+    ctx.drawImage(pi, G.padX - pw / 2, G.padY - 2 - ph * 0.47, pw, ph); return;
+  }
   var x0 = G.padX - G.padW / 2, y = G.padY;
   ctx.fillStyle = '#3a3a55'; ctx.fillRect(x0, y - 2, G.padW, 9); ctx.strokeStyle = '#111'; ctx.lineWidth = 3; ctx.strokeRect(x0, y - 2, G.padW, 9);
   for (var i = 0; i < G.padW; i += 14) { ctx.fillStyle = (i / 14 | 0) % 2 ? '#ffd84a' : '#222'; ctx.fillRect(x0 + i, y - 2, Math.min(7, G.padW - i), 4); }
@@ -462,6 +477,15 @@ function drawPad() {
   [x0, x0 + G.padW].forEach(function (lx) { ctx.fillStyle = '#555'; ctx.fillRect(lx - 1.5, y - 18, 3, 16); ctx.fillStyle = blink ? '#ff4a4a' : '#ffa0a0'; ctx.beginPath(); ctx.arc(lx, y - 20, 4.5, 0, 6.3); ctx.fill(); ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5; ctx.stroke(); });
 }
 function drawShip(c, sx, sy, ang, sh, flame, chute, crashed) {
+  var si = img('ship_' + SHIPS.indexOf(sh)), ci = img('chute'), fi = img('flame');
+  if (si) {
+    c.save(); c.translate(sx, sy); c.rotate(ang);
+    if (chute && ci) c.drawImage(ci, -50, -128, 100, 100 * ci.naturalHeight / ci.naturalWidth);
+    if (flame && fi) { var fh = 26 + Math.random() * 12; c.drawImage(fi, -11, 14, 22, fh); }
+    var hh = 50, ww = hh * si.naturalWidth / si.naturalHeight;
+    c.drawImage(si, -ww / 2, 20 - hh, ww, hh);
+    c.restore(); return;
+  }
   c.save(); c.translate(sx, sy); c.rotate(ang);
   if (chute) {
     c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-34, -64); c.lineTo(-6, -18); c.moveTo(34, -64); c.lineTo(6, -18); c.moveTo(0, -70); c.lineTo(0, -20); c.stroke();
@@ -482,7 +506,7 @@ function hudText(t, x, y, col, size, al) { ctx.font = '700 ' + (size || 15) + 'p
 function drawHUD() {
   var fr = G.fuel / G.fuel0;
   ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(0, 0, K.W, 62);
-  hudText('ТОПЛИВО', 12, 20, '#fff', 12);
+  if (img('ic_fuel')) ctx.drawImage(img('ic_fuel'), 12, 4, 18, 18); hudText('ТОПЛИВО', img('ic_fuel') ? 34 : 12, 20, '#fff', 12);
   ctx.fillStyle = '#222'; ctx.fillRect(12, 26, 150, 14);
   ctx.fillStyle = fr > 0.3 ? '#4bd16a' : fr > 0.12 ? '#ffb02e' : '#ff4a4a'; ctx.fillRect(12, 26, 150 * fr, 14);
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.strokeRect(12, 26, 150, 14);
@@ -493,7 +517,7 @@ function drawHUD() {
   hudText((G.vy > 0 ? '↓ ' : '↑ ') + fmt(Math.abs(G.vy)), 178, 20, vyOk ? '#7dff9a' : '#ff7a7a', 15);
   hudText('→ ' + fmt(G.vx), 178, 40, vxOk ? '#7dff9a' : '#ff7a7a', 15);
   hudText('наклон ' + fmt(Math.abs(G.ang) * 180 / Math.PI) + '°', 178, 58, Math.abs(G.ang) <= K.ang ? '#7dff9a' : '#ff7a7a', 13);
-  if (G.body.wind > 0 && G.lv.wind > 0) { var w = G.wind || 0; hudText('Ветер', 266, 20, '#cfe', 12); ctx.save(); ctx.translate(290, 38); ctx.strokeStyle = '#fff'; ctx.fillStyle = '#fff'; ctx.lineWidth = 3; var L = clamp(w / G.body.wind, -1.3, 1.3) * 22; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L, 0); ctx.stroke(); var dir = L >= 0 ? 1 : -1; ctx.beginPath(); ctx.moveTo(L + dir * 7, 0); ctx.lineTo(L, -5); ctx.lineTo(L, 5); ctx.fill(); ctx.restore(); }
+  if (G.body.wind > 0 && G.lv.wind > 0) { var w = G.wind || 0; if (img('ic_wind')) ctx.drawImage(img('ic_wind'), 244, 6, 18, 18); hudText('Ветер', 266, 20, '#cfe', 12); ctx.save(); ctx.translate(290, 38); ctx.strokeStyle = '#fff'; ctx.fillStyle = '#fff'; ctx.lineWidth = 3; var L = clamp(w / G.body.wind, -1.3, 1.3) * 22; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L, 0); ctx.stroke(); var dir = L >= 0 ? 1 : -1; ctx.beginPath(); ctx.moveTo(L + dir * 7, 0); ctx.lineTo(L, -5); ctx.lineTo(L, 5); ctx.fill(); ctx.restore(); }
 }
 function render() {
   var b = G.body; ctx.setTransform(2, 0, 0, 2, 0, 0);
@@ -501,6 +525,7 @@ function render() {
   // частицы
   G.parts.forEach(function (p) { ctx.globalAlpha = clamp(p.l / p.m, 0, 1); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (p.l / p.m + .3), 0, 6.3); ctx.fill(); }); ctx.globalAlpha = 1;
   var gone = G.over && !G.over.win;
+  if (gone && img('boom')) { var bm = img('boom'), k = 1 - G.ending / 0.9, bw = 40 + k * 90; ctx.globalAlpha = clamp(1.4 - k, 0, 1); ctx.drawImage(bm, G.x - bw / 2, G.y - bw * 0.4, bw, bw * bm.naturalHeight / bm.naturalWidth); ctx.globalAlpha = 1; }
   if (!gone) drawShip(ctx, G.x, G.y, G.ang, SHIPS[save.ship], G.thrustOn && G.fuel > 0, G.chute, false);
   if (G.lv.night) {
     octx.setTransform(1, 0, 0, 1, 0, 0); octx.globalCompositeOperation = 'source-over'; octx.clearRect(0, 0, K.W, K.H);
@@ -514,7 +539,7 @@ function render() {
     ctx.drawImage(off, 0, 0, K.W, K.H);
     // огни площадки светят всегда
     var blink = Math.sin(G.t * 6) > 0; [G.padX - G.padW / 2, G.padX + G.padW / 2].forEach(function (lx) { var gg = ctx.createRadialGradient(lx, G.padY - 20, 0, lx, G.padY - 20, 26); gg.addColorStop(0, blink ? 'rgba(255,60,60,.95)' : 'rgba(255,150,150,.5)'); gg.addColorStop(1, 'rgba(255,60,60,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(lx, G.padY - 20, 26, 0, 6.3); ctx.fill(); });
-    ctx.fillStyle = '#7dff9a'; ctx.beginPath(); ctx.moveTo(G.padX, G.padY - 46); ctx.lineTo(G.padX - 8, G.padY - 60); ctx.lineTo(G.padX + 8, G.padY - 60); ctx.fill();
+    var bi = img('beacon'); if (bi) ctx.drawImage(bi, G.padX - 9, G.padY - 66, 18, 16); else { ctx.fillStyle = '#7dff9a'; ctx.beginPath(); ctx.moveTo(G.padX, G.padY - 46); ctx.lineTo(G.padX - 8, G.padY - 60); ctx.lineTo(G.padX + 8, G.padY - 60); ctx.fill(); }
   }
   drawHUD();
   // стрелка к площадке, если она не видна по бокам: не нужна (одна сцена)
