@@ -7415,6 +7415,9 @@ steerPad.addEventListener('pointermove',e=>{if(steerPtr.has(e.pointerId)){steerP
 const steerEnd=e=>{if(steerPtr.delete(e.pointerId))steerUpdate();};
 ['pointerup','pointercancel','lostpointercapture'].forEach(n=>steerPad.addEventListener(n,steerEnd));
 steerPad.addEventListener('contextmenu',e=>e.preventDefault());
+// Яндекс 1.6.1.8 / 1.6.2.7: ни правый клик, ни долгий тап по игре не открывают меню и не выделяют
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('selectstart',e=>{const t=e.target;if(!(t&&t.closest&&t.closest('input,textarea')))e.preventDefault();});
 document.querySelectorAll('#tRight .tb, #tJump').forEach(b=>{
   const k=b.dataset.k;
   const on=e=>{e.preventDefault();touch[k]=1;if(k==='jump')jumpQ=.5;b.classList.add('on');try{b.setPointerCapture(e.pointerId);}catch(_){}};
