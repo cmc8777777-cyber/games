@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Подводный мир</title>
+<style>
+:root{--ink:#3b2a1a;--sea:#0b3d5c;--sea2:#0e5f8a;--card:#f4fbff;--ok:#2e9e5b;--warn:#f2a31b;--bad:#d9433b;--gold:#ffc83d}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#06293f;font-family:system-ui,"Segoe UI",Roboto,sans-serif;color:var(--ink);overflow:hidden}
+#app{position:relative;width:100%;max-width:420px;height:100dvh;max-height:900px;margin:0 auto;background:linear-gradient(#0e6fa0,#0b3d5c);overflow:hidden;display:flex;flex-direction:column}
+.top{display:flex;gap:6px;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(0,30,50,.55);color:#fff;font-weight:700;font-size:14px}
+.top span{white-space:nowrap}
+#main{flex:1;overflow-y:auto;padding:8px 10px 6px}
+.nav{display:flex;gap:6px;padding:8px 10px;background:rgba(0,30,50,.6)}
+button{font:inherit;border:2px solid var(--ink);background:#fff;color:var(--ink);border-radius:12px;padding:8px 10px;font-weight:700;cursor:pointer}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.45}
+.b-go{background:var(--gold);flex:1.4;font-size:16px}
+.b-nav{flex:1;background:#e8f6ff;font-size:13px;padding:8px 4px}
+.b-ok{background:#8fe3a8}.b-bad{background:#ff9b94}.b-sm{padding:4px 9px;font-size:13px;border-radius:9px}
+.tk{background:var(--card);border:3px solid var(--ink);border-radius:16px;margin:0 0 10px;overflow:hidden}
+.tkh{display:flex;justify-content:space-between;padding:6px 10px;font-weight:700;font-size:14px;background:#d9efff}
+.view{position:relative;height:112px;overflow:hidden;background:linear-gradient(#7fd4f5,#2b8fc7)}
+.view.salt{background:linear-gradient(#59e0e8,#1b6fb8)}
+.view.big{height:200px}
+.view .sand{position:absolute;left:0;right:0;bottom:0;height:16%;background:#f2d9a0;border-top:2px solid #c9a766}
+.view .pl{position:absolute;bottom:8%;font-size:22px;line-height:1}
+.fish{position:absolute;left:0;top:0;will-change:transform}
+.fish svg{display:block;overflow:visible}
+.tkf{display:flex;gap:6px;flex-wrap:wrap;padding:6px 10px;font-size:12.5px}
+.chip{border:2px solid var(--ink);border-radius:10px;padding:1px 7px;background:#fff;font-weight:700}
+.chip.g{background:#bff0cf}.chip.y{background:#ffe9a8}.chip.r{background:#ffb4ae}
+.ov{position:absolute;inset:0;background:#e8f6ff;display:flex;flex-direction:column;z-index:5}
+.ov.dim{background:rgba(0,20,40,.7);justify-content:center;padding:14px}
+.ovh{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#0b3d5c;color:#fff;font-weight:800}
+.ovh button{padding:4px 10px}
+.ovb{flex:1;overflow-y:auto;padding:10px}
+.modal{background:#fff;border:3px solid var(--ink);border-radius:18px;padding:14px;max-height:92%;overflow-y:auto}
+.modal h2{margin:0 0 8px;font-size:19px}
+.row{display:flex;gap:8px;align-items:center;margin:6px 0;flex-wrap:wrap}
+.row .sp{flex:1}
+.card{background:#fff;border:2px solid var(--ink);border-radius:12px;padding:8px;margin:0 0 8px}
+.small{font-size:12.5px;color:#5a4a3a}
+.hint{background:#fff6cf;border:2px dashed #c9a100;border-radius:10px;padding:6px 8px;font-size:13px;margin:6px 0}
+input[type=text]{font:inherit;font-weight:700;border:2px solid var(--ink);border-radius:10px;padding:7px 9px;width:110px}
+.opt{display:block;width:100%;text-align:left;margin:5px 0}
+.tabs{display:flex;gap:5px;margin-bottom:8px}.tabs button{flex:1;padding:6px 2px;font-size:13px;background:#d9efff}.tabs button.on{background:var(--gold)}
+.bar{height:10px;border-radius:6px;background:#cfd8dc;border:1.5px solid var(--ink);overflow:hidden}.bar i{display:block;height:100%}
+.cover{text-align:center;color:#fff;padding:30px 18px}
+.cover h1{font-size:38px;margin:30px 0 6px;text-shadow:3px 3px 0 var(--ink)}
+.toast{position:absolute;left:50%;bottom:78px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:8px 14px;border-radius:12px;font-weight:700;font-size:14px;z-index:20;max-width:90%;text-align:center}
+.lock{filter:grayscale(1) brightness(.6)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+</style></head>
+<body><div id="app"></div>
+<script>
+'use strict';
+
+
+const REG={
+ SA:'Южная Америка (Амазонка)', CA:'Центральная Америка', SEA:'Юго-Восточная Азия', IND:'Южная Азия (Индия)',
+ AFR:'Африка (озеро Малави)', EA:'Восточная Азия (Китай, Япония)', AUS:'Австралия и Новая Гвинея',
+ REEF:'Коралловый риф Индийского океана', PAC:'Тёплые воды Тихого океана', CAR:'Карибское море и Атлантика', TROP:'Тропические моря всех океанов'
+};
+const SPD=[
+ ['Гуппи',0,22,28,4,60,2,'всеядная',0,1,0,'SA','#ff9a3d','#3bb5ff',0],
+ ['Неон обыкновенный',0,20,26,3.5,70,2,'всеядная',0,0,0,'SA','#29b6f6','#ff3d3d',0],
+ ['Меченосец',0,22,28,8,150,3,'всеядная',0,1,0,'CA','#ff7043','#ffd54f',0],
+ ['Моллинезия',0,22,28,7,120,3,'всеядная',0,1,0,'CA','#37474f','#90a4ae',0],
+ ['Пецилия (платия)',0,20,26,5,90,2,'всеядная',0,1,0,'CA','#ff5252','#ffeb3b',0],
+ ['Данио рерио',0,18,25,5,80,2,'всеядная',0,0,0,'IND','#c5cae9','#3949ab',2],
+ ['Барбус суматранский',0,22,26,6,140,3,'всеядная',0,0,0,'SEA','#ffca28','#212121',0],
+ ['Скалярия',0,24,28,12,320,6,'хищная',1,0,120,'SA','#cfd8dc','#212121',1],
+ ['Золотая рыбка',0,10,24,15,250,5,'всеядная',0,0,0,'EA','#ff9800','#ffd54f',4],
+ ['Вуалехвост',0,10,24,14,400,7,'всеядная',0,0,0,'EA','#ff5722','#fff3e0',4],
+ ['Сомик коридорас',0,22,26,6,150,3,'всеядная',0,0,0,'SA','#a1887f','#d7ccc8',0],
+ ['Анциструс',0,20,26,12,250,3,'растительноядная',0,0,0,'SA','#6d4c41','#bcaaa4',2],
+ ['Петушок (бетта)',0,24,28,6,200,4,'всеядная',0,0,0,'SEA','#d32f2f','#7b1fa2',0],
+ ['Гурами жемчужный',0,24,28,10,220,4,'всеядная',0,0,0,'SEA','#8d6e63','#fff8e1',1],
+ ['Расбора клиновидная',0,22,27,4,90,2,'всеядная',0,0,0,'SEA','#ff8a65','#212121',0],
+ ['Апистограмма',0,23,27,7,250,4,'всеядная',0,0,0,'SA','#ffee58','#1e88e5',0],
+ ['Радужница',0,22,27,8,180,3,'всеядная',0,0,0,'AUS','#4dd0e1','#ff7043',0],
+ ['Лабидохромис жёлтый',0,24,28,10,300,4,'всеядная',0,0,0,'AFR','#ffeb3b','#212121',0],
+ ['Дискус',0,28,31,18,1200,12,'всеядная',0,0,200,'SA','#ef5350','#1e88e5',1],
+ ['Оскар',0,22,28,30,900,10,'хищная',1,0,150,'SA','#424242','#ff5722',0],
+ ['Арована',0,24,30,80,6000,30,'хищная',1,0,400,'SA','#b0bec5','#ffd54f',2],
+ ['Пресноводный скат моторо',0,24,28,40,8000,32,'хищная',1,0,500,'SA','#6d4c41','#ffcc80',3],
+ ['Кои',0,5,25,60,5000,25,'всеядная',0,0,500,'EA','#fafafa','#e53935',0],
+ ['Клоун-рыба',1,24,28,8,500,6,'всеядная',0,0,0,'REEF','#ff7a00','#ffffff',0],
+ ['Синий хирург (Дори)',1,24,28,25,1400,12,'растительноядная',0,0,250,'REEF','#1e88e5','#ffeb3b',1],
+ ['Рыба-бабочка',1,24,28,15,800,7,'всеядная',0,0,0,'REEF','#fff176','#212121',1],
+ ['Рыба-ангел императорская',1,24,28,35,3500,16,'всеядная',0,0,500,'REEF','#1565c0','#ffd600',1],
+ ['Мандариновая рыбка',1,24,28,6,900,8,'питается планктоном',0,0,0,'PAC','#00acc1','#ff6f00',0],
+ ['Хромис зелёный',1,25,28,7,250,3,'питается планктоном',0,0,0,'REEF','#43e68a','#00897b',0],
+ ['Рыба-кузовок',1,24,28,20,2000,11,'всеядная',0,0,0,'TROP','#ffee58','#212121',4],
+ ['Мурена',1,24,27,60,3000,18,'хищная',1,0,400,'PAC','#8d6e00','#ffe082',2],
+ ['Рыба-ёж',1,24,28,30,2800,14,'всеядная',0,0,0,'TROP','#ffcc80','#6d4c41',4],
+ ['Морской конёк',1,22,26,12,1500,9,'питается планктоном',0,0,0,'CAR','#ffb300','#ff6f00',5],
+ ['Крылатка (рыба-лев)',1,24,28,30,2500,15,'хищная',1,0,300,'REEF','#c62828','#fff8e1',1],
+ ['Голубопятнистый скат',1,24,28,40,7000,28,'хищная',1,0,600,'REEF','#ffb74d','#2979ff',3],
+ ['Бамбуковая акула',1,22,26,70,12000,40,'хищная',1,0,800,'PAC','#8d6e63','#3e2723',6],
+ ['Спинорог',1,24,28,30,2200,12,'хищная',1,0,300,'REEF','#26c6da','#7e57c2',1],
+ ['Жёлтый хирург',1,24,28,18,1100,9,'растительноядная',0,0,0,'PAC','#ffeb3b','#fbc02d',1],
+ ['Креветка-чистильщик',1,24,28,6,400,5,'всеядная',0,0,0,'REEF','#ef5350','#ffffff',0],
+ ['Рыба-попугай',1,24,28,40,4000,20,'растительноядная',0,0,500,'REEF','#26a69a','#f06292',0]
+];
+
+const SP=SPD.map((a,i)=>({i,name:a[0],w:a[1],t1:a[2],t2:a[3],cm:a[4],price:a[5],ap:a[6],diet:a[7],pred:a[8],brd:a[9],minV:a[10],reg:REG[a[11]],c1:a[12],c2:a[13],sh:a[14],mass:0.025*a[4]**3}));
+const PLANTS=[{n:'Элодея',w:0,p:150},{n:'Валлиснерия',w:0,p:200},{n:'Кабомба',w:0,p:250},{n:'Анубиас',w:0,p:400},{n:'Каулерпа',w:1,p:500},{n:'Хетоморфа',w:1,p:600}];
+const TANKS=[{V:20,p:1200,mp:6},{V:60,p:3500,mp:3},{V:120,p:7000,mp:6},{V:250,p:14000,mp:10},{V:500,p:28000,mp:10},{V:1000,p:55000,mp:10}].map(t=>(t.mp=Math.max(2,Math.min(10,Math.floor(t.V/20))),t));
+const EQ={filter:['Фильтр',1500,'нитраты растут на 40 % медленнее'],aer:['Аэратор',900,'вместимость по кислороду +30 %'],lamp:['Лампа',700,'растения лучше чистят воду, +5 % привлекательности'],feeder:['Автокормушка',2200,'выдаёт ровно норму корма'],decor:['Декор (замок)',1200,'+10 % привлекательности']};
+const BASE_PRICE=60,RENT=200,FEED_RUB=1.5,GK=0.8,DAYS=60;
+// слоты под картинки: сюда добавляются имена файлов из art\ (WebP) после генерации; пока пусто, чтобы не было 404
+const ART={bg_fresh:0,bg_salt:0,cover:0};
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const nf=n=>Math.round(n).toLocaleString('ru-RU');
+const f1=x=>String(Math.round(x*10)/10).replace('.',',');
+const $=id=>document.getElementById(id);
+// ---- слой Yandex SDK (заглушка)
+const YG={ready:false,rewarded(cb){cb(true)},init(){this.ready=true}};
+// ---- состояние
+let S=null,L=[],anim=[];
+const KEY='akvarium-save-v1',BEST='akvarium-best';
+function newGame(){
+ S={day:1,money:15000,rep:50,coins:1,tickets:BASE_PRICE,tanks:[],known:{0:1},seen:{0:1},nid:1,goals:{},stats:{profit:0,bestGuests:0},ev:null,task:null,taskDone:true,hint:{},battery:false,fans:false,over:false,lastRep:null};
+ S.tanks.push(mkTank(60,0));
+ const t=S.tanks[0];t.fish[0]=8;t.pl[0]=1;t.temp=25;t.feed=normFeed(t);
+ startDay();save();
+}
+function mkTank(V,salt){return {id:S.nid++,V,salt,temp:salt?25:25,fish:{},pl:{},eq:{},N:0,feed:0,sick:false}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){try{const j=localStorage.getItem(KEY);if(j){S=JSON.parse(j);return true}}catch(e){}return false}
+function bestGet(){try{return +localStorage.getItem(BEST)||0}catch(e){return 0}}
+// ---- расчёты аквариума
+const lpc=t=>t.salt?2:1;
+const fl=t=>Object.keys(t.fish).filter(i=>t.fish[i]>0).map(i=>({sp:SP[i],i:+i,n:t.fish[i]}));
+const cmTot=t=>fl(t).reduce((a,f)=>a+f.sp.cm*f.n,0);
+const massTot=t=>fl(t).reduce((a,f)=>a+f.sp.mass*f.n,0);
+const nPl=t=>Object.values(t.pl).reduce((a,b)=>a+b,0);
+const nFish=t=>fl(t).reduce((a,f)=>a+f.n,0);
+const normFeed=t=>Math.round(massTot(t)*0.02*10)/10;
+function cap(t,black){return t.V/lpc(t)*(1+0.06*nPl(t))*((t.eq.aer&&!(black&&!S.battery))?1.3:1)*(black&&!S.battery?0.7:1)}
+function tooSmall(t){return fl(t).some(f=>f.sp.minV>t.V)}
+function load_(t,black){const c=cap(t,black);return c?cmTot(t)*(tooSmall(t)?1.3:1)/c:0}
+function range(t){const f=fl(t);if(!f.length)return null;return [Math.max(...f.map(x=>x.sp.t1)),Math.min(...f.map(x=>x.sp.t2))]}
+function outRange(t,eff){return fl(t).some(f=>eff<f.sp.t1||eff>f.sp.t2)}
+function feedStep(n){return n<2?0.1:n<20?0.5:n<200?5:50}
+function hintOK(t){return S.hint[t.id]===S.day||S.day<=10}
+const rep_stars=()=>'★'.repeat(Math.round(S.rep/20))+'☆'.repeat(5-Math.round(S.rep/20));
+function appeal(t){
+ let s=0;fl(t).forEach(f=>{s+=f.sp.ap*(2-Math.pow(0.5,f.n-1))});
+ s*=1+0.05*Math.min(nPl(t),10)+(t.eq.decor?0.1:0)+(t.eq.lamp?0.05:0);
+ return s;
+}
+// ---- день
+function weekend(){const d=S.day%7;return d===6||d===0}
+function startDay(){
+ S.ev=null;
+ const d=S.day;
+ if(d===20||d===45)S.ev={t:'expo'};
+ else if(d===12||d===33)S.ev={t:'school',n:rnd(20,50),p:pick([10,20,30])};
+ else if(d>=5&&Math.random()<0.25)S.ev={t:pick(['black','algae','heat','expo','school'])};
+ if(S.ev&&S.ev.t==='school'&&!S.ev.n){S.ev.n=rnd(20,50);S.ev.p=pick([10,20,30])}
+ if(S.ev&&S.ev.t==='algae')S.tanks.forEach(t=>t.N+=15);
+ S.task=genTask();S.taskDone=false;S.evSeen=false;
+}
+function effTemp(t){return t.temp+(S.ev&&S.ev.t==='heat'?(S.fans?1:4):0)}
+function simDay(){
+ const R={day:S.day,log:[],rev:0,tic:0,fry:0,school:0,exp:{rent:RENT,power:0,feed:0},guests:0,repd:0,deaths:0};
+ const black=S.ev&&S.ev.t==='black';
+ let A=0;
+ S.tanks.forEach((t,k)=>{
+  const nm='Аквариум '+(k+1);
+  const eff=effTemp(t),out=outRange(t,eff);
+  const ld=load_(t,black),norm=normFeed(t),feed=t.eq.feeder?norm:t.feed;
+  const ratio=norm>0?feed/norm:1;
+  const hungry=norm>0&&ratio<0.7,over=Math.max(0,feed-norm*1.1);
+  R.exp.feed+=feed*FEED_RUB;
+  R.exp.power+=t.V*0.2+t.V*0.02*Math.max(0,t.temp-20)+Object.keys(t.eq).length*10;
+  // азот
+  let dN=6*ld*((t.eq.filter&&!(black&&!S.battery))?0.6:1)+over*40/t.V-nPl(t)*(t.eq.lamp?0.6:0.4);
+  t.N=Math.max(0,t.N+dN);
+  // хищники
+  fl(t).filter(f=>f.sp.pred).forEach(pr=>{for(let q=0;q<pr.n;q++){
+   const prey=fl(t).filter(f=>!f.sp.pred&&f.sp.cm<=pr.sp.cm*0.4);
+   if(prey.length){const v=pick(prey);t.fish[v.i]--;R.deaths++;R.log.push('🦈 '+nm+': '+pr.sp.name+' съел рыбу «'+v.sp.name+'»')}}});
+  // удушье
+  if(ld>1.2){const lose=Math.ceil(nFish(t)*Math.min(0.3,(ld-1)*0.5));killRand(t,lose,R);R.log.push('😮‍💨 '+nm+': не хватает кислорода, погибло '+lose)}
+  if(t.N>80){const lose=Math.ceil(nFish(t)*0.2);killRand(t,lose,R);R.log.push('☠ '+nm+': нитраты '+Math.round(t.N)+' — погибло '+lose)}
+  if(t.sick){const lose=Math.max(1,Math.ceil(nFish(t)*0.2));if(nFish(t)>0){killRand(t,lose,R);R.log.push('🤒 '+nm+': болезнь не вылечили, погибло '+lose)}if(Math.random()<0.5)t.sick=false}
+  // болезнь
+  if(!t.sick&&nFish(t)>0){
+   let p=(t.N>40?0.25:0)+(out?0.3:0)+(ld>1?0.2:0)+(hungry?0.1:0);p=Math.min(0.8,p);
+   if(Math.random()<p){t.sick=true;R.log.push('🤒 '+nm+': рыбы заболели'+(out?' (температура вне нормы)':'')+(t.N>40?' (грязная вода)':'')+(ld>1?' (тесно)':''))}
+  }
+  if(hungry){R.repd-=1;R.log.push('🍽 '+nm+': рыбы голодные ('+f1(feed)+' г при норме '+f1(norm)+' г)')}
+  if(ratio>1.1&&norm>0)R.log.push('🍽 '+nm+': перекорм ('+f1(feed)+' г при норме '+f1(norm)+' г), вода портится');
+  if(out)R.log.push('🌡 '+nm+': температура '+Math.round(eff)+' °C вне нормы для части рыб');
+  // мальки
+  fl(t).filter(f=>f.sp.brd).forEach(f=>{const pairs=Math.floor(f.n/2);
+   if(pairs&&ld<=1&&!hungry&&!fl(t).some(x=>x.sp.pred)){const r=pairs*2*f.sp.price*0.25;R.fry+=r}});
+  // привлекательность
+  let a=appeal(t);if(t.sick)a*=0.5;if(t.N>25)a*=0.8;if(hungry)a*=0.7;if(nFish(t)===0)a=0;
+  A+=a;
+  if(ld>1)R.repd-=1;
+ });
+ const mult=(0.6+0.6*S.rep/100)*(weekend()?1.4:1)*(S.ev&&S.ev.t==='expo'?1.8:1);
+ const pf=Math.max(0.2,Math.min(1.6,1-0.8*(S.tickets/BASE_PRICE-1)));
+ R.guests=Math.round(A*mult*pf*GK);
+ R.tic=R.guests*S.tickets;
+ if(S.ev&&S.ev.t==='school'){R.school=Math.round(S.ev.n*S.tickets*(1-S.ev.p/100))}
+ R.fry=Math.round(R.fry);R.exp.power=Math.round(R.exp.power);R.exp.feed=Math.round(R.exp.feed);
+ R.rev=R.tic+R.fry+R.school;
+ R.expT=R.exp.rent+R.exp.power+R.exp.feed;
+ R.profit=R.rev-R.expT;
+ if(R.deaths===0&&R.repd===0&&!S.tanks.some(t=>t.sick))R.repd+=1;
+ S.money+=R.profit;S.rep=Math.max(0,Math.min(100,S.rep+R.repd));
+ S.stats.profit+=R.profit;S.stats.bestGuests=Math.max(S.stats.bestGuests,R.guests);
+ S.tanks.forEach(t=>t.changed=false);
+ return R;
+}
+function killRand(t,n,R){const ks=fl(t);for(let q=0;q<n;q++){const all=fl(t);if(!all.length)break;const tot=all.reduce((a,f)=>a+f.n,0);let r=Math.random()*tot;for(const f of all){r-=f.n;if(r<=0){t.fish[f.i]--;R.deaths++;break}}}}
+function goalsCheck(){
+ const m=[];const gs=[{d:10,k:'g10',txt:'30 гостей за день',ok:()=>S.stats.bestGuests>=30},{d:30,k:'g30',txt:'15 видов в коллекции',ok:()=>Object.keys(S.seen).length>=15},{d:60,k:'g60',txt:'прибыль 80 000 ₽',ok:()=>S.stats.profit>=80000}];
+ gs.forEach(g=>{if(S.day===g.d&&!S.goals[g.k]){const ok=g.ok();S.goals[g.k]=ok?1:2;if(ok){S.money+=3000;S.rep=Math.min(100,S.rep+5);m.push('🎯 Цель выполнена: '+g.txt+'! +3 000 ₽, репутация +5')}else{S.rep=Math.max(0,S.rep-5);m.push('Цель не выполнена: '+g.txt+'. Репутация −5')}}});
+ return m;
+}
+function capital(){let c=S.money;S.tanks.forEach(t=>{const tk=TANKS.find(x=>x.V===t.V);c+=(tk.p*(t.salt?1.4:1))*0.5;fl(t).forEach(f=>c+=f.sp.price*f.n*0.7)});return Math.round(c)}
+// ---- задачи
+function genTask(){
+ const d=S.day,lv=d<=15?1:d<=35?2:3;
+ const tk=pick(S.tanks)||{V:60,salt:0};
+ const V=tk.V,lp=tk.salt?2:1;
+ const gens=[
+ ()=>{const cs=[2,4,5,10].filter(c=>lv>1||(V/lp)%c===0);const c=pick(cs.length?cs:[2]);const a=Math.floor(V/lp/c);return {q:`Аквариум ${V} л (${tk.salt?'морской: 1 см рыбы на 2 л':'пресный: 1 см рыбы на 1 л'}). Сколько рыбок длиной ${c} см можно держать?`,a,ex:`Вместимость ${V} ÷ ${lp} = ${V/lp} см. ${V/lp} ÷ ${c} = ${V/lp/c}, берём целое: ${a}.`}},
+ ()=>{const p=lv===1?pick([10,25,50]):pick([15,20,30,40]);const a=V*p/100;return {q:`Нужно подменить ${p} % воды в аквариуме ${V} л. Сколько литров заменить?`,a,ex:`${V} × ${p} ÷ 100 = ${a} л.`}},
+ ()=>{const m=pick([200,400,500,1000,1500]);const a=m*0.02;return {q:`Рыбы весят ${m} г. Корм — 2 % от массы. Сколько граммов корма в день?`,a,ex:`${m} × 2 ÷ 100 = ${a} г.`}},
+ ()=>{const n=pick([20,30,45,60]),p=pick([60,70,80]);if(lv===1)return {q:`Пришли ${n} гостей, билет ${p} ₽. Сколько рублей выручка?`,a:n*p,ex:`${n} × ${p} = ${n*p} ₽.`};return {q:`Пришли ${n} гостей, билет ${p} ₽. Расходы за день ${RENT+120} ₽. Какова прибыль?`,a:n*p-RENT-120,ex:`Выручка ${n*p}, минус ${RENT+120} = ${n*p-RENT-120} ₽.`}},
+ ()=>{const N=pick([20,40,60,80]),p=pick([25,50]);const a=N*(1-p/100);return {q:`Нитратов ${N} мг/л. Подменили ${p} % воды. Сколько мг/л стало?`,a,ex:`Остаётся ${100-p} %: ${N} × ${100-p} ÷ 100 = ${a}.`}},
+ ()=>{const t=pick([100,150,200,250]);const a=t*0.6;return {q:`Из ${t} гостей 40 % — дети. Сколько взрослых?`,a,ex:`Взрослых 60 %: ${t} × 60 ÷ 100 = ${a}.`}},
+ ()=>{const a0=pick([16,18,20]),b0=pick([24,26,28]),h=pick([1,2]);const a=(b0-a0)/h;return {q:`Вода ${a0} °C, нужна ${b0} °C. Нагреватель греет на ${h} °C в час. За сколько часов?`,a,ex:`Разница ${b0-a0} °C, делим на ${h}: ${a} ч.`}},
+ ()=>{const n=pick([6,8,12]),c=pick([3,4,5]);return {q:`В аквариуме ${n} рыб по ${c} см. Сколько всего сантиметров рыб?`,a:n*c,ex:`${n} × ${c} = ${n*c} см.`}}
+ ];
+ const pool=lv===1?[0,1,2,3,7]:lv===2?[0,1,2,3,4,6,7]:[0,1,2,3,4,5,6];
+ const g=gens[pick(pool)]();g.lv=lv;g.rew=lv*200;return g;
+}
+// ---- интерфейс
+function toast(m){const e=document.createElement('div');e.className='toast';e.textContent=m;$('app').appendChild(e);setTimeout(()=>e.remove(),2200)}
+function topbar(){return `<div class="top"><span>День ${S.day}/${DAYS}${weekend()?' 🎉':''}</span><span>💰 ${nf(S.money)}</span><span>${rep_stars()}</span><span>🪙 ${S.coins}</span></div>`}
+function fishSVG(sp,w){
+ const h=Math.round(w*0.66),c1=sp.c1,c2=sp.c2,st='stroke="#3b2a1a" stroke-width="2.4" stroke-linejoin="round"';
+ let b;
+ switch(sp.sh){
+  case 1:b=`<path d="M30 3 L38 14 L52 4 L48 20 L52 36 L38 26 L30 37 L16 34 Q4 20 16 6Z" fill="${c1}" ${st}/><path d="M26 6 Q18 20 26 34" fill="none" stroke="${c2}" stroke-width="5"/>`;break;
+  case 2:b=`<path d="M4 20 Q10 12 30 13 L46 8 L44 20 L46 32 L30 27 Q10 28 4 20Z" fill="${c1}" ${st}/><path d="M10 20 L42 20" stroke="${c2}" stroke-width="4"/>`;break;
+  case 3:b=`<path d="M6 20 Q30 -2 54 20 Q30 42 6 20Z" fill="${c1}" ${st}/><circle cx="26" cy="18" r="3" fill="${c2}"/><circle cx="36" cy="22" r="3" fill="${c2}"/><path d="M6 20 L-6 22" stroke="#3b2a1a" stroke-width="2.4"/>`;break;
+  case 4:b=`<circle cx="30" cy="20" r="15" fill="${c1}" ${st}/><path d="M15 20 L3 10 L3 30Z" fill="${c1}" ${st}/><circle cx="26" cy="26" r="5" fill="${c2}" opacity=".45"/>`;break;
+  case 5:b=`<path d="M34 6 Q44 8 42 20 Q40 32 34 36 Q26 38 28 30 Q32 22 28 14 Q28 6 34 6Z" fill="${c1}" ${st}/><path d="M42 12 L56 14 L42 17Z" fill="${c2}" ${st}/>`;break;
+  case 6:b=`<path d="M2 22 Q10 16 28 14 L36 3 L38 14 Q50 16 58 22 Q50 30 36 28 L28 36 L26 28Z" fill="${c1}" ${st}/><path d="M2 22 L-4 12 L-6 30Z" fill="${c1}" ${st}/>`;break;
+  default:b=`<path d="M4 20 Q8 6 28 6 Q46 8 50 20 Q46 32 28 34 Q8 34 4 20Z" fill="${c1}" ${st}/><path d="M50 20 L60 8 L60 32Z" fill="${c1}" ${st}/><path d="M26 7 Q20 20 26 33" fill="none" stroke="${c2}" stroke-width="5"/><path d="M34 7 Q30 20 34 33" fill="none" stroke="${c2}" stroke-width="3" opacity=".7"/>`;
+ }
+ // нос направлен влево (рыба плывёт влево); глаз слева
+ const eye=sp.sh===5?'<circle cx="38" cy="14" r="2.2" fill="#fff"/><circle cx="38" cy="14" r="1" fill="#000"/>':sp.sh===3?'':'<circle cx="'+(sp.sh===2?10:sp.sh===1?20:14)+'" cy="'+(sp.sh===1?16:17)+'" r="3.2" fill="#fff" stroke="#3b2a1a" stroke-width="1.4"/><circle cx="'+(sp.sh===2?9:sp.sh===1?19:13)+'" cy="'+(sp.sh===1?16:17)+'" r="1.4" fill="#000"/>';
+ return `<svg viewBox="-8 0 72 40" width="${w}" height="${h}">${b}${eye}</svg>`;
+}
+function fw(sp){return Math.round(Math.max(22,Math.min(74,14+8*Math.log2(sp.cm))))}
+function viewHTML(t,big){
+ let h='<div class="view '+(t.salt?'salt':'')+(big?' big':'')+'" data-t="'+t.id+'"><div class="sand"></div>';
+ let pi=0;Object.keys(t.pl).forEach(k=>{for(let q=0;q<t.pl[k];q++){h+=`<span class="pl" style="left:${6+(pi*37)%88}%">${PLANTS[k].w?'🪸':'🌿'}</span>`;pi++}});
+ if(t.eq.decor)h+='<span class="pl" style="left:78%;font-size:28px">🏰</span>';
+ let n=0;
+ fl(t).forEach(f=>{const show=Math.min(f.n,big?10:6);for(let q=0;q<show;q++){h+=`<div class="fish" data-w="${fw(f.sp)}" data-s="${(Math.random()*0.5+0.3).toFixed(2)}">${fishSVG(f.sp,fw(f.sp)*(big?1.15:0.85))}</div>`;n++}});
+ if(!n)h+='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800">Пусто — добавьте рыб</div>';
+ return h+'</div>';
+}
+function startAnim(){
+ anim=[];
+ document.querySelectorAll('.view').forEach(v=>{
+  const W=v.clientWidth,H=v.clientHeight;
+  v.querySelectorAll('.fish').forEach(e=>{
+   const w=+e.dataset.w*(v.classList.contains('big')?1.15:0.85);
+   anim.push({e,x:Math.random()*(W-w),y:6+Math.random()*(H*0.7-w*0.5),dir:Math.random()<0.5?-1:1,sp:+e.dataset.s,W,H,w,ph:Math.random()*6});
+  });
+ });
+}
+let raf=0,last=0;
+function loop(ts){
+ const dt=Math.min(50,ts-last||16);last=ts;
+ for(const a of anim){
+  a.x+=a.dir*a.sp*dt*0.06;
+  if(a.x<0){a.x=0;a.dir=1}if(a.x>a.W-a.w){a.x=a.W-a.w;a.dir=-1}
+  a.ph+=dt*0.002;
+  const y=a.y+Math.sin(a.ph)*4;
+  a.e.style.transform=`translate(${a.x}px,${y}px) scaleX(${a.dir>0?-1:1})`;
+ }
+ raf=requestAnimationFrame(loop);
+}
+function render(){
+ const app=$('app');
+ if(!S){app.innerHTML=`<div class="cover"><div style="font-size:70px">🐠🐙🐡</div><h1>Подводный мир</h1><p style="font-size:17px">Аквариумный бизнес: рыбы, вода, математика</p>
+  <div style="display:grid;gap:10px;margin-top:30px">${hasSave()?'<button class="b-go" id="bCont">▶ Продолжить</button>':''}<button class="${hasSave()?'b-nav':'b-go'}" id="bNew">Новая игра</button></div></div>`;
+  const c=$('bCont');if(c)c.onclick=()=>{load();render();afterLoad()};$('bNew').onclick=()=>{newGame();render();afterLoad()};return}
+ let h=topbar()+'<div id="main">';
+ S.tanks.forEach((t,k)=>{
+  const f=fl(t);
+  h+=`<div class="tk" data-open="${t.id}"><div class="tkh"><span>Аквариум ${k+1} · ${t.V} л · ${t.salt?'🌊 морской':'💧 пресный'}</span><span>${t.temp} °C</span></div>${viewHTML(t,false)}
+  <div class="tkf"><span class="chip">🐟 ${nFish(t)} шт · ${f1(cmTot(t))} см</span><span class="chip ${t.N>40?'r':t.N>25?'y':'g'}">NO₃ ${f1(t.N)}</span>${t.sick?'<span class="chip r">🤒 болезнь</span>':''}</div></div>`;
+ });
+ if(S.tanks.length<6)h+=`<button class="tk" id="bNewTank" style="width:100%;padding:16px;font-size:16px;border-style:dashed">➕ Купить аквариум</button>`;
+ h+=`</div><div class="nav"><button class="b-nav" id="nShop">🛒<br>Магазин</button><button class="b-nav" id="nGoals">🎯<br>Цели</button><button class="b-nav" id="nMenu">⚙<br>Меню</button><button class="b-go" id="bDay">▶ Открыть<br>день ${S.day}</button></div>`;
+ app.innerHTML=h;
+ document.querySelectorAll('[data-open]').forEach(e=>e.onclick=()=>pushL(tankL(+e.dataset.open)));
+ const nt=$('bNewTank');if(nt)nt.onclick=()=>pushL(shopL);
+ $('nShop').onclick=()=>pushL(shopL);$('nGoals').onclick=()=>pushL(goalsL);$('nMenu').onclick=()=>pushL(menuL);$('bDay').onclick=openDay;
+ startAnim();
+ drawL();
+}
+const hasSave=()=>{try{return !!localStorage.getItem(KEY)}catch(e){return false}};
+function pushL(fn){L.push(fn);drawL()}
+function popL(){L.pop();drawL()}
+function drawL(){
+ let o=$('ov');if(o)o.remove();
+ if(!L.length){startAnim();return}
+ o=document.createElement('div');o.id='ov';$('app').appendChild(o);
+ L[L.length-1](o);
+ startAnim();
+}
+function overlay(o,title,body,back=true){o.className='ov';o.innerHTML=`<div class="ovh">${back?'<button id="bBack">←</button>':''}<span>${title}</span></div><div class="ovb">${body}</div>`;if(back)o.querySelector('#bBack').onclick=()=>{popL();render()}}
+function modal(o,html){o.className='ov dim';o.innerHTML=`<div class="modal">${html}</div>`}
+// ---- аквариум
+function tankL(id){return function(o){
+ const t=S.tanks.find(x=>x.id===id);if(!t){popL();return}
+ const k=S.tanks.indexOf(t)+1,rg=range(t),ok=hintOK(t);
+ let b=viewHTML(t,true);
+ b+=`<div class="row"><b>Температура:</b><button class="b-sm" data-tp="-1">−</button><b>${t.temp} °C</b><button class="b-sm" data-tp="1">+</button><span class="small sp">${rg?(rg[0]<=rg[1]?'рыбам подходит '+rg[0]+'–'+rg[1]+' °C':'⚠ у рыб нет общей температуры!'):'нет рыб'}</span></div>`;
+ b+=`<div class="row"><b>Нитраты:</b> <span class="chip ${t.N>40?'r':t.N>25?'y':'g'}">${f1(t.N)} мг/л</span> ${t.sick?'<span class="chip r">🤒 болезнь</span><button class="b-sm b-ok" id="bTreat">Лечить (${nf(5*t.V)} ₽)</button>':''}</div>`;
+ b+=`<div class="row"><b>Подмена воды:</b>${[10,25,50].map(p=>`<button class="b-sm" data-wc="${p}">${p} %</button>`).join('')}<span class="small sp">${t.changed?'сегодня уже менял':''}</span></div>`;
+ b+=`<div class="row"><b>Масса рыб:</b> ${nf(massTot(t))} г</div>`;
+ b+=`<div class="row"><b>Корм, г:</b>${t.eq.feeder?'<span>🤖 автокормушка: ровно норма</span>':`<button class="b-sm" data-fd="-1">−</button><input type="text" id="fd" inputmode="decimal" value="${f1(t.feed)}"><button class="b-sm" data-fd="1">+</button>`}</div>`;
+ if(ok){const c=cap(t),l=load_(t);b+=`<div class="hint">🔍 Проверка ихтиолога: вместимость ${f1(c)} см (норма ${lpc(t)} л на 1 см, растения +${nPl(t)*6} %${t.eq.aer?', аэратор +30 %':''}). Сейчас ${f1(cmTot(t))} см = ${Math.round(l*100)} %. Норма корма: 2 % от ${nf(massTot(t))} г = <b>${f1(normFeed(t))} г</b>. ${tooSmall(t)?'⚠ Для крупных рыб аквариум мал (нужен больший объём).':''} <button class="b-sm" id="bNorm">Поставить норму</button></div>`}
+ else b+=`<button id="bHint" style="width:100%;margin:6px 0">🔍 Проверка ихтиолога (1 🪙) — вместимость и норма корма</button>`;
+ b+=`<h3 style="margin:10px 0 4px">Рыбы</h3>`;
+ const f=fl(t);
+ if(!f.length)b+='<div class="small">Пока никого.</div>';
+ f.forEach(x=>b+=`<div class="card row"><span style="flex:1"><b>${x.sp.name}</b> × ${x.n}<br><span class="small">${x.sp.cm} см · ${f1(x.sp.mass)} г · ${x.sp.t1}–${x.sp.t2} °C${x.sp.pred?' · 🦈 хищник':''}</span></span><button class="b-sm" data-sell="${x.i}">продать (${nf(x.sp.price*0.6)})</button></div>`);
+ b+=`<div class="row"><button class="b-ok" id="bFish" style="flex:1">➕ Рыбы</button><button class="b-ok" id="bPl" style="flex:1">🌿 Растения (${nPl(t)}/${TANKS.find(x=>x.V===t.V).mp})</button></div>`;
+ b+=`<h3 style="margin:10px 0 4px">Оборудование</h3>`;
+ Object.keys(EQ).forEach(e=>{b+=`<div class="card row"><span style="flex:1"><b>${EQ[e][0]}</b><br><span class="small">${EQ[e][2]}</span></span>${t.eq[e]?'<span class="chip g">✔ стоит</span>':`<button class="b-sm" data-eq="${e}">${nf(EQ[e][1])} ₽</button>`}</div>`});
+ overlay(o,`Аквариум ${k} · ${t.V} л · ${t.salt?'морской':'пресный'}`,b);
+ o.querySelectorAll('[data-tp]').forEach(e=>e.onclick=()=>{t.temp=Math.max(5,Math.min(32,t.temp+ +e.dataset.tp));save();drawL()});
+ const tr=o.querySelector('#bTreat');if(tr)tr.onclick=()=>{const c=5*t.V;if(S.money<c)return toast('Не хватает денег');S.money-=c;t.sick=false;save();toast('Вылечили!');drawL()};
+ o.querySelectorAll('[data-wc]').forEach(e=>e.onclick=()=>{if(t.changed)return toast('Сегодня уже меняли воду');const p=+e.dataset.wc,l=t.V*p/100,c=Math.round(l*(t.salt?3:1.5));if(S.money<c)return toast('Не хватает денег');S.money-=c;t.N*=1-p/100;t.changed=true;save();toast(`Заменено ${f1(l)} л, ${nf(c)} ₽`);drawL()});
+ o.querySelectorAll('[data-fd]').forEach(e=>e.onclick=()=>{const st=feedStep(normFeed(t)||t.feed||1);t.feed=Math.max(0,Math.round((t.feed+ +e.dataset.fd*st)*10)/10);save();drawL()});
+ const fd=o.querySelector('#fd');if(fd)fd.onchange=()=>{const v=parseFloat(fd.value.replace(',','.'));t.feed=isNaN(v)?0:Math.max(0,v);save();drawL()};
+ const hb=o.querySelector('#bHint');if(hb)hb.onclick=()=>{if(S.coins<1)return toast('Нужна монета знаний — решайте задачи!');S.coins--;S.hint[t.id]=S.day;save();drawL()};
+ const nb=o.querySelector('#bNorm');if(nb)nb.onclick=()=>{t.feed=normFeed(t);save();drawL()};
+ o.querySelectorAll('[data-sell]').forEach(e=>e.onclick=()=>{const sp=SP[+e.dataset.sell];t.fish[sp.i]--;S.money+=Math.round(sp.price*0.6);t.feed=Math.min(t.feed,normFeed(t)>0?t.feed:0);save();drawL()});
+ o.querySelectorAll('[data-eq]').forEach(e=>e.onclick=()=>{const q=EQ[e.dataset.eq];if(S.money<q[1])return toast('Не хватает денег');S.money-=q[1];t.eq[e.dataset.eq]=1;save();drawL()});
+ o.querySelector('#bFish').onclick=()=>pushL(catalogL(t.id));
+ o.querySelector('#bPl').onclick=()=>pushL(plantsL(t.id));
+}}
+function plantsL(id){return function(o){
+ const t=S.tanks.find(x=>x.id===id),mp=TANKS.find(x=>x.V===t.V).mp;
+ let b=`<div class="small">В аквариуме ${nPl(t)} из ${mp}. Растения дают кислород (+6 % вместимости), чистят воду от нитратов, украшают.</div>`;
+ PLANTS.map((p,i)=>({p,i})).filter(x=>x.p.w===t.salt).forEach(x=>b+=`<div class="card row"><span style="flex:1"><b>${x.p.n}</b> ${t.pl[x.i]?'× '+t.pl[x.i]:''}</span><button class="b-sm" data-pl="${x.i}">${x.p.p} ₽</button></div>`);
+ overlay(o,'Растения',b);
+ o.querySelectorAll('[data-pl]').forEach(e=>e.onclick=()=>{const i=+e.dataset.pl;if(nPl(t)>=mp)return toast('Больше растений не поместится');if(S.money<PLANTS[i].p)return toast('Не хватает денег');S.money-=PLANTS[i].p;t.pl[i]=(t.pl[i]||0)+1;save();drawL()});
+}}
+// ---- каталог рыб
+function catalogL(id){return function(o){
+ const t=S.tanks.find(x=>x.id===id);
+ const f=fl(t),rg=range(t);
+ let b=`<div class="small">Аквариум ${t.V} л · ${t.salt?'морской':'пресный'} · ${t.temp} °C. Новый вид сначала сдаётся на экзамене ихтиолога.</div>`;
+ SP.filter(s=>s.w===t.salt).sort((a,b)=>a.price-b.price).forEach(s=>{
+  const warn=[];
+  if(t.temp<s.t1||t.temp>s.t2)warn.push('температура');
+  if(s.minV>t.V)warn.push('мал аквариум');
+  b+=`<div class="card row" data-card="${s.i}">${fishSVG(s,46)}<span style="flex:1"><b>${S.known[s.i]?'✔ ':'🔒 '}${s.name}</b><br><span class="small">${s.cm} см · ${s.t1}–${s.t2} °C ${warn.length?'· ⚠ '+warn.join(', '):''}</span></span><b>${nf(s.price)} ₽</b></div>`});
+ overlay(o,'Каталог рыб',b);
+ o.querySelectorAll('[data-card]').forEach(e=>e.onclick=()=>pushL(cardL(t.id,+e.dataset.card)));
+}}
+function cardL(tid,si){return function(o){
+ const t=S.tanks.find(x=>x.id===tid),s=SP[si];
+ const prey=SP.filter(x=>!x.pred&&x.w===s.w&&x.cm<=s.cm*0.4).length;
+ let b=`<div class="card" style="text-align:center;background:linear-gradient(#7fd4f5,#2b8fc7)">${fishSVG(s,130)}</div>
+ <div class="card"><b style="font-size:18px">${s.name}</b><br>
+ 🌍 Живёт: ${s.reg}<br>🍽 Питание: ${s.diet}<br>💧 Вода: ${s.w?'морская':'пресная'}, ${s.t1}–${s.t2} °C<br>📏 Длина ${s.cm} см · масса ≈ ${f1(s.mass)} г (корм в день ≈ ${f1(s.mass*0.02)} г)<br>
+ ${s.pred?`🦈 Хищник: съест рыб короче ${f1(s.cm*0.4)} см<br>`:'🕊 Мирная<br>'}${s.brd?'🍼 Живородящая: даёт мальков<br>':''}${s.minV?`🛢 Нужен аквариум от ${s.minV} л<br>`:''}
+ 🎟 Привлекает ≈ ${s.ap} гостей в день</div>`;
+ b+=`<div class="row"><button class="b-ok" id="b1" style="flex:1">Купить 1 за ${nf(s.price)} ₽</button><button class="b-ok" id="b5" style="flex:1">Купить 5</button></div>`;
+ overlay(o,s.name,b);
+ const buy=q=>{
+  const go=()=>{const c=s.price*q;if(S.money<c)return toast('Не хватает денег');S.money-=c;t.fish[si]=(t.fish[si]||0)+q;S.seen[si]=1;t.feed=t.feed||0;save();toast('Куплено: '+s.name+' ×'+q);drawL()};
+  if(S.known[si])go();else examL(si,()=>{drawL();go()});
+ };
+ o.querySelector('#b1').onclick=()=>buy(1);o.querySelector('#b5').onclick=()=>buy(5);
+}}
+// ---- экзамен
+function examQs(s){
+ const qs=[];
+ const others=SP.filter(x=>x.i!==s.i);
+ const uniq=a=>[...new Set(a)];
+ const shuf=a=>a.map(v=>[Math.random(),v]).sort((x,y)=>x[0]-y[0]).map(v=>v[1]);
+ const mk=(q,right,wrongs,ex)=>{const ws=shuf(uniq(wrongs).filter(w=>w!==right)).slice(0,3);return {q,opts:shuf([right,...ws]),right,ex}};
+ qs.push(()=>mk(`Где в природе живёт вид «${s.name}»?`,s.reg,others.map(x=>x.reg),`«${s.name}» живёт: ${s.reg}.`));
+ qs.push(()=>mk(`Чем питается «${s.name}»?`,s.diet,['всеядная','хищная','растительноядная','питается планктоном'],`Питание: ${s.diet}.`));
+ qs.push(()=>{const r=s.t1+'–'+s.t2+' °C';return mk(`Какая температура воды подходит для «${s.name}»?`,r,others.map(x=>x.t1+'–'+x.t2+' °C'),`Для «${s.name}» нужна вода ${r}.`)});
+ qs.push(()=>mk(`Можно ли посадить «${s.name}» вместе с мелкими рыбками (гуппи, неонами)?`,s.pred?'Нет, съест':'Да, мирная',['Нет, съест','Да, мирная'],s.pred?`«${s.name}» — хищник, мелкие рыбки для него корм.`:`«${s.name}» — мирная рыба.`));
+ const pickq=s.pred?[3,pick([0,1,2])]:shuf([0,1,2,3]).slice(0,2);
+ return pickq.map(i=>qs[i]());
+}
+function examL(si,done){
+ const s=SP[si],qs=examQs(s);let i=0,okc=0;
+ function step(){
+  const o=$('ov')||document.createElement('div');o.id='ov';if(!o.parentNode)$('app').appendChild(o);
+  const q=qs[i];
+  modal(o,`<h2>🎓 Экзамен ихтиолога ${i+1}/2</h2><p><b>${q.q}</b></p>`+q.opts.map((x,k)=>`<button class="opt" data-k="${k}">${x}</button>`).join(''));
+  o.querySelectorAll('.opt').forEach(e=>e.onclick=()=>{
+   const right=q.opts[+e.dataset.k]===q.right;if(right)okc++;
+   modal(o,`<h2>${right?'✅ Верно!':'❌ Не совсем'}</h2><p>${q.ex}</p><button class="b-go" id="nx" style="width:100%">Дальше</button>`);
+   o.querySelector('#nx').onclick=()=>{i++;if(i<qs.length)step();else{
+    if(okc===qs.length){S.known[si]=1;save();modal(o,`<h2>🎉 Экзамен сдан!</h2><p>Вид «${s.name}» открыт — можно закупать.</p><button class="b-go" id="nx2" style="width:100%">Отлично</button>`);o.querySelector('#nx2').onclick=()=>{drawL();done()}}
+    else{modal(o,`<h2>Пока не сдали</h2><p>Верно ${okc} из 2. Загляните в карточку вида и попробуйте снова — вопросы будут другие.</p><button class="b-go" id="nx2" style="width:100%">Понятно</button>`);o.querySelector('#nx2').onclick=()=>drawL()}}}
+  });
+ }
+ step();
+}
+// ---- магазин
+function shopL(o){
+ let b='<h3 style="margin:0 0 4px">Новый аквариум</h3>';
+ TANKS.forEach((tk,i)=>{b+=`<div class="card row"><span style="flex:1"><b>${tk.V} л</b> <span class="small">(до ${tk.V} см пресный / ${tk.V/2} см морской)</span></span><button class="b-sm" data-nt="${i}|0">💧 ${nf(tk.p)}</button><button class="b-sm" data-nt="${i}|1">🌊 ${nf(Math.round(tk.p*1.4))}</button></div>`});
+ b+=`<h3 style="margin:10px 0 4px">Для всего магазина</h3>
+ <div class="card row"><span style="flex:1"><b>Резервный аккумулятор</b><br><span class="small">защита от отключения света</span></span>${S.battery?'<span class="chip g">✔</span>':'<button class="b-sm" data-g="battery">3 500 ₽</button>'}</div>
+ <div class="card row"><span style="flex:1"><b>Вентиляторы</b><br><span class="small">в жару вода греется на +1 °C, а не на +4 °C</span></span>${S.fans?'<span class="chip g">✔</span>':'<button class="b-sm" data-g="fans">1 800 ₽</button>'}</div>
+ <h3 style="margin:10px 0 4px">Цена билета</h3>
+ <div class="row"><button class="b-sm" id="pm">−5</button><b style="font-size:20px">${S.tickets} ₽</b><button class="b-sm" id="pp">+5</button><span class="small sp">базовая цена ${BASE_PRICE} ₽. +10 % к цене — минус 8 % гостей.</span></div>`;
+ overlay(o,'Магазин',b);
+ o.querySelectorAll('[data-nt]').forEach(e=>e.onclick=()=>{
+  if(S.tanks.length>=6)return toast('Максимум 6 аквариумов');
+  const [i,s]=e.dataset.nt.split('|').map(Number),tk=TANKS[i],c=Math.round(tk.p*(s?1.4:1));
+  if(S.money<c)return toast('Не хватает денег');S.money-=c;const t=mkTank(tk.V,s);t.temp=25;S.tanks.push(t);save();toast('Куплен аквариум '+tk.V+' л');L=[];render()});
+ o.querySelectorAll('[data-g]').forEach(e=>e.onclick=()=>{const k=e.dataset.g,c=k==='battery'?3500:1800;if(S.money<c)return toast('Не хватает денег');S.money-=c;S[k]=true;save();drawL()});
+ o.querySelector('#pm').onclick=()=>{S.tickets=Math.max(20,S.tickets-5);save();drawL()};
+ o.querySelector('#pp').onclick=()=>{S.tickets=Math.min(200,S.tickets+5);save();drawL()};
+}
+function goalsL(o){
+ const g=(d,k,txt)=>`<div class="card row"><span style="flex:1"><b>День ${d}:</b> ${txt}</span>${S.goals[k]===1?'<span class="chip g">✔</span>':S.goals[k]===2?'<span class="chip r">✘</span>':'<span class="chip">…</span>'}</div>`;
+ let b=g(10,'g10','хотя бы в один день 30 гостей (лучший сейчас: '+S.stats.bestGuests+')')+g(30,'g30','15 разных видов в коллекции (сейчас '+Object.keys(S.seen).length+')')+g(60,'g60','прибыль за всё время 80 000 ₽ (сейчас '+nf(S.stats.profit)+')');
+ b+=`<h3 style="margin:12px 0 4px">Коллекция: ${Object.keys(S.seen).length}/40</h3><div class="grid2">`;
+ SP.forEach(s=>{const k=S.seen[s.i];b+=`<div class="card ${k?'':'lock'}" style="text-align:center;margin:0;padding:4px">${fishSVG(s,48)}<div class="small"><b>${k?s.name:'???'}</b></div></div>`});
+ overlay(o,'Цели и коллекция',b+'</div>');
+}
+function menuL(o){
+ overlay(o,'Меню',`<div class="card">Капитал сейчас: <b>${nf(capital())} ₽</b><br>Рекорд: <b>${nf(bestGet())} ₽</b></div>
+ <button class="opt" id="mAd">🎬 Посмотреть ролик: +2 🪙 (заглушка)</button>
+ <button class="opt" id="mSave">💾 Сохранить</button>
+ <button class="opt" id="mNew">🔄 Новая игра</button>
+ <p class="small">Версия прототипа 0.1. Картинки — запасные, нарисованы кодом.</p>`);
+ o.querySelector('#mAd').onclick=()=>YG.rewarded(ok=>{if(ok){S.coins+=2;save();toast('+2 монеты');render()}});
+ o.querySelector('#mSave').onclick=()=>{save();toast('Сохранено')};
+ o.querySelector('#mNew').onclick=()=>{if(confirm('Начать заново? Прогресс будет стёрт.')){try{localStorage.removeItem(KEY)}catch(e){}L=[];S=null;render()}};
+}
+// ---- день: события, задача, отчёт
+function afterLoad(){L=[];if(!S.evSeen&&S.ev)showEvent();else if(!S.taskDone)showTask()}
+function showEvent(){
+ const ev=S.ev;if(!ev){showTask();return}
+ const T={black:['💡 Отключили свет!','Фильтры и аэраторы встанут. Без резервного аккумулятора вместимость аквариумов упадёт до 70 %. Снизьте нагрузку заранее.'],algae:['🌿 Вспышка водорослей!','Нитраты во всех аквариумах выросли на 15 мг/л. Подмените воду.'],heat:['🌞 Жара!','Вода нагреется на '+(S.fans?'1':'4')+' °C (вентиляторы '+(S.fans?'есть':'не куплены')+'). Проверьте температуру для холодноводных рыб.'],expo:['🎪 Выставка!','Гостей сегодня в 1,8 раза больше. Можно поднять цену билета.'],school:['🚌 Школьная экскурсия!',`Придут ${ev.n||0} детей со скидкой ${ev.p||0} % на билет.`]}[ev.t];
+ const o=document.createElement('div');o.id='ov';$('app').appendChild(o);
+ if(ev.t==='school'){
+  modal(o,`<h2>${T[0]}</h2><p>${T[1]}</p><p><b>Сколько рублей заплатит школа?</b> (билет ${S.tickets} ₽)</p><input type="text" id="an" inputmode="decimal"> <button class="b-go" id="ok">Ответить</button>`);
+  o.querySelector('#ok').onclick=()=>{const v=parseFloat(o.querySelector('#an').value.replace(',','.')),r=Math.round(ev.n*S.tickets*(1-ev.p/100));
+   const good=Math.abs(v-r)<=1;if(good){S.coins++;S.rep=Math.min(100,S.rep+2)}S.evSeen=true;save();
+   modal(o,`<h2>${good?'✅ Верно!  +1 🪙, репутация +2':'❌ Нет'}</h2><p>${ev.n} × ${S.tickets} × (100 − ${ev.p}) ÷ 100 = ${r} ₽.</p><button class="b-go" id="nx" style="width:100%">Дальше</button>`);
+   o.querySelector('#nx').onclick=()=>{o.remove();render();showTask()}};
+ } else {
+  modal(o,`<h2>${T[0]}</h2><p>${T[1]}</p><button class="b-go" id="ok" style="width:100%">Понятно</button>`);
+  o.querySelector('#ok').onclick=()=>{S.evSeen=true;save();o.remove();render();showTask()};
+ }
+}
+function showTask(){
+ if(S.taskDone||!S.task)return;
+ const tk=S.task,o=document.createElement('div');o.id='ov';$('app').appendChild(o);
+ modal(o,`<h2>🧮 Задача дня</h2><p>${tk.q}</p><input type="text" id="an" inputmode="decimal" placeholder="ответ"> <button class="b-go" id="ok">Ответить</button><br><button class="b-sm" id="skip" style="margin-top:10px">Пропустить</button><div class="small" style="margin-top:6px">Награда: +1 🪙 и ${tk.rew} ₽</div>`);
+ const fin=ok=>{S.taskDone=true;if(ok){S.coins++;S.money+=tk.rew}save();modal(o,`<h2>${ok===null?'Пропущено':ok?'✅ Верно! +1 🪙, +'+tk.rew+' ₽':'❌ Не совсем'}</h2><p>${tk.ex}</p><button class="b-go" id="nx" style="width:100%">К аквариумам</button>`);o.querySelector('#nx').onclick=()=>{o.remove();render()}};
+ o.querySelector('#ok').onclick=()=>{const v=parseFloat(o.querySelector('#an').value.replace(',','.'));fin(!isNaN(v)&&Math.abs(v-tk.a)<0.011)};
+ o.querySelector('#skip').onclick=()=>fin(null);
+}
+function openDay(){
+ if(S.over)return;
+ if(!S.taskDone&&S.task){showTask();return}
+ const R=simDay(),gm=goalsCheck();
+ const o=document.createElement('div');o.id='ov';$('app').appendChild(o);
+ const pct=R.rev>0?Math.round(R.expT/R.rev*100):0;
+ let h=`<h2>📋 Итоги дня ${R.day}</h2>
+ <div class="card">Гостей: <b>${R.guests}</b> × ${S.tickets} ₽ = ${nf(R.tic)} ₽${R.fry?`<br>Мальки: ${nf(R.fry)} ₽`:''}${R.school?`<br>Школа: ${nf(R.school)} ₽`:''}<br><b>Выручка: ${nf(R.rev)} ₽</b></div>
+ <div class="card">Расходы: аренда ${R.exp.rent}, электричество ${R.exp.power}, корм ${R.exp.feed} = <b>${nf(R.expT)} ₽</b><br><b>Прибыль: ${nf(R.profit)} ₽</b> · репутация ${R.repd>=0?'+':''}${R.repd}</div>`;
+ const all=[...R.log,...gm];
+ if(all.length)h+=`<div class="card small">${all.join('<br>')}</div>`;
+ h+=`<p><b>Вопрос:</b> какую долю выручки (в %) съели расходы? <small>(целым числом)</small></p><input type="text" id="an" inputmode="decimal"> <button class="b-go" id="ok">Ответить</button> <button class="b-sm" id="sk">Пропустить</button>`;
+ modal(o,h);
+ const next=()=>{o.remove();S.day++;S.tanks.forEach(t=>{t.feed=Math.min(t.feed,t.feed)});
+  if(S.money<0){endGame(true);return}
+  if(S.day>DAYS){endGame(false);return}
+  startDay();save();render();afterLoad()};
+ o.querySelector('#ok').onclick=()=>{const v=parseFloat(o.querySelector('#an').value.replace(',','.'));if(isNaN(v))return;const good=Math.abs(v-pct)<=1;if(good){S.coins++;S.rep=Math.min(100,S.rep+1)}
+  const m=o.querySelector('.modal');m.insertAdjacentHTML('afterbegin',`<div class="hint">${good?'✅ Верно! +1 🪙, репутация +1':'❌ Правильно: '+pct+' % (расходы '+nf(R.expT)+' ÷ выручка '+nf(R.rev)+')'}</div>`);o.querySelector('#ok').remove();o.querySelector('#an').remove();o.querySelector('#sk').textContent='Дальше →';o.querySelector('#sk').onclick=next};
+ o.querySelector('#sk').onclick=next;
+ save();
+}
+function endGame(bankrupt){
+ S.over=true;const cap_=capital(),sp=Object.keys(S.seen).length;
+ const st=bankrupt?0:(cap_>=80000?1:0)+(cap_>=160000?1:0)+(cap_>=160000&&sp>=25?1:0);
+ try{if(cap_>bestGet())localStorage.setItem(BEST,cap_)}catch(e){}
+ try{localStorage.removeItem(KEY)}catch(e){}
+ render();
+ const o=document.createElement('div');o.id='ov';$('app').appendChild(o);
+ modal(o,`<h2>${bankrupt?'😢 Магазин закрыт':'🏆 60 дней позади!'}</h2><p style="font-size:30px;text-align:center;margin:4px">${'⭐'.repeat(st)}${'☆'.repeat(3-st)}</p><p>Капитал: <b>${nf(cap_)} ₽</b><br>Видов в коллекции: <b>${sp}/40</b><br>Прибыль за всё время: ${nf(S.stats.profit)} ₽<br>Рекорд: ${nf(bestGet())} ₽</p><button class="b-go" id="nw" style="width:100%">Играть снова</button>`);
+ o.querySelector('#nw').onclick=()=>{S=null;L=[];render()};
+}
+// ---- запуск
+try{YG.init()}catch(e){}
+window.__game={get S(){return S},SP,simDay,newGame,capital,render,cap,load_,normFeed,nf,fl,startDay,genTask,mkTank,TANKS,goalsCheck,examQs};
+render();raf=requestAnimationFrame(loop);
+</script></body></html>
