@@ -1,0 +1,2202 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#151638">
+<title>Умножение в столбик — Кристалл Умножения</title>
+<style>
+:root{--pm-paper:#fff8e8;--pm-ink:#2b1b3d;--pm-red:#ff4d5e;--pm-redink:#fff;--pm-gold:#ffd23f;--pm-muted:#5a4a73;--pm-line:#cdbfe6;--pm-paper2:#f1eaff;--f-display:system-ui,Arial,sans-serif;--f-body:system-ui,Arial,sans-serif;--pm-z:60}
+.modal{position:absolute;inset:0;z-index:50;background:#05061dcc;display:flex;align-items:center;justify-content:center;padding:20px}.modal .box{background:#262a55;border:1px solid #ffffff30;border-radius:18px;padding:18px;width:100%;max-width:330px;text-align:center}.modal .box p{margin:0 0 14px;font-size:16px;line-height:1.4}.modal .box .btn{width:100%;margin-top:8px}
+:root{
+  --bg:#151638;--panel:#24264f;--panel2:#303461;
+  --gold:#ffd66b;--blue:#74d8ff;--green:#72e5a0;
+  --red:#ff778b;--ink:#fff;--muted:#c1c5e2;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#10112b;color:var(--ink);font-family:system-ui,-apple-system,Arial,sans-serif}
+button,input{font:inherit}
+button{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button:disabled{opacity:.38;cursor:default}
+#app{width:100%;max-width:430px;min-height:100dvh;margin:auto;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 0%,#454078 0%,#1b1d46 47%,#11132f 100%)}
+.screen{min-height:100dvh;padding:15px 15px 25px;display:flex;flex-direction:column;gap:12px}
+h1,h2,h3,p{margin:0}
+h1{font-size:30px;line-height:1.15}
+h2{font-size:23px}
+h3{font-size:17px}
+small,.muted{color:var(--muted)}
+.center{text-align:center}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.top h2{font-size:21px;text-align:center}
+.panel{background:linear-gradient(145deg,#303360,#202347);border:1px solid #ffffff20;border-radius:20px;padding:15px;box-shadow:0 8px 22px #08091d44}
+.btn{min-height:50px;border:0;border-radius:15px;padding:10px 14px;font-weight:800;color:#24213d;background:linear-gradient(#ffe99a,#ffc752);box-shadow:0 4px 0 #b67c30}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 #b67c30}
+.btn.alt{background:linear-gradient(#8ce3ff,#59b7f2);box-shadow:0 4px 0 #34739c}
+.btn.ghost{background:#383b69;color:white;box-shadow:none;border:1px solid #ffffff25}
+.btn.danger{background:#ff8794;box-shadow:none}
+.btn.full{width:100%}
+.btn.tiny{min-height:48px;font-size:13px;padding:7px}
+.actions{display:grid;gap:9px}
+.row{display:flex;align-items:center;gap:8px}
+.grow{flex:1}
+.pill{padding:7px 11px;background:#141633aa;border-radius:99px;font-weight:800;font-size:14px}
+.logo{font-size:77px;text-align:center;filter:drop-shadow(0 7px 16px #ffcd5655);margin-top:18px}
+.subtitle{color:#cdd0eb;line-height:1.5;text-align:center}
+.stars{color:var(--gold);letter-spacing:2px}
+.castle-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.castle{min-height:135px;background:linear-gradient(155deg,#444579,#24274e);border:1px solid #ffffff25;border-radius:17px;padding:12px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:6px}
+.castle.locked{filter:grayscale(.8);opacity:.5}
+.castle .emoji{font-size:37px}
+.castle b{font-size:14px}
+.castle small{font-size:11px}
+.level-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.level{height:57px;border:1px solid #ffffff40;border-radius:12px;background:#333763;color:white;font-weight:900;font-size:18px}
+.level.current{border:2px solid var(--gold);background:#5c4b79}
+.level:disabled{opacity:.35}
+.level .stars{font-size:10px;display:block}
+.character{font-size:73px;text-align:center}
+.hearts .art.sm{height:28px;margin:0}
+.scenepic{width:100%;border-radius:14px;max-height:200px;object-fit:cover;border:1px solid #ffffff30}
+.art{display:block;margin:0 auto;object-fit:contain;filter:drop-shadow(0 6px 10px #000a)}
+.art.big{height:230px}.art.hero{height:150px}.art.face{height:96px}.art.sm{height:46px}
+.fighters{display:flex;align-items:flex-end;justify-content:space-between;gap:4px;min-height:130px}
+.fighters .art{flex:0 1 auto;max-width:48%}
+.fighters .art.en{height:130px}.fighters .art.he{height:108px}
+#app.bg{background-size:cover;background-position:center;background-blend-mode:normal}
+#app.bg .screen{background:linear-gradient(#0b0c1f66,#0b0c1fb0)}
+.castle b{color:#fff;text-shadow:0 2px 6px #000}.castle small{color:#ffe9a8}.castle .emoji{font-size:30px}.castle.art-bg{background-size:cover;background-position:center top;text-shadow:0 2px 6px #000}
+.dialogue{font-size:19px;line-height:1.55;min-height:115px}
+.battle-top{display:flex;justify-content:space-between;align-items:center;gap:7px}
+.hearts{font-size:23px;letter-spacing:2px}
+.progress{height:13px;border-radius:20px;background:#12132d;overflow:hidden;border:1px solid #ffffff30}
+.progress>div{height:100%;background:linear-gradient(90deg,#ff587d,#ffb36d);transition:width .25s}
+.enemy{font-size:66px;text-align:center;line-height:1.05}
+.enemy-name{text-align:center;font-size:13px;font-weight:800}
+.battle-card{padding:12px}
+.question{font-size:19px;font-weight:800;text-align:center;color:#ffe18d;min-height:30px}
+.math-large{text-align:center;font-size:38px;font-weight:900;margin:9px 0;font-variant-numeric:tabular-nums}
+.answer{height:56px;background:#151735;border:2px solid #7479b3;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:31px;font-weight:900;letter-spacing:2px}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.key{height:51px;border:1px solid #8c94d044;border-radius:12px;background:linear-gradient(#4c528c,#333963);color:white;font-size:25px;font-weight:850;box-shadow:0 3px 0 #171a3d}
+.key:active{transform:translateY(2px)}
+.key.ok{background:linear-gradient(#a7f5bc,#4ed38c);color:#133b29}
+.key.back{background:#75618d}
+.feedback{min-height:42px;font-size:13px;line-height:1.35;text-align:center;color:#e4e7ff}
+.feedback.bad{color:#ffabb6}
+.feedback.good{color:#91f4b6}
+.tool-row{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.tool-row button{font-size:12px;min-height:48px}
+.column-wrap{display:flex;justify-content:center;overflow-x:auto;padding:8px 0}
+.column{display:grid;grid-template-columns:repeat(var(--cols),30px);grid-auto-rows:32px;gap:2px;font-variant-numeric:tabular-nums}
+.cell{width:30px;height:32px;display:flex;justify-content:center;align-items:center;font-size:22px;font-weight:850;border-radius:5px}
+.cell.digit{color:#fff}
+.cell.blank{color:transparent}
+.cell.edit{background:#171a3d;border:1px dashed #777da7;color:#9da3cc}
+.cell.active{background:#fff0a0;color:#1b2045;border:2px solid #ffae31;animation:pulse 1s infinite}
+.cell.wrong{background:#ff6d86;color:#fff}
+.cell.carry{font-size:13px;color:#9be9ff}
+.cell.carry.edit{font-size:17px}
+.cell.line{border-bottom:2px solid #d7d9ef;border-radius:0}
+.cell.operator{color:#ffd36c}
+.cell.shift{color:#8cddff}
+@keyframes pulse{50%{box-shadow:0 0 0 4px #ffde6540}}
+.heroes{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.hero-card{border:2px solid transparent;border-radius:15px;padding:11px;background:#30345e;text-align:center;min-height:155px}
+.hero-card.selected{border-color:#ffd66b}
+.hero-card .face{font-size:38px}
+.hero-card p{font-size:12px;color:#d5d7ec;margin-top:5px}
+.hero-card b{font-size:13px}
+.bar-label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
+.skillbar{height:12px;background:#151733;border-radius:20px;overflow:hidden}
+.skillbar div{height:100%;background:linear-gradient(90deg,#ff8b84,#ffe17d,#6be7a5)}
+.notice{background:#131631;border:1px solid #ffffff25;border-radius:12px;padding:10px;font-size:13px;line-height:1.4}
+.scroll{overflow-y:auto}
+.spacer{flex:1}
+@media(max-height:830px){
+.screen{gap:8px;padding:10px 12px}
+.enemy{font-size:47px}.fighters{min-height:90px}.fighters .art.en{height:90px}.fighters .art.he{height:76px}.key{height:42px!important}.screen{gap:5px!important;padding:8px 12px!important}.battle-card{padding:6px!important}.column{grid-auto-rows:26px!important}.cell{height:26px!important}.enemy-name{font-size:12px}
+.battle-card{padding:8px}
+.key{height:46px}
+.column{grid-auto-rows:28px}
+.cell{height:28px}
+.logo{font-size:60px;margin-top:5px}
+}
+@media(max-height:760px){
+.fighters{min-height:64px!important}.fighters .art.en{height:64px!important}.fighters .art.he{height:54px!important}
+.key{height:37px!important;font-size:21px}.screen{gap:3px!important;padding:6px 12px!important}
+.column{grid-auto-rows:23px!important}.cell{height:23px!important;font-size:17px}
+.math-large{font-size:34px!important}.answer{height:46px!important}.battle-card{padding:5px!important}
+.enemy-name{display:none}.battle-top .muted{display:none}.btn.tiny{min-height:40px!important}.art.hero{height:110px}.art.big{height:150px}
+}
+@media(max-height:680px){
+.fighters{min-height:50px!important}.fighters .art.en{height:50px!important}.fighters .art.he{height:42px!important}
+.key{height:33px!important;font-size:19px}.column{grid-auto-rows:20px!important}.cell{height:20px!important;font-size:15px}
+.hearts .art.sm{height:22px!important}.art.hero{height:90px}.art.big{height:120px}
+}
+</style>
+<script src="/sdk.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ===== Премиум (общий модуль publish\shared\premium\premium.js, копия tools\premium.js, без правок) ===== */
+/* Премиум: общий модуль для браузерных игр на Яндекс Играх.
+   Платный Премиум на срок (30 дней или год), без автопродления: «используемая» покупка, срок считается по серверному
+   времени Яндекса и хранится в облачных данных игрока. Подробно: README.md рядом с этим файлом.
+   Модуль ничего не знает об игре: хранилище, звук и реклама подключаются через init() и несколько вызовов хозяина.
+   Без SDK, без покупок или без созданных товаров в консоли кнопка и карточки скрыты, игра работает как раньше. */
+window.Premium = (function () {
+  "use strict";
+  var DAY = 86400000;
+
+  /* ---- Настройки: все числа и товары в одном месте ---- */
+  var config = {
+    adGapMs: 5 * 60 * 1000,     // интервал полноэкранной рекламы; хозяин читает его при показе (решение владельца 8 ноября: 5 минут)
+    cardEvery: 3,               // карточка «Надоела реклама?» после каждой 3-й показанной полноэкранной рекламы
+    remindDays: 3,              // напоминание о конце Премиума за столько дней и меньше (раз в сутки)
+    pollMs: 60000,              // как часто сверять срок с серверным временем
+    tokensKeep: 20,             // сколько токенов последних покупок помнить
+    products: {                 // id товара в консоли Яндекса → срок
+      premium_30: { days: 30 },
+      premium_365: { days: 365 }
+    },
+    order: ["premium_30", "premium_365"],
+    corner: true,               // кнопка «Премиум» в углу экрана
+    zIndex: 50
+  };
+
+  /* ---- Тексты по умолчанию (нейтральные; не обещать отсутствие чужих блоков рекламы, платформа может показывать свои). Игра подставляет свои финальные тексты. Подмена: Premium.init({ texts: { ru: {...}, en: {...} } }) ---- */
+  var TEXTS = {
+    ru: {
+      btn: "Премиум", btnOn: "Премиум · {0} д.", title: "Премиум",
+      activeUntil: "Активен до {0}. Осталось {1}.",
+      notActive: "Сейчас Премиум не включён.",
+      perks: ["Полноэкранная реклама отключается.", "Награды за ролики выдаются сразу, без просмотра.", "Правила и сложность игры не меняются: Премиум не помогает выигрывать."],
+      p30: "Премиум на 30 дней", p365: "Премиум на год",
+      validTo: "Будет действовать до {0}", buy: "Купить", endBuy: "Купить Премиум", extend: "Продлить",
+      note: "Один платёж, без автопродления: больше ничего не спишется. Если Премиум уже идёт, новый срок добавится к концу.",
+      close: "Закрыть", later: "Не сейчас",
+      adTitle: "Надоела реклама?", adText: "Премиум отключает полноэкранную рекламу, а награды за ролики выдаёт сразу. 30 дней за {0}, не продлевается сам.", adMore: "Узнать про Премиум",
+      soonTitle: "Премиум скоро закончится", soonText: "Осталось {0}. Продлить?",
+      endTitle: "Премиум закончился", endText: "Реклама вернулась. Можно включить Премиум снова.",
+      busy: "Ждём подтверждения оплаты…", done: "Готово! Премиум активен до {0}.",
+      fail: "Покупка не прошла. Деньги не списаны.", saveFail: "Оплата принята, но срок пока не сохранился. Не закрывайте игру, мы повторим при следующем запуске.",
+      d1: "{0} день", d2: "{0} дня", d5: "{0} дней", free: "Ян", lang: "ru-RU"
+    },
+    en: {
+      btn: "Premium", btnOn: "Premium · {0} d", title: "Premium",
+      activeUntil: "Active until {0}. {1} left.",
+      notActive: "Premium is not active.",
+      perks: ["Full-screen ads are disabled.", "Rewards for videos are given instantly, no watching.", "The rules and difficulty stay the same: Premium does not help you win."],
+      p30: "Premium for 30 days", p365: "Premium for a year",
+      validTo: "Will be active until {0}", buy: "Buy", endBuy: "Buy Premium", extend: "Extend",
+      note: "One payment, no auto-renewal: nothing else will be charged. If Premium is already running, the new period is added to the end.",
+      close: "Close", later: "Not now",
+      adTitle: "Tired of ads?", adText: "Premium removes full-screen ads and gives video rewards instantly. 30 days for {0}, no auto-renewal.", adMore: "About Premium",
+      soonTitle: "Premium ends soon", soonText: "{0} left. Extend?",
+      endTitle: "Premium has ended", endText: "Ads are back. You can turn Premium on again.",
+      busy: "Waiting for payment confirmation…", done: "Done! Premium is active until {0}.",
+      fail: "The purchase did not go through. You were not charged.", saveFail: "Payment accepted, but the period is not saved yet. Keep the game open, we will retry on the next start.",
+      d1: "{0} day", d2: "{0} days", d5: "{0} days", free: "Yan", lang: "en-GB"
+    }
+  };
+
+  /* ---- Состояние ---- */
+  var sdk = null, payments = null, store = null;
+  var lang = "ru", texts = TEXTS.ru;
+  var catalog = {};                   // id → описание товара из консоли
+  var st = blank();
+  var off = 0;                        // запасная поправка серверного времени, если serverTime() недоступен
+  var ready = false, canBuy = false, busy = false, chain = Promise.resolve();
+  var listeners = [], pollTimer = 0, lastActive = false;
+  var ui = { corner: null, ov: null, box: null, status: "", mode: "", style: null, lastFocus: null };
+
+  function blank() { return { until: 0, tokens: [], ads: 0, cardAt: 0, remindDay: 0, endShown: 0 }; }
+  function clean(o) {
+    var r = blank();
+    if (!o || typeof o !== "object") return r;
+    r.until = Math.max(0, Number(o.until) || 0);
+    r.tokens = Array.isArray(o.tokens) ? o.tokens.filter(function (t) { return typeof t === "string"; }).slice(-config.tokensKeep) : [];
+    r.ads = Math.max(0, Math.floor(Number(o.ads) || 0));
+    r.cardAt = Math.max(0, Math.floor(Number(o.cardAt) || 0));
+    r.remindDay = Math.max(0, Math.floor(Number(o.remindDay) || 0));
+    r.endShown = Math.max(0, Number(o.endShown) || 0);
+    return r;
+  }
+  function parse(raw) { try { return clean(typeof raw === "string" ? JSON.parse(raw) : raw); } catch (e) { return blank(); } }
+  /* Слияние двух снимков (облако и устройство): срок и счётчики берём большие, токены объединяем.
+     Хозяин вызывает при импорте облака, иначе срок мог бы пропасть при конфликте двух устройств. */
+  function mergeState(a, b) {
+    var x = parse(a), y = parse(b), r = blank(), seen = {};
+    r.until = Math.max(x.until, y.until); r.ads = Math.max(x.ads, y.ads); r.cardAt = Math.max(x.cardAt, y.cardAt);
+    r.remindDay = Math.max(x.remindDay, y.remindDay); r.endShown = Math.max(x.endShown, y.endShown);
+    y.tokens.concat(x.tokens).forEach(function (t) { if (!seen[t]) { seen[t] = 1; r.tokens.push(t); } });
+    r.tokens = r.tokens.slice(-config.tokensKeep);
+    return JSON.stringify(r);
+  }
+  function persist() { try { if (store && store.set) store.set(JSON.stringify(st)); } catch (e) {} }
+  function loadState() { try { st = parse(store && store.get ? store.get() : null); } catch (e) { st = blank(); } }
+
+  /* ---- Серверное время: часы устройства не используем ---- */
+  function now() {
+    if (sdk && typeof sdk.serverTime === "function") {
+      try { var t = sdk.serverTime(); if (typeof t === "number" && t > 0) { off = t - Date.now(); return t; } } catch (e) {}
+    }
+    return Date.now() + off;
+  }
+  function active() { return st.until > now(); }
+  function daysLeft() { var ms = st.until - now(); return ms > 0 ? Math.ceil(ms / DAY) : 0; }
+  function available() { return !!(ready && canBuy); }
+
+  /* ---- Утилиты текста ---- */
+  function fmt(s) { var a = arguments; return String(s).replace(/\{(\d)\}/g, function (m, i) { var v = a[Number(i) + 1]; return v == null ? "" : v; }); }
+  function tx(k) { var v = texts[k]; return v != null ? v : (TEXTS.ru[k] != null ? TEXTS.ru[k] : k); }
+  function plural(n) {
+    if (lang === "en") return fmt(n === 1 ? tx("d1") : tx("d2"), n);
+    var m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return fmt(tx("d1"), n);
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return fmt(tx("d2"), n);
+    return fmt(tx("d5"), n);
+  }
+  function dateStr(ms) {
+    try { return new Date(ms).toLocaleDateString(tx("lang"), { day: "numeric", month: "long", year: "numeric" }).replace(/\s*г\.$/, ""); }   // без «г.», чтобы в конце фразы не было «г..»
+    catch (e) { return new Date(ms).toISOString().slice(0, 10); }
+  }
+  function priceOf(id) { var c = catalog[id]; return c && c.price ? String(c.price) : ""; }
+  function dayIdx() { return Math.floor(now() / DAY); }
+  function emit() { var a = active(); lastActive = a; listeners.slice().forEach(function (f) { try { f(a); } catch (e) {} }); renderCorner(); if (ui.ov && ui.mode === "shop") renderShop(); }
+
+  /* ---- Покупка и начисление: запись в облако подтверждена, и только потом consumePurchase ---- */
+  function grant(p) {
+    var id = p && p.productID, tok = p && p.purchaseToken, prod = config.products[id];
+    if (!prod || !tok) return Promise.resolve(false);
+    if (st.tokens.indexOf(tok) < 0) {
+      var base = Math.max(now(), st.until);
+      st.until = base + prod.days * DAY;
+      st.tokens.push(tok); if (st.tokens.length > config.tokensKeep) st.tokens.shift();
+      persist();
+    }
+    return Promise.resolve(store && store.save ? store.save() : false).then(function (ok) {
+      if (!ok) { var e = new Error("save"); e.code = "save"; throw e; }
+      // срок уже сохранён: если закрыть покупку не вышло, её закроют при следующем запуске, второй раз срок не начислится
+      return Promise.resolve(payments.consumePurchase(tok)).then(function () {}, function () {});
+    }).then(function () { emit(); return true; });
+  }
+  function queue(f) { var r = chain.then(f, f); chain = r.then(function () {}, function () {}); return r; }
+  function checkPurchases() {
+    return queue(function () {
+      return payments.getPurchases().then(function (list) {
+        list = Array.isArray(list) ? list : (list && list.purchases) || [];
+        return list.reduce(function (p, item) { return p.then(function () { return grant(item).catch(function () {}); }); }, Promise.resolve());
+      });
+    }).catch(function () {}).then(function () { emit(); });
+  }
+  function buy(id) {
+    if (busy || !canBuy || !config.products[id]) return Promise.resolve(false);
+    busy = true; setStatus(tx("busy")); renderShop();
+    return queue(function () {
+      return payments.purchase({ id: id, developerPayload: "pm" }).then(function (p) {
+        return grant(p).then(function () { setStatus(fmt(tx("done"), dateStr(st.until))); return true; }, function (e) {
+          setStatus(e && e.code === "save" ? tx("saveFail") : tx("fail")); return false;
+        });
+      }, function () { setStatus(tx("fail")); return false; });
+    }).then(function (r) { busy = false; renderShop(); return r; }, function () { busy = false; renderShop(); return false; });
+  }
+
+  /* ---- Вызовы хозяина ---- */
+  function noteFullscreen() { st.ads++; persist(); }
+  /* Показать карточку на спокойном экране (меню, результат). Возвращает true, если карточка открыта. */
+  function maybeCard() {
+    if (!available() || ui.ov) return false;
+    if (active()) {
+      if (daysLeft() <= config.remindDays && st.remindDay !== dayIdx()) { st.remindDay = dayIdx(); persist(); openCard("soon"); return true; }
+      return false;
+    }
+    if (st.until > 0 && st.endShown !== st.until) { st.endShown = st.until; persist(); openCard("end"); return true; }
+    if (config.cardEvery > 0 && Math.floor(st.ads / config.cardEvery) > Math.floor(st.cardAt / config.cardEvery)) { st.cardAt = st.ads; persist(); openCard("ad"); return true; }
+    return false;
+  }
+
+  /* ---- Интерфейс ---- */
+  var CSS = ".pm-corner{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:max(12px,env(safe-area-inset-right,0px));z-index:var(--pm-z,50);display:inline-flex;align-items:center;gap:5px;" +
+    "min-height:40px;padding:0 12px;border-radius:20px;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:var(--pm-gold,#f2c14e);color:#2a2110;font:600 14px/1 var(--f-display,system-ui,sans-serif);letter-spacing:.02em;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.25)}" +
+    ".pm-corner[hidden]{display:none}.pm-corner.on{background:var(--pm-paper,var(--paper,#f4edd9));color:var(--pm-ink,var(--fg,#22304a))}" +
+    ".pm-corner:focus-visible,.pm-btn:focus-visible,.pm-x:focus-visible{outline:3px solid var(--pm-focus,var(--focus,#1d5cc0));outline-offset:2px}" +
+    ".pm-ov{position:fixed;inset:0;z-index:calc(var(--pm-z,50) + 10);display:grid;place-items:center;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));background:var(--pm-scrim,rgba(20,18,12,.5))}" +
+    ".pm-ov[hidden]{display:none}.pm-box{position:relative;box-sizing:border-box;width:100%;max-width:420px;max-height:calc(100% - 8px);overflow-y:auto;background:var(--pm-paper,var(--paper,#f4edd9));color:var(--pm-ink,var(--fg,#22304a));" +
+    "border:1.5px solid var(--pm-ink,var(--fg,#22304a));border-radius:12px;padding:18px 18px 16px;box-shadow:0 10px 34px rgba(0,0,0,.4);font:15px/1.4 var(--f-body,system-ui,sans-serif);-webkit-user-select:none;user-select:none}" +
+    ".pm-box h2{margin:0 36px 8px 0;font:600 22px/1.2 var(--f-display,system-ui,sans-serif);text-wrap:balance}.pm-box p{margin:0 0 10px}.pm-sub{color:var(--pm-muted,var(--muted,#615d4f));font-size:14px}" +
+    ".pm-x{position:absolute;top:8px;right:8px;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer}" +
+    ".pm-perks{margin:0 0 12px;padding-left:20px}.pm-perks li{margin:0 0 4px}" +
+    ".pm-prod{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:10px 12px;margin:0 0 10px;border:1.5px solid var(--pm-line,var(--line,#b9ab86));border-radius:10px;background:var(--pm-paper2,var(--paper-2,#ebe1c6))}" +
+    ".pm-prod b{font:600 17px/1.2 var(--f-display,system-ui,sans-serif)}.pm-prod .pm-price{font:600 17px/1 var(--f-display,system-ui,sans-serif);font-variant-numeric:tabular-nums;white-space:nowrap}" +
+    ".pm-prod .pm-sub{grid-column:1 / -1}.pm-btn{box-sizing:border-box;min-height:44px;padding:0 16px;border-radius:8px;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:transparent;color:inherit;font:600 16px/1 var(--f-display,system-ui,sans-serif);cursor:pointer}" +
+    ".pm-btn.main{background:var(--pm-red,var(--red,#b3352b));border-color:var(--pm-red,var(--red,#b3352b));color:var(--pm-redink,var(--red-ink,#fff7ea))}.pm-btn:disabled{opacity:.55;cursor:default}" +
+    ".pm-prod .pm-btn{grid-column:1 / -1;width:100%}.pm-row{display:flex;gap:10px;flex-wrap:wrap}.pm-row .pm-btn{flex:1 1 140px}" +
+    ".pm-status{min-height:20px;margin:6px 0 0;font-size:14px;font-style:italic}@media (prefers-reduced-motion:no-preference){.pm-box{animation:pmIn .2s ease-out}}@keyframes pmIn{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}";
+
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function ensureUi() {
+    if (ui.style) return;
+    ui.style = el("style"); ui.style.textContent = CSS; document.head.appendChild(ui.style);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && ui.ov) closeOv(); });
+  }
+  function renderCorner() {
+    if (!config.corner || typeof document === "undefined") return;
+    var show = ready && (canBuy || active());
+    try { document.documentElement.classList.toggle("pm-on", !!show); } catch (e) {}
+    if (!show) { if (ui.corner) ui.corner.hidden = true; return; }
+    ensureUi();
+    if (!ui.corner) {
+      ui.corner = el("button", "pm-corner"); ui.corner.type = "button"; ui.corner.id = "pmCorner";
+      ui.corner.addEventListener("click", function () { openShop(); });
+      document.body.appendChild(ui.corner);
+    }
+    var on = active();
+    ui.corner.hidden = false;
+    ui.corner.classList.toggle("on", on);
+    // звезда и подпись отдельными элементами: хозяин может скрыть подпись на тесном экране (.pm-lbl), кнопка остаётся звездой
+    ui.corner.textContent = "";
+    ui.corner.appendChild(el("span", "pm-st", "★"));
+    ui.corner.appendChild(el("span", "pm-lbl", on ? fmt(tx("btnOn"), daysLeft()) : tx("btn")));
+    ui.corner.setAttribute("aria-label", on ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("btn"));
+  }
+  function setStatus(s) { ui.status = s || ""; var n = ui.box && ui.box.querySelector(".pm-status"); if (n) n.textContent = ui.status; }
+  function mountOv() {
+    ensureUi(); closeOv(true);
+    ui.lastFocus = document.activeElement;
+    ui.ov = el("div", "pm-ov"); ui.ov.setAttribute("role", "dialog"); ui.ov.setAttribute("aria-modal", "true");
+    ui.box = el("div", "pm-box"); ui.ov.appendChild(ui.box);
+    ui.ov.addEventListener("click", function (e) { if (e.target === ui.ov) closeOv(); });
+    document.body.appendChild(ui.ov);
+  }
+  function closeOv(quiet) {
+    if (ui.ov && ui.ov.parentNode) ui.ov.parentNode.removeChild(ui.ov);
+    ui.ov = null; ui.box = null; ui.mode = ""; ui.status = "";
+    if (!quiet && ui.lastFocus && ui.lastFocus.focus) { try { ui.lastFocus.focus({ preventScroll: true }); } catch (e) {} }
+  }
+  function xBtn() { var b = el("button", "pm-x", "×"); b.type = "button"; b.setAttribute("aria-label", tx("close")); b.addEventListener("click", function () { closeOv(); }); return b; }
+  function productCard(id) {
+    var days = config.products[id].days, c = el("div", "pm-prod");
+    var base = Math.max(now(), st.until);
+    c.appendChild(el("b", "", id === "premium_365" ? tx("p365") : tx("p30")));
+    c.appendChild(el("span", "pm-price", priceOf(id) || ""));
+    c.appendChild(el("span", "pm-sub", fmt(tx("validTo"), dateStr(base + days * DAY))));
+    var b = el("button", "pm-btn main", active() ? tx("extend") : tx("buy")); b.type = "button"; b.disabled = busy; b.setAttribute("data-pm-buy", id);
+    b.addEventListener("click", function () { buy(id); });
+    c.appendChild(b);
+    return c;
+  }
+  function renderShop() {
+    if (!ui.box || ui.mode !== "shop") return;
+    var b = ui.box; b.textContent = "";
+    b.appendChild(xBtn());
+    var h = el("h2", "", tx("title")); h.id = "pmTitle"; b.appendChild(h);
+    ui.ov.setAttribute("aria-labelledby", "pmTitle");
+    b.appendChild(el("p", "", active() ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("notActive")));
+    var ul = el("ul", "pm-perks"); texts.perks.forEach(function (s) { ul.appendChild(el("li", "", s)); }); b.appendChild(ul);
+    config.order.forEach(function (id) { if (catalog[id]) b.appendChild(productCard(id)); });
+    b.appendChild(el("p", "pm-sub", tx("note")));
+    var s = el("p", "pm-status", ui.status); s.setAttribute("role", "status"); s.setAttribute("aria-live", "polite"); b.appendChild(s);
+  }
+  function openShop() {
+    if (!ready || (!canBuy && !active())) return;
+    mountOv(); ui.mode = "shop"; renderShop();
+    var f = ui.box.querySelector(".pm-prod .pm-btn") || ui.box.querySelector(".pm-x"); if (f) try { f.focus({ preventScroll: true }); } catch (e) {}
+  }
+  function openCard(kind) {
+    mountOv(); ui.mode = "card:" + kind;
+    var b = ui.box, p30 = priceOf("premium_30");
+    var title = kind === "ad" ? tx("adTitle") : kind === "soon" ? tx("soonTitle") : tx("endTitle");
+    var text = kind === "ad" ? fmt(tx("adText"), p30 || ("99 " + tx("free"))) : kind === "soon" ? fmt(tx("soonText"), plural(daysLeft())) : tx("endText");
+    b.appendChild(xBtn());
+    var h = el("h2", "", title); h.id = "pmTitle"; b.appendChild(h); ui.ov.setAttribute("aria-labelledby", "pmTitle");
+    b.appendChild(el("p", "", text));
+    var row = el("div", "pm-row");
+    var go = el("button", "pm-btn main", kind === "ad" ? tx("adMore") : (kind === "soon" ? tx("extend") : tx("endBuy"))); go.type = "button";
+    go.addEventListener("click", function () { openShop(); });
+    var no = el("button", "pm-btn", tx("later")); no.type = "button"; no.addEventListener("click", function () { closeOv(); });
+    row.appendChild(go); row.appendChild(no); b.appendChild(row);
+    try { no.focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  /* ---- Запуск ---- */
+  function setLang(l) {
+    lang = l === "en" ? "en" : "ru"; texts = Object.assign({}, TEXTS.ru, TEXTS[lang] || {});
+    renderCorner(); if (ui.ov) { if (ui.mode === "shop") renderShop(); else { var m = ui.mode.split(":")[1]; openCard(m); } }
+  }
+  function tick() {
+    var a = active();
+    if (a !== lastActive) emit(); else renderCorner();
+  }
+  function init(o) {
+    o = o || {};
+    if (o.config) Object.keys(o.config).forEach(function (k) { config[k] = o.config[k]; });
+    if (o.texts) Object.keys(o.texts).forEach(function (l) { TEXTS[l] = Object.assign(TEXTS[l] || {}, o.texts[l]); });
+    sdk = o.sdk || null; store = o.store || null;
+    setLang(o.lang || lang);
+    loadState();
+    ready = true; lastActive = active();
+    try { document.addEventListener("visibilitychange", function () { if (!document.hidden) tick(); }); } catch (e) {}
+    clearInterval(pollTimer); pollTimer = setInterval(tick, config.pollMs);
+    renderCorner();
+    if (!sdk || typeof sdk.getPayments !== "function") return Promise.resolve(false);
+    return sdk.getPayments({ signed: false }).then(function (pay) {
+      payments = pay;
+      return pay.getCatalog();
+    }).then(function (list) {
+      list = Array.isArray(list) ? list : [];
+      list.forEach(function (c) { if (c && config.products[c.id]) catalog[c.id] = c; });
+      canBuy = !!(store && store.save && config.order.some(function (id) { return catalog[id]; }));
+      renderCorner();
+      return canBuy ? checkPurchases().then(function () { return true; }) : false;
+    }).catch(function () { canBuy = false; renderCorner(); return false; });
+  }
+
+  return {
+    config: config,
+    init: init, setLang: setLang,
+    active: active, until: function () { return st.until; }, daysLeft: daysLeft, available: available,
+    noteFullscreen: noteFullscreen, maybeCard: maybeCard, openShop: openShop,
+    onChange: function (f) { if (typeof f === "function") listeners.push(f); },
+    mergeState: mergeState,
+    refresh: function () { return canBuy ? checkPurchases() : Promise.resolve(); },
+    _state: function () { return JSON.parse(JSON.stringify(st)); }
+  };
+})();
+
+</script>
+<script>
+/* ===== Слой платформы (Яндекс Игры: SDK, облако, ролики; без SDK localStorage) ===== */
+window.PF = (function () {
+  'use strict';
+  var ysdk = null, player = null, sdkOk = false, adBusy = false, tabHidden = false, apiPaused = false;
+  var mem = {}, dirty = false, timer = 0, T_KEY = 'stb-syncT';
+  var self = { onPause: function () {} };
+  function ls(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+  self.get = function (k) { if (k in mem) return mem[k]; try { return localStorage.getItem(k); } catch (e) { return null; } };
+  self.put = function (k, v) { v = String(v); mem[k] = v; ls(k, v); if (k.indexOf('stb-') === 0 && k !== T_KEY) { ls(T_KEY, String(Date.now())); dirty = true; if (!timer && player) timer = setTimeout(flush, 2500); } };
+  self.del = function (k) { delete mem[k]; ls(k, null); };
+  function snap() { var d = {}; Object.keys(mem).forEach(function (k) { if (k.indexOf('stb-') === 0 && k !== T_KEY) d[k] = mem[k]; }); return { v: 1, _t: Date.now(), d: d }; }
+  self.saveNow = function () { clearTimeout(timer); timer = 0; if (!player) return Promise.resolve(false); try { return Promise.resolve(player.setData(snap(), true)).then(function () { dirty = false; return true; }, function () { return false; }); } catch (e) { return Promise.resolve(false); } };
+  self.sdk = function () { return ysdk; };
+  self.premium = function () { try { return !!(window.Premium && window.Premium.active()); } catch (e) { return false; } };
+  function flush() { clearTimeout(timer); timer = 0; if (!dirty || !player) return; dirty = false; var d = {}; Object.keys(mem).forEach(function (k) { if (k.indexOf('stb-') === 0 && k !== T_KEY) d[k] = mem[k]; }); try { player.setData({ v: 1, _t: Date.now(), d: d }, false); } catch (e) {} }
+  self.paused = function () { return adBusy || tabHidden || apiPaused; };
+  function changed() { try { self.onPause(self.paused()); } catch (e) {} }
+  document.addEventListener('visibilitychange', function () { tabHidden = document.hidden; if (tabHidden) flush(); changed(); });
+  self.setPlaying = function (on) { try { var g = ysdk && ysdk.features && ysdk.features.GameplayAPI; if (g) { on ? g.start() : g.stop(); } } catch (e) {} };
+  self.lang = function () { try { return ysdk && ysdk.environment && ysdk.environment.i18n && ysdk.environment.i18n.lang; } catch (e) { return null; } };
+  self.ready = function () { try { var l = ysdk && ysdk.features && ysdk.features.LoadingAPI; if (l) l.ready(); } catch (e) {} };
+  self.init = function () {
+    if (!window.YaGames || !window.YaGames.init) return Promise.resolve();
+    return new Promise(function (resolve) {
+      var to = setTimeout(resolve, 4000);
+      window.YaGames.init().then(function (sdk) {
+        ysdk = sdk; sdkOk = true;
+        try { sdk.on('game_api_pause', function () { apiPaused = true; changed(); }); sdk.on('game_api_resume', function () { apiPaused = false; changed(); }); } catch (e) {}
+        return sdk.getPlayer({ scopes: false }).then(function (p) { player = p; return p.getData(); }).then(function (data) {
+          var PK = 'stb-premium', cp = data && data.d && typeof data.d[PK] === 'string' ? data.d[PK] : null, lp = self.get(PK);
+          if (data && data.d && (data._t || 0) > (Number(self.get(T_KEY)) || 0)) { Object.keys(data.d).forEach(function (k) { mem[k] = data.d[k]; ls(k, data.d[k]); }); ls(T_KEY, String(data._t)); }
+          if ((cp || lp) && window.Premium) { var m = window.Premium.mergeState(lp, cp); mem[PK] = m; ls(PK, m); if (m !== cp) { dirty = true; if (!timer) timer = setTimeout(flush, 2500); } }
+        }, function () {});
+      }).then(function () { clearTimeout(to); resolve(); }, function () { clearTimeout(to); resolve(); });
+    });
+  };
+  self.canReward = function () { return !!(self.premium() || sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo); };
+  self.rewarded = function (done) {
+    if (self.premium()) { done(true); return; }
+    if (!self.canReward()) { done(false); return; }
+    var fin = false, got = false; function end() { if (fin) return; fin = true; adBusy = false; changed(); done(got); }
+    adBusy = true; changed();
+    try { ysdk.adv.showRewardedVideo({ callbacks: { onRewarded: function () { got = true; }, onClose: end, onError: end } }); } catch (e) { end(); }
+  };
+  return self;
+})();
+</script>
+<script>
+"use strict";
+(()=>{
+/*STORY*/
+const STORY = {
+  intro: [
+    ["Рассказчик", "В полночь Кристалл Умножения раскололся. Шесть осколков исчезли."],
+    ["Нульморт", "Я сотру все числа! Тогда никто больше не потеряет того, кто ему дорог."],
+    ["Рыцарь Артём", "Мы вернём осколки. Но почему он говорит о потере?"],
+    ["Кот Пифагор", "Потому что однажды исчезла Единица. И кто-то из нас знает правду."]
+  ],
+
+  levels: [
+    {
+      n: 1,
+      title: "Замок Искр — Площадь погасших фонарей",
+      scene: [
+        ["Рассказчик", "На площади гаснут фонари. Жители прячут последние светящиеся числа."],
+        ["Дракончик Искра", "Семизуб украл огонь! Без него город скоро замёрзнет."],
+        ["Кот Пифагор", "Странно. На стене знак тайного хранителя. Я уже видел его."]
+      ],
+      choice: {
+        q: "У фонаря плачет маленький торговец. Что сделаем?",
+        opts: [
+          {
+            t: "Помочь торговцу зажечь фонарь",
+            r: ["Дракончик Искра", "Спасибо! Возьми искру жизни. Она защитит тебя!"],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Забрать волшебный фонарь для похода",
+            r: ["Робот Байт", "Его свет покажет слабое место врага."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Realistic dark fantasy illustration, medieval town square at twilight, extinguished lanterns, frightened merchants, young knight in blue steel armor, small green dragon, mysterious glowing numerical runes on cobblestones, cinematic lighting, landscape 3:2, no text"
+    },
+    {
+      n: 2,
+      title: "Замок Искр — Улица семи колоколов",
+      scene: [
+        ["Рассказчик", "Семь колоколов звонят сами. Каждый удар превращает камень в пепел."],
+        ["Лиса Алиса", "Семизуб расставил ловушку. Но под мостом застрял мальчик!"],
+        ["Рыцарь Артём", "Колокола уже просыпаются. Нужно решать быстро."]
+      ],
+      choice: {
+        q: "Как пройти через улицу?",
+        opts: [
+          {
+            t: "Сначала спасти мальчика",
+            r: ["Лиса Алиса", "Ты не оставил его! Он дарит нам защитный талисман."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Пройти тайным ходом и не рисковать",
+            r: ["Кот Пифагор", "Я знаю ритм колоколов. Подскажу, когда двигаться."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Photorealistic dark fantasy medieval street with seven giant bronze bells suspended between towers, glowing cracks in stone, fox-featured girl in green cloak, young knight rescuing a child near an ancient bridge, dramatic storm light, landscape 3:2, no text"
+    },
+    {
+      n: 3,
+      title: "Замок Искр — Рынок украденных ответов",
+      scene: [
+        ["Рассказчик", "На рынке торговцы продают ответы, украденные из школьных тетрадей."],
+        ["Волшебница Мира", "Без ответов дети забудут, как умножать!"],
+        ["Торговец", "Семизуб платит за каждую ошибку. Но я могу помочь вам."]
+      ],
+      choice: {
+        q: "Торговец предлагает сделку. Что выберем?",
+        opts: [
+          {
+            t: "Вернуть детям украденные тетради",
+            r: ["Волшебница Мира", "Дети благодарят нас и дарят сердечный оберег."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Обменять монеты на секретный ответ",
+            r: ["Кот Пифагор", "Торговец рассказал, как распознать обман Семизуба."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Cinematic realistic dark fantasy bazaar, crooked medieval stalls, stolen glowing school notebooks, shadowy merchants, young sorceress in purple hat, gray cat wearing round spectacles, blue armored knight, magical amber lanterns, landscape 3:2, no text"
+    },
+    {
+      n: 4,
+      title: "Замок Искр — Мост сломанных обещаний",
+      scene: [
+        ["Рассказчик", "На мосту висит портрет Нульморта. Рядом нарисован сияющий друг."],
+        ["Фея Цифра", "Это Единица! Они когда-то вместе охраняли Кристалл."],
+        ["Кот Пифагор", "Не трогайте портрет! В нём заперта память."]
+      ],
+      choice: {
+        q: "Портрет начинает рассыпаться. Как поступим?",
+        opts: [
+          {
+            t: "Сохранить портрет и память о друге",
+            r: ["Фея Цифра", "Память согрела мост. Нам досталась частица защиты."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Изучить тайный знак на обратной стороне",
+            r: ["Кот Пифагор", "Знак открывает секрет боевого построения Семизуба."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Realistic dark fantasy stone bridge over a glowing abyss, torn magical portrait of a young shadow sorcerer beside a luminous humanoid spirit made of light, tiny fairy, gray scholarly cat, mysterious runes, moonlight, landscape 3:2, no text"
+    },
+    {
+      n: 5,
+      title: "Замок Искр — Семизуб и первый осколок",
+      scene: [
+        ["Семизуб", "Семь зубцов моей короны раздавят ваши жалкие надежды!"],
+        ["Рыцарь Артём", "Верни осколок! Мы знаем, что Нульморт скрывает правду."],
+        ["Семизуб", "Он не уничтожил Единицу. Он сам запер её, испугавшись потери!"]
+      ],
+      choice: {
+        q: "Семизуб побеждён, но просит пощады. Что ответим?",
+        opts: [
+          {
+            t: "Пощадить Семизуба и выслушать его",
+            r: ["Семизуб", "Первый осколок ваш. Берегите тех, кто ещё вам верит."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Потребовать осколок и секрет следующего замка",
+            r: ["Семизуб", "Забирайте! Двурог прячет слабость в зеркальных рядах."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Epic photorealistic dark fantasy boss battle in ruined fire castle throne room, terrifying armored villain with seven jagged crown spikes, young blue armored knight, glowing orange crystal shard floating above black throne, fire and smoke, cinematic landscape 3:2, no text"
+    },
+    {
+      n: 6,
+      title: "Замок Двух Рядов — Зеркальная площадь",
+      scene: [
+        ["Рассказчик", "На площади каждое отражение живёт собственной жизнью."],
+        ["Робот Байт", "В зеркале я вижу себя рядом с Нульмортом. Это невозможно!"],
+        ["Лиса Алиса", "Или зеркало показывает то, что ты скрываешь."]
+      ],
+      choice: {
+        q: "Зеркальный Байт просит выпустить его. Что сделаем?",
+        opts: [
+          {
+            t: "Выслушать отражение и помочь ему",
+            r: ["Робот Байт", "Оно показало мне защитный код. Я стал сильнее!"],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Закрыть зеркало и изучить его механизм",
+            r: ["Робот Байт", "Механизм выдаёт полезную подсказку для боя."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Realistic dark fantasy mirror plaza, medieval gothic architecture, towering enchanted mirrors reflecting a silver robot standing beside a sinister dark sorcerer, fox-featured girl in green cloak, eerie blue moonlight, landscape 3:2, no text"
+    },
+    {
+      n: 7,
+      title: "Замок Двух Рядов — Переулок двойников",
+      scene: [
+        ["Рассказчик", "Из тумана выходят две одинаковые феи Цифры."],
+        ["Фея Цифра", "Одна из нас подделка! Не верьте её словам!"],
+        ["Фея Цифра", "Настоящая фея знает: Нульморт когда-то спас весь мир."]
+      ],
+      choice: {
+        q: "Как проверить двойников?",
+        opts: [
+          {
+            t: "Дать обеим феям шанс объясниться",
+            r: ["Фея Цифра", "Добро разрушило чары. Настоящая фея дарит сердце."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Использовать проверку Робота Байта",
+            r: ["Робот Байт", "Подделка найдена. Я вычислил её боевой секрет."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Photorealistic dark fantasy foggy medieval alley, two identical tiny luminous fairies facing each other, blue armored knight and silver robot investigating, distorted shadows on cobblestones, mysterious purple magical reflections, landscape 3:2, no text"
+    },
+    {
+      n: 8,
+      title: "Замок Двух Рядов — Улица исчезнувших имён",
+      scene: [
+        ["Рассказчик", "Жители забывают свои имена. На дверях остаются пустые таблички."],
+        ["Страж Гром", "Двурог стирает память, чтобы никто не помнил Единицу."],
+        ["Кот Пифагор", "Некоторые воспоминания опасны. Особенно мои."]
+      ],
+      choice: {
+        q: "Старушка просит вернуть ей имя. Как поступим?",
+        opts: [
+          {
+            t: "Помочь ей вспомнить прошлое",
+            r: ["Страж Гром", "Она вспомнила своё имя и вручила нам оберег."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Сначала найти источник заклинания",
+            r: ["Волшебница Мира", "Я раскрыла секрет чар и получила подсказку."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Cinematic realistic dark fantasy medieval street, elderly woman beside a house with blank wooden signs, spectral letters dissolving into blue mist, massive golden armored guardian, scholarly gray cat, unsettling magical atmosphere, landscape 3:2, no text"
+    },
+    {
+      n: 9,
+      title: "Замок Двух Рядов — Башня двух дверей",
+      scene: [
+        ["Рассказчик", "Перед героями две двери: одна ведёт к пленникам, другая к Двурогу."],
+        ["Лиса Алиса", "Слышите? За первой дверью зовут на помощь!"],
+        ["Кот Пифагор", "Если задержимся, Двурог узнает о нашем приближении."]
+      ],
+      choice: {
+        q: "Какую дверь откроем первой?",
+        opts: [
+          {
+            t: "Освободить пленников",
+            r: ["Лиса Алиса", "Мы спасли жителей! Они подарили нам сердце."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Открыть проход к Двурогу",
+            r: ["Кот Пифагор", "Мы нашли тайный чертёж его доспехов."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Realistic dark fantasy gothic tower interior with two monumental enchanted doors, one glowing warm gold with trapped silhouettes, another radiating cold violet darkness, blue armored knight, orange fox girl, gray cat, dramatic torchlight, landscape 3:2, no text"
+    },
+    {
+      n: 10,
+      title: "Замок Двух Рядов — Двурог и второе отражение",
+      scene: [
+        ["Двурог", "Вы видели двойников, но не заметили предателя рядом!"],
+        ["Робот Байт", "Он лжёт! Мои воспоминания повреждены, но я верен друзьям."],
+        ["Двурог", "Твой создатель служил Нульморту. А Пифагор знает гораздо больше!"]
+      ],
+      choice: {
+        q: "Двурог отдаёт осколок и предлагает тайный договор.",
+        opts: [
+          {
+            t: "Отказаться от сделки и простить его",
+            r: ["Двурог", "Второй осколок ваш. Пифагор когда-то охранял Единицу."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Потребовать доказательства против Пифагора",
+            r: ["Двурог", "Вот запись: Пифагор открывал Нульморту тайный проход."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Epic realistic dark fantasy throne chamber filled with giant mirrors, menacing horned armored sorcerer with two black horns, silver robot and gray cat with spectacles facing suspicion, luminous blue crystal shard, dramatic magical reflections, landscape 3:2, no text"
+    },
+    {
+      n: 11,
+      title: "Замок Переносов — Площадь падающих цифр",
+      scene: [
+        ["Рассказчик", "С неба падают тяжёлые каменные цифры. Улицы рушатся."],
+        ["Волшебница Мира", "Переносий превратил ошибки вычислений в настоящие камни!"],
+        ["Кот Пифагор", "Я служил Нульморту. Но это было задолго до его злодеяний."]
+      ],
+      choice: {
+        q: "Герои требуют объяснений. Что скажем Пифагору?",
+        opts: [
+          {
+            t: "Дать Пифагору возможность рассказать правду",
+            r: ["Кот Пифагор", "Спасибо за доверие. Я сохраню вам сердце."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Потребовать раскрыть все секреты немедленно",
+            r: ["Кот Пифагор", "Я расскажу, как обезвредить ближайшую ловушку."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Photorealistic dark fantasy medieval square under storm clouds, enormous carved stone numerals falling from sky, purple magical explosions, gray cat with spectacles confessing to young knight and sorceress, dramatic rubble, landscape 3:2, no text"
+    },
+    {
+      n: 12,
+      title: "Замок Переносов — Улица украденных разрядов",
+      scene: [
+        ["Рассказчик", "На улице пропадают десятки и сотни. Дома становятся крошечными."],
+        ["Робот Байт", "Я обнаружил тайный сигнал. Его отправляют из нашей команды!"],
+        ["Фея Цифра", "Но кто передаёт Нульморту сведения о каждом нашем шаге?"]
+      ],
+      choice: {
+        q: "На крыше найден передатчик. Что с ним сделать?",
+        opts: [
+          {
+            t: "Отключить его и предупредить жителей",
+            r: ["Фея Цифра", "Мы защитили город. Жители дарят нам сердце."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Перехватить сигнал и прочитать сообщение",
+            r: ["Робот Байт", "В сообщении указана слабость следующего врага."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Realistic dark fantasy medieval street where buildings shrink under magical distortion, glowing numerical symbols flying through air, silver robot discovering sinister crystal transmitter on rooftop, tiny fairy hovering nearby, landscape 3:2, no text"
+    },
+    {
+      n: 13,
+      title: "Замок Переносов — Подземелье потерянных друзей",
+      scene: [
+        ["Рассказчик", "Под площадью герои находят камеру с призрачным силуэтом Единицы."],
+        ["Единица", "Нульморт не потерял меня. Он сам закрыл дверь между нами."],
+        ["Кот Пифагор", "Я помог ему запечатать её. И до сих пор жалею об этом."]
+      ],
+      choice: {
+        q: "Призрак Единицы просит передать Нульморту послание.",
+        opts: [
+          {
+            t: "Пообещать передать послание",
+            r: ["Единица", "Скажите ему, что я всё ещё жду. Возьмите моё сердце света."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Сначала спросить, как разрушить печать",
+            r: ["Единица", "Шесть осколков откроют дверь. Я покажу её слабое место."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Cinematic photorealistic dark fantasy underground prison beneath medieval castle, luminous humanlike spirit formed from a single vertical beam of golden light behind magical barrier, gray cat in spectacles, blue armored knight, ancient runes, landscape 3:2, no text"
+    },
+    {
+      n: 14,
+      title: "Замок Переносов — Мост предательства",
+      scene: [
+        ["Рассказчик", "В полночь Пифагор исчезает с двумя осколками."],
+        ["Лиса Алиса", "Он предал нас! Я видела, как он вошёл в портал Нульморта!"],
+        ["Рыцарь Артём", "Пифагор оставил записку: «Не ищите меня до рассвета»."]
+      ],
+      choice: {
+        q: "Как поступим после исчезновения Пифагора?",
+        opts: [
+          {
+            t: "Поверить, что у него есть причина",
+            r: ["Волшебница Мира", "Надежда поддерживает нас. Я создам защитное сердце."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Найти след портала и подготовить засаду",
+            r: ["Робот Байт", "Я восстановил маршрут и узнал секрет стражей."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Realistic dark fantasy broken stone bridge over bottomless mist, gray scholarly cat secretly entering swirling black portal carrying two glowing crystal shards, fox-featured girl watching in shock, moonlit medieval towers, landscape 3:2, no text"
+    },
+    {
+      n: 15,
+      title: "Замок Переносов — Переносий и третий осколок",
+      scene: [
+        ["Переносий", "Пифагор уже отдал вашему врагу два осколка! Вы проиграли!"],
+        ["Рыцарь Артём", "Даже без них мы не позволим тебе уничтожить город."],
+        ["Переносий", "Нульморт запер Единицу, чтобы спасти её от древнего Пустоцвета!"]
+      ],
+      choice: {
+        q: "Переносий побеждён и отдаёт третий осколок. Что дальше?",
+        opts: [
+          {
+            t: "Освободить Переносия от проклятия",
+            r: ["Переносий", "Спасибо. Пустоцвет питается страхом. Я дарю вам защиту."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Заставить его раскрыть путь к Нульморту",
+            r: ["Переносий", "Через Большие Числа идёт секретный тоннель."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Epic realistic dark fantasy boss battle, towering armored sorcerer controlling floating stone number blocks and shifting castle walls, blue steel knight confronting him, bright emerald crystal shard above shattered altar, cinematic landscape 3:2, no text"
+    },
+    {
+      n: 16,
+      title: "Замок Больших Чисел — Проспект великанов",
+      scene: [
+        ["Рассказчик", "Гигантские стражи шагают по проспекту. Каждый несёт украденное число."],
+        ["Страж Гром", "Они слишком велики даже для меня. Но я знаю, как их остановить."],
+        ["Дракончик Искра", "Смотрите! Один великан плачет. Его заставили служить Трёхглаву."]
+      ],
+      choice: {
+        q: "Перед нами заколдованный великан. Что сделаем?",
+        opts: [
+          {
+            t: "Помочь великану освободиться",
+            r: ["Страж Гром", "Он благодарен и делится своей силой защиты."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Обойти великана и найти слабое место",
+            r: ["Робот Байт", "Его броня скрывает секретную схему. Я её запомнил."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Photorealistic dark fantasy monumental medieval avenue, enormous enchanted stone giants carrying luminous numerical relics, one sorrowful giant kneeling, massive golden armored guardian and tiny green dragon, stormy sky, landscape 3:2, no text"
+    },
+    {
+      n: 17,
+      title: "Замок Больших Чисел — Библиотека запретной истории",
+      scene: [
+        ["Рассказчик", "В библиотеке лежит книга, которую Нульморт приказал уничтожить."],
+        ["Волшебница Мира", "Здесь сказано: Пустоцвет родился из первой неправильной клятвы."],
+        ["Фея Цифра", "Нульморт поклялся никогда не терять Единицу. Клятва стала ловушкой."]
+      ],
+      choice: {
+        q: "Книга начинает гореть холодным пламенем. Что спасём?",
+        opts: [
+          {
+            t: "Сохранить историю Единицы",
+            r: ["Волшебница Мира", "Истина уцелела. Магия книги дарит нам сердце."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Скопировать страницу о слабости Пустоцвета",
+            r: ["Фея Цифра", "Теперь мы знаем, как защититься от его обмана."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Realistic dark fantasy ancient forbidden library with towering shelves, open illuminated book showing abstract golden magical shapes, cold blue flames consuming scrolls, young purple-hatted sorceress and tiny fairy, cinematic landscape 3:2, no text"
+    },
+    {
+      n: 18,
+      title: "Замок Больших Чисел — Площадь трёх корон",
+      scene: [
+        ["Рассказчик", "На площади стоят три трона. Каждый обещает герою власть."],
+        ["Трёхглав", "Кто сядет на трон, станет сильнее. Но забудет одного друга!"],
+        ["Рыцарь Артём", "Никакая сила не стоит памяти о друзьях."]
+      ],
+      choice: {
+        q: "Троны предлагают опасный подарок. Что выберем?",
+        opts: [
+          {
+            t: "Разрушить чары и освободить пленников",
+            r: ["Страж Гром", "Ты выбрал друзей. Освобождённые дарят нам сердце."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Исследовать троны, не принимая их дар",
+            r: ["Робот Байт", "Я нашёл механизм, управляющий защитой Трёхглава."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Cinematic realistic dark fantasy gothic plaza with three ominous black thrones beneath floating golden crowns, gigantic three-headed armored shadow looming above, brave young knight in blue steel armor, eerie violet mist, landscape 3:2, no text"
+    },
+    {
+      n: 19,
+      title: "Замок Больших Чисел — Возвращение предателя",
+      scene: [
+        ["Рассказчик", "Пифагор возвращается раненым. Двух осколков при нём больше нет."],
+        ["Кот Пифагор", "Я отдал их Нульморту. Он обещал показать мне живую Единицу."],
+        ["Лиса Алиса", "Ты продал нашу надежду! Почему мы должны тебе верить?"]
+      ],
+      choice: {
+        q: "Пифагор просит остаться с командой. Что решим?",
+        opts: [
+          {
+            t: "Простить Пифагора и дать ему шанс",
+            r: ["Кот Пифагор", "Я верну доверие делом. Примите моё защитное сердце."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Оставить его под наблюдением",
+            r: ["Кот Пифагор", "Справедливо. Я раскрою секрет доспехов Трёхглава."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Photorealistic dark fantasy ruined castle courtyard at dawn, exhausted gray cat wearing cracked round spectacles returning to suspicious companions, orange fox-featured girl confronting him, young knight, silver robot, emotional cinematic lighting, landscape 3:2, no text"
+    },
+    {
+      n: 20,
+      title: "Замок Больших Чисел — Трёхглав и четвёртый осколок",
+      scene: [
+        ["Трёхглав", "Три головы знают три истины. Ваш друг предал вас ради Единицы!"],
+        ["Кот Пифагор", "Да. Но Нульморт обманул меня. Единица заперта в самом Кристалле."],
+        ["Трёхглав", "Четвёртый осколок ваш. Но Пустоцвет уже просыпается!"]
+      ],
+      choice: {
+        q: "Трёхглав просит снять проклятие с его трёх голов.",
+        opts: [
+          {
+            t: "Освободить Трёхглава от проклятия",
+            r: ["Трёхглав", "Я снова могу думать сам. Примите дар трёх сердец."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Потребовать карту последнего убежища",
+            r: ["Трёхглав", "Вот путь к Замку Процентов и тайна его стражей."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Epic photorealistic dark fantasy throne hall, colossal three-headed armored warlord kneeling before blue steel knight, luminous violet crystal shard above fractured throne, gray cat watching anxiously, three huge stone crowns, dramatic landscape 3:2, no text"
+    },
+    {
+      n: 21,
+      title: "Замок Процентов — Площадь отнятых долей",
+      scene: [
+        ["Рассказчик", "Процентор забирает у жителей долю их сил. Город слабеет."],
+        ["Фея Цифра", "Он крадёт даже радость. Люди перестали улыбаться!"],
+        ["Робот Байт", "Пустоцвет растёт. Он питается каждым несправедливым поступком."]
+      ],
+      choice: {
+        q: "Жители просят вернуть украденную силу.",
+        opts: [
+          {
+            t: "Поделиться с жителями запасом магии",
+            r: ["Фея Цифра", "Их благодарность вернулась к нам защитным сердцем."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Найти устройство, собирающее силу",
+            r: ["Робот Байт", "Я вычислил, как устроена защита Процентора."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Realistic dark fantasy medieval market square, sinister machines draining glowing golden energy from frightened townspeople, purple-robed sorceress, small luminous fairy, silver robot, bleak yet beautiful cinematic lighting, landscape 3:2, no text"
+    },
+    {
+      n: 22,
+      title: "Замок Процентов — Улица честных сделок",
+      scene: [
+        ["Рассказчик", "Торговец предлагает вернуть городу свет за половину запасов."],
+        ["Лиса Алиса", "Он выглядит испуганным. Возможно, Процентор заставил его обманывать."],
+        ["Страж Гром", "За лавкой прячутся голодные дети. Им нужна помощь."]
+      ],
+      choice: {
+        q: "Как поступим с торговцем?",
+        opts: [
+          {
+            t: "Накормить детей и помочь торговцу",
+            r: ["Лиса Алиса", "Торговец раскаялся и подарил нам сердце."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Разоблачить обман и забрать схему машины",
+            r: ["Робот Байт", "Схема показывает секрет защитного поля врага."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Photorealistic dark fantasy medieval merchant street, frightened trader beside a crooked stall, hungry children sheltered beneath awning, fox-featured girl in green cloak, huge golden armored guardian, warm lanterns against ominous sky, landscape 3:2, no text"
+    },
+    {
+      n: 23,
+      title: "Замок Процентов — Зал разделённых сердец",
+      scene: [
+        ["Рассказчик", "В зале висит портрет Нульморта и Единицы до их ссоры."],
+        ["Кот Пифагор", "Я был свидетелем. Нульморт испугался, что Единица уйдёт навсегда."],
+        ["Волшебница Мира", "Он запер друга ради защиты. Но этим создал Пустоцвета."]
+      ],
+      choice: {
+        q: "Магия позволяет услышать голос прошлого. Что спросим?",
+        opts: [
+          {
+            t: "Спросить, чего на самом деле хотела Единица",
+            r: ["Единица", "Я хотела быть свободной и остаться другом. Возьмите мою защиту."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Спросить, как разрушить печать Нульморта",
+            r: ["Единица", "Шесть осколков и верный расчёт откроют путь ко мне."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Realistic dark fantasy chamber of memories, huge magical portrait of young dark sorcerer and radiant golden spirit before their tragic separation, gray scholarly cat and young purple-hatted wizard watching, floating fragments of crystal, landscape 3:2, no text"
+    },
+    {
+      n: 24,
+      title: "Замок Процентов — Ночь тайного послания",
+      scene: [
+        ["Рассказчик", "Ночью Байт перехватывает сообщение Нульморта, адресованное Пифагору."],
+        ["Нульморт", "Приведи героев в Цитадель. Только их сила сможет открыть Кристалл."],
+        ["Кот Пифагор", "Он использует нас! Но внутри Кристалла действительно жива Единица."]
+      ],
+      choice: {
+        q: "Нульморт предлагает обменять осколки на свободу Единицы.",
+        opts: [
+          {
+            t: "Попытаться договориться без обмана",
+            r: ["Кот Пифагор", "Я передам твои слова. Ты вернул мне надежду."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Отправить ложный ответ и подготовить ловушку",
+            r: ["Робот Байт", "Нульморт раскрыл часть своего плана. Это поможет в бою."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Cinematic photorealistic dark fantasy camp at night beneath ruined castle towers, silver robot projecting ominous holographic image of dark sorcerer, gray cat with spectacles, blue knight and companions listening, storm clouds, landscape 3:2, no text"
+    },
+    {
+      n: 25,
+      title: "Замок Процентов — Процентор и пятый осколок",
+      scene: [
+        ["Процентор", "Я отниму вашу силу по частям, пока не останется ничего!"],
+        ["Рыцарь Артём", "Ты можешь отнять силы, но не нашу дружбу."],
+        ["Процентор", "Пятый осколок ваш! Но шестой Нульморт держит в своём сердце."]
+      ],
+      choice: {
+        q: "Процентор побеждён. Его пленники ждут освобождения.",
+        opts: [
+          {
+            t: "Освободить пленников и простить Процентора",
+            r: ["Процентор", "Я верну украденную силу. Возьмите сердце благодарности."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Забрать карту защиты Цитадели",
+            r: ["Процентор", "Вот карта. Нульморт слаб перед светом настоящей Единицы."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Epic photorealistic dark fantasy boss battle in ruined treasury, sinister armored sorcerer controlling floating luminous fragments of golden energy, blue knight with crystal weapon, fifth radiant crystal shard above dark altar, cinematic landscape 3:2, no text"
+    },
+    {
+      n: 26,
+      title: "Цитадель Нульморта — Ворота пустоты",
+      scene: [
+        ["Рассказчик", "Перед Цитаделью числа исчезают прямо с каменных стен."],
+        ["Нульморт", "Вы собрали пять осколков. Принесите их мне, и Единица вернётся."],
+        ["Кот Пифагор", "Не верьте обещанию. Он хочет открыть Кристалл чужими руками."]
+      ],
+      choice: {
+        q: "У ворот стоят заколдованные стражи. Как пройти?",
+        opts: [
+          {
+            t: "Освободить стражей от власти Нульморта",
+            r: ["Страж Гром", "Они снова свободны и передают нам защитное сердце."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Найти обходной путь через старые стены",
+            r: ["Лиса Алиса", "Я обнаружила тайный проход и подсказку к бою."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Photorealistic dark fantasy black citadel gates, enormous gothic towers dissolving into magical void, sinister dark sorcerer silhouette high above, blue armored knight with companions, enchanted stone guards, lightning and mist, landscape 3:2, no text"
+    },
+    {
+      n: 27,
+      title: "Цитадель Нульморта — Галерея утраченной Единицы",
+      scene: [
+        ["Рассказчик", "В галерее оживают воспоминания Нульморта о счастливых временах."],
+        ["Единица", "Я не хотела покидать его. Я хотела увидеть мир за пределами замка."],
+        ["Фея Цифра", "Нульморт принял свободу друга за предательство."]
+      ],
+      choice: {
+        q: "Воспоминание начинает исчезать. Что сохраним?",
+        opts: [
+          {
+            t: "Сохранить счастливый день двух друзей",
+            r: ["Единица", "Спасибо. Память о дружбе дарит вам защиту."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Найти воспоминание о создании печати",
+            r: ["Волшебница Мира", "Теперь я знаю слабость заклинания Нульморта."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Realistic dark fantasy enchanted memory gallery, spectral young dark-haired sorcerer smiling beside radiant golden spirit, ghostly scenes floating in mirrors, small fairy and purple-hatted wizard watching, melancholic cinematic light, landscape 3:2, no text"
+    },
+    {
+      n: 28,
+      title: "Цитадель Нульморта — Суд над Пифагором",
+      scene: [
+        ["Рассказчик", "Нульморт запирает героев в зале суда и вызывает Пифагора вперёд."],
+        ["Нульморт", "Пифагор дважды предал друзей. Сначала меня, затем вас!"],
+        ["Кот Пифагор", "Я виноват. Но больше не позволю страху решать за меня."]
+      ],
+      choice: {
+        q: "Нульморт требует изгнать Пифагора из команды.",
+        opts: [
+          {
+            t: "Защитить Пифагора и признать его раскаяние",
+            r: ["Кот Пифагор", "Я останусь с вами до конца. Возьмите моё сердце."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Потребовать от Пифагора доказать верность",
+            r: ["Кот Пифагор", "Я открою тайный механизм защиты Нульморта."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Cinematic photorealistic dark fantasy gothic courtroom, sinister shadow sorcerer on towering black throne judging small gray cat with spectacles, brave blue armored knight and eight fantasy companions, magical chains and violet fire, landscape 3:2, no text"
+    },
+    {
+      n: 29,
+      title: "Цитадель Нульморта — Сердце Пустоцвета",
+      scene: [
+        ["Рассказчик", "Из трещины в Кристалле вырывается Пустоцвет — древняя живая тень."],
+        ["Пустоцвет", "Я вырос из страха Нульморта! Теперь весь мир станет пустотой!"],
+        ["Нульморт", "Я не хотел этого! Единица, прости меня!"]
+      ],
+      choice: {
+        q: "Пустоцвет атакует даже Нульморта. Что сделаем?",
+        opts: [
+          {
+            t: "Спасти Нульморта от Пустоцвета",
+            r: ["Нульморт", "Ты спас врага? Я забыл, что такое милосердие."],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Использовать сражение, чтобы изучить Пустоцвета",
+            r: ["Робот Байт", "Я обнаружил слабость живой тени."],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Epic photorealistic dark fantasy black crystal chamber, enormous living shadow creature emerging from cracked glowing crystal, dark sorcerer recoiling in fear, blue armored knight defending companions, swirling violet energy, landscape 3:2, no text"
+    },
+    {
+      n: 30,
+      title: "Цитадель Нульморта — Последний расчёт",
+      scene: [
+        ["Нульморт", "Шестой осколок в моём сердце! Победите меня, если сможете!"],
+        ["Единица", "Не уничтожайте его! Я жива, но он должен сам отпустить свой страх."],
+        ["Рыцарь Артём", "Мы остановим обнуление. А каким станет мир потом, решим вместе."]
+      ],
+      choice: {
+        q: "Последний бой начинается. Что скажем Нульморту?",
+        opts: [
+          {
+            t: "Ты можешь исправить зло. Мы поможем тебе",
+            r: ["Нульморт", "После всего, что я сделал? Тогда покажи силу своей надежды!"],
+            fx: "heart",
+            karma: "good"
+          },
+          {
+            t: "Ты проиграл. Мы заберём последний осколок",
+            r: ["Нульморт", "Попробуй! Я не отдам свою власть без последней битвы!"],
+            fx: "hint",
+            karma: "sly"
+          }
+        ]
+      },
+      img: "Epic photorealistic dark fantasy final battle in vast black citadel throne room, powerful sinister sorcerer Nullmort in dark crown with sixth glowing crystal shard embedded in chest, brave young knight in blue steel armor and seven companions, radiant golden spirit trapped in giant crystal, cinematic storm lighting, landscape 3:2, no text"
+    }
+  ],
+
+  endGood: [
+    ["Рассказчик", "Шесть осколков соединились. Кристалл засиял, но не уничтожил Нульморта."],
+    ["Рыцарь Артём", "Ты ошибся, Нульморт. Но мы верим, что ты можешь всё исправить."],
+    ["Нульморт", "Я боялся потерять друга и сам лишил её свободы. Прости меня, Единица."],
+    ["Единица", "Я прощаю тебя. Открой дверь, и мы снова будем хранить числа вместе."],
+    ["Рассказчик", "Нульморт вернул Единицу. Пустоцвет исчез, а восемь героев спасли мир."]
+  ],
+
+  endNormal: [
+    ["Рассказчик", "Нульморт пал. Шестой осколок вырвался из его сердца и соединился с остальными."],
+    ["Рыцарь Артём", "Кристалл восстановлен! Больше никто не сможет обнулить наш мир."],
+    ["Единица", "Я свободна. Спасибо, герои. Но Нульморт пока не готов услышать меня."],
+    ["Нульморт", "Вы победили. Я уйду в изгнание, пока не научусь отпускать свой страх."],
+    ["Рассказчик", "Числа спасены, Пустоцвет исчез. Герои вернулись домой с великой победой."]
+  ]
+};
+/*ENDSTORY*/
+const KEY="stb-save";
+let LANG="ru";
+const EN=/*EN_DICT*/{"Замок Искр": "Castle of Sparks", "Замок Двух Рядов": "Castle of Two Rows", "Замок Переносов": "Castle of Carries", "Замок Больших Чисел": "Castle of Large Numbers", "Замок Процентов": "Castle of Percents", "Цитадель Нульморта": "Nulmort's Citadel", "Огненный Страж": "Fire Guardian", "Двуглав": "Two-Head", "Переносыч": "Captain Carry", "Великан Разряд": "Place Value Giant", "Процентус": "Percentus", "Рыцарь Артём": "Knight Artyom", "Лиса Алиса": "Alisa the Fox", "Робот Байт": "Byte the Robot", "Волшебница Мира": "Mira the Sorceress", "Дракончик Искра": "Iskra the Little Dragon", "Кот Пифагор": "Pythagoras the Cat", "Страж Гром": "Grom the Guardian", "Фея Цифра": "Tsifra the Fairy", "+1 сердце": "+1 heart", "Показать перенос": "Show the carry", "Проверка без штрафа": "Check without penalty", "Подсветить разряд": "Highlight place value", "Пропустить шаг": "Skip step", "Разложить число": "Break down the number", "Щит от ошибки": "Mistake shield", "Следующая цифра": "Next digit", "Однозначный множитель": "One-digit multiplier", "Перенос": "Carry", "Сдвиг": "Shift", "Сложение": "Addition", "Проценты": "Percents", "Умножение": "Long Multiplication", "в столбик": "Quest", "Кристалл Умножения": "Crystal of Multiplication", "6 замков · 30 уровней · 8 героев": "6 castles · 30 levels · 8 heroes", "Нульморт разбил волшебный кристалл! Победи боссов и верни все шесть осколков.": "Nulmort shattered the magic crystal! Defeat the bosses and recover all six shards.", "⭐ {0} звёзд · {1}/30 уровней": "⭐ {0} stars · {1}/30 levels", "⚔️ Играть": "⚔️ Play", "🗺️ Карта замков": "🗺️ Castle Map", "🦸 Герои": "🦸 Heroes", "⚙️ Настройки": "⚙️ Settings", "👨‍👩‍👧 Родителям (удерживать)": "👨‍👩‍👧 For Parents (hold)", "Карта замков": "Castle Map", "💎 Собрано осколков:": "💎 Shards collected:", "🔒 Закрыт": "🔒 Locked", "⭐ {0}/15 · уровни {1}–{2}": "⭐ {0}/15 · Levels {1}–{2}", "🦸 Выбрать героя": "🦸 Choose Hero", "Пятый уровень — битва с боссом!": "Level five is a boss battle!", "Правила боя": "Battle Rules", "Реши 5–8 примеров. За правильные ответы монстр теряет здоровье. Две ошибки в одном примере забирают сердце. Подсказки помогут разобраться.": "Solve 5–8 problems. Each correct answer damages the monster. Two mistakes on the same problem cost you one heart. Hints will help you figure things out.", "▶️ Играть доступный уровень": "▶️ Play an Unlocked Level", "Выбор героя": "Choose Your Hero", "⭐ {0} звёзд": "⭐ {0} stars", "✅ Выбран": "✅ Selected", "Выбрать": "Select", "🔒 {0} ⭐": "🔒 {0} ⭐", "Способность каждого героя доступна один раз за бой.": "Each hero can use their special ability once per battle.", "Настройки": "Settings", "🔊 Звук": "🔊 Sound", "Короткие звуки ответов через WebAudio.": "Short answer sounds powered by WebAudio.", "Звук включён": "Sound on", "Звук выключен": "Sound off", "💾 Сохранение": "💾 Saving", "Прогресс сохраняется автоматически. Игра работает без интернета.": "Progress is saved automatically. The game works offline.", "🌐 Язык": "🌐 Language", "Для родителей": "For Parents", "📊 Тепловая карта навыков": "📊 Skill Heatmap", "Доля правильных шагов и ответов. Чем зеленее полоса, тем увереннее навык.": "Percentage of correct steps and answers. The greener the bar, the stronger the skill.", "Нет данных": "No data", "{0} верно · {1} ошибок": "{0} correct · {1} mistakes", "📦 Повтор ошибок": "📦 Mistake Review", "{0} примеров требуют повторения.": "{0} problems need more practice.", "Коробки Лейтнера 1–5. Ошибки возвращают пример в первую коробку.": "Leitner boxes 1–5. A mistake sends the problem back to the first box.", "★ Премиум для родителей": "★ Premium for Parents", "Премиум активен до {0}.": "Premium is active until {0}.", "Премиум на 30 дней или год: награды выдаются сразу, без просмотра роликов. Покупку оплачивает взрослый, автопродления нет.": "Premium for 30 days or one year: rewards are granted instantly without watching videos. An adult must make the purchase. There is no automatic renewal.", "★ Премиум": "★ Premium", "★ Узнать про Премиум": "★ Learn About Premium", "🗑️ Сбросить весь прогресс": "🗑️ Reset All Progress", "Далее ▶": "Next ▶", "Пропустить": "Skip", "Выбор влияет на бой и на финал истории.": "Your choice affects the battle and the story's ending.", "Осколок {0} из шести найден!": "Shard {0} of six found!", "Замок «{0}» освобождён.": "Castle \"{0}\" has been freed.", "Нульморт ждёт тебя в последней цитадели!": "Nulmort awaits you in the final citadel!", "Нульморт уже готовит следующую преграду!": "Nulmort is already preparing the next obstacle!", "‹ Карта": "‹ Map", "Ур. {0} · {1}/{2}": "Lvl. {0} · {1}/{2}", "⏱️ {0} с": "⏱️ {0} sec", "Страж замка": "Castle Guardian", "✏️ В СТОЛБИК": "✏️ LONG MULTIPLICATION", "🧠 В УМЕ": "🧠 MENTAL MATH", "{0}/2 ошибки": "{0}/2 mistakes", "💡 Объяснить шаг": "💡 Explain This Step", "💡 Как считать в уме": "💡 How to Calculate Mentally", "{0} Способность": "{0} Ability", "{0}% от {1} = ?": "{0}% of {1} = ?", "Сколько процентов {0} от {1}?": "What percent of {1} is {0}?", "Введи ответ": "Enter your answer", "Пример решён!": "Problem solved!", "Какую цифру перенести?": "Which digit should you carry?", "Запиши оставшийся перенос.": "Write down the remaining carry.", "{0} × {1} = ? Запиши цифру разряда.": "{0} × {1} = ? Write the digit for this place value.", "Сложение по разрядам: {0} = ?": "Add by place value: {0} = ?", "Решай спокойно. Время не ограничено.": "Take your time. There is no time limit.", "Введи цифру.": "Enter a digit.", "Правильный ответ: {0}. {1}": "Correct answer: {0}. {1}", "⚔️ Попадание! Монстр потерял здоровье.": "⚔️ Hit! The monster lost health.", "❌ {0}": "❌ {0}", "✅ {0}": "✅ {0}", "✨ {0}": "✨ {0}", "💡 {0}": "💡 {0}", "Готово!": "Done!", "🛡️ Щит защитил от потери сердца!": "🛡️ The shield saved you from losing a heart!", "🛡️ Артём добавил одно сердце!": "🛡️ Artyom added one heart!", "🦊 Алиса: {0}": "🦊 Alisa: {0}", "🦊 {0}": "🦊 {0}", "🤖 Проверка без штрафа: следующая цифра {0}.": "🤖 Free check: the next digit is {0}.", "🤖 Ответ: {0}.": "🤖 Answer: {0}.", "🪄 Сейчас работаем с разрядом 10^{0}. {1}": "🪄 We're working with the 10^{0} place value. {1}", "🪄 Смотри на разряды числа.": "🪄 Look at the place values.", "🐲 В уме: {0}": "🐲 Mental math: {0}", "🐱 {0}": "🐱 {0}", "⚡ Щит поглотит следующую потерю сердца.": "⚡ The shield will prevent the next heart loss.", "🧚 Следующая цифра: {0}": "🧚 Next digit: {0}", "🧚 Ответ: {0}": "🧚 Answer: {0}", "❤️ Сердце восстановлено!": "❤️ Heart restored!", "10% — это одна десятая: {0} ÷ 10 = {1}.": "10% is one tenth: {0} ÷ 10 = {1}.", "25% — четверть: {0} ÷ 4 = {1}.": "25% is one quarter: {0} ÷ 4 = {1}.", "50% — половина: {0} ÷ 2 = {1}.": "50% is one half: {0} ÷ 2 = {1}.", "{0}×{1}={2}, {3}×{4}={5}. Всего {6}.": "{0}×{1}={2}, {3}×{4}={5}. Total: {6}.", "{0}. Запиши {1}, {2} перенеси.": "{0}. Write {1}, carry {2}.", "{0}. Запиши {1}.": "{0}. Write {1}.", "{0}. Запиши {1}, перенеси {2}.": "{0}. Write {1}, carry {2}.", "{0}. Перенос в следующий разряд — {1}.": "{0}. Carry {1} to the next place value.", "Оставшийся перенос {0} запиши слева.": "Write the remaining carry, {0}, on the left.", "Перенос при сложении — {0}.": "Carry {0} when adding.", "Герой устал!": "Your hero is exhausted!", "Нульморт пока удержал замок. Можно попробовать ещё раз.": "Nulmort has kept control of the castle for now. You can try again.", "Пройдено примеров: {0}/{1}": "Problems completed: {0}/{1}", "❤️ +1 сердце (Премиум)": "❤️ +1 heart (Premium)", "🎬 +1 сердце за ролик": "🎬 +1 heart for watching a video", "🔄 Повторить бой": "🔄 Retry Battle", "🗺️ На карту": "🗺️ Back to Map", "Победа!": "Victory!", "Уровень {0} пройден": "Level {0} completed", "Ошибок: {0} · Подсказок: {1}": "Mistakes: {0} · Hints: {1}", "Заработано новых звёзд: ⭐ {0}": "New stars earned: ⭐ {0}", "1 ★ — победа; 2 ★ — не более 3 ошибок; 3 ★ — без ошибок и подсказок.": "1 ★ — win; 2 ★ — no more than 3 mistakes; 3 ★ — no mistakes or hints.", "⭐ Удвоить звёзды (Премиум)": "⭐ Double Stars (Premium)", "🎬 Удвоить звёзды (ролик)": "🎬 Double Stars (watch video)", "🎉 Финал": "🎉 Finale", "💎 Забрать осколок": "💎 Collect Shard", "▶️ Следующий уровень": "▶️ Next Level", "🔄 Переиграть": "🔄 Play Again", "🗺️ Карта": "🗺️ Map", "Да": "Yes", "Отмена": "Cancel", "Понятно": "Got it", "Нужно {0} звёзд. Сейчас у тебя {1}.": "You need {0} stars. You currently have {1}.", "Открыть героя «{0}» за {1} звёзд?": "Unlock hero \"{0}\" for {1} stars?", "Удалить все звёзды, уровни и статистику?": "Delete all stars, levels, and statistics?", "Выйти из боя? Текущий бой начнётся заново.": "Leave the battle? The current battle will restart.", "Умножение в столбик — Кристалл Умножения": "Long Multiplication Quest — Crystal of Multiplication", "В полночь Кристалл Умножения раскололся. Шесть осколков исчезли.": "At midnight, the Crystal of Multiplication shattered. Six shards vanished.", "Я сотру все числа! Тогда никто больше не потеряет того, кто ему дорог.": "I'll erase every number! Then no one will ever lose someone they love again.", "Мы вернём осколки. Но почему он говорит о потере?": "We'll recover the shards. But why is he talking about losing someone?", "Потому что однажды исчезла Единица. И кто-то из нас знает правду.": "Because the One disappeared long ago. And someone among us knows the truth.", "Замок Искр — Площадь погасших фонарей": "Castle of Sparks — Square of Darkened Lanterns", "На площади гаснут фонари. Жители прячут последние светящиеся числа.": "The lanterns in the square are going out. The townspeople hide the last glowing numbers.", "Семизуб украл огонь! Без него город скоро замёрзнет.": "Sevenfang stole the fire! Without it, the city will soon freeze.", "Странно. На стене знак тайного хранителя. Я уже видел его.": "Strange. There's a secret guardian's symbol on the wall. I've seen it before.", "У фонаря плачет маленький торговец. Что сделаем?": "A little merchant is crying beside a lantern. What should we do?", "Помочь торговцу зажечь фонарь": "Help the merchant light the lantern", "Спасибо! Возьми искру жизни. Она защитит тебя!": "Thank you! Take this spark of life. It will protect you!", "Забрать волшебный фонарь для похода": "Take the magic lantern on our journey", "Его свет покажет слабое место врага.": "Its light will reveal the enemy's weak spot.", "Замок Искр — Улица семи колоколов": "Castle of Sparks — Street of Seven Bells", "Семь колоколов звонят сами. Каждый удар превращает камень в пепел.": "Seven bells ring on their own. Each chime turns stone to ash.", "Семизуб расставил ловушку. Но под мостом застрял мальчик!": "Sevenfang set a trap. But a boy is stuck under the bridge!", "Колокола уже просыпаются. Нужно решать быстро.": "The bells are already waking up. We need to act fast.", "Как пройти через улицу?": "How should we cross the street?", "Сначала спасти мальчика": "Save the boy first", "Ты не оставил его! Он дарит нам защитный талисман.": "You didn't leave him behind! He gives us a protective charm.", "Пройти тайным ходом и не рисковать": "Take the secret passage and avoid the danger", "Я знаю ритм колоколов. Подскажу, когда двигаться.": "I know the bells' rhythm. I'll tell you when to move.", "Замок Искр — Рынок украденных ответов": "Castle of Sparks — Market of Stolen Answers", "На рынке торговцы продают ответы, украденные из школьных тетрадей.": "At the market, merchants sell answers stolen from school notebooks.", "Без ответов дети забудут, как умножать!": "Without their answers, the children will forget how to multiply!", "Семизуб платит за каждую ошибку. Но я могу помочь вам.": "Sevenfang pays for every mistake. But I can help you.", "Торговец предлагает сделку. Что выберем?": "A merchant offers us a deal. What should we choose?", "Вернуть детям украденные тетради": "Return the stolen notebooks to the children", "Дети благодарят нас и дарят сердечный оберег.": "The children thank us and give us a heart charm.", "Обменять монеты на секретный ответ": "Trade coins for a secret answer", "Торговец рассказал, как распознать обман Семизуба.": "The merchant tells us how to spot Sevenfang's tricks.", "Замок Искр — Мост сломанных обещаний": "Castle of Sparks — Bridge of Broken Promises", "На мосту висит портрет Нульморта. Рядом нарисован сияющий друг.": "A portrait of Nulmort hangs on the bridge. A glowing friend is painted beside him.", "Это Единица! Они когда-то вместе охраняли Кристалл.": "That's the One! They used to guard the Crystal together.", "Не трогайте портрет! В нём заперта память.": "Don't touch the portrait! A memory is trapped inside it.", "Портрет начинает рассыпаться. Как поступим?": "The portrait begins to crumble. What should we do?", "Сохранить портрет и память о друге": "Save the portrait and the memory of their friendship", "Память согрела мост. Нам досталась частица защиты.": "The memory warms the bridge. We receive a spark of protection.", "Изучить тайный знак на обратной стороне": "Study the secret symbol on the back", "Знак открывает секрет боевого построения Семизуба.": "The symbol reveals the secret of Sevenfang's battle formation.", "Замок Искр — Семизуб и первый осколок": "Castle of Sparks — Sevenfang and the First Shard", "Семь зубцов моей короны раздавят ваши жалкие надежды!": "The seven spikes of my crown will crush your pathetic hopes!", "Верни осколок! Мы знаем, что Нульморт скрывает правду.": "Give back the shard! We know Nulmort is hiding the truth.", "Он не уничтожил Единицу. Он сам запер её, испугавшись потери!": "He didn't destroy the One. He locked her away himself because he was afraid of losing her!", "Семизуб побеждён, но просит пощады. Что ответим?": "Sevenfang is defeated, but he begs for mercy. What should we say?", "Пощадить Семизуба и выслушать его": "Spare Sevenfang and hear him out", "Первый осколок ваш. Берегите тех, кто ещё вам верит.": "The first shard is yours. Take care of those who still believe in you.", "Потребовать осколок и секрет следующего замка": "Demand the shard and the next castle's secret", "Забирайте! Двурог прячет слабость в зеркальных рядах.": "Take it! Twin-Horn hides his weakness in the mirrored rows.", "Замок Двух Рядов — Зеркальная площадь": "Castle of Two Rows — Mirror Square", "На площади каждое отражение живёт собственной жизнью.": "In the square, every reflection has a life of its own.", "В зеркале я вижу себя рядом с Нульмортом. Это невозможно!": "I can see myself standing beside Nulmort in the mirror. That's impossible!", "Или зеркало показывает то, что ты скрываешь.": "Or maybe the mirror shows what you're hiding.", "Зеркальный Байт просит выпустить его. Что сделаем?": "Mirror Byte asks us to set him free. What should we do?", "Выслушать отражение и помочь ему": "Listen to the reflection and help him", "Оно показало мне защитный код. Я стал сильнее!": "He showed me a protective code. I'm stronger now!", "Закрыть зеркало и изучить его механизм": "Close the mirror and study how it works", "Механизм выдаёт полезную подсказку для боя.": "The mechanism gives us a useful battle hint.", "Замок Двух Рядов — Переулок двойников": "Castle of Two Rows — Alley of Doubles", "Из тумана выходят две одинаковые феи Цифры.": "Two identical Tsifra fairies emerge from the fog.", "Одна из нас подделка! Не верьте её словам!": "One of us is a fake! Don't believe a word she says!", "Настоящая фея знает: Нульморт когда-то спас весь мир.": "The real fairy knows that Nulmort once saved the entire world.", "Как проверить двойников?": "How can we tell which fairy is real?", "Дать обеим феям шанс объясниться": "Give both fairies a chance to explain", "Добро разрушило чары. Настоящая фея дарит сердце.": "Kindness breaks the spell. The real fairy gives us a heart.", "Использовать проверку Робота Байта": "Use Byte the Robot's scanner", "Подделка найдена. Я вычислил её боевой секрет.": "Fake detected. I've figured out her battle secret.", "Замок Двух Рядов — Улица исчезнувших имён": "Castle of Two Rows — Street of Forgotten Names", "Жители забывают свои имена. На дверях остаются пустые таблички.": "The townspeople are forgetting their names. Blank signs hang on their doors.", "Двурог стирает память, чтобы никто не помнил Единицу.": "Twin-Horn is erasing memories so no one will remember the One.", "Некоторые воспоминания опасны. Особенно мои.": "Some memories are dangerous. Especially mine.", "Старушка просит вернуть ей имя. Как поступим?": "An old woman asks us to help her remember her name. What should we do?", "Помочь ей вспомнить прошлое": "Help her remember her past", "Она вспомнила своё имя и вручила нам оберег.": "She remembers her name and gives us a protective charm.", "Сначала найти источник заклинания": "Find the source of the spell first", "Я раскрыла секрет чар и получила подсказку.": "I've uncovered the spell's secret and gained a hint.", "Замок Двух Рядов — Башня двух дверей": "Castle of Two Rows — Tower of Two Doors", "Перед героями две двери: одна ведёт к пленникам, другая к Двурогу.": "Two doors stand before the heroes. One leads to prisoners, the other to Twin-Horn.", "Слышите? За первой дверью зовут на помощь!": "Do you hear that? Someone is calling for help behind the first door!", "Если задержимся, Двурог узнает о нашем приближении.": "If we take too long, Twin-Horn will know we're coming.", "Какую дверь откроем первой?": "Which door should we open first?", "Освободить пленников": "Free the prisoners", "Мы спасли жителей! Они подарили нам сердце.": "We saved the townspeople! They give us a heart.", "Открыть проход к Двурогу": "Open the passage to Twin-Horn", "Мы нашли тайный чертёж его доспехов.": "We found a secret blueprint of his armor.", "Замок Двух Рядов — Двурог и второе отражение": "Castle of Two Rows — Twin-Horn and the Second Reflection", "Вы видели двойников, но не заметили предателя рядом!": "You saw the doubles, but you failed to notice the traitor right beside you!", "Он лжёт! Мои воспоминания повреждены, но я верен друзьям.": "He's lying! My memories are damaged, but I'm loyal to my friends.", "Твой создатель служил Нульморту. А Пифагор знает гораздо больше!": "Your creator served Nulmort. And Pythagoras knows much more than he's telling you!", "Двурог отдаёт осколок и предлагает тайный договор.": "Twin-Horn hands over the shard and offers a secret deal.", "Отказаться от сделки и простить его": "Refuse the deal and forgive him", "Второй осколок ваш. Пифагор когда-то охранял Единицу.": "The second shard is yours. Pythagoras once guarded the One.", "Потребовать доказательства против Пифагора": "Demand proof against Pythagoras", "Вот запись: Пифагор открывал Нульморту тайный проход.": "Here's a recording: Pythagoras opened a secret passage for Nulmort.", "Замок Переносов — Площадь падающих цифр": "Castle of Carries — Square of Falling Digits", "С неба падают тяжёлые каменные цифры. Улицы рушатся.": "Heavy stone digits fall from the sky. The streets crumble.", "Переносий превратил ошибки вычислений в настоящие камни!": "Carrymaster turned math mistakes into real stones!", "Я служил Нульморту. Но это было задолго до его злодеяний.": "I once served Nulmort. But that was long before he turned evil.", "Герои требуют объяснений. Что скажем Пифагору?": "The heroes demand an explanation. What should we say to Pythagoras?", "Дать Пифагору возможность рассказать правду": "Give Pythagoras a chance to tell the truth", "Спасибо за доверие. Я сохраню вам сердце.": "Thank you for trusting me. I'll protect one of your hearts.", "Потребовать раскрыть все секреты немедленно": "Demand that he reveal all his secrets right now", "Я расскажу, как обезвредить ближайшую ловушку.": "I'll tell you how to disable the next trap.", "Замок Переносов — Улица украденных разрядов": "Castle of Carries — Street of Stolen Place Values", "На улице пропадают десятки и сотни. Дома становятся крошечными.": "Tens and hundreds are disappearing from the street. Houses are shrinking.", "Я обнаружил тайный сигнал. Его отправляют из нашей команды!": "I've detected a secret signal. Someone on our team is sending it!", "Но кто передаёт Нульморту сведения о каждом нашем шаге?": "But who's telling Nulmort about our every move?", "На крыше найден передатчик. Что с ним сделать?": "A transmitter is found on a rooftop. What should we do with it?", "Отключить его и предупредить жителей": "Turn it off and warn the townspeople", "Мы защитили город. Жители дарят нам сердце.": "We protected the city. The townspeople give us a heart.", "Перехватить сигнал и прочитать сообщение": "Intercept the signal and read the message", "В сообщении указана слабость следующего врага.": "The message reveals the next enemy's weakness.", "Замок Переносов — Подземелье потерянных друзей": "Castle of Carries — Dungeon of Lost Friends", "Под площадью герои находят камеру с призрачным силуэтом Единицы.": "Beneath the square, the heroes find a cell holding the ghostly figure of the One.", "Нульморт не потерял меня. Он сам закрыл дверь между нами.": "Nulmort didn't lose me. He closed the door between us himself.", "Я помог ему запечатать её. И до сих пор жалею об этом.": "I helped him seal her away. And I still regret it.", "Призрак Единицы просит передать Нульморту послание.": "The One's ghost asks us to deliver a message to Nulmort.", "Пообещать передать послание": "Promise to deliver the message", "Скажите ему, что я всё ещё жду. Возьмите моё сердце света.": "Tell him I'm still waiting. Take my heart of light.", "Сначала спросить, как разрушить печать": "First ask how to break the seal", "Шесть осколков откроют дверь. Я покажу её слабое место.": "The six shards will open the door. I'll show you its weak spot.", "Замок Переносов — Мост предательства": "Castle of Carries — Bridge of Betrayal", "В полночь Пифагор исчезает с двумя осколками.": "At midnight, Pythagoras disappears with two shards.", "Он предал нас! Я видела, как он вошёл в портал Нульморта!": "He betrayed us! I saw him enter Nulmort's portal!", "Пифагор оставил записку: «Не ищите меня до рассвета».": "Pythagoras left a note: \"Don't look for me until dawn.\"", "Как поступим после исчезновения Пифагора?": "What should we do after Pythagoras disappears?", "Поверить, что у него есть причина": "Believe that he has a good reason", "Надежда поддерживает нас. Я создам защитное сердце.": "Hope keeps us going. I'll create a protective heart.", "Найти след портала и подготовить засаду": "Track the portal and prepare an ambush", "Я восстановил маршрут и узнал секрет стражей.": "I've traced his route and discovered the guardians' secret.", "Замок Переносов — Переносий и третий осколок": "Castle of Carries — Carrymaster and the Third Shard", "Пифагор уже отдал вашему врагу два осколка! Вы проиграли!": "Pythagoras has already given your enemy two shards! You've lost!", "Даже без них мы не позволим тебе уничтожить город.": "Even without them, we won't let you destroy the city.", "Нульморт запер Единицу, чтобы спасти её от древнего Пустоцвета!": "Nulmort locked away the One to save her from the ancient Hollowbloom!", "Переносий побеждён и отдаёт третий осколок. Что дальше?": "Carrymaster is defeated and hands over the third shard. What next?", "Освободить Переносия от проклятия": "Free Carrymaster from the curse", "Спасибо. Пустоцвет питается страхом. Я дарю вам защиту.": "Thank you. Hollowbloom feeds on fear. I'll give you protection.", "Заставить его раскрыть путь к Нульморту": "Make him reveal the path to Nulmort", "Через Большие Числа идёт секретный тоннель.": "A secret tunnel runs through the Land of Large Numbers.", "Замок Больших Чисел — Проспект великанов": "Castle of Large Numbers — Avenue of Giants", "Гигантские стражи шагают по проспекту. Каждый несёт украденное число.": "Giant guardians march down the avenue. Each carries a stolen number.", "Они слишком велики даже для меня. Но я знаю, как их остановить.": "They're too big even for me. But I know how to stop them.", "Смотрите! Один великан плачет. Его заставили служить Трёхглаву.": "Look! One of the giants is crying. He was forced to serve Three-Head!", "Перед нами заколдованный великан. Что сделаем?": "An enchanted giant stands before us. What should we do?", "Помочь великану освободиться": "Help the giant break free", "Он благодарен и делится своей силой защиты.": "He's grateful and shares his protective power with us.", "Обойти великана и найти слабое место": "Go around the giant and find a weak spot", "Его броня скрывает секретную схему. Я её запомнил.": "His armor hides a secret diagram. I've memorized it.", "Замок Больших Чисел — Библиотека запретной истории": "Castle of Large Numbers — Library of Forbidden History", "В библиотеке лежит книга, которую Нульморт приказал уничтожить.": "In the library lies a book that Nulmort ordered destroyed.", "Здесь сказано: Пустоцвет родился из первой неправильной клятвы.": "It says here that Hollowbloom was born from the first broken oath.", "Нульморт поклялся никогда не терять Единицу. Клятва стала ловушкой.": "Nulmort swore he would never lose the One. His oath became a trap.", "Книга начинает гореть холодным пламенем. Что спасём?": "The book begins to burn with cold flames. What should we save?", "Сохранить историю Единицы": "Save the story of the One", "Истина уцелела. Магия книги дарит нам сердце.": "The truth survives. The book's magic gives us a heart.", "Скопировать страницу о слабости Пустоцвета": "Copy the page about Hollowbloom's weakness", "Теперь мы знаем, как защититься от его обмана.": "Now we know how to protect ourselves from his tricks.", "Замок Больших Чисел — Площадь трёх корон": "Castle of Large Numbers — Square of Three Crowns", "На площади стоят три трона. Каждый обещает герою власть.": "Three thrones stand in the square. Each promises power to a hero.", "Кто сядет на трон, станет сильнее. Но забудет одного друга!": "Anyone who sits on a throne will become stronger. But they'll forget one friend!", "Никакая сила не стоит памяти о друзьях.": "No amount of power is worth forgetting your friends.", "Троны предлагают опасный подарок. Что выберем?": "The thrones offer a dangerous gift. What should we choose?", "Разрушить чары и освободить пленников": "Break the spell and free the prisoners", "Ты выбрал друзей. Освобождённые дарят нам сердце.": "You chose your friends. The freed prisoners give us a heart.", "Исследовать троны, не принимая их дар": "Study the thrones without accepting their gift", "Я нашёл механизм, управляющий защитой Трёхглава.": "I've found the mechanism that controls Three-Head's defenses.", "Замок Больших Чисел — Возвращение предателя": "Castle of Large Numbers — Return of the Traitor", "Пифагор возвращается раненым. Двух осколков при нём больше нет.": "Pythagoras returns wounded. The two shards are gone.", "Я отдал их Нульморту. Он обещал показать мне живую Единицу.": "I gave them to Nulmort. He promised to show me the One alive.", "Ты продал нашу надежду! Почему мы должны тебе верить?": "You betrayed our hopes! Why should we trust you?", "Пифагор просит остаться с командой. Что решим?": "Pythagoras asks to rejoin the team. What should we decide?", "Простить Пифагора и дать ему шанс": "Forgive Pythagoras and give him another chance", "Я верну доверие делом. Примите моё защитное сердце.": "I'll earn back your trust through my actions. Please accept my protective heart.", "Оставить его под наблюдением": "Let him stay, but keep an eye on him", "Справедливо. Я раскрою секрет доспехов Трёхглава.": "Fair enough. I'll reveal the secret of Three-Head's armor.", "Замок Больших Чисел — Трёхглав и четвёртый осколок": "Castle of Large Numbers — Three-Head and the Fourth Shard", "Три головы знают три истины. Ваш друг предал вас ради Единицы!": "Three heads know three truths. Your friend betrayed you for the One!", "Да. Но Нульморт обманул меня. Единица заперта в самом Кристалле.": "Yes. But Nulmort tricked me. The One is trapped inside the Crystal itself.", "Четвёртый осколок ваш. Но Пустоцвет уже просыпается!": "The fourth shard is yours. But Hollowbloom is already awakening!", "Трёхглав просит снять проклятие с его трёх голов.": "Three-Head asks us to lift the curse from his three heads.", "Освободить Трёхглава от проклятия": "Free Three-Head from the curse", "Я снова могу думать сам. Примите дар трёх сердец.": "I can think for myself again. Accept the gift of three hearts.", "Потребовать карту последнего убежища": "Demand a map to the final hideout", "Вот путь к Замку Процентов и тайна его стражей.": "Here's the path to the Castle of Percents and the secret of its guardians.", "Замок Процентов — Площадь отнятых долей": "Castle of Percents — Square of Stolen Shares", "Процентор забирает у жителей долю их сил. Город слабеет.": "Percentor steals part of the townspeople's strength. The city grows weaker.", "Он крадёт даже радость. Люди перестали улыбаться!": "He even steals their joy. People have stopped smiling!", "Пустоцвет растёт. Он питается каждым несправедливым поступком.": "Hollowbloom is growing. Every unfair act makes him stronger.", "Жители просят вернуть украденную силу.": "The townspeople ask us to restore their stolen strength.", "Поделиться с жителями запасом магии": "Share our magic supplies with the townspeople", "Их благодарность вернулась к нам защитным сердцем.": "Their gratitude returns to us as a protective heart.", "Найти устройство, собирающее силу": "Find the device that collects their strength", "Я вычислил, как устроена защита Процентора.": "I've figured out how Percentor's defenses work.", "Замок Процентов — Улица честных сделок": "Castle of Percents — Street of Honest Deals", "Торговец предлагает вернуть городу свет за половину запасов.": "A merchant offers to restore the city's light in exchange for half its supplies.", "Он выглядит испуганным. Возможно, Процентор заставил его обманывать.": "He looks frightened. Maybe Percentor forced him to cheat people.", "За лавкой прячутся голодные дети. Им нужна помощь.": "Hungry children are hiding behind the shop. They need help.", "Как поступим с торговцем?": "What should we do about the merchant?", "Накормить детей и помочь торговцу": "Feed the children and help the merchant", "Торговец раскаялся и подарил нам сердце.": "The merchant regrets his actions and gives us a heart.", "Разоблачить обман и забрать схему машины": "Expose the trick and take the machine's blueprint", "Схема показывает секрет защитного поля врага.": "The blueprint reveals the secret of the enemy's protective field.", "Замок Процентов — Зал разделённых сердец": "Castle of Percents — Hall of Divided Hearts", "В зале висит портрет Нульморта и Единицы до их ссоры.": "A portrait of Nulmort and the One before their argument hangs in the hall.", "Я был свидетелем. Нульморт испугался, что Единица уйдёт навсегда.": "I was there. Nulmort was afraid the One would leave forever.", "Он запер друга ради защиты. Но этим создал Пустоцвета.": "He locked his friend away to protect her. But that created Hollowbloom.", "Магия позволяет услышать голос прошлого. Что спросим?": "Magic lets us hear a voice from the past. What should we ask?", "Спросить, чего на самом деле хотела Единица": "Ask what the One really wanted", "Я хотела быть свободной и остаться другом. Возьмите мою защиту.": "I wanted to be free and still be his friend. Take my protection.", "Спросить, как разрушить печать Нульморта": "Ask how to break Nulmort's seal", "Шесть осколков и верный расчёт откроют путь ко мне.": "Six shards and the correct calculation will open the way to me.", "Замок Процентов — Ночь тайного послания": "Castle of Percents — Night of the Secret Message", "Ночью Байт перехватывает сообщение Нульморта, адресованное Пифагору.": "At night, Byte intercepts a message from Nulmort addressed to Pythagoras.", "Приведи героев в Цитадель. Только их сила сможет открыть Кристалл.": "Bring the heroes to the Citadel. Only their power can open the Crystal.", "Он использует нас! Но внутри Кристалла действительно жива Единица.": "He's using us! But the One really is alive inside the Crystal.", "Нульморт предлагает обменять осколки на свободу Единицы.": "Nulmort offers to trade the shards for the One's freedom.", "Попытаться договориться без обмана": "Try to make an honest deal", "Я передам твои слова. Ты вернул мне надежду.": "I'll pass along your words. You've given me hope again.", "Отправить ложный ответ и подготовить ловушку": "Send a fake reply and prepare a trap", "Нульморт раскрыл часть своего плана. Это поможет в бою.": "Nulmort revealed part of his plan. That will help us in battle.", "Замок Процентов — Процентор и пятый осколок": "Castle of Percents — Percentor and the Fifth Shard", "Я отниму вашу силу по частям, пока не останется ничего!": "I'll drain your strength bit by bit until there's nothing left!", "Ты можешь отнять силы, но не нашу дружбу.": "You can take our strength, but you can't take our friendship.", "Пятый осколок ваш! Но шестой Нульморт держит в своём сердце.": "The fifth shard is yours! But Nulmort keeps the sixth inside his heart.", "Процентор побеждён. Его пленники ждут освобождения.": "Percentor is defeated. His prisoners are waiting to be freed.", "Освободить пленников и простить Процентора": "Free the prisoners and forgive Percentor", "Я верну украденную силу. Возьмите сердце благодарности.": "I'll return the strength I stole. Take this heart of gratitude.", "Забрать карту защиты Цитадели": "Take the map of the Citadel's defenses", "Вот карта. Нульморт слаб перед светом настоящей Единицы.": "Here's the map. Nulmort is weak against the light of the true One.", "Цитадель Нульморта — Ворота пустоты": "Nulmort's Citadel — Gates of the Void", "Перед Цитаделью числа исчезают прямо с каменных стен.": "Outside the Citadel, numbers are disappearing right off the stone walls.", "Вы собрали пять осколков. Принесите их мне, и Единица вернётся.": "You've collected five shards. Bring them to me, and the One will return.", "Не верьте обещанию. Он хочет открыть Кристалл чужими руками.": "Don't believe his promise. He wants us to open the Crystal for him.", "У ворот стоят заколдованные стражи. Как пройти?": "Enchanted guards stand at the gates. How should we get past them?", "Освободить стражей от власти Нульморта": "Free the guards from Nulmort's control", "Они снова свободны и передают нам защитное сердце.": "They're free again and give us a protective heart.", "Найти обходной путь через старые стены": "Find another way through the old walls", "Я обнаружила тайный проход и подсказку к бою.": "I've discovered a secret passage and a battle hint.", "Цитадель Нульморта — Галерея утраченной Единицы": "Nulmort's Citadel — Gallery of the Lost One", "В галерее оживают воспоминания Нульморта о счастливых временах.": "In the gallery, Nulmort's memories of happier times come to life.", "Я не хотела покидать его. Я хотела увидеть мир за пределами замка.": "I never wanted to leave him. I wanted to see the world beyond the castle.", "Нульморт принял свободу друга за предательство.": "Nulmort mistook his friend's wish for freedom as betrayal.", "Воспоминание начинает исчезать. Что сохраним?": "A memory begins to fade. What should we save?", "Сохранить счастливый день двух друзей": "Save a happy day shared by the two friends", "Спасибо. Память о дружбе дарит вам защиту.": "Thank you. The memory of friendship gives you protection.", "Найти воспоминание о создании печати": "Find the memory of how the seal was created", "Теперь я знаю слабость заклинания Нульморта.": "Now I know the weakness in Nulmort's spell.", "Цитадель Нульморта — Суд над Пифагором": "Nulmort's Citadel — Trial of Pythagoras", "Нульморт запирает героев в зале суда и вызывает Пифагора вперёд.": "Nulmort traps the heroes in a courtroom and calls Pythagoras forward.", "Пифагор дважды предал друзей. Сначала меня, затем вас!": "Pythagoras betrayed his friends twice. First me, then you!", "Я виноват. Но больше не позволю страху решать за меня.": "I'm guilty. But I won't let fear make my choices anymore.", "Нульморт требует изгнать Пифагора из команды.": "Nulmort demands that we banish Pythagoras from the team.", "Защитить Пифагора и признать его раскаяние": "Defend Pythagoras and accept his apology", "Я останусь с вами до конца. Возьмите моё сердце.": "I'll stay with you until the end. Take my heart.", "Потребовать от Пифагора доказать верность": "Demand that Pythagoras prove his loyalty", "Я открою тайный механизм защиты Нульморта.": "I'll reveal the secret mechanism behind Nulmort's defenses.", "Цитадель Нульморта — Сердце Пустоцвета": "Nulmort's Citadel — Heart of Hollowbloom", "Из трещины в Кристалле вырывается Пустоцвет — древняя живая тень.": "Hollowbloom, an ancient living shadow, bursts out of a crack in the Crystal.", "Я вырос из страха Нульморта! Теперь весь мир станет пустотой!": "I grew from Nulmort's fear! Now the whole world will become an empty void!", "Я не хотел этого! Единица, прости меня!": "I never wanted this! One, forgive me!", "Пустоцвет атакует даже Нульморта. Что сделаем?": "Hollowbloom even attacks Nulmort. What should we do?", "Спасти Нульморта от Пустоцвета": "Save Nulmort from Hollowbloom", "Ты спас врага? Я забыл, что такое милосердие.": "You saved your enemy? I'd forgotten what mercy was.", "Использовать сражение, чтобы изучить Пустоцвета": "Use the battle to study Hollowbloom", "Я обнаружил слабость живой тени.": "I've discovered the living shadow's weakness.", "Цитадель Нульморта — Последний расчёт": "Nulmort's Citadel — The Final Calculation", "Шестой осколок в моём сердце! Победите меня, если сможете!": "The sixth shard is inside my heart! Defeat me if you can!", "Не уничтожайте его! Я жива, но он должен сам отпустить свой страх.": "Don't destroy him! I'm alive, but he must let go of his fear himself.", "Мы остановим обнуление. А каким станет мир потом, решим вместе.": "We'll stop the erasing of numbers. Then we'll decide together what kind of world comes next.", "Последний бой начинается. Что скажем Нульморту?": "The final battle begins. What should we say to Nulmort?", "Ты можешь исправить зло. Мы поможем тебе": "You can make things right. We'll help you", "После всего, что я сделал? Тогда покажи силу своей надежды!": "After everything I've done? Then show me the power of your hope!", "Ты проиграл. Мы заберём последний осколок": "You've lost. We're taking the final shard", "Попробуй! Я не отдам свою власть без последней битвы!": "Just try it! I won't give up my power without one last battle!", "Шесть осколков соединились. Кристалл засиял, но не уничтожил Нульморта.": "The six shards come together. The Crystal shines brightly, but Nulmort is not destroyed.", "Ты ошибся, Нульморт. Но мы верим, что ты можешь всё исправить.": "You made a mistake, Nulmort. But we believe you can make things right.", "Я боялся потерять друга и сам лишил её свободы. Прости меня, Единица.": "I was afraid of losing my friend, so I took away her freedom. Forgive me, One.", "Я прощаю тебя. Открой дверь, и мы снова будем хранить числа вместе.": "I forgive you. Open the door, and we'll guard the numbers together again.", "Нульморт вернул Единицу. Пустоцвет исчез, а восемь героев спасли мир.": "Nulmort brings back the One. Hollowbloom disappears, and the eight heroes save the world.", "Нульморт пал. Шестой осколок вырвался из его сердца и соединился с остальными.": "Nulmort falls. The sixth shard breaks free from his heart and joins the others.", "Кристалл восстановлен! Больше никто не сможет обнулить наш мир.": "The Crystal is restored! No one can ever erase all the numbers from our world again.", "Я свободна. Спасибо, герои. Но Нульморт пока не готов услышать меня.": "I'm free. Thank you, heroes. But Nulmort isn't ready to listen to me yet.", "Вы победили. Я уйду в изгнание, пока не научусь отпускать свой страх.": "You've won. I'll go into exile until I learn to let go of my fear.", "Числа спасены, Пустоцвет исчез. Герои вернулись домой с великой победой.": "The numbers are saved, and Hollowbloom is gone. The heroes return home after a great victory.", "Рассказчик": "Narrator", "Нульморт": "Nulmort", "Торговец": "Merchant", "Семизуб": "Sevenfang", "Двурог": "Twin-Horn", "Единица": "the One", "Переносий": "Carrymaster", "Трёхглав": "Three-Head", "Процентор": "Percentor", "Пустоцвет": "Hollowbloom"}/*END_EN*/;
+const PATS=[];
+Object.keys(EN).forEach(k=>{
+ if(!/\{\d+\}/.test(k))return;
+ const parts=k.split(/(\{\d+\})/),order=[];
+ const re="^"+parts.map(x=>{if(/^\{\d+\}$/.test(x)){order.push(+x.slice(1,-1));return "(.+?)"}return x.replace(/[.*+?^$()|[\]\\{}]/g,"\\$&")}).join("")+"$";
+ PATS.push({re:new RegExp(re),order,to:EN[k],lit:k.replace(/\{\d+\}/g,"").length});
+});
+PATS.sort((a,b)=>b.lit-a.lit);
+function t(s){
+ if(LANG!=="en"||typeof s!=="string")return s;
+ if(Object.prototype.hasOwnProperty.call(EN,s))return EN[s];
+ for(const p of PATS){
+  const m=p.re.exec(s);
+  if(m){const v={};p.order.forEach((n,j)=>v[n]=m[j+1]);return p.to.replace(/\{(\d+)\}/g,(_,i)=>t(v[i]===undefined?"":v[i]))}
+ }
+ return s;
+}
+function trDom(root){
+ if(LANG!=="en")return;
+ const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;const list=[];
+ while((n=w.nextNode()))list.push(n);
+ list.forEach(n=>{const v=n.nodeValue,c=v.trim();if(!c||!/[А-Яа-яЁё]/.test(c))return;const r=t(c);if(r!==c)n.nodeValue=v.replace(c,r)});
+}
+function detectLang(){
+ try{const l=String((PF.lang&&PF.lang())||navigator.language||"ru").toLowerCase().slice(0,2);
+  return ["ru","be","kk","uk","uz","hy","az","ky","tg","tk"].indexOf(l)>=0?"ru":"en"}catch(e){return "ru"}
+}
+function setLang(l){
+ LANG=(l==="en"&&Object.keys(EN).length)?"en":"ru";
+ document.documentElement.lang=LANG;
+ document.title=t("Умножение в столбик — Кристалл Умножения");
+ try{if(window.Premium)Premium.setLang(LANG)}catch(e){}
+}
+const app=document.getElementById("app");
+const IMG="img/";
+const art=(n,fb,cls)=>`<img class="art ${cls||""}" src="${IMG}${n}.webp" alt="" data-fb="${fb}" onerror="this.replaceWith(document.createTextNode(this.dataset.fb))">`;
+const worlds=[
+ {name:"Замок Искр",emoji:"🏰",enemy:"🔥",boss:"Огненный Страж"},
+ {name:"Замок Двух Рядов",emoji:"🏯",enemy:"👹",boss:"Двуглав"},
+ {name:"Замок Переносов",emoji:"🏰",enemy:"🧌",boss:"Переносыч"},
+ {name:"Замок Больших Чисел",emoji:"🏯",enemy:"🦾",boss:"Великан Разряд"},
+ {name:"Замок Процентов",emoji:"🏰",enemy:"🧙",boss:"Процентус"},
+ {name:"Цитадель Нульморта",emoji:"🏯",enemy:"👿",boss:"Нульморт"}
+];
+const heroes=[
+ {name:"Рыцарь Артём",icon:"🛡️",cost:0,power:"+1 сердце"},
+ {name:"Лиса Алиса",icon:"🦊",cost:0,power:"Показать перенос"},
+ {name:"Робот Байт",icon:"🤖",cost:10,power:"Проверка без штрафа"},
+ {name:"Волшебница Мира",icon:"🧙‍♀️",cost:25,power:"Подсветить разряд"},
+ {name:"Дракончик Искра",icon:"🐲",cost:45,power:"Пропустить шаг"},
+ {name:"Кот Пифагор",icon:"🐱",cost:65,power:"Разложить число"},
+ {name:"Страж Гром",icon:"⚡",cost:90,power:"Щит от ошибки"},
+ {name:"Фея Цифра",icon:"🧚",cost:120,power:"Следующая цифра"}
+];
+const types=["single","carry","shift","addition","percent"];
+const labels={
+ single:"Однозначный множитель",
+ carry:"Перенос",
+ shift:"Сдвиг",
+ addition:"Сложение",
+ percent:"Проценты"
+};
+const fresh=()=>({
+ unlocked:1,stars:{},wallet:0,hero:0,
+ owned:[0,1],sound:true,scenes:{},lang:"",karma:{good:0,sly:0},seen:{},
+ stats:Object.fromEntries(types.map(t=>[t,{ok:0,bad:0}])),
+ leitner:{},best:{}
+});
+let save=load(),screen="start",battle=null,scene=null;
+let selectedWorld=0,notice="",audio=null,holdTimer=null;
+function load(){
+ try{
+  const raw=JSON.parse(PF.get(KEY)||PF.get("stolbik-save"));
+  if(!raw||typeof raw!=="object")return fresh();
+  const d=fresh();
+  const s={...d,...raw};
+  s.stats={...d.stats,...(raw.stats||{})};
+  for(const t of types)s.stats[t]={...d.stats[t],...(s.stats[t]||{})};
+  s.leitner=raw.leitner||{};
+  s.stars=raw.stars||{};
+  s.owned=Array.isArray(raw.owned)?raw.owned:[0,1];
+  s.scenes=raw.scenes||{};
+  s.karma={good:0,sly:0,...(raw.karma||{})};
+  s.seen=raw.seen||{};
+  s.lang=raw.lang==="en"||raw.lang==="ru"?raw.lang:"";
+  s.best=raw.best||{};
+  s.unlocked=Math.max(1,Math.min(31,Number(s.unlocked)||1));
+  return s;
+ }catch(e){return fresh()}
+}
+function persist(){
+ try{PF.put(KEY,JSON.stringify(save))}catch(e){}
+}
+function esc(s){
+ return String(s).replace(/[&<>"']/g,c=>({
+ "&":"&amp;","<":"&lt;",">":"&gt;",
+ '"':"&quot;","'":"&#39;"
+ })[c]);
+}
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function pick(a){return a[rand(0,a.length-1)]}
+function beep(f=520,d=.08){
+ if(!save.sound||PF.paused())return;
+ try{
+  audio=audio||new(window.AudioContext||window.webkitAudioContext)();
+  const o=audio.createOscillator(),g=audio.createGain();
+  o.type="sine";o.frequency.value=f;
+  g.gain.setValueAtTime(.06,audio.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);
+  o.connect(g);g.connect(audio.destination);
+  o.start();o.stop(audio.currentTime+d);
+ }catch(e){}
+}
+function btn(text,action,cls=""){
+ return `<button class="btn ${cls}" data-action="${action}">${text}</button>`;
+}
+function header(title,back="map"){
+ return `<div class="top">${btn("‹",back,"ghost tiny")}<h2>${esc(title)}</h2><span style="width:48px"></span></div>`;
+}
+function nav(s){screen=s;render()}
+function start(){
+ screen="start";render();
+}
+function showMap(){
+ screen="map";render();
+}
+function worldOf(n){return Math.floor((n-1)/5)}
+function starString(n){
+ return "★".repeat(n)+"☆".repeat(3-n);
+}
+function sceneLines(kind,w){
+ if(kind==="intro")return STORY.intro;
+ if(kind==="end")return save.karma.good>=save.karma.sly?STORY.endGood:STORY.endNormal;
+ return [
+ ["💎",`Осколок ${w+1} из шести найден!`],
+ ["🛡️",`Замок «${worlds[w].name}» освобождён.`],
+ ["👿",w===4?"Нульморт ждёт тебя в последней цитадели!":"Нульморт уже готовит следующую преграду!"]
+ ];
+}
+let curW=0;
+function playLevel(n){
+ const L=STORY.levels[n-1];
+ if(!L||save.seen[n]){startLevel(n);return}
+ curW=worldOf(n);
+ scene={lines:L.scene,index:0,w:curW,pic:"scene_"+String(n).padStart(2,"0"),title:L.title,done:()=>{choiceN=n;screen="choice";render()}};
+ screen="scene";render();
+}
+let choiceN=0;
+function renderChoice(){
+ const L=STORY.levels[choiceN-1];
+ return `<div class="screen">
+ <div class="spacer"></div>
+ <div class="panel dialogue"><h3>${esc(L.title)}</h3><p>${esc(L.choice.q)}</p></div>
+ ${L.choice.opts.map((o,i)=>`<button class="btn ${i?"alt":""}" data-choice="${i}">${esc(o.t)}</button>`).join("")}
+ <p class="center muted">Выбор влияет на бой и на финал истории.</p>
+ <div class="spacer"></div></div>`;
+}
+function chooseOption(i){
+ const n=choiceN,o=STORY.levels[n-1].choice.opts[i];
+ save.karma[o.karma==="good"?"good":"sly"]++;save.seen[n]=true;persist();
+ scene={lines:[o.r],index:0,w:curW,done:()=>{
+  startLevel(n);
+  if(o.fx==="heart")battle.hearts=Math.min(4,battle.hearts+1);
+  if(o.fx==="hint")battle.freeHints=1;
+  render();
+ }};
+ screen="scene";render();
+}
+function openScene(kind,w,done){
+ scene={lines:sceneLines(kind,w),index:0,done};
+ screen="scene";render();
+}
+function nextScene(skip=false){
+ if(!scene)return;
+ if(skip||++scene.index>=scene.lines.length){
+  const done=scene.done;scene=null;
+  if(done)done();else showMap();
+ }else render();
+}
+function renderStart(){
+ const total=Object.values(save.stars).filter(x=>x>0).length;
+ return `<div class="screen center">
+ <div class="logo">${art("villain","💎⚔️🏰","hero")}</div>
+ <h1>Умножение<br>в столбик</h1>
+ <p class="subtitle">Кристалл Умножения<br>6 замков · 30 уровней · 8 героев</p>
+ <div class="panel">
+ <div style="font-size:42px">👿 ⚡ 💎</div>
+ <p>Нульморт разбил волшебный кристалл! Победи боссов и верни все шесть осколков.</p>
+ <p class="stars" style="margin-top:12px">⭐ ${save.wallet} звёзд · ${total}/30 уровней</p>
+ </div>
+ <div class="spacer"></div>
+ <div class="actions">
+ ${btn("⚔️ Играть","play")}
+ ${btn("🗺️ Карта замков","map","alt")}
+ ${btn("🦸 Герои","heroes","ghost")}
+ ${btn("⚙️ Настройки","settings","ghost")}
+ ${btn("👨‍👩‍👧 Родителям (удерживать)","parentsHold","ghost")}
+ </div>
+ </div>`;
+}
+function renderMap(){
+ return `<div class="screen">
+ ${header("Карта замков","start")}
+ <div class="panel center">💎 Собрано осколков: <b>${Math.min(6,Math.floor((save.unlocked-1)/5))}/6</b><br><span class="stars">⭐ ${save.wallet}</span></div>
+ <div class="castle-grid">${worlds.map((w,i)=>{
+ const locked=save.unlocked<i*5+1;
+ const earned=Array.from({length:5},(_,j)=>save.stars[i*5+j+1]||0).reduce((a,b)=>a+b,0);
+ return `<button class="castle art-bg ${locked?"locked":""}" style="background-image:linear-gradient(#0008,#000b),url(${IMG}bg_w${i+1}.webp)" data-world="${i}" ${locked?"disabled":""}>
+ <span class="emoji">${w.emoji}</span><b>${esc(w.name)}</b>
+ <small>${locked?"🔒 Закрыт":`⭐ ${earned}/15 · уровни ${i*5+1}–${i*5+5}`}</small>
+ </button>`;
+ }).join("")}</div>
+ ${btn("🦸 Выбрать героя","heroes","ghost")}
+ </div>`;
+}
+function renderLevels(){
+ const w=worlds[selectedWorld],start=selectedWorld*5+1;
+ return `<div class="screen">
+ ${header(w.name,"map")}
+ <div class="character">${art(selectedWorld===5?"villain":"boss"+(selectedWorld+1),w.emoji,"big")}</div>
+ <div class="panel center"><h3>${esc(w.boss)}</h3><p class="muted">Пятый уровень — битва с боссом!</p></div>
+ <div class="level-grid">${Array.from({length:5},(_,i)=>{
+ const n=start+i,s=save.stars[n]||0;
+ return `<button class="level ${n===save.unlocked?"current":""}" data-level="${n}" ${n>save.unlocked?"disabled":""}>${i===4?"👑":n}<span class="stars">${s?starString(s):" "}</span></button>`;
+ }).join("")}</div>
+ <div class="panel">
+ <h3>Правила боя</h3>
+ <p class="muted">Реши 5–8 примеров. За правильные ответы монстр теряет здоровье. Две ошибки в одном примере забирают сердце. Подсказки помогут разобраться.</p>
+ </div>
+ ${btn("▶️ Играть доступный уровень","nextAvailable")}
+ </div>`;
+}
+function renderHeroes(){
+ return `<div class="screen">
+ ${header("Выбор героя",battle?"battle":"map")}
+ <div class="pill center">⭐ ${save.wallet} звёзд</div>
+ <div class="heroes">${heroes.map((h,i)=>{
+ const owned=save.owned.includes(i);
+ return `<button class="hero-card ${save.hero===i?"selected":""}" data-hero="${i}">
+ <div class="face">${art("hero"+(i+1),h.icon,"face")}</div><b>${esc(h.name)}</b>
+ <p>${esc(h.power)}</p>
+ <p>${owned?(save.hero===i?"✅ Выбран":"Выбрать"):`🔒 ${h.cost} ⭐`}</p>
+ </button>`;
+ }).join("")}</div>
+ <p class="muted center">Способность каждого героя доступна один раз за бой.</p>
+ </div>`;
+}
+function renderSettings(){
+ return `<div class="screen">
+ ${header("Настройки","start")}
+ <div class="panel">
+ <h3>🔊 Звук</h3><p class="muted">Короткие звуки ответов через WebAudio.</p>
+ ${btn(save.sound?"Звук включён":"Звук выключен","sound","full")}
+ </div>
+ <div class="panel"><h3>💾 Сохранение</h3><p class="muted">Прогресс сохраняется автоматически. Игра работает без интернета.</p></div>
+ ${Object.keys(EN).length?`<div class="panel"><h3>🌐 Язык</h3><div class="row" style="display:flex;gap:8px"><button class="btn ${LANG==="ru"?"":"ghost"}" data-lang="ru" style="flex:1">Русский</button><button class="btn ${LANG==="en"?"":"ghost"}" data-lang="en" style="flex:1">English</button></div></div>`:""}
+ </div>`;
+}
+function renderParents(){
+ return `<div class="screen">
+ ${header("Для родителей","start")}
+ <div class="panel"><h3>📊 Тепловая карта навыков</h3>
+ <p class="muted">Доля правильных шагов и ответов. Чем зеленее полоса, тем увереннее навык.</p>
+ ${types.map(t=>{
+ const v=save.stats[t],all=v.ok+v.bad;
+ const pct=all?Math.round(v.ok/all*100):0;
+ return `<div style="margin-top:13px"><div class="bar-label"><span>${labels[t]}</span><b>${all?pct+"%":"Нет данных"}</b></div>
+ <div class="skillbar"><div style="width:${pct}%;background:${pct<45?"#ff7d88":pct<75?"#ffce67":"#73e6a0"}"></div></div>
+ <small>${v.ok} верно · ${v.bad} ошибок</small></div>`;
+ }).join("")}</div>
+ <div class="panel"><h3>📦 Повтор ошибок</h3>
+ ${Object.entries(save.leitner).filter(([,v])=>v.box<5).length} примеров требуют повторения.
+ <p class="muted">Коробки Лейтнера 1–5. Ошибки возвращают пример в первую коробку.</p></div>
+ ${window.Premium&&(Premium.available()||Premium.active())?`<div class="panel"><h3>★ Премиум для родителей</h3><p class="muted">${Premium.active()?`<span>Премиум активен до ${new Date(Premium.until()).toLocaleDateString(LANG==="en"?"en-GB":"ru-RU")}.</span> `:""}<span>Премиум на 30 дней или год: награды выдаются сразу, без просмотра роликов. Покупку оплачивает взрослый, автопродления нет.</span></p>${btn(Premium.active()?"★ Премиум":"★ Узнать про Премиум","premium","alt")}</div>`:""}
+ ${btn("🗑️ Сбросить весь прогресс","resetAsk","danger")}
+ </div>`;
+}
+const NPC={"Рыцарь Артём":"hero1","Лиса Алиса":"hero2","Робот Байт":"hero3","Волшебница Мира":"hero4","Дракончик Искра":"hero5","Кот Пифагор":"hero6","Страж Гром":"hero7","Фея Цифра":"hero8","Семизуб":"boss1","Двурог":"boss2","Переносий":"boss3","Трёхглав":"boss4","Процентор":"boss5","Нульморт":"villain"};
+const NPCEMO={"Рассказчик":"📜","Единица":"1️⃣","Торговец":"🧑‍🌾","Пустоцвет":"🥀"};
+function renderScene(){
+ const [who,line]=scene.lines[scene.index];
+ const img=NPC[who],face=img?art(img,"🗣️","hero"):`<div class="character">${NPCEMO[who]||(who.length<=3?who:"💬")}</div>`;
+ const pic=scene.pic&&scene.index===0?`<img class="scenepic" src="${IMG}${scene.pic}.webp" alt="" onerror="this.remove()">`:"";
+ return `<div class="screen">
+ ${pic}<div class="spacer"></div>
+ ${face}
+ <div class="panel dialogue">${img||NPCEMO[who]?`<b>${esc(who)}</b><br>`:""}${esc(line)}</div>
+ <p class="center muted">${scene.index+1} / ${scene.lines.length}</p>
+ ${btn("Далее ▶","sceneNext")}
+ ${btn("Пропустить","sceneSkip","ghost")}
+ <div class="spacer"></div>
+ </div>`;
+}
+function questionBank(n){
+ const w=worldOf(n),local=(n-1)%5,boss=local===4;
+ const bank=[];
+ const add=(a,b,mode="column")=>bank.push({a,b,mode,type:"multiplication"});
+ const pct=(p,base)=>bank.push({type:"percent",kind:"of",p,base,mode:"mental"});
+ const ratio=(part,base)=>bank.push({type:"percent",kind:"ratio",part,base,mode:"mental"});
+ if(w===0){
+  [[34,7],[26,4],[48,3],[63,2],[72,4],[19,6],[125,4]].forEach(x=>add(...x,"mental"));
+  [40,80,200,240].forEach(x=>[10,25,50].forEach(p=>pct(p,x)));
+ }else if(w===1){
+  [[12,22],[13,23],[24,12],[21,32],[31,21],[42,12],[23,13]].forEach(x=>add(...x));
+ }else if(w===2){
+  [[46,38],[27,34],[58,47],[67,29],[39,46],[76,58],[84,37]].forEach(x=>add(...x));
+ }else if(w===3){
+  [[125,4],[213,24],[342,16],[306,27],[407,35],[128,6],[504,18],[215,32]].forEach(x=>add(...x,x[1]<10?"mental":"column"));
+ }else if(w===4){
+  [120,160,200,240,320,400].forEach(x=>[10,15,20,25,50].forEach(p=>pct(p,x)));
+  [[30,120],[45,300],[24,120],[60,240],[36,180]].forEach(x=>ratio(...x));
+ }else{
+  [[324,26],[475,38],[306,47],[508,29],[213,64],[407,58],[625,34]].forEach(x=>add(...x));
+  pct(15,240);ratio(30,120);
+ }
+ if(boss&&w===5){
+  [[324,26],[475,38],[608,47],[735,29]].forEach(x=>add(...x));
+ }
+ return bank;
+}
+function questionKey(q){
+ return q.type==="percent"?
+  (q.kind==="of"?`p:${q.p}:${q.base}`:`r:${q.part}:${q.base}`):
+  `m:${q.a}:${q.b}`;
+}
+function chooseQuestion(n,used){
+ const bank=questionBank(n);
+ const weak=bank.filter(q=>{
+  const x=save.leitner[questionKey(q)];
+  return x&&x.box<5&&!used.has(questionKey(q));
+ });
+ const available=bank.filter(q=>!used.has(questionKey(q)));
+ const q=pick(weak.length&&Math.random()<.3?weak:(available.length?available:bank));
+ return {...q};
+}
+function answerOf(q){
+ if(q.type==="percent"){
+  return q.kind==="of"?q.base*q.p/100:q.part*100/q.base;
+ }
+ return q.a*q.b;
+}
+function mentalHint(q){
+ if(q.type==="percent"){
+  if(q.kind==="ratio")return `${q.part} ÷ ${q.base} × 100 = ${answerOf(q)}%.`;
+  if(q.p===10)return `10% — это одна десятая: ${q.base} ÷ 10 = ${answerOf(q)}.`;
+  if(q.p===25)return `25% — четверть: ${q.base} ÷ 4 = ${answerOf(q)}.`;
+  if(q.p===50)return `50% — половина: ${q.base} ÷ 2 = ${answerOf(q)}.`;
+  return `${q.base} × ${q.p} ÷ 100 = ${answerOf(q)}.`;
+ }
+ const tens=Math.floor(q.a/10)*10,rest=q.a-tens;
+ if(q.b<10)return `${tens}×${q.b}=${tens*q.b}, ${rest}×${q.b}=${rest*q.b}. Всего ${answerOf(q)}.`;
+ return `${q.a}×(${Math.floor(q.b/10)*10}+${q.b%10}) = ${q.a*Math.floor(q.b/10)*10}+${q.a*(q.b%10)} = ${answerOf(q)}.`;
+}
+function createColumn(a,b){
+ // Each step is computed from a single decimal column, never from
+ // string concatenation. Zero digits and zero carries are valid.
+ const ad=String(a).split("").reverse().map(Number);
+ const bd=String(b).split("").reverse().map(Number);
+ const steps=[],rows=[];
+ const width=String(a*b).length+2;
+ const addStep=(kind,row,col,value,desc,skill,extra={})=>{
+  steps.push({kind,row,col,value,desc,skill,...extra});
+ };
+ bd.forEach((digit,r)=>{
+  let carry=0,raw=[];
+  for(let i=0;i<ad.length;i++){
+   const total=ad[i]*digit+carry;
+   const value=total%10,next=Math.floor(total/10);
+   const expr=`${ad[i]}×${digit}${carry?` + ${carry}`:""} = ${total}`;
+   addStep("digit",r,i+r,value,`${expr}. Запиши ${value}${next?`, ${next} перенеси`:""}.`,r?"shift":"carry",{carry:next,operand:ad[i],multiplier:digit,incoming:carry});
+   raw.push(value);
+   if(i<ad.length-1){
+    if(next>0)addStep("carry",r,i+r+1,next,`${expr}. Перенос в следующий разряд — ${next}.`,"carry",{isCarry:true});
+   }else if(next>0){
+    addStep("digit",r,i+r+1,next,`Оставшийся перенос ${next} запиши слева.`,"carry",{leading:true});
+    raw.push(next);
+   }
+   carry=next;
+  }
+  const value=Number(raw.slice().reverse().join(""))*10**r;
+  rows.push(value);
+ });
+ // For a one-digit multiplier, the single partial product is the answer.
+ // For multiple multiplier digits, calculate column sums with carries.
+ if(bd.length>1){
+  let carry=0;
+  const max=Math.max(String(a*b).length,...rows.map(x=>String(x).length));
+  for(let c=0;c<max;c++){
+   const digits=rows.map(x=>Math.floor(x/10**c)%10);
+   const total=digits.reduce((x,y)=>x+y,carry);
+   const value=total%10,next=Math.floor(total/10);
+   const expr=digits.join(" + ")+(carry?` + ${carry}`:"");
+   addStep("sum",bd.length,c,value,`${expr} = ${total}. Запиши ${value}${next?`, перенеси ${next}`:""}.`,"addition",{carry:next});
+   if(next&&c<max-1)addStep("sumCarry",bd.length,c+1,next,`Перенос при сложении — ${next}.`,"addition");
+   carry=next;
+  }
+ }
+ return {a,b,ad,bd,rows,width,steps,values:{},index:0,wrong:false};
+}
+function initQuestion(){
+ const b=battle;
+ const q=chooseQuestion(b.level,b.used);
+ b.used.add(questionKey(q));
+ b.q=q;b.mistakesThis=0;b.input="";
+ b.col=q.mode==="column"?createColumn(q.a,q.b):null;
+ b.feedback="Решай спокойно. Время не ограничено.";
+ b.feedbackType="";
+ b.hint=false;
+ b.shield=false;
+ b.startedAt=Date.now();
+ render();
+}
+function startLevel(n){
+ n=Math.floor(Number(n));
+ if(!Number.isFinite(n)||n<1||n>30)return false;
+ const count=5+(n-1)%4;
+ battle={
+  level:n,total:count,index:0,hearts:3,
+  mistakes:0,hints:0,used:new Set(),
+  abilityUsed:false,shield:false,defeated:false,
+  correct:0,wrongKeys:new Set(),
+  feedback:"",feedbackType:"",input:""
+ };
+ screen="battle";initQuestion();render();
+ return true;
+}
+function currentStep(){
+ return battle&&battle.col?battle.col.steps[battle.col.index]:null;
+}
+function stepPrompt(s){
+ if(!s)return "";
+ if(s.kind==="sum"||s.kind==="sumCarry")return `Сложение по разрядам: ${s.desc.split(" = ")[0]} = ?`;
+ if(s.kind==="carry"||s.kind==="sumCarry")return "Какую цифру перенести?";
+ if(s.leading)return "Запиши оставшийся перенос.";
+ return `${s.operand} × ${s.multiplier}${s.incoming?" + "+s.incoming:""} = ? Запиши цифру разряда.`;
+}
+function renderColumn(c){
+ const rows=c.bd.length,cols=c.width;
+ const cells=new Map();
+ const put=(r,col,text,cl="digit")=>{
+  if(col>=0&&col<cols)cells.set(`${r}:${col}`,{text,cl});
+ };
+ const top=1,mid=2,partialStart=3,sumRow=partialStart+rows+1;
+ // Logical column zero is the units column on the right.
+ c.ad.forEach((d,i)=>put(top,i,d));
+ c.bd.forEach((d,i)=>put(mid,i,d));
+ put(mid,c.bd.length,"×","operator");
+ for(let i=0;i<cols;i++)put(mid+0.5,i,"","line");
+ c.bd.forEach((digit,r)=>{
+  for(let k=0;k<r;k++)put(partialStart+r,k,"0","shift");
+ });
+ const steps=c.steps;
+ steps.forEach((s,i)=>{
+  const isCarry=s.kind==="carry"||s.kind==="sumCarry";
+  const rr=isCarry?(s.kind==="sumCarry"?sumRow-1:0):s.kind==="sum"?sumRow:partialStart+s.row;
+  const key=`${rr}:${s.col}`;
+  if(i<c.index)put(rr,s.col,String(s.value),isCarry?"carry":"digit");
+  else if(i===c.index)put(rr,s.col,c.wrong?String(s.value):"?",`active ${c.wrong?"wrong":""}`);
+  else if(!cells.has(key))put(rr,s.col,"·",isCarry?"carry edit":"edit");
+ });
+ // The final sum line is separated from partial products.
+ if(rows>1){
+  for(let i=0;i<cols;i++)put(sumRow-0.5,i,"","line");
+ }
+ const maxRow=sumRow;
+ let html=`<div class="column" style="--cols:${cols}">`;
+ for(let r=0;r<=maxRow;r++){
+  if(r===mid+0.5||r===sumRow-0.5){
+   for(let col=cols-1;col>=0;col--)html+=`<div class="cell line"></div>`;
+   continue;
+  }
+  if(!Number.isInteger(r))continue;
+  for(let col=cols-1;col>=0;col--){
+   const v=cells.get(`${r}:${col}`)||{text:"",cl:"blank"};
+   html+=`<div class="cell ${v.cl}">${esc(v.text)}</div>`;
+  }
+ }
+ html+="</div>";
+ return html;
+}
+function enemyImg(b){const w=worldOf(b.level);if(b.index===b.total-1)return w===5?"villain":"boss"+(w+1);return "mon"+(w+1)+"_"+(b.index%3+1)}
+function setBg(){const m={start:"bg_start",map:"bg_map",levels:"bg_w"+(selectedWorld+1),battle:battle?"bg_w"+(worldOf(battle.level)+1):"",scene:scene&&scene.w!=null?"bg_w"+(scene.w+1):"bg_start",choice:"bg_w"+(curW+1),defeat:battle?"bg_w"+(worldOf(battle.level)+1):"",result:battle?"bg_w"+(worldOf(battle.level)+1):""};const n=m[screen];if(n){app.classList.add("bg");app.style.backgroundImage=`url(${IMG}${n}.webp)`}else{app.classList.remove("bg");app.style.backgroundImage=""}}
+function renderBattle(){
+ const b=battle,q=b.q,w=worlds[worldOf(b.level)];
+ const hp=Math.round((b.total-b.correct)/b.total*100);
+ const isCol=!!b.col,s=currentStep();
+ const question=q.type==="percent"?
+  (q.kind==="of"?`${q.p}% от ${q.base} = ?`:`Сколько процентов ${q.part} от ${q.base}?`):
+  `${q.a} × ${q.b} = ?`;
+ const prompt=isCol?(s?stepPrompt(s):"Пример решён!"):"Введи ответ";
+ return `<div class="screen" style="gap:8px">
+ <div class="battle-top">
+ <button class="btn ghost tiny" data-action="exitBattle">‹ Карта</button>
+ <span class="pill">Ур. ${b.level} · ${b.index+1}/${b.total}</span>
+ <span class="pill" style="display:flex;align-items:center;gap:4px">${art("ic_star","⭐","sm").replace('class="art sm"','class="art sm" style="height:20px"')} ${save.wallet}</span>
+ </div>
+ <div class="battle-top">
+ <span class="hearts" style="display:flex;gap:3px">${Array.from({length:Math.max(3,b.hearts)},(_,i)=>art("ic_heart",i<b.hearts?"❤️":"🖤","sm")).map((h,i)=>i<b.hearts?h:h.replace('class="art sm"','class="art sm" style="filter:grayscale(1) brightness(.4)"')).join("")}</span>
+ <span class="muted" style="font-size:12px">⏱️ ${Math.floor((Date.now()-b.startedAt)/1000)} с</span>
+ </div>
+ <div class="fighters">${art("hero"+(save.hero+1),heroes[save.hero].icon,"he")}${art(enemyImg(b),w.enemy,"en")}</div>
+ <div class="enemy-name">${esc(b.index===b.total-1?w.boss:"Страж замка")}</div>
+ <div class="progress"><div style="width:${hp}%"></div></div>
+ <div class="panel battle-card">
+ <div class="row" style="justify-content:space-between">
+ <span class="pill">${isCol?"✏️ В СТОЛБИК":"🧠 В УМЕ"}</span>
+ <span class="muted" style="font-size:12px">${b.mistakesThis}/2 ошибки</span>
+ </div>
+ ${isCol?
+ `<div class="column-wrap">${renderColumn(b.col)}</div>`:
+ `<div class="math-large">${esc(question)}</div><div class="answer">${esc(b.input)||"?"}</div>`}
+ <div class="question" style="font-size:${isCol?15:18}px">${esc(prompt)}</div>
+ <div class="feedback ${b.feedbackType}">${esc(b.feedback)}</div>
+ </div>
+ <div class="tool-row">
+ ${btn(isCol?"💡 Объяснить шаг":"💡 Как считать в уме","hint","ghost tiny")}
+ ${btn(`${heroes[save.hero].icon} Способность`,"ability","alt tiny")}
+ </div>
+ <div class="spacer"></div>
+ <div class="keypad">
+ ${[1,2,3,4,5,6,7,8,9,"←",0,"✓"].map(k=>
+ `<button class="key ${k==="✓"?"ok":k==="←"?"back":""}" data-key="${k}">${k}</button>`).join("")}
+ </div>
+ </div>`;
+}
+function stat(t,good){
+ if(!types.includes(t))return;
+ save.stats[t][good?"ok":"bad"]++;
+ persist();
+}
+function skillOf(q){
+ if(q.type==="percent")return "percent";
+ return q.mode==="mental"?"single":"carry";
+}
+function updateLeitner(q,good){
+ const key=questionKey(q);
+ const x=save.leitner[key]||{box:1,seen:0};
+ x.box=good?Math.min(5,x.box+1):1;
+ x.seen++;
+ save.leitner[key]=x;
+ persist();
+}
+function loseHeart(){
+ const b=battle;
+ if(b.shield){
+  b.shield=false;b.feedback="🛡️ Щит защитил от потери сердца!";
+  return;
+ }
+ b.hearts=Math.max(0,b.hearts-1);
+ beep(170,.2);
+}
+function wrongAnswer(expected,desc,skill){
+ const b=battle;
+ b.mistakes++;b.mistakesThis++;
+ b.wrongKeys.add(questionKey(b.q));
+ stat(skill,false);
+ beep(210,.12);
+ b.feedback=`❌ ${desc}`;
+ b.feedbackType="bad";
+ if(b.col)b.col.wrong=true;
+ if(b.mistakesThis>=2){
+  loseHeart();b.mistakesThis=0;
+  if(b.hearts===0){defeat();return}
+ }
+ render();
+}
+function checkInput(){
+ const b=battle;
+ if(!b||b.defeated)return;
+ if(b.col){
+  const s=currentStep();
+  if(!s)return;
+  if(b.input===""){b.feedback="Введи цифру.";render();return}
+  const value=Number(b.input);
+  b.input="";
+  if(value===s.value)advanceStep(false);
+  else wrongAnswer(s.value,s.desc,s.skill);
+ }else{
+  if(b.input==="")return;
+  const value=Number(b.input),expected=answerOf(b.q);
+  b.input="";
+  if(value===expected){
+   stat(skillOf(b.q),true);finishQuestion();
+  }else wrongAnswer(expected,`Правильный ответ: ${expected}. ${mentalHint(b.q)}`,skillOf(b.q));
+ }
+}
+function advanceStep(auto=false){
+ const b=battle,c=b.col;
+ if(!c)return false;
+ const s=currentStep();
+ if(!s)return false;
+ c.values[c.index]=s.value;
+ c.index++;c.wrong=false;
+ stat(s.skill,true);
+ b.feedback=auto?`✨ ${s.desc}`:`✅ ${s.desc}`;
+ b.feedbackType="good";
+ beep(590,.06);
+ if(c.index>=c.steps.length){
+  finishQuestion();
+ }else render();
+ return true;
+}
+function finishQuestion(){
+ const b=battle;
+ const q=b.q;
+ const clean=!b.wrongKeys.has(questionKey(q));
+ updateLeitner(q,clean);
+ b.correct++;
+ beep(720,.12);
+ if(b.correct>=b.total){
+  victory();return;
+ }
+ b.index++;
+ initQuestion();
+ b.feedback="⚔️ Попадание! Монстр потерял здоровье.";
+ b.feedbackType="good";
+ render();
+}
+function defeat(){
+ battle.defeated=true;
+ screen="defeat";render();
+}
+function victory(){
+ const b=battle,n=b.level;
+ const stars=b.mistakes===0&&b.hints===0?3:b.mistakes<=3?2:1;
+ const old=save.stars[n]||0;
+ save.stars[n]=Math.max(old,stars);
+ save.wallet+=Math.max(0,stars-old);
+ save.unlocked=Math.max(save.unlocked,Math.min(31,n+1));
+ save.best[n]=Math.max(save.best[n]||0,stars);
+ persist();
+ b.earned=stars;b.newStars=stars-old;
+ screen="result";render();
+}
+function renderDefeat(){
+ return `<div class="screen center">
+ <div class="spacer"></div><div class="character">💔</div>
+ <h1>Герой устал!</h1>
+ <p>Нульморт пока удержал замок. Можно попробовать ещё раз.</p>
+ <div class="panel">Пройдено примеров: ${battle.correct}/${battle.total}</div>
+ ${PF.canReward()&&!battle.heartAd?btn(PF.premium()?"❤️ +1 сердце (Премиум)":"🎬 +1 сердце за ролик","reward"):""}
+ ${btn("🔄 Повторить бой","retry","alt")}
+ ${btn("🗺️ На карту","map","ghost")}
+ <div class="spacer"></div></div>`;
+}
+function renderResult(){
+ const b=battle,n=b.level,w=worldOf(n);
+ return `<div class="screen center">
+ <div class="spacer"></div>
+ <div class="character">🏆💎</div>
+ <h1>Победа!</h1>
+ <div class="stars" style="font-size:47px">${starString(b.earned)}</div>
+ <div class="panel">
+ <h3>Уровень ${n} пройден</h3>
+ <p>Ошибок: ${b.mistakes} · Подсказок: ${b.hints}</p>
+ <p>Заработано новых звёзд: ⭐ ${b.newStars}</p>
+ <p class="muted">1 ★ — победа; 2 ★ — не более 3 ошибок; 3 ★ — без ошибок и подсказок.</p>
+ </div>
+ ${PF.canReward()&&b.newStars>0&&!b.doubled?btn(PF.premium()?"⭐ Удвоить звёзды (Премиум)":"🎬 Удвоить звёзды (ролик)","x2","alt"):""}
+ ${btn(n===30?"🎉 Финал":n%5===0?"💎 Забрать осколок":"▶️ Следующий уровень","continue")}
+ ${btn("🔄 Переиграть","retry","alt")}
+ ${btn("🗺️ Карта","map","ghost")}
+ <div class="spacer"></div>
+ </div>`;
+}
+function render(){
+ let html="";
+ if(screen==="start")html=renderStart();
+ if(screen==="map")html=renderMap();
+ if(screen==="levels")html=renderLevels();
+ if(screen==="heroes")html=renderHeroes();
+ if(screen==="settings")html=renderSettings();
+ if(screen==="parents")html=renderParents();
+ if(screen==="scene")html=renderScene();
+ if(screen==="choice")html=renderChoice();
+ if(screen==="battle")html=renderBattle();
+ if(screen==="defeat")html=renderDefeat();
+ if(screen==="result")html=renderResult();
+ app.innerHTML=html;setBg();PF.setPlaying(screen==="battle");trDom(app);if(screen==="parents"){try{if(window.Premium)Premium.maybeCard()}catch(e){}}
+}
+function hint(){
+ const b=battle;
+ if(!b)return;
+ if(b.freeHints>0)b.freeHints--;else b.hints++;
+ if(b.col){
+  const s=currentStep();
+  b.feedback=s?`💡 ${s.desc}`:"Готово!";
+ }else b.feedback=`💡 ${mentalHint(b.q)}`;
+ b.feedbackType="good";render();
+}
+function useAbility(){
+ const b=battle;
+ if(!b||b.abilityUsed)return;
+ const h=save.hero;
+ b.abilityUsed=true;
+ b.hints++;
+ const s=currentStep();
+ if(h===0){
+  b.hearts=Math.min(4,b.hearts+1);
+  b.feedback="🛡️ Артём добавил одно сердце!";
+ }else if(h===1){
+  b.feedback=s?`🦊 Алиса: ${s.desc}`:`🦊 ${mentalHint(b.q)}`;
+ }else if(h===2){
+  b.feedback=s?`🤖 Проверка без штрафа: следующая цифра ${s.value}.`:`🤖 Ответ: ${answerOf(b.q)}.`;
+ }else if(h===3){
+  b.feedback=s?`🪄 Сейчас работаем с разрядом 10^${s.col}. ${s.desc}`:"🪄 Смотри на разряды числа.";
+ }else if(h===4){
+  if(s){advanceStep(true);return}
+  b.feedback="🐲 В уме: "+mentalHint(b.q);
+ }else if(h===5){
+  b.feedback="🐱 "+mentalHint(b.q);
+ }else if(h===6){
+  b.shield=true;b.feedback="⚡ Щит поглотит следующую потерю сердца.";
+ }else if(h===7){
+  b.feedback=s?`🧚 Следующая цифра: ${s.value}`:`🧚 Ответ: ${answerOf(b.q)}`;
+ }
+ b.feedbackType="good";render();
+}
+function keyPress(k){
+ if(!battle||screen!=="battle")return;
+ if(k==="✓"){checkInput();return}
+ if(k==="←")battle.input=battle.input.slice(0,-1);
+ else if(/^[0-9]$/.test(String(k))){
+  const max=battle.col?1:9;
+  if(battle.input.length<max)battle.input+=k;
+  if(battle.col){
+   checkInput();return;
+  }
+ }
+ render();
+}
+function showRewarded(cb){PF.rewarded(ok=>{if(ok&&typeof cb==="function")cb()})}
+function continueGame(){
+ const n=battle.level,w=worldOf(n);
+ if(n===30){
+  openScene("end",5,showMap);
+ }else if(n%5===0){
+  openScene("world",w,()=>playLevel(n+1));
+ }else playLevel(n+1);
+}
+function ask(text,ok,only){
+ const d=document.createElement("div");d.className="modal";
+ d.innerHTML=`<div class="box"><p>${esc(text)}</p>${only?"":`<button class="btn" data-m="ok">Да</button>`}<button class="btn ghost" data-m="no">${only?"Понятно":"Отмена"}</button></div>`;
+ d.addEventListener("click",e=>{const x=e.target.closest("[data-m]");if(!x)return;d.remove();if(x.dataset.m==="ok"&&ok)ok()});
+ app.appendChild(d);trDom(d);
+}
+function chooseHero(i){
+ const h=heroes[i];
+ const pick=()=>{save.hero=i;persist();render()};
+ if(save.owned.includes(i)){pick();return}
+ if(save.wallet<h.cost){ask(`Нужно ${h.cost} звёзд. Сейчас у тебя ${save.wallet}.`,null,true);return}
+ ask(`Открыть героя «${h.name}» за ${h.cost} звёзд?`,()=>{save.wallet-=h.cost;save.owned.push(i);pick()});
+}
+function reset(){
+ ask("Удалить все звёзды, уровни и статистику?",()=>{save=fresh();persist();start()});
+}
+function holdParents(button){
+ clearTimeout(holdTimer);
+ holdTimer=setTimeout(()=>{
+  holdTimer=null;
+  if(button)button.dataset.held="1";
+  nav("parents");
+ },1500);
+}
+function stopHold(){clearTimeout(holdTimer);holdTimer=null}
+app.addEventListener("pointerdown",e=>{
+ const el=e.target.closest('[data-action="parentsHold"]');
+ if(el)holdParents(el);
+});
+["pointerup","pointercancel","pointerleave"].forEach(ev=>
+ app.addEventListener(ev,stopHold)
+);
+app.addEventListener("contextmenu",e=>{
+ if(e.target.closest('[data-action="parentsHold"]'))e.preventDefault();
+});
+app.addEventListener("click",e=>{
+ const key=e.target.closest("[data-key]");
+ if(key){keyPress(key.dataset.key);return}
+ const world=e.target.closest("[data-world]");
+ if(world){selectedWorld=Number(world.dataset.world);nav("levels");return}
+ const level=e.target.closest("[data-level]");
+ if(level){playLevel(Number(level.dataset.level));return}
+ const ch=e.target.closest("[data-choice]");
+ if(ch){chooseOption(Number(ch.dataset.choice));return}
+ const lg=e.target.closest("[data-lang]");
+ if(lg){save.lang=lg.dataset.lang;setLang(save.lang);persist();render();return}
+ const hero=e.target.closest("[data-hero]");
+ if(hero){chooseHero(Number(hero.dataset.hero));return}
+ const button=e.target.closest("[data-action]");
+ if(!button)return;
+ const a=button.dataset.action;
+ if(a==="start")start();
+ else if(a==="play"){
+  if(!save.scenes.intro){
+   save.scenes.intro=true;persist();
+   openScene("intro",0,()=>playLevel(save.unlocked<=30?save.unlocked:30));
+  }else playLevel(save.unlocked<=30?save.unlocked:30);
+ }
+ else if(a==="map")showMap();
+ else if(a==="heroes")nav("heroes");
+ else if(a==="settings")nav("settings");
+ else if(a==="sound"){save.sound=!save.sound;persist();beep();render()}
+ else if(a==="parentsHold"){}
+ else if(a==="resetAsk")reset();
+ else if(a==="premium"){try{Premium.openShop()}catch(e){}}
+ else if(a==="sceneNext")nextScene();
+ else if(a==="sceneSkip")nextScene(true);
+ else if(a==="nextAvailable")playLevel(Math.min(save.unlocked,selectedWorld*5+5));
+ else if(a==="exitBattle"){
+  ask("Выйти из боя? Текущий бой начнётся заново.",showMap);
+ }
+ else if(a==="battle")nav("battle");
+ else if(a==="hint")hint();
+ else if(a==="ability")useAbility();
+ else if(a==="retry")startLevel(battle.level);
+ else if(a==="continue")continueGame();
+ else if(a==="reward"){if(battle.heartAd)return;showRewarded(()=>{
+  battle.heartAd=true;battle.hearts=1;battle.defeated=false;
+  battle.mistakesThis=0;
+  battle.feedback="❤️ Сердце восстановлено!";
+  screen="battle";render();
+ });
+}
+ else if(a==="x2"){if(battle.doubled||!battle.newStars)return;showRewarded(()=>{battle.doubled=true;save.wallet+=battle.newStars;battle.newStars*=2;persist();render()})}
+});
+document.addEventListener("keydown",e=>{
+ if(screen!=="battle")return;
+ if(/^[0-9]$/.test(e.key))keyPress(e.key);
+ if(e.key==="Backspace")keyPress("←");
+ if(e.key==="Enter")keyPress("✓");
+});
+PF.init().then(()=>{
+ save=load();setLang(save.lang||detectLang());render();PF.ready();
+ try{Premium.onChange(()=>{if(screen==="parents")render()});Premium.init({sdk:PF.sdk(),lang:LANG,config:{corner:false},texts:{"ru": {"title": "Премиум для родителей", "perks": ["Награды за ролики выдаются сразу, без просмотра.", "Оплачивает взрослый, через родительский экран.", "Один платёж. Автопродления и повторных списаний нет."], "p30": "Премиум на 30 дней", "p365": "Премиум на год", "note": "Оплата один раз. Премиум действует 30 дней или год. Автопродления и повторных списаний нет.", "later": "Не сейчас", "extend": "Продлить", "endBuy": "Купить Премиум", "soonTitle": "Премиум скоро закончится", "soonText": "Осталось {0}. Премиум закончится сам, без повторных списаний. Если вам удобно, вы сможете купить его снова для игры ребёнка.", "endTitle": "Премиум закончился", "endText": "Награды снова требуют просмотра роликов. Ребёнок может продолжать решать примеры в столбик и играть."}, "en": {"title": "Premium for Parents", "perks": ["Video rewards are instant, no watching.", "An adult pays, via the parent screen.", "One-time payment. No automatic renewal or recurring charges."], "p30": "30-Day Premium", "p365": "1-Year Premium", "note": "One-time payment. Premium lasts 30 days or 1 year. No automatic renewal or recurring charges.", "later": "Not Now", "extend": "Renew", "endBuy": "Buy Premium", "soonTitle": "Premium Is Ending Soon", "soonText": "{0} left. Premium ends automatically, with no further charges. You can purchase it again for your child's game if you wish.", "endTitle": "Premium Has Ended", "endText": "Video rewards require watching ads again. Your child can keep solving long multiplication and playing."}},store:{get:()=>PF.get("stb-premium"),set:r=>PF.put("stb-premium",r),save:()=>PF.saveNow()}}).then(()=>{if(screen==="parents")render()})}catch(e){}
+},()=>{render()});
+})();
+</script>
+</body>
+</html>
+
