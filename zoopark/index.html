@@ -434,44 +434,64 @@ const PF=(function(){
   var ysdk=null,player=null,sdkOk=false,cloudOk=false,gaveUp=false,wantReady=false,readyDone=false;
   var adBusy=false,tabHidden=false,apiPaused=false,gpOn=false,wantGp=false,lastAdAt=0,bornAt=Date.now();
   var AD_FIRST_MS=300000,INIT_TIMEOUT_MS=4000,SYNC_DELAY_MS=2500,T_KEY="zoopark-syncT";
-  var mem={},dirty=false,syncTimer=0,self={onPause:function(){}};
-  function isSynced(k){return k!==T_KEY&&k.indexOf("zoopark-")===0;}
+  var KT_KEY="zoopark-keyT",kt={},lsOk=false,setErr=0;
+  var mem={},dirty=false,syncTimer=0,self={onPause:function(){},onCloud:function(){},mergers:{}};
+  function isSynced(k){return k!==T_KEY&&k!==KT_KEY&&k.indexOf("zoopark-")===0;}
+  function log(){try{console.info.apply(console,["[zoopark-save]"].concat([].slice.call(arguments)));}catch(e){}}
   function lsSetRaw(k,v){try{localStorage.setItem(k,v);}catch(e){}}
   function lsDelRaw(k){try{localStorage.removeItem(k);}catch(e){}}
-  function seedMem(){try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(isSynced(k)||k===T_KEY)mem[k]=localStorage.getItem(k);}}catch(e){}}
+  function seedMem(){
+    try{localStorage.setItem("zoopark-probe","1");lsOk=localStorage.getItem("zoopark-probe")==="1";localStorage.removeItem("zoopark-probe");}catch(e){lsOk=false;}
+    try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(isSynced(k)||k===T_KEY)mem[k]=localStorage.getItem(k);}}catch(e){}
+    try{var o=JSON.parse(localStorage.getItem(KT_KEY)||"{}");if(o&&typeof o==="object")kt=o;}catch(e){}
+    log("localStorage:",lsOk?"работает":"НЕДОСТУПЕН","| ключей игры:",Object.keys(mem).filter(isSynced).length);
+  }
+  function ktSave(){lsSetRaw(KT_KEY,JSON.stringify(kt));}
   function localT(){return Number(mem[T_KEY])||0;}
+  function keyT(k){return kt[k]||(Object.prototype.hasOwnProperty.call(mem,k)?localT():0);}
   function schedule(){if(!syncTimer&&player&&cloudOk)syncTimer=setTimeout(function(){flush(false);},SYNC_DELAY_MS);}
   function touch(){var t=String(Date.now());mem[T_KEY]=t;lsSetRaw(T_KEY,t);dirty=true;schedule();}
   self.get=function(k){if(Object.prototype.hasOwnProperty.call(mem,k))return mem[k];try{return localStorage.getItem(k);}catch(e){return null;}};
-  self.put=function(k,raw){mem[k]=raw;lsSetRaw(k,raw);if(isSynced(k))touch();};
-  self.del=function(k){delete mem[k];lsDelRaw(k);if(isSynced(k))touch();};
+  self.put=function(k,raw){raw=String(raw);mem[k]=raw;lsSetRaw(k,raw);if(isSynced(k)){kt[k]=Date.now();ktSave();touch();}};
+  self.del=function(k){delete mem[k];lsDelRaw(k);if(isSynced(k)){kt[k]=Date.now();ktSave();touch();}};
+  /* Облако: слияние ПО КЛЮЧАМ. У каждого ключа побеждает более позднее изменение; у ключей с правилом слияния (mergers) побеждает больший прогресс.
+     Пустой ответ облака (гость) ничего не стирает; ключ, которого нет на устройстве, не затирается. Снимок v1 без времён ключей: время ключа = _t снимка. */
   function importCloud(data){
-    var d=data&&typeof data==="object"?data:{},ct=Number(d._t)||0,blob=d.d&&typeof d.d==="object"?d.d:null;
-    var PK="zoopark-premium",cloudPrem=blob&&typeof blob[PK]==="string"?blob[PK]:null,localPrem=Object.prototype.hasOwnProperty.call(mem,PK)?mem[PK]:null;
-    if(blob&&ct>localT()){
-      Object.keys(mem).forEach(function(k){if(isSynced(k)){delete mem[k];lsDelRaw(k);}});
-      Object.keys(blob).forEach(function(k){if(isSynced(k)&&typeof blob[k]==="string"){mem[k]=blob[k];lsSetRaw(k,blob[k]);}});
-      mem[T_KEY]=String(ct);lsSetRaw(T_KEY,String(ct));dirty=false;
-    }else if(localT()>ct){dirty=true;}
-    if((localPrem||cloudPrem)&&window.Premium&&window.Premium.mergeState){
-      var m=window.Premium.mergeState(localPrem,cloudPrem);mem[PK]=m;lsSetRaw(PK,m);if(m!==cloudPrem)dirty=true;
-    }
-    cloudOk=true;if(dirty)schedule();
+    var d=data&&typeof data==="object"?data:{},ct=Number(d._t)||0,blob=d.d&&typeof d.d==="object"?d.d:{},ckt=d.kt&&typeof d.kt==="object"?d.kt:{};
+    var keys={},took=0,kept=0,merged=0,changedAny=false;
+    [mem,kt,blob,ckt].forEach(function(o){Object.keys(o).forEach(function(k){if(isSynced(k))keys[k]=1;});});
+    Object.keys(keys).forEach(function(k){
+      var hasL=Object.prototype.hasOwnProperty.call(mem,k),hasC=typeof blob[k]==="string";
+      var lt=keyT(k),cT=Number(ckt[k])||(hasC?ct:0),lv=hasL?mem[k]:null,cv=hasC?blob[k]:null,fn=self.mergers[k];
+      if(fn&&hasL&&hasC&&lv!==cv){
+        var m=null;try{m=fn(lv,cv);}catch(e){}
+        if(typeof m==="string"){if(m!==lv){mem[k]=m;lsSetRaw(k,m);changedAny=true;}if(m!==cv)dirty=true;kt[k]=Math.max(lt,cT);merged++;return;}
+      }
+      if(cT>lt||(cT===lt&&hasC&&!hasL)){
+        if(hasC){if(lv!==cv){mem[k]=cv;lsSetRaw(k,cv);changedAny=true;}}else if(hasL){delete mem[k];lsDelRaw(k);changedAny=true;}
+        kt[k]=cT;took++;
+      }else if(lt>cT||(hasL&&!hasC)){dirty=true;kept++;}
+    });
+    ktSave();
+    if(ct>localT()){mem[T_KEY]=String(ct);lsSetRaw(T_KEY,String(ct));}
+    cloudOk=true;
+    log("облако:",Object.keys(blob).length?"снимок v"+(d.v||1)+", ключей "+Object.keys(blob).length:"пусто","| из облака:",took,"с устройства:",kept,"объединено:",merged);
+    if(dirty)schedule();
+    if(changedAny)try{self.onCloud();}catch(e){}
   }
+  function snapshot(){var d={},t={};Object.keys(mem).forEach(function(k){if(isSynced(k)&&mem[k]!=null)d[k]=mem[k];});Object.keys(kt).forEach(function(k){if(isSynced(k))t[k]=kt[k];});return{v:2,_t:localT(),d:d,kt:t};}
   function flush(now){
     clearTimeout(syncTimer);syncTimer=0;
     if(!dirty||!player||!cloudOk)return;
-    var d={};Object.keys(mem).forEach(function(k){if(isSynced(k)&&mem[k]!=null)d[k]=mem[k];});
     dirty=false;
-    try{var p=player.setData({v:1,_t:localT(),d:d},!!now);if(p&&p.catch)p.catch(function(){dirty=true;});}catch(e){dirty=true;}
+    try{var p=player.setData(snapshot(),!!now);if(p&&p.then)p.then(function(){if(setErr){setErr=0;log("setData снова работает");}},function(e){dirty=true;if(!setErr++)log("setData ОШИБКА:",e&&(e.message||e));});}catch(e){dirty=true;}
   }
   /* Запись в облако с подтверждением: Promise<true>, когда данные сохранены (нужна Премиуму: сначала запись, потом consumePurchase). */
   self.save=function(){
     clearTimeout(syncTimer);syncTimer=0;
     if(!player||!cloudOk)return Promise.resolve(false);
-    var d={};Object.keys(mem).forEach(function(k){if(isSynced(k)&&mem[k]!=null)d[k]=mem[k];});
     dirty=false;
-    try{return Promise.resolve(player.setData({v:1,_t:localT(),d:d},true)).then(function(){return true;},function(){dirty=true;return false;});}
+    try{return Promise.resolve(player.setData(snapshot(),true)).then(function(){return true;},function(){dirty=true;return false;});}
     catch(e){dirty=true;return Promise.resolve(false);}
   };
   self.sdk=function(){return ysdk;};
@@ -501,7 +521,7 @@ const PF=(function(){
         ysdk=sdk;sdkOk=true;
         try{sdk.on("game_api_pause",function(){apiPaused=true;changed();});sdk.on("game_api_resume",function(){apiPaused=false;changed();});}catch(e){}
         tryReady();
-        return sdk.getPlayer({scopes:false}).then(function(p){player=p;return p.getData();}).then(function(data){if(!gaveUp)importCloud(data);},function(){});
+        return sdk.getPlayer({scopes:false}).then(function(p){player=p;var md='';try{md=p.getMode?p.getMode():'';}catch(e){}log('игрок:',md==='lite'?'гость (lite)':'авторизован');return p.getData();}).then(function(data){importCloud(data);},function(e){log('игрок или getData: ОШИБКА —',e&&(e.message||e),'| сохранение только на устройстве');});
       }).then(fin,fin);
     });
   };
@@ -1382,6 +1402,7 @@ requestAnimationFrame(frame);
 document.title=T("meta_001","Зоопарк");
 document.querySelectorAll('[data-i18n-aria]').forEach(e=>e.setAttribute('aria-label',T(e.dataset.i18nAria,e.getAttribute('aria-label'))));
 window.__premUi=premUi;
+PF.onCloud=function(){try{premInit();}catch(e){}if(mode==='over'&&!S&&!$('#ov').classList.contains('hidden'))showStart();};
 showStart();PF.ready();
 }
 </script>
@@ -1395,8 +1416,17 @@ var PREM_TEXTS={
       adTitle:"Tired of ads?",adText:"Build animal habitats and manage your zoo budget without ad breaks! Premium removes full-screen ads and gives video rewards instantly.",
       endText:"Full-screen ads are back, and video rewards require watching ads again. Your zoo is still open!"}
 };
+
+/* Правила слияния облака и устройства: побеждает больший прогресс, а не более поздняя запись. */
+function jp(x){try{return JSON.parse(x);}catch(e){return null;}}
+PF.mergers['zoopark-save-v2']=function(a,b){var x=jp(a),y=jp(b);if(!x||!y)return null;if((x.day||0)!==(y.day||0))return(x.day||0)>(y.day||0)?a:b;return null;};
+PF.mergers['zoopark-best-v2']=function(a,b){var x=jp(a),y=jp(b);if(!x||!y)return null;return(x.capital||0)>=(y.capital||0)?a:b;};
+PF.mergers['zoopark-premium']=function(a,b){return window.Premium&&Premium.mergeState?Premium.mergeState(a,b):null;};
+function premInit(){
+try{Premium.init({sdk:PF.sdk(),lang:LANG,texts:PREM_TEXTS,config:{corner:false},store:{get:function(){return PF.get('zoopark-premium');},set:function(r){PF.put('zoopark-premium',r);},save:function(){return PF.save();}}}).then(function(){try{if(!document.getElementById('ov').classList.contains('hidden'))window.__premUi();}catch(e){}});}catch(e){}
+}
 PF.init().then(function(){LANG=pickLang();document.documentElement.lang=LANG;__start();
-  try{Premium.init({sdk:PF.sdk(),lang:LANG,texts:PREM_TEXTS,config:{corner:false},store:{get:function(){return PF.get('zoopark-premium');},set:function(r){PF.put('zoopark-premium',r);},save:function(){return PF.save();}}}).then(function(){try{if(!document.getElementById('ov').classList.contains('hidden'))window.__premUi();}catch(e){}});}catch(e){}
+  premInit();
 });
 </script>
 

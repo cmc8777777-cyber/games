@@ -955,55 +955,98 @@ window.PF = (function () {
   var self = { onPause: function () {} };
 
   /* ---- Хранилище ---- */
-  function isSynced(k) { return k !== T_KEY && (k.indexOf("ks.") === 0 || k.indexOf("daily:") === 0 || k === "shelf" || k === "notebook"); }
+  var KT_KEY = "ks.keyT", kt = {}, lsOk = false;   // время изменения каждого ключа (мс); удалённый ключ: время есть, значения нет
+  function isSynced(k) { return k !== T_KEY && k !== KT_KEY && (k.indexOf("ks.") === 0 || k.indexOf("daily:") === 0 || k === "shelf" || k === "notebook"); }
+  function log() { try { console.info.apply(console, ["[kugosvetka-save]"].concat([].slice.call(arguments))); } catch (e) {} }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* хранилище недоступно — остаётся зеркало в памяти */ } }
   function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
   function seedMem() {
+    try { localStorage.setItem("ks.probe", "1"); lsOk = localStorage.getItem("ks.probe") === "1"; localStorage.removeItem("ks.probe"); } catch (e) { lsOk = false; }
     try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (isSynced(k) || k === T_KEY) mem[k] = localStorage.getItem(k); } } catch (e) {}
+    try { var o = JSON.parse(localStorage.getItem(KT_KEY) || "{}"); if (o && typeof o === "object") kt = o; } catch (e) {}
   }
+  function ktSave() { lsSet(KT_KEY, JSON.stringify(kt)); }
   function localT() { return Number(mem[T_KEY]) || 0; }
+  function keyT(k) { return kt[k] || (Object.prototype.hasOwnProperty.call(mem, k) ? localT() : 0); }
   function schedule() { if (!syncTimer && player && cloudOk) syncTimer = setTimeout(function () { flush(false); }, SYNC_DELAY_MS); }
-  function touch() {
-    var t = String(Date.now()); mem[T_KEY] = t; lsSet(T_KEY, t);
+  function touch(k) {
+    var now = Date.now(); kt[k] = now; ktSave();
+    var t = String(now); mem[T_KEY] = t; lsSet(T_KEY, t);
     dirty = true; schedule();
   }
   self.get = function (k) {
     if (Object.prototype.hasOwnProperty.call(mem, k)) return mem[k];
     try { return localStorage.getItem(k); } catch (e) { return null; }
   };
-  self.put = function (k, raw) { mem[k] = raw; lsSet(k, raw); if (isSynced(k)) touch(); };
-  self.del = function (k) { delete mem[k]; lsDel(k); if (isSynced(k)) touch(); };
+  self.put = function (k, raw) { mem[k] = raw; lsSet(k, raw); if (isSynced(k)) touch(k); };
+  self.del = function (k) { delete mem[k]; lsDel(k); if (isSynced(k)) touch(k); };
+  self.onCloud = function () {};
 
-  /* ---- Облако: целый снимок, побеждает более поздняя отметка времени ---- */
+  /* ---- Правила слияния по данным игры (прогресс не теряется ни у кого из двух) ---- */
+  function jp(s) { try { return JSON.parse(s); } catch (e) { return undefined; } }
+  function union(a, b) { var out = [], seen = {}; (a || []).concat(b || []).forEach(function (x) { var s = JSON.stringify(x); if (!seen[s]) { seen[s] = 1; out.push(x); } }); return out; }
+  function cmpRec(a, b) { return (b.countries - a.countries) || (b.money - a.money) || (a.daysUsed - b.daysUsed); }
+  function mergerFor(k) {
+    if (k === "ks.premium") return function (a, b) { return window.Premium && window.Premium.mergeState ? window.Premium.mergeState(a, b) : null; };
+    if (k === "shelf") return function (a, b) { var x = jp(a), y = jp(b); return Array.isArray(x) && Array.isArray(y) ? JSON.stringify(union(x, y)) : null; };
+    if (k === "ks.passport") return function (a, b) {
+      var x = jp(a), y = jp(b); if (!x || !y || typeof x !== "object" || typeof y !== "object") return null;
+      var m = Object.assign({}, y, x); m.stamps = union(x.stamps, y.stamps); m.ach = union(x.ach, y.ach);
+      m.active = (x.active && m.ach.indexOf(x.active) >= 0) ? x.active : ((y.active && m.ach.indexOf(y.active) >= 0) ? y.active : "");
+      return JSON.stringify(m);
+    };
+    if (k.indexOf("ks.records") === 0) return function (a, b) { var x = jp(a), y = jp(b); return Array.isArray(x) && Array.isArray(y) ? JSON.stringify(union(x, y).sort(cmpRec).slice(0, 10)) : null; };
+    if (k === "notebook") return function (a, b) {
+      var x = jp(a), y = jp(b); if (!x || !y || typeof x !== "object" || typeof y !== "object" || Array.isArray(x) || Array.isArray(y)) return null;
+      var m = Object.assign({}, y); Object.keys(x).forEach(function (id) { if (!m[id] || ((x[id] && x[id].n) || 0) >= ((m[id] && m[id].n) || 0)) m[id] = x[id]; });
+      return JSON.stringify(m);
+    };
+    return null;
+  }
+  self.mergerFor = mergerFor;
+
+  /* ---- Облако: слияние по ключам. У каждого ключа побеждает более позднее изменение; коллекции, прогресс и Премиум объединяются.
+     Пустой ответ облака (гость, нет данных, медленный SDK) ничего не стирает. Снимок v1 без времени ключей: время ключа = _t снимка. ---- */
   function importCloud(data) {
-    var d = data && typeof data === "object" ? data : {};
-    var ct = Number(d._t) || 0, blob = d.d && typeof d.d === "object" ? d.d : null;
-    var PK = "ks.premium", cloudPrem = blob && typeof blob[PK] === "string" ? blob[PK] : null, localPrem = Object.prototype.hasOwnProperty.call(mem, PK) ? mem[PK] : null;
-    if (blob && ct > localT()) {
-      Object.keys(mem).forEach(function (k) { if (isSynced(k)) { delete mem[k]; lsDel(k); } });
-      Object.keys(blob).forEach(function (k) { if (isSynced(k) && typeof blob[k] === "string") { mem[k] = blob[k]; lsSet(k, blob[k]); } });
-      mem[T_KEY] = String(ct); lsSet(T_KEY, String(ct));
-      dirty = false;
-    } else if (localT() > ct) {
-      dirty = true;   // локальный прогресс новее облачного — отправим при первой возможности
-    }
-    // срок Премиума не должен пропасть, кто бы ни победил по времени: сливаем (большой срок, объединённые токены)
-    if ((localPrem || cloudPrem) && window.Premium && window.Premium.mergeState) {
-      var m = window.Premium.mergeState(localPrem, cloudPrem);
-      mem[PK] = m; lsSet(PK, m);
-      if (m !== cloudPrem) dirty = true;
-    }
+    var d = data && typeof data === "object" ? data : {}, ct = Number(d._t) || 0;
+    var blob = d.d && typeof d.d === "object" ? d.d : {}, ckt = d.kt && typeof d.kt === "object" ? d.kt : {};
+    var keys = {}, took = 0, kept = 0, merged = 0, changedAny = false;
+    [mem, kt, blob, ckt].forEach(function (o) { Object.keys(o).forEach(function (k) { if (isSynced(k)) keys[k] = 1; }); });
+    Object.keys(keys).forEach(function (k) {
+      var hasL = Object.prototype.hasOwnProperty.call(mem, k), hasC = typeof blob[k] === "string";
+      var lt = keyT(k), cT = Number(ckt[k]) || (hasC ? ct : 0), lv = hasL ? mem[k] : null, cv = hasC ? blob[k] : null;
+      var fn = mergerFor(k);
+      if (fn && hasL && hasC && lv !== cv) {
+        var m = null; try { m = fn(lv, cv); } catch (e) {}
+        if (typeof m === "string") {
+          if (m !== lv) { mem[k] = m; lsSet(k, m); changedAny = true; }
+          if (m !== cv) dirty = true;
+          kt[k] = Math.max(lt, cT); merged++; return;
+        }
+      }
+      if (cT > lt || (cT === lt && hasC && !hasL)) {   // при равном времени лучше значение, чем пустота: удаление всегда обновляет время
+        if (hasC) { if (lv !== cv) { mem[k] = cv; lsSet(k, cv); changedAny = true; } }
+        else if (hasL) { delete mem[k]; lsDel(k); changedAny = true; }
+        kt[k] = cT; took++;
+      } else if (lt > cT || (hasL && !hasC)) { dirty = true; kept++; }
+    });
+    ktSave();
+    if (ct > localT()) { mem[T_KEY] = String(ct); lsSet(T_KEY, String(ct)); }
     cloudOk = true;
+    log("localStorage:", lsOk ? "работает" : "НЕДОСТУПЕН", "| облако:", Object.keys(blob).length ? "снимок v" + (d.v || 1) + ", ключей " + Object.keys(blob).length : "пусто", "| взято:", took, "оставлено:", kept, "объединено:", merged);
     if (dirty) schedule();
+    return changedAny;
   }
   function snapshot() {
-    var d = {}, daily = [];
+    var d = {}, t = {}, daily = [];
     Object.keys(mem).forEach(function (k) {
       if (!isSynced(k) || mem[k] == null) return;
       if (k.indexOf("daily:") === 0) daily.push(k); else d[k] = mem[k];
     });
     daily.sort().slice(-DAILY_KEEP).forEach(function (k) { d[k] = mem[k]; });
-    return { v: 1, _t: localT(), d: d };
+    var keep = {}; Object.keys(d).forEach(function (k) { keep[k] = 1; });
+    Object.keys(kt).forEach(function (k) { if (isSynced(k) && (keep[k] || k.indexOf("daily:") !== 0)) t[k] = kt[k]; });   // метки удалений тоже уходят в облако
+    return { v: 2, _t: localT(), d: d, kt: t };
   }
   function flush(now) {
     clearTimeout(syncTimer); syncTimer = 0;
@@ -1013,8 +1056,7 @@ window.PF = (function () {
       var p = player.setData(snapshot(), !!now);
       if (p && p.catch) p.catch(function () { dirty = true; });
     } catch (e) { dirty = true; }
-  }
-  /* Запись в облако с подтверждением: Promise<true>, когда данные сохранены. Нужна Премиуму: сначала запись, потом consumePurchase. */
+  }  /* Запись в облако с подтверждением: Promise<true>, когда данные сохранены. Нужна Премиуму: сначала запись, потом consumePurchase. */
   self.save = function () {
     clearTimeout(syncTimer); syncTimer = 0;
     if (!player || !cloudOk) return Promise.resolve(false);
@@ -1064,7 +1106,7 @@ window.PF = (function () {
         return sdk.getPlayer({ scopes: false }).then(function (p) {
           player = p;
           return p.getData();
-        }).then(function (data) { if (!gaveUp) importCloud(data); }, function () { /* без облака: играем с localStorage */ });
+        }).then(function (data) { var ch = importCloud(data); if (gaveUp && ch) { try { self.onCloud(); } catch (e) {} } }, function () { /* без облака: играем с localStorage */ });
       }).then(fin, fin);
     });
   };
@@ -3591,6 +3633,19 @@ function setLanguage(l) {
 /* ===================================================================
    Запуск
    =================================================================== */
+/* Сохранённое из хранилища (localStorage + облако) в память. Вызывается при старте и если облако ответило позже таймаута. Текущую партию не трогает. */
+function loadSaved() {
+  passport = Object.assign({ stamps: [], ach: [], active: "" }, LS.get(K.pass, {}) || {});
+  for (const d of DIFF_ORDER) { const l = LS.get(recKey(d), []); records[d] = Array.isArray(l) ? l : []; }
+  selDiff = DIFF[LS.get(K.diff, "traveler")] ? LS.get(K.diff, "traveler") : "traveler";
+  shelf = LS.get(K.shelf, []); if (!Array.isArray(shelf)) shelf = [];
+  notebook = LS.get(K.nb, {}); if (!notebook || typeof notebook !== "object" || Array.isArray(notebook)) notebook = {};
+  for (const id of Object.keys(notebook)) if (!W.byId[id] || !notebook[id] || !(notebook[id].n > 0)) delete notebook[id];
+  playerName = LS.get(K.name, "") || "";
+  muted = !!LS.get(K.mute, false);
+  $("pname").value = playerName;
+}
+PF.onCloud = () => { try { loadSaved(); if (screen === "start") refreshStart(); } catch (e) {} };
 function init(s) {
   s = s || {};
   if (!window.GEO || !window.GEO.countries) { document.getElementById("app").innerHTML = '<p style="padding:24px">Данные игры не загрузились. / Game data failed to load.</p>'; return; }
@@ -3604,15 +3659,7 @@ function init(s) {
   COLORS = mapColors(W, 8);
   buildLabelOrder();
   $("mapNotice").hidden = MAP.ok;
-  passport = Object.assign({ stamps: [], ach: [], active: "" }, LS.get(K.pass, {}) || {});
-  for (const d of DIFF_ORDER) { const l = LS.get(recKey(d), []); records[d] = Array.isArray(l) ? l : []; }
-  selDiff = DIFF[LS.get(K.diff, "traveler")] ? LS.get(K.diff, "traveler") : "traveler";
-  shelf = LS.get(K.shelf, []); if (!Array.isArray(shelf)) shelf = [];
-  notebook = LS.get(K.nb, {}); if (!notebook || typeof notebook !== "object" || Array.isArray(notebook)) notebook = {};
-  for (const id of Object.keys(notebook)) if (!W.byId[id] || !notebook[id] || !(notebook[id].n > 0)) delete notebook[id];
-  playerName = LS.get(K.name, "") || "";
-  muted = !!LS.get(K.mute, false);
-  $("pname").value = playerName;
+  loadSaved();
   $("pname").addEventListener("input", e => { playerName = e.target.value.trim().slice(0, 24); LS.set(K.name, playerName); });
 
   // снимок от горячего обновления важнее сохранённого
