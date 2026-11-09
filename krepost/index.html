@@ -438,7 +438,7 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
   <div class="screen" id="scrArt" hidden style="z-index:22"><div class="scroll" id="artBox" role="dialog" aria-label="Статья"></div></div>
 </div>
 
-<script src="/sdk.js"></script>
+<!-- YANDEX_SDK (магазинная сборка build\make-store.ps1 вставляет сюда <script src="/sdk.js">) -->
 <script>
 /* Слой платформы (по образцу Кругосветки): Яндекс Игры SDK, если игра запущена на площадке; пауза, реклама, облачное сохранение.
    Без SDK (сайт, файл, локальный сервер) все вызовы — заглушки, игра работает как раньше.
@@ -1140,15 +1140,21 @@ function reset(){
     quiz:{}, events:{}, enc:{}, fastNext:false, fastWave:false, quizArt:null, adCh:{},
     fBonus:0, fTok:{unit:0, slow:0, recharge:0}, slowWave:false   // Колесо Фортуны: бонусные денарии этой партии и жетоны наград
   });
+  encLoad();
 }
-reset();
 
 // ---------- Encyclopedia unlocks ----------
+// Открытые статьи свитка копятся между партиями (9.11: раньше каждая новая партия начинала свиток с нуля, и владелец считал это потерей прогресса).
+// Один ключ на оба режима, через PF: localStorage + облако.
+const ENC_KEY = 'hannibal-td-enc';
+function encLoad(){ try { const a = JSON.parse(PF.get(ENC_KEY) || '[]'); if (Array.isArray(a)) for (const id of a) if (ENC_BY[id]) G.enc[id] = 1; } catch(e){} }
+function encStore(){ PF.put(ENC_KEY, JSON.stringify(ENC.filter(a => G.enc[a.id]).map(a => a.id))); }
+reset();
 let ENC_NEW = [];
 function encCount(){ let n = 0; for (const a of ENC) if (G.enc[a.id]) n++; return n; }
 function unlock(id){
   if (!ENC_BY[id] || G.enc[id]) return null;
-  G.enc[id] = 1; refreshEncBtn(true); return ENC_BY[id];
+  G.enc[id] = 1; encStore(); refreshEncBtn(true); return ENC_BY[id];
 }
 function unlockNotify(id){ const a = unlock(id); if (a) ENC_NEW.push(a.title); return a; }
 function unlockReward(){
@@ -1191,7 +1197,7 @@ function startGame(){
   hideScreens(); closeModals();
   fortHint();
   showWaveCard();
-  encSeen = 0; persist(); refreshUI(); refreshEncBtn();
+  encSeen = encCount(); persist(); refreshUI(); refreshEncBtn();
 }
 function continueGame(){
   const s = readSave(); if (!s) { startGame(); return false; }
@@ -1288,7 +1294,7 @@ function finish(win){
   closeSheet(); hideCard(); closeModals(); clearSave(); pmCard(1500);
   if (win) {
     for (const a of ENC) G.enc[a.id] = 1;
-    refreshEncBtn();
+    encStore(); refreshEncBtn();
     $('winQuiz').textContent = T('Верных ответов: {0} из {1}', quizCorrect(), WAVES.length);
     let best = readBest(); if (G.lives > best) PF.put(BEST_KEY, String(G.lives));
     best = Math.max(best, G.lives);
@@ -3240,5 +3246,16 @@ PF.init().then(() => {
       store: { get: () => PF.get(PM_KEY), set: raw => PF.put(PM_KEY, raw), save: () => PF.save() } }).then(() => { pmSync(); pmCard(0); });
   } catch (e) {}
 });
+// DEBUG_BEGIN — объект для автотестов и автоигрока; build\make-store.ps1 вырезает его из магазинной сборки
+window.__game = {BAL, manual:v=>{MANUAL=!!v;}, setCamera:y=>{CAM.tgt=null;CAM.vel=0;return setCamera(y);}, camera:()=>({y:CAM.y,max:CAM.max,viewH:VIEW_H}), drawMini, refreshCamUI, CHAPTERS, G, update, startGame, startWave, build, upgrade, sell, useAbility, upgradeCost, TOWERS, ENEMIES, WAVES, PADS, PATH, SEG, PATH_LEN, draw, refreshUI,
+  CONTENT, ENC, quizFor, eventAfter, answerQuiz, skipQuiz, chooseEvent, closeEvent, quizOpen, eventOpen, quizCorrect,
+  openEnc, closeEnc, showArticle, closeArticle, unlock, encCount, T2ENC, E2ENC,
+  snapshot, readSave, saveNow, clearSave, continueGame, renderStart, get SAVE_KEY(){ return SAVE_KEY; }, get BEST_KEY(){ return BEST_KEY; },
+  MODES, setMode, get MODE(){ return MODE.id; }, WAVES_ALL, finish,
+  // Колесо Фортуны: fortunaReset() — сбросить таймер колеса (и, если day=true, сундук дня), чтобы проверить без ожидания 5 часов
+  FORT_SECT, CHEST_DAYS, FORT_CAP, fRead, fWrite, fortSpin, chestOpen, openFort, closeFort, fortApplyPending, chestState, fortAuto,
+  applyLang, get LANG(){ return LANG; }, T, I18N_EN,
+  fortunaReset:(day) => { const f = fRead(); f.next = 0; if (day) f.last = ''; fWrite(f); fortUI(); if (!scrFort.hidden) renderFort(); return f; }};
+// DEBUG_END
 })();
 </script>
