@@ -5,7 +5,7 @@ window.THUMBS = (function () {
   var T = window.THREE, G = window.GFX, MD = window.MODELS;
   var cache = {}, W = 168, H = 220;
   function renderAll(skins, done) {
-    var todo = skins.filter(function (s) { return !cache[s.id]; });
+    var todo = skins.filter(function (s) { return !cache[(s.pet ? "pet:" : "") + s.id]; });
     if (!todo.length) { done && done(); return; }
     var cv = document.createElement("canvas"); cv.width = W; cv.height = H;
     var r;
@@ -26,11 +26,12 @@ window.THUMBS = (function () {
     var i2 = 0;
     function next() {
       if (i2 >= todo.length) { try { r.dispose(); r.forceContextLoss(); } catch (e) {} done && done(); return; }
-      var s = todo[i2++], h = MD.hero(s);
-      h.root.rotation.y = 0.45; MD.pose(h, { phase: 0, anim: "idle" }, 1.2, 0.016); h.head.rotation.y = 0.2;
-      sc.add(h.root); r.render(sc, cam); cache[s.id] = cv.toDataURL("image/png"); sc.remove(h.root);
+      var s = todo[i2++], obj;
+      if (s.pet) { obj = window.PETS.build(s.id); obj.rotation.y = 0.6; window.PETS.animate(obj, 0.3, false, false); obj.userData.parts.b.position.y = 0; obj.scale.setScalar(1.85); obj.position.set(0.05, 0.4, 0); }
+      else { var h = MD.hero(s); h.root.rotation.y = 0.45; MD.pose(h, { phase: 0, anim: "idle" }, 1.2, 0.016); h.head.rotation.y = 0.2; obj = h.root; }
+      sc.add(obj); r.render(sc, cam); cache[(s.pet ? "pet:" : "") + s.id] = cv.toDataURL("image/png"); sc.remove(obj);
       setTimeout(next, 0);
-      if (window.THUMBS.onOne) try { window.THUMBS.onOne(s.id, cache[s.id]); } catch (e) {}
+      if (window.THUMBS.onOne) try { var key = (s.pet ? "pet:" : "") + s.id; window.THUMBS.onOne(key, cache[key]); } catch (e) {}
     }
     next();
   }

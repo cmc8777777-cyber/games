@@ -56,6 +56,9 @@ window.AUDIO = (function () {
     caught: function (t) { [523, 659, 784, 1046, 1318].forEach(function (f, i) { tone(sfxBus, "square", f, t + i * 0.08, 0.16, 0.12, { lp: 3500 }); }); tone(sfxBus, "triangle", 1568, t + 0.42, 0.5, 0.15, { sus: 0.3, rel: 0.3 }); },
     boing: function (t) { tone(sfxBus, "sine", 160, t, 0.4, 0.35, { to: 700, glide: 0.25 }); },
     build: function (t) { for (var i = 0; i < 6; i++) noise(sfxBus, t + i * 0.09, 0.07, 0.18, "bandpass", 1200 + i * 300, 3); [392, 523, 659, 784].forEach(function (f, i) { tone(sfxBus, "triangle", f, t + 0.55 + i * 0.07, 0.25, 0.16); }); },
+    token: function (t) { tone(sfxBus, "triangle", 1568, t, 0.08, 0.1); tone(sfxBus, "sine", 2093, t + 0.05, 0.14, 0.08); },
+    warn: function (t) { tone(sfxBus, "square", 880, t, 0.08, 0.12, { lp: 3000 }); tone(sfxBus, "square", 880, t + 0.14, 0.08, 0.12, { lp: 3000 }); },
+    fire: function (t) { noise(sfxBus, t, 0.45, 0.3, "bandpass", 700, 0.7); tone(sfxBus, "sawtooth", 140, t, 0.35, 0.12, { to: 60, lp: 900 }); },
     click: function (t) { tone(sfxBus, "sine", 1200, t, 0.03, 0.08); },
     chest: function (t) { noise(sfxBus, t, 0.2, 0.15, "lowpass", 800); [659, 784, 988, 1318, 1568].forEach(function (f, i) { tone(sfxBus, "triangle", f, t + 0.2 + i * 0.05, 0.2, 0.14); }); }
   };

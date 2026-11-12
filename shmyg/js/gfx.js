@@ -219,7 +219,8 @@ window.GFX = (function () {
     quality.level = level;
     quality.shadows = level >= 1;
     renderer.shadowMap.enabled = quality.shadows; sun.castShadow = quality.shadows;
-    if (level <= 1) { sun.shadow.mapSize.set(512, 512); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
+    var ms = level >= 2 ? (mobile ? 1024 : 2048) : 512;
+    if (sun.shadow.mapSize.x !== ms) { sun.shadow.mapSize.set(ms, ms); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
     quality.ratio = level >= 2 ? Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 2) : level === 1 ? Math.min(window.devicePixelRatio || 1, 1.25) : 1;
     renderer.setPixelRatio(quality.ratio); resize();
     scene.traverse(function (o) { if (o.material) o.material.needsUpdate = true; });

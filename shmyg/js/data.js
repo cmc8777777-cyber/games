@@ -71,6 +71,11 @@ window.DATA = (function () {
     S("neon", "Неон", "Neon", { top: 0x15151c, pants: 0x15151c, shoe: 0x15151c, sole: 0x2affd9, glove: 0x15151c, hat: "visor", hatC: 0xff2ad9, acc: ["lines:2affd9"] }, 0x2affd9, { t: "buy", p: "skin_neon" }),
     S("dragon", "Драконья броня", "Dragon Armor", { top: 0x9a1a14, sleeve: 0x9a1a14, pants: 0x6a120e, shoe: 0x3a0a08, glove: 0x3a0a08, hat: "horns", hatC: 0x9a1a14, acc: ["armor:b8281e", "dwings:7a1410", "lines:ff7a1a"], kinds: { top: "metal", sleeve: "metal", pants: "metal" } }, 0xff7a1a, { t: "buy", p: "skin_dragon" }),
     S("wizard", "Чародейка", "Sorceress", { top: 0x22205a, pants: 0x22205a, shoe: 0x111122, hat: "sorchood", hatC: 0x2a2870, acc: ["robe:2a2870", "sash:c0c8ff", "staff:9a7aff"] }, 0xb08aff, { t: "buy", p: "skin_wizard" }),
+    S("lanternist", "Фонарщица", "Lantern Keeper", { top: 0xc8302a, pants: 0x2a1a14, shoe: 0x3a2a1a, hat: "wrap", hatC: 0xffc23a, acc: ["sash:ffc23a", "robe:c8302a", "staff:ff9a3a"] }, 0xff8a3a, { t: "season", s: "lanterns" }),
+    S("frost", "Морозная", "Frost", { top: 0xdff4ff, sleeve: 0xa8dcff, pants: 0x6aaedc, shoe: 0xffffff, glove: 0xa8dcff, hat: "crown", acc: ["cape:bfe8ff", "lines:9fe0ff"], kinds: { top: "ice" } }, 0xbfe8ff, { t: "season", s: "frost" }),
+    S("corsair", "Корсарка", "Corsair", { top: 0xf2ece0, pants: 0x2a2a3a, shoe: 0x3a2214, hat: "captain", hatC: 0x6a1a1a, acc: ["sash:c8302a", "belt:3a2214", "trench:6a1a1a"] }, 0xffb8a0, { t: "season", s: "corsair" }),
+    S("neonracer", "Неоновая гонщица", "Neon Racer", { top: 0x15151c, pants: 0x15151c, shoe: 0xff3ad9, sole: 0x3affff, glove: 0x15151c, hat: "racer", acc: ["lines:ff3ad9", "vest:2a2a3a"] }, 0xff3ad9, { t: "season", s: "neon" }),
+    S("champion", "Чемпионка", "Champion", { top: 0xf4f0e8, sleeve: 0xf4f0e8, pants: 0x1a1a22, shoe: 0xe8b830, glove: 0xe8b830, hat: "crown", acc: ["cape:e8b830", "belt:e8b830", "lines:ffd24a"], kinds: { shoe: "gold", glove: "gold" } }, 0xffe27a, { t: "boss", w: "moon" }, { coins: 0.05 }),
     S("samurai", "Кибер-самурай", "Cyber Samurai", { top: 0xf0f0f2, sleeve: 0x1a1a1e, pants: 0x1a1a1e, shoe: 0xf0f0f2, glove: 0x1a1a1e, hat: "kabuto", acc: ["armor:f0f0f2", "lines:ff2a3a"], kinds: { top: "paint", pants: "plastic" } }, 0xff2a3a, { t: "buy", p: "skin_samurai" })
   ];
   /* Товары Яндекса (создаёт владелец в консоли; цены здесь — запасные, на экране — из getCatalog) */
@@ -119,6 +124,45 @@ window.DATA = (function () {
   ];
   /* ---- Событие выходных (сб и вс по серверной дате): слитки чаще, поимка Шмыга даёт больше ---- */
   var WEEKEND = { bars: 0.5, catchBonus: 1 };
+  /* ---- Финальные погони: открываются после 10 построек в мире. target — метры, throwGap — пауза между бросками ловушек (с).
+     Первая победа — награда reward; повтор — 2 слитка раз в день. ---- */
+  var BOSS = { needBuilds: 10, replayBars: 2, list: {
+    town: { target: 1000, throwGap: 3.6, reward: { bars: 10 } },
+    dunes: { target: 1150, throwGap: 3.4, reward: { bars: 15 } },
+    snow: { target: 1300, throwGap: 3.2, reward: { bars: 20, keys: 1 } },
+    jungle: { target: 1450, throwGap: 3.0, reward: { pet: "robodog", bars: 10 } },
+    harbor: { target: 1600, throwGap: 2.9, reward: { bars: 30, keys: 1 } },
+    mine: { target: 1750, throwGap: 2.8, reward: { bars: 35, keys: 2 } },
+    sky: { target: 1900, throwGap: 2.7, reward: { bars: 40, keys: 2 } },
+    moon: { target: 2100, throwGap: 2.5, reward: { skin: "champion", bars: 50 } }
+  } };
+  /* ---- Сезонные события: по 14 дней по кругу (по серверной дате). Своя валюта на трассе, оформление, 10 наград, последняя — образ.
+     Пропустил — событие вернётся через 8 недель. ---- */
+  var SEASONS = { days: 14, epoch: 20400, tokenChance: 0.06, catchTokens: 10,
+    tiers: [40, 100, 180, 280, 400, 550, 720, 900, 1100, 1350],
+    rewards: [{ coins: 500 }, { bars: 2 }, { keys: 1 }, { coins: 1500 }, { chest: "small" }, { bars: 4 }, { keys: 2 }, { coins: 3000 }, { chest: "big" }, { skin: true }],
+    list: [
+      { id: "lanterns", name: { ru: "Фестиваль фонарей", en: "Lantern Festival" }, token: { ru: "фонарики", en: "lanterns" }, color: 0xff6a3a, skin: "lanternist", deco: "lanterns" },
+      { id: "frost", name: { ru: "Морозный карнавал", en: "Frost Carnival" }, token: { ru: "снежинки", en: "snowflakes" }, color: 0x9fe0ff, skin: "frost", deco: "snow" },
+      { id: "corsair", name: { ru: "Неделя корсаров", en: "Corsair Weeks" }, token: { ru: "ракушки", en: "seashells" }, color: 0xffb8a0, skin: "corsair", deco: "flags" },
+      { id: "neon", name: { ru: "Неоновая ночь", en: "Neon Night" }, token: { ru: "звёздочки", en: "stars" }, color: 0xff3ad9, skin: "neonracer", deco: "neon" }
+    ] };
+  /* ---- Достижения (34): stat — счётчик из сохранения или вычисляемый (worlds, skins, pets, bosses, builds), n — цель, r — награда ---- */
+  function A(id, stat, n, r, ru, en) { return { id: id, stat: stat, n: n, r: r, name: { ru: ru, en: en } }; }
+  var ACHIEVEMENTS = [
+    A("run1", "runs", 10, { coins: 300 }, "Первые шаги", "First steps"), A("run2", "runs", 50, { coins: 1000 }, "Бегунья", "Runner"), A("run3", "runs", 200, { bars: 5 }, "Марафонец", "Marathoner"), A("run4", "runs", 500, { bars: 10 }, "Неутомимая", "Tireless"),
+    A("best1", "best", 1000, { coins: 500 }, "Километр", "One kilometer"), A("best2", "best", 3000, { bars: 2 }, "Три километра", "Three kilometers"), A("best3", "best", 6000, { bars: 4 }, "Шесть километров", "Six kilometers"), A("best4", "best", 10000, { bars: 8 }, "Десять километров!", "Ten kilometers!"),
+    A("coin1", "coinsAll", 10000, { coins: 1000 }, "Копилка", "Piggy bank"), A("coin2", "coinsAll", 100000, { bars: 5 }, "Сундучок", "Treasure box"), A("coin3", "coinsAll", 500000, { bars: 15 }, "Золотая гора", "Gold mountain"),
+    A("catch1", "caught", 1, { coins: 300 }, "Попался!", "Gotcha!"), A("catch2", "caught", 10, { bars: 2 }, "Охотница", "Hunter"), A("catch3", "caught", 50, { bars: 6 }, "Гроза енотов", "Raccoon's nightmare"),
+    A("build1", "builds", 5, { coins: 800 }, "Строитель", "Builder"), A("build2", "builds", 20, { bars: 3 }, "Архитектор", "Architect"), A("build3", "builds", 60, { bars: 8 }, "Градостроитель", "City planner"), A("build4", "builds", 120, { bars: 20 }, "Все города отстроены", "All towns rebuilt"),
+    A("world1", "worlds", 2, { coins: 1000 }, "Путешественница", "Traveler"), A("world2", "worlds", 4, { bars: 4 }, "Полсвета", "Half the world"), A("world3", "worlds", 8, { bars: 10 }, "До самой Луны", "All the way to the Moon"),
+    A("skin1", "skins", 5, { coins: 1000 }, "Модница", "Fashionista"), A("skin2", "skins", 15, { bars: 4 }, "Гардероб", "Wardrobe"), A("skin3", "skins", 30, { bars: 10 }, "Коллекционер образов", "Outfit collector"),
+    A("pet1", "pets", 1, { coins: 500 }, "Лучший друг", "Best friend"), A("pet2", "pets", 4, { bars: 3 }, "Стая", "The pack"), A("pet3", "pets", 8, { bars: 8 }, "Весь зверинец", "Full menagerie"),
+    A("boss1", "bosses", 1, { bars: 3 }, "Финал!", "Finale!"), A("boss2", "bosses", 4, { bars: 6 }, "Четыре погони", "Four chases"), A("boss3", "bosses", 8, { bars: 15 }, "Шмыг повержен", "Shmyg defeated"),
+    A("bars1", "barsAll", 100, { coins: 2000 }, "Слиток за слитком", "Bar by bar"), A("boost1", "boostsAll", 100, { coins: 1500 }, "Ускорение", "Power-ups"),
+    A("days1", "days", 7, { bars: 2 }, "Неделя в игре", "One week"), A("days2", "days", 30, { bars: 6 }, "Месяц в игре", "One month"),
+    A("jump1", "jumpsAll", 1000, { coins: 1500 }, "Прыгунья", "Jumper"), A("token1", "tokensAll", 500, { bars: 3 }, "Праздник!", "Party time!")
+  ];
   var LEADERBOARD = "best";   // имя таблицы лидеров в консоли Яндекса (создаёт владелец), очки — метры за забег
 
   /* ---- Календарь входа (по кругу) и сундуки ---- */
@@ -140,5 +184,5 @@ window.DATA = (function () {
 
   return { WORLDS: WORLDS, BUILD_COST: BUILD_COST, BUILD_BONUS: BUILD_BONUS, BUILD_BONUS_MAX: BUILD_BONUS_MAX,
     SKINS: SKINS, PRODUCTS: PRODUCTS, BOOSTS: BOOSTS, BOOST_ORDER: BOOST_ORDER, UPGRADE_COST: UPGRADE_COST, START_BOOSTS: START_BOOSTS, KEY_PRICE: KEY_PRICE, KEYS_PER_DAY: KEYS_PER_DAY, BUILD_WORLD_MUL: BUILD_WORLD_MUL,
-    TASKS: TASKS, LETTERS: LETTERS, WEEKLY: WEEKLY, WEEKEND: WEEKEND, LEADERBOARD: LEADERBOARD, CALENDAR: CALENDAR, CHESTS: CHESTS, FREE_CHEST_MS: FREE_CHEST_MS, RUN: RUN };
+    BOSS: BOSS, SEASONS: SEASONS, ACHIEVEMENTS: ACHIEVEMENTS, TASKS: TASKS, LETTERS: LETTERS, WEEKLY: WEEKLY, WEEKEND: WEEKEND, LEADERBOARD: LEADERBOARD, CALENDAR: CALENDAR, CHESTS: CHESTS, FREE_CHEST_MS: FREE_CHEST_MS, RUN: RUN };
 })();

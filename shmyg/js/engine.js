@@ -12,6 +12,7 @@ window.ENGINE = (function () {
   var mode = "menu", st = null, hooks = {};
   var auto = false, autoErr = 0, skinCur = D.SKINS[0];
   var turntable = false, pool = {}, lastT = 0, menuLift = 0, menuLiftV = 0, palClock = 0, palKey = "", shake = 0;
+  var petG = null, petId = "", petInfo = null;   // питомец рядом с героиней
   var coinIM, COIN_MAX = 420, coinFree = [], coinDummy = new T.Object3D();
   var DIMS = { low: { h: 1.0, d: 0.6 }, high: { h: 2.6, d: 0.5 }, wall: { h: 2.6, d: 1.4 }, train: { h: 3.0, d: 14 }, ramp: { h: 3.0, d: 6.5 },
     gap: { h: 0, d: 3.2 }, roller: { h: 1.1, d: 1.1 }, pad: { h: 0, d: 1.6 }, ice: { h: 0, d: 18 } };
@@ -97,6 +98,8 @@ window.ENGINE = (function () {
     if (WD.feat && WD.feat.embers) { embers = makeEmbers(0xff8a2a); scene.add(embers); }
     if (WD.earth) { earth = new T.Sprite(new T.SpriteMaterial({ map: earthTex(), fog: false, depthWrite: false })); earth.scale.set(40, 40, 1); scene.add(earth); }
     palKey = ""; updatePal(0, true);
+    if (seasonCur) setSeason(seasonCur);
+    applyLevel();
   }
   function earthTex() {
     return G.spriteTex("earth", function (g, s) {
@@ -135,7 +138,7 @@ window.ENGINE = (function () {
     G.applyPal(p, force || key !== palKey);
     palKey = key;
     var n = G.night();
-    glows.forEach(function (s) { s.material.opacity = s.userData.nightGlow * n; s.visible = n > 0.02; });
+    glows.forEach(function (s) { s.material.opacity = s.userData.nightGlow * n; s.visible = n > 0.02 && !s.userData.lowHide; });
   }
 
   /* ---------- Препятствия ---------- */
@@ -157,14 +160,27 @@ window.ENGINE = (function () {
     var ob = { type: type, lane: lane, z0: zFront, z1: zFront + d, top: DIMS[type].h, mesh: mesh, key: key, vz: moving ? (type === "roller" ? -6 : -7) : 0, dead: false };
     obstacles.push(ob); return ob;
   }
-  function removeObstacle(ob) { scene.remove(ob.mesh); (pool[ob.key] = pool[ob.key] || []).push(ob.mesh); ob.dead = true; }
+  function removeObstacle(ob) { if (ob.mark) { scene.remove(ob.mark); ob.mark = null; } scene.remove(ob.mesh); (pool[ob.key] = pool[ob.key] || []).push(ob.mesh); ob.dead = true; }
 
   /* ---------- Подбираемое: монеты — один InstancedMesh ---------- */
   var barGeo, bubbleGeo;
+  var tokenGeo = null;
+  function tokenMesh(sz) {
+    var c = sz.color, g = new T.Group();
+    if (sz.id === "lanterns") { g.add(new T.Mesh(new T.CylinderGeometry(0.22, 0.26, 0.5, 10), G.mat(c, "paint", { emissive: 0xff7a2a, ei: 0.9 }))); var top = new T.Mesh(new T.CylinderGeometry(0.12, 0.22, 0.1, 10), G.mat(0x2a1a14, "metal")); top.position.y = 0.3; g.add(top); }
+    else if (sz.id === "frost") { for (var i = 0; i < 3; i++) { var b = new T.Mesh(new T.BoxGeometry(0.75, 0.08, 0.08), G.mat(c, "ice", { emissive: 0x6ac8ff, ei: 0.8 })); b.rotation.z = i * Math.PI / 3; g.add(b); } }
+    else if (sz.id === "corsair") { var sh = new T.Mesh(new T.SphereGeometry(0.3, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), G.mat(c, "plastic", { emissive: 0x6a3a2a, ei: 0.4, side: true })); sh.rotation.x = Math.PI / 2; sh.scale.set(1, 1, 0.5); g.add(sh); }
+    else { var st2 = new T.Shape(); for (var k = 0; k < 10; k++) { var r = k % 2 ? 0.16 : 0.38, a = k / 10 * Math.PI * 2; if (k) st2.lineTo(Math.sin(a) * r, Math.cos(a) * r); else st2.moveTo(Math.sin(a) * r, Math.cos(a) * r); } g.add(new T.Mesh(new T.ExtrudeGeometry(st2, { depth: 0.1, bevelEnabled: false }), G.mat(c, "plastic", { emissive: c, ei: 1.3 }))); }
+    var gl = new T.Sprite(new T.SpriteMaterial({ map: G.glowTex(), color: c, transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: 0.7 })); gl.scale.set(1.6, 1.6, 1); g.add(gl);
+    return g;
+  }
   function addPickup(kind, lane, z, y, letter) {
+    if (kind === "coin" && st && st.season && !st.fast && Math.random() < D.SEASONS.tokenChance) kind = "token";
+    else if (kind === "coin" && st && st.season && st.fast && Math.random() < D.SEASONS.tokenChance) kind = "token";
     var p = { kind: kind, lane: lane, x: laneX(lane), y: y, z: z, y0: y, dead: false, fly: false, letter: letter };
     if (kind === "coin") { if (!coinFree.length) return null; p.i = coinFree.pop(); }
     else if (kind === "bar") { p.mesh = (pool.bar && pool.bar.pop()) || new T.Mesh(barGeo, G.mat(0xffc21a, "gold")); p.mesh.castShadow = true; scene.add(p.mesh); }
+    else if (kind === "token") { p.mesh = st.fast ? new T.Group() : ((pool.token && pool.token.pop()) || tokenMesh(st.season)); scene.add(p.mesh); }
     else {
       var g = new T.Group(), sp = new T.Sprite(spriteMat(kind, letter)); sp.scale.set(0.95, 0.95, 1); g.add(sp);
       g.add(new T.Mesh(bubbleGeo, G.mat(0xffffff, "glass", { opacity: 0.18 })));
@@ -175,7 +191,7 @@ window.ENGINE = (function () {
   }
   function killPickup(p) {
     if (p.kind === "coin") { coinDummy.position.set(0, -50, 0); coinDummy.scale.setScalar(0.0001); coinDummy.updateMatrix(); coinIM.setMatrixAt(p.i, coinDummy.matrix); coinFree.push(p.i); coinIM.instanceMatrix.needsUpdate = true; }
-    else if (p.mesh) { scene.remove(p.mesh); if (p.kind === "bar") (pool.bar = pool.bar || []).push(p.mesh); }
+    else if (p.mesh) { scene.remove(p.mesh); if (p.kind === "bar") (pool.bar = pool.bar || []).push(p.mesh); if (p.kind === "token") (pool.token = pool.token || []).push(p.mesh); }
     p.dead = true;
   }
   function coinLine(lane, z0, n, y, step) { for (var i = 0; i < n; i++) addPickup("coin", lane, z0 + i * (step || 2.2), y || 0.85); }
@@ -289,8 +305,12 @@ window.ENGINE = (function () {
       coinMul: (opts.coinMul || 1) + (perk.coins || 0), levels: opts.levels || {}, perk: perk,
       letter: opts.letter || "", letterAt: rnd(250, 600), letterShown: false,
       lastBarAt: -150, barEvery: 480 / (1 + (perk.bars || 0) + (opts.eventBars || 0)), catchBonus: opts.catchBonus || 0, lastFree: 1, continues: 0, ended: false, fast: !!opts.fast,
+      pet: opts.pet && window.PETS ? opts.pet : null, petSaveAt: 0, petBurnT: 0,
+      season: opts.season || null, tokens: 0,
+      boss: opts.boss ? { target: opts.boss.target, gap: opts.boss.throwGap, throwT: 3, won: false } : null, winT: 0,
       gravity: R.gravity * (WD.gravity || 1), cycle0: opts.cycle0 || 0, tut: !!opts.tutorial, tutK: 0, tutWait: null };
     thief.gap = 17; thief.flee = 0; thief.lane = 1; thief.x = 0; thief.laneT = 1;
+    if (st.pet) { var pv = petVal(); if (st.pet.id === "parrot") st.barEvery /= 1 + pv / 100; if (st.pet.id === "fox") st.perk = Object.assign({}, st.perk, { chase: (st.perk.chase || 0) + pv / 100 }); }
     hero.body.rotation.set(0, 0, 0); hero.body.position.set(0, 0, 0); hero.stars.visible = false; hero.root.rotation.set(0, 0, 0);
     if (opts.startShield || perk.startShield) giveBoost("shield");
     if (opts.startJet) giveBoost("jet");
@@ -298,7 +318,32 @@ window.ENGINE = (function () {
     mode = "run"; palKey = "";
     try { if (window.AUDIO) window.AUDIO.music(W.id); } catch (e) {}
   }
-  function dur(kind) { var add = (st.perk && st.perk[kind]) || 0; return D.BOOSTS[kind].dur[Math.min(5, st.levels[kind] || 0)] + add; }
+  function petVal() { var pd = window.PETS && st && st.pet ? window.PETS.byId(st.pet.id) : null; return pd ? pd.v(st.pet.lvl || 1) : 0; }
+  function dur(kind) {
+    var add = (st.perk && st.perk[kind]) || 0, d = D.BOOSTS[kind].dur[Math.min(5, st.levels[kind] || 0)] + add;
+    if (st.pet && st.pet.id === "bee" && (kind === "magnet" || kind === "x2")) d += petVal();
+    if (st.pet && st.pet.id === "robodog") d *= 1 + petVal() / 100;
+    return d;
+  }
+  /* способности питомцев, которые работают каждый шаг */
+  function petTick(dt) {
+    var id = st.pet.id, v = petVal(), hz = st.dist;
+    if (id === "cat" || id === "robodog") {
+      for (var i = 0; i < pickups.length; i++) { var p = pickups[i]; if (p.dead || p.fly) continue;
+        if (id === "cat" && p.kind === "coin" && Math.abs(p.x - st.x) < 2.6 && p.z > hz - 0.5 && p.z < hz + v && p.y < st.y + 3) p.fly = true;
+        if (id === "robodog" && D.BOOSTS[p.kind] && Math.abs(p.x - st.x) < 2.6 && p.z > hz && p.z < hz + 6) p.fly = true; }
+    } else if (id === "owl") {
+      for (var j = 0; j < obstacles.length; j++) { var o = obstacles[j];
+        if (!o.dead && o.vz && !o.warned && Math.abs(laneX(o.lane) - st.x) < 1.2 && o.z0 - hz < v && o.z0 > hz) { o.warned = true; sfx("warn"); if (hooks.warn) hooks.warn(o.lane); } }
+    } else if (id === "dragon") {
+      st.petBurnT -= dt;
+      if (st.petBurnT <= 0) {
+        var best = null;
+        for (var k = 0; k < obstacles.length; k++) { var q = obstacles[k]; if (!q.dead && (q.type === "low" || q.type === "high" || q.type === "wall" || q.type === "roller") && Math.abs(laneX(q.lane) - st.x) < 1.2 && q.z0 > hz + 4 && q.z0 < hz + 24 && (!best || q.z0 < best.z0)) best = q; }
+        if (best) { st.petBurnT = v; burst(laneX(best.lane), 1, best.z0, 0xff6a1a, 26); removeObstacle(best); obstacles = obstacles.filter(function (o2) { return !o2.dead; }); sfx("fire"); if (hooks.petAct) hooks.petAct("dragon"); }
+      }
+    }
+  }
   function giveBoost(kind) {
     st.boost[kind] = dur(kind);
     if (kind === "jet") {
@@ -314,7 +359,7 @@ window.ENGINE = (function () {
   }
   function stats() {
     return { dist: Math.floor(st.dist), coins: st.coins, bars: st.bars, boosts: st.boostsGot, jumps: st.jumps, slides: st.slides,
-      caught: st.caught, letter: st.letterGot, time: st.t, continues: st.continues, chase: st.chase, boost: st.boost, why: st.why || "", ctx: st.ctx };
+      caught: st.caught, letter: st.letterGot, time: st.t, continues: st.continues, chase: st.chase, boost: st.boost, boss: st.boss ? { target: st.boss.target, won: st.boss.won } : null, tokens: st.tokens, why: st.why || "", ctx: st.ctx };
   }
   function continueRun() {
     if (mode !== "crash") return;
@@ -371,6 +416,8 @@ window.ENGINE = (function () {
     var dz = st.speed * dt; st.dist += dz; st.phase += dz * 0.62;
     if (auto) autoplay();
     if (st.tut || st.tutWait || st.tutEnd) tutCheck();
+    if (st.boss) { bossTick(dt); if (mode !== "run") return; }
+    if (st.pet) petTick(dt);
     D.BOOST_ORDER.forEach(function (k) { if (st.boost[k] > 0) st.boost[k] = Math.max(0, st.boost[k] - dt); });
     if (st.jet > 0) { st.jet -= dt; if (st.jet <= 0) { st.jet = 0; st.inv = Math.max(st.inv, 1.6); clearAhead(32); } }
     if (st.inv > 0) st.inv -= dt;
@@ -386,7 +433,7 @@ window.ENGINE = (function () {
         if (st.boost.shield > 0 || st.inv > 0) { st.vy = R.jumpV; st.boost.shield = 0; st.inv = Math.max(st.inv, 0.8); sfx("shield"); }
         else if (st.y < -0.6) { crash("gap"); return; }
         st.onGround = false;
-      } else if (st.y <= gnd) { st.y = gnd; st.vy = 0; st.onGround = true; } else st.onGround = st.y - gnd < 0.05;
+      } else if (st.y <= gnd) { if (!st.onGround && st.vy < -8 && !st.fast) { for (var dd = 0; dd < 6; dd++) fxSprite(0xd8ccb8, rnd(0.4, 0.7), 0.35, st.x + rnd(-0.3, 0.3), gnd + 0.1, st.dist + rnd(-0.2, 0.3), rnd(-2, 2), rnd(0.3, 1.2), rnd(-1, 1)); if (hooks.land) hooks.land(); } st.y = gnd; st.vy = 0; st.onGround = true; } else st.onGround = st.y - gnd < 0.05;
     }
     if (st.slide > 0) st.slide -= dt;
     st.anim = st.jet > 0 ? "fly" : st.slide > 0 ? "slide" : !st.onGround ? "jump" : "run";
@@ -398,7 +445,7 @@ window.ENGINE = (function () {
     for (var i = 0; i < pickups.length; i++) {
       var p = pickups[i]; if (p.dead) continue;
       if (p.z < hz - 3) { killPickup(p); continue; }
-      if (p.kind === "coin" && mag && p.z < hz + 15 && p.z > hz - 1) p.fly = true;
+      if ((p.kind === "coin" || p.kind === "token") && mag && p.z < hz + 15 && p.z > hz - 1) p.fly = true;
       if (p.fly) { var k = Math.min(1, dt * 12); p.x += (st.x - p.x) * k; p.y += (st.y + 1 - p.y) * k; p.z += (hz + 0.2 - p.z) * k; }
       if (Math.abs(p.x - st.x) < 1.0 && Math.abs(p.z - hz) < 0.9 && p.y > st.y - 0.4 && p.y < st.y + h + 0.4) collect(p);
     }
@@ -406,11 +453,42 @@ window.ENGINE = (function () {
     obstacles = obstacles.filter(function (o) { if (!o.dead && o.z1 < hz - 10) removeObstacle(o); return !o.dead; });
     while (st.nextZ < hz + 145) spawnRow();
     st.chase = Math.max(0, st.chase);
+    if (st.boss) st.chase = Math.min(99, st.chase);
     if (st.chase >= 100) {
-      st.chase = 0; st.caught++; st.bars += R.catchReward + st.catchBonus; thief.flee = 1.6; sfx("caught");
+      st.chase = 0; st.caught++; st.bars += R.catchReward + st.catchBonus; thief.flee = 1.6; if (st.season) st.tokens += D.SEASONS.catchTokens; sfx("caught");
       burst(thief.root.position.x, thief.root.position.y + 1.4, thief.root.position.z, 0xffc93a, 26);
       if (hooks.caught) hooks.caught(stats());
     }
+  }
+  /* ---------- Финальная погоня: Шмыг рядом и бросает ловушки ---------- */
+  var markGeo = null;
+  function throwTrap() {
+    var hz = st.dist, prog = st.dist / st.boss.target;
+    var lane = Math.random() < 0.6 ? st.lane : irnd(0, 2), z = hz + 30 + rnd(0, 6);
+    var types = ["low", "high", "wall"]; if (feat("rollers")) types.push("low");
+    var type = pick(types);
+    // не перекрывать все три дорожки: если рядом уже стена/поезд в двух других — бросаем низкое
+    var blocked = [0, 1, 2].filter(function (l) { return l !== lane && obstacles.some(function (o) { return !o.dead && o.lane === l && (o.type === "wall" || o.type === "train") && Math.abs(o.z0 - z) < 8; }); }).length;
+    if (blocked >= 2) type = "low";
+    if (obstacles.some(function (o) { return !o.dead && o.type !== "ice" && o.lane === lane && o.z0 < z + 16 && o.z1 > z - 16; })) { st.boss.throwT = 0.4; return; }
+    var ob = addObstacle(type, lane, z); ob.drop = 0.7; ob.mesh.position.y = 7;
+    if (!markGeo) markGeo = new T.RingGeometry(0.55, 0.85, 24);
+    var mk = new T.Mesh(markGeo, new T.MeshBasicMaterial({ color: 0xff3a3a, transparent: true, opacity: 0.9, depthWrite: false }));
+    mk.rotation.x = -Math.PI / 2; mk.position.set(laneX(lane), 0.04, z + DIMS[type].d / 2); scene.add(mk); ob.mark = mk;
+    thief.throwAnim = 0.5; sfx("whoosh");
+    st.boss.throwT = st.boss.gap * (1 - prog * 0.3) * rnd(0.8, 1.2);
+  }
+  function bossTick(dt) {
+    st.boss.throwT -= dt;
+    if (st.boss.throwT <= 0 && st.dist > 60 && st.dist < st.boss.target - 60) throwTrap();
+    for (var i = 0; i < obstacles.length; i++) { var o = obstacles[i]; if (o.drop > 0) { o.drop -= dt; o.mesh.position.y = Math.max(0, o.drop / 0.7) * 7; if (o.drop <= 0) { o.mesh.position.y = 0; shake = Math.max(shake, 0.08); if (o.mark) { scene.remove(o.mark); o.mark = null; } } } else if (o.mark && o.dead) { scene.remove(o.mark); o.mark = null; } }
+    if (st.dist >= st.boss.target && !st.boss.won) { st.boss.won = true; mode = "win"; st.winT = 2.2; sfx("caught"); if (hooks.bossWin) hooks.bossWin(); }
+  }
+  function winTick(dt) {
+    st.winT -= dt; st.dist += st.speed * dt * Math.max(0.15, st.winT / 2.2) * 0.6; st.phase += st.speed * dt * 0.3; st.x += (laneX(thief.lane) - st.x) * Math.min(1, dt * 3);
+    if (Math.random() < 0.3) burst(thief.root.position.x, 1.5, thief.root.position.z, 0xffc93a, 3);
+    if (hudCb) hudCb(st);
+    if (st.winT <= 0) { mode = "run"; endRun(); }
   }
   function clearAhead(len) {
     obstacles.forEach(function (o) { if (o.type !== "ice" && o.z1 > st.dist - 1 && o.z0 < st.dist + len) removeObstacle(o); });
@@ -420,7 +498,7 @@ window.ENGINE = (function () {
     var hz = st.dist, top = st.y + (st.slide > 0 ? 0.8 : 1.7);
     for (var i = 0; i < obstacles.length; i++) {
       var o = obstacles[i];
-      if (o.dead || o.type === "ramp" || o.type === "gap" || o.type === "pad" || o.type === "ice") continue;
+      if (o.dead || o.type === "ramp" || o.type === "gap" || o.type === "pad" || o.type === "ice" || o.drop > 0.12) continue;
       if (Math.abs(laneX(o.lane) - st.x) > 1.25) continue;
       if (hz + 0.35 < o.z0 || hz - 0.35 > o.z1) continue;
       var hit = false;
@@ -429,6 +507,7 @@ window.ENGINE = (function () {
       else if (o.type === "wall") hit = st.y < 2.55;
       else if (o.type === "train") hit = st.y < o.top - 0.5;
       if (!hit || st.inv > 0) continue;
+      if (st.pet && st.pet.id === "turtle" && st.dist >= st.petSaveAt) { st.petSaveAt = st.dist + petVal(); st.inv = 1.2; burst(laneX(o.lane), 1, o.z0, 0x7ad8ff, 22); removeObstacle(o); sfx("shield"); shake = 0.2; if (hooks.petAct) hooks.petAct("turtle"); return; }
       if (st.boost.shield > 0) { st.boost.shield = 0; st.inv = 1.0; burst(laneX(o.lane), 1, o.z0, 0x8fd8ff, 18); removeObstacle(o); sfx("shield"); shake = 0.2; return; }
       var depth = hz + 0.35 - o.z0, side = depth > 0.45 + dz * 2 + (o.vz ? 0.4 : 0) && st.laneFrom !== st.lane && Math.abs(laneX(st.lane) - st.x) > 0.25;
       if (side) {
@@ -445,6 +524,7 @@ window.ENGINE = (function () {
     killPickup(p);
     if (p.kind === "coin") { st.coinF += st.coinMul * (st.boost.x2 > 0 ? 2 : 1); st.coins = Math.floor(st.coinF); st.chase += R.catchCoins * (1 + (st.perk.chase || 0)); sfx("coin"); sparkle(x, y, z); }
     else if (p.kind === "bar") { st.bars++; st.chase += R.catchBar * (1 + (st.perk.chase || 0)); sfx("bar"); burst(x, y, z, 0xffc21a, 14); }
+    else if (p.kind === "token") { st.tokens++; st.chase += R.catchCoins * 2; sfx("token"); burst(x, y, z, st.season.color, 8); }
     else if (p.kind === "letter") { st.letterGot = p.letter; sfx("bar"); burst(x, y, z, 0xffe27a, 16); if (hooks.letter) hooks.letter(p.letter); }
     else { giveBoost(p.kind); st.boostsGot++; st.chase += R.catchBoost; sfx("boost"); burst(x, y, z, D.BOOSTS[p.kind].color, 20); if (hooks.boost) hooks.boost(p.kind); }
   }
@@ -461,7 +541,7 @@ window.ENGINE = (function () {
   function updateFx(dt) {
     fx = fx.filter(function (s) {
       var u = s.userData; u.life -= dt; if (u.life <= 0) { scene.remove(s); fxPool.push(s); return false; }
-      s.position.x += u.vx * dt; s.position.y += u.vy * dt; s.position.z += u.vz * dt; u.vy -= 6 * dt;
+      s.position.x += u.vx * dt; s.position.y += u.vy * dt; s.position.z += u.vz * dt; if (!u.noGrav) u.vy -= 6 * dt;
       var k = u.life / u.max; s.material.opacity = k * (u.alpha || 1); s.scale.setScalar(u.size * (0.4 + k * 0.6)); return true;
     });
   }
@@ -536,6 +616,7 @@ window.ENGINE = (function () {
   function animPlaza(dt, now) {
     var t = now / 1000, C = window.PLAZA.CENTER;
     hero.root.visible = true; thief.root.visible = false;
+    if (petG) { petG.position.set(C.x + 1.1, 0, C.z + 8); petG.rotation.y = 0.2; window.PETS.animate(petG, t, false, petInfo.fly); }
     hero.root.position.set(C.x, 0, C.z + 7.5); hero.root.rotation.set(0, Math.sin(t * 0.4) * 0.2, 0);
     MD.pose(hero, { phase: 0, anim: "idle" }, t, dt);
     if (plazaFocusT > 0) MD.pose(hero, { phase: 0, anim: "wave" }, t, dt);
@@ -576,7 +657,7 @@ window.ENGINE = (function () {
     var hz = st && !inMenu ? st.dist : 0, x = st && !inMenu ? st.x : 0, y = st && !inMenu ? st.y : 0;
     var t = now / 1000;
     hero.root.position.set(x, y, hz);
-    MD.pose(hero, { phase: st ? st.phase : 0, anim: inMenu ? "idle" : mode === "run" ? st.anim : "fall" }, t, dt);
+    MD.pose(hero, { phase: st ? st.phase : 0, anim: inMenu ? "idle" : mode === "run" || mode === "win" ? (mode === "win" ? "run" : st.anim) : "fall" }, t, dt);
     if (inMenu) hero.root.rotation.y = turntable ? hero.root.rotation.y + dt * 0.7 : 0.35 + Math.sin(t * 0.4) * 0.12;
     else { hero.root.rotation.y = 0; hero.root.rotation.z = st ? (st.x - laneX(st.lane)) * 0.06 : 0; }
     if (mode === "crash" || mode === "over") hero.stars.rotation.y += dt * 4;
@@ -592,27 +673,36 @@ window.ENGINE = (function () {
       MD.pose(thief, { phase: 0, anim: "idle" }, t + 3, dt); thief.aR.up.rotation.x = -2.5; thief.aR.el.rotation.x = -0.9;
       thief.head.rotation.y = 0.4 + Math.sin(t * 0.8) * 0.3;
     } else {
-      var gapT = thief.flee > 0 ? 42 : 17 - (st ? st.chase : 0) * 0.1;
+      var gapT = mode === "win" ? 1.4 : st && st.boss ? 10 - Math.min(1, st.dist / st.boss.target) * 3 : thief.flee > 0 ? 42 : 17 - (st ? st.chase : 0) * 0.1;
       if (thief.flee > 0) thief.flee -= dt;
       thief.gap += (gapT - thief.gap) * Math.min(1, dt * 1.5);
       thief.laneT -= dt; if (thief.laneT <= 0) { thief.laneT = rnd(1.5, 3.5); thief.lane = irnd(0, 2); }
       thief.x += (laneX(thief.lane) - thief.x) * Math.min(1, dt * 3);
       var tz = hz + thief.gap, tx = thief.x, tg = groundAt(tx, tz, 10);
       thief.root.position.set(tx, tg, tz); thief.root.rotation.y = mode === "run" ? 0 : Math.PI;
+      if (thief.throwAnim > 0) { thief.throwAnim -= dt; thief.root.rotation.y = Math.PI * 0.85; }
       MD.pose(thief, { phase: (st ? st.phase : t * 8) * 1.08 + 1, anim: mode === "run" ? "run" : "idle" }, t, dt);
       if (mode !== "run") { thief.aR.up.rotation.x = -2.5; thief.aL.up.rotation.x = -2.9 + Math.sin(t * 10) * 0.3; }
+      if (thief.throwAnim > 0) { thief.aL.up.rotation.x = -2.8; thief.aL.el.rotation.x = -0.2; }
       thief.head.rotation.y = mode === "run" && Math.sin(t * 0.7) > 0.85 ? 2.4 : 0;
     }
     thiefBlob.position.set(thief.root.position.x, thief.root.position.y + 0.03, thief.root.position.z);
+    if (petG) {
+      if (inMenu) { petG.position.set(0.95, 0, 0.55); petG.rotation.y = 0.3 + Math.sin(t * 0.5) * 0.3; petG.visible = !turntable || true; }
+      else { var side = st && st.lane === 2 ? 1 : -1, px = x + side * 0.95; petG.position.x += (px - petG.position.x) * Math.min(1, dt * 8); petG.position.y = y * 0.85; petG.position.z = hz - 0.5; petG.rotation.y = 0; }
+      window.PETS.animate(petG, t, mode === "run", petInfo.fly);
+    }
     // монеты и предметы
     var rot = t * 3, any = false;
     for (var i = 0; i < pickups.length; i++) {
       var p = pickups[i]; if (p.dead) continue;
       if (p.kind === "coin") { coinDummy.position.set(p.x, p.y, p.z); coinDummy.rotation.set(0, rot + p.z * 0.25, 0); coinDummy.scale.setScalar(1); coinDummy.updateMatrix(); coinIM.setMatrixAt(p.i, coinDummy.matrix); any = true; }
-      else if (p.mesh) { p.mesh.position.set(p.x, p.kind === "bar" ? p.y : p.y + Math.sin(t * 3 + p.z) * 0.12, p.z); if (p.kind === "bar") p.mesh.rotation.y = rot; }
+      else if (p.mesh) { p.mesh.position.set(p.x, p.kind === "bar" ? p.y : p.y + Math.sin(t * 3 + p.z) * 0.12, p.z); if (p.kind === "bar" || p.kind === "token") p.mesh.rotation.y = rot; }
     }
     if (any) coinIM.instanceMatrix.needsUpdate = true;
     props.forEach(function (p) { if (p.g.position.z < hz - 25) p.g.position.z += PROP_SPAN; else if (p.g.position.z > hz + PROP_SPAN - 25) p.g.position.z -= PROP_SPAN; });
+    seasonDeco.forEach(function (p) { if (p.g.position.z < hz - 12) p.g.position.z += 160; else if (p.g.position.z > hz + 160 - 12) p.g.position.z -= 160; });
+    if (snowPts) { snowPts.position.z = hz - 10; var sp = snowPts.geometry.attributes.position; for (var e2 = 0; e2 < sp.count; e2++) { var y2 = sp.getY(e2) - dt * 1.4; sp.setY(e2, y2 < 0 ? 8 : y2); sp.setX(e2, sp.getX(e2) + Math.sin(t + e2) * dt * 0.3); } sp.needsUpdate = true; }
     nears.forEach(function (p) { if (p.g.position.z < hz - 12) p.g.position.z += NEAR_SPAN; else if (p.g.position.z > hz + NEAR_SPAN - 12) p.g.position.z -= NEAR_SPAN; });
     spinners.forEach(function (s) { s.rotation.x += dt * 1.2; });
     road.position.z = hz + 60; roadBase.position.z = hz + 60; ground.position.z = hz + 60;
@@ -622,10 +712,13 @@ window.ENGINE = (function () {
     if (embers) { embers.position.z = hz - 10; var ep = embers.geometry.attributes.position; for (var e = 0; e < ep.count; e++) { var yy = ep.getY(e) + dt * 0.8; ep.setY(e, yy > 8 ? 0 : yy); } ep.needsUpdate = true; }
     if (earth) earth.position.set(-60, 70, hz + 160);
     trailT -= dt;
-    if (mode === "run" && trailT <= 0 && !(st && st.fast)) {
+    if (mode === "run" && trailT <= 0 && !(st && st.fast) && G.quality().level > 0) {
       trailT = st.jet > 0 ? 0.025 : 0.07;
       fxSprite(hero.skin.trail, st.jet > 0 ? 0.6 : 0.22, 0.35, x + rnd(-0.15, 0.15), y + (st.jet > 0 ? 0.6 : 0.1), hz - 0.4, rnd(-0.4, 0.4), rnd(0, 0.6), -1); fx[fx.length - 1].userData.alpha = 0.55;
     }
+    // линии скорости на большой скорости и золотая пыль в меню
+    if (mode === "run" && st && st.speed > 21 && G.quality().level > 0 && Math.random() < (st.speed - 21) * 0.08 && !st.fast) { var sl = fxSprite(0xffffff, 0.25, 0.25, x + rnd(-4, 4), y + rnd(0.5, 4), hz + rnd(4, 12), 0, 0, -st.speed * 1.6); fx[fx.length - 1].userData.alpha = 0.35; fx[fx.length - 1].scale.set(0.05, 0.05, 1); fx[fx.length - 1].userData.size = 0.12; }
+    if (inMenu && Math.random() < dt * 4) { fxSprite(0xffd060, rnd(0.08, 0.18), rnd(2, 3.5), rnd(-1.5, 1.5), rnd(0.2, 1.6), rnd(-1, 1), rnd(-0.1, 0.1), rnd(0.15, 0.4), rnd(-0.1, 0.1)); fx[fx.length - 1].userData.alpha = 0.8; fx[fx.length - 1].userData.noGrav = true; }
     updateFx(dt);
     palClock -= dt;
     if (palClock <= 0) { palClock = 0.2; updatePal(inMenu ? 0 : (st ? st.t + st.cycle0 : 0)); }
@@ -651,17 +744,34 @@ window.ENGINE = (function () {
   }
 
   /* ---------- Цикл и автокачество ---------- */
-  var paused = false, hudCb = null, perf = { n: 0, sum: 0, checked: false };
+  var paused = false, hudCb = null, perf = { n: 0, sum: 0, lastDrop: 0, auto: true, fps: 60 };
+  function perfSample(raw, now) {
+    if (raw <= 0 || raw > 0.25 || document.hidden) return;
+    perf.n++; perf.sum += raw;
+    if (perf.n < 90) return;
+    var avg = perf.sum / perf.n; perf.fps = Math.round(1 / avg); perf.n = 0; perf.sum = 0;
+    if (hooks.fps) hooks.fps(perf.fps, G.quality().level);
+    if (!perf.auto || mode !== "run" || now - perf.lastDrop < 4000) return;
+    var q = G.quality().level;
+    if (avg > 0.030 && q > 0) { perf.lastDrop = now; G.setQuality(q - 1); applyLevel(); if (hooks.quality) hooks.quality(q - 1); }
+  }
+  /* уровень 0: меньше дальнего окружения, без следа и частиц скорости */
+  function applyLevel() {
+    var q = G.quality().level;
+    props.forEach(function (p, i) { p.g.visible = q > 0 || i % 2 === 0; });
+    glows.forEach(function (gl) { gl.userData.lowHide = q === 0; });
+  }
   function loop(now) {
     requestAnimationFrame(loop);
     var raw = (now - (lastT || now)) / 1000, dt = Math.min(0.05, raw); lastT = now;
     if (paused) return;
+    if (mode === "win") winTick(dt);
     if (mode === "run") {
       var n = Math.ceil(dt / (1 / 120)), sdt = dt / n;
       for (var i = 0; i < n && mode === "run"; i++) step(sdt);
       if (hudCb) hudCb(st);
       try { if (window.AUDIO) window.AUDIO.setEnergy((st.speed - R.speed0) / (R.speedMax - R.speed0)); } catch (e) {}
-      if (!perf.checked && raw > 0 && raw < 0.2 && st.t > 1.5 && !document.hidden) { perf.n++; perf.sum += raw; if (perf.n >= 150) { perf.checked = true; var avg = perf.sum / perf.n; if (avg > 0.034) G.setQuality(0); else if (avg > 0.024) G.setQuality(1); } }
+      if (st.t > 1.5) perfSample(raw, now);
     }
     animate(dt, now);
     renderer.render(scene, camera);
@@ -687,6 +797,33 @@ window.ENGINE = (function () {
     setWorld("town");
     requestAnimationFrame(loop);
   }
+  /* ---------- оформление сезонного события: арки над дорогой и снегопад ---------- */
+  var seasonDeco = [], snowPts = null, seasonCur = null;
+  function decoArch(sz) {
+    var g = new T.Group(), c = sz.color, pole = G.mat(0x2a2a30, "metal");
+    [-1, 1].forEach(function (k) { var p = new T.Mesh(new T.CylinderGeometry(0.07, 0.09, 5.6, 8), pole); p.position.set(k * 3.7, 2.8, 0); g.add(p); });
+    if (sz.deco === "neon") { var a = new T.Mesh(new T.TorusGeometry(3.7, 0.08, 6, 30, Math.PI), G.mat(c, "plastic", { emissive: c, ei: 2.4 })); a.position.y = 2.6; g.add(a); var a2 = new T.Mesh(new T.TorusGeometry(3.45, 0.05, 6, 30, Math.PI), G.mat(0x3affff, "plastic", { emissive: 0x3affff, ei: 2.4 })); a2.position.y = 2.6; g.add(a2); return g; }
+    var n = 11;
+    for (var i = 0; i < n; i++) {
+      var tt = i / (n - 1), x = -3.6 + tt * 7.2, y = 5.4 - Math.sin(tt * Math.PI) * 0.9;
+      if (sz.deco === "lanterns") { var l = new T.Mesh(new T.CylinderGeometry(0.16, 0.2, 0.36, 8), G.mat([0xff4a2a, 0xffb23a, 0xff6a3a][i % 3], "paint", { emissive: 0xff7a2a, ei: 0.4, night: 2.2 })); l.position.set(x, y - 0.3, 0); g.add(l); }
+      else if (sz.deco === "flags" || sz.deco === "snow") { var f = new T.Mesh(new T.ConeGeometry(0.22, 0.45, 3), G.mat(sz.deco === "snow" ? [0xffffff, 0x9fe0ff][i % 2] : [0xff4a3a, 0xffd23a, 0x3a8aff, 0xffffff][i % 4], "fabric", { side: true })); f.rotation.x = Math.PI; f.scale.z = 0.12; f.position.set(x, y - 0.25, 0); g.add(f); }
+    }
+    var rope = new T.Mesh(new T.CylinderGeometry(0.015, 0.015, 7.4, 4), G.mat(0x3a3a3a, "fabric")); rope.rotation.z = Math.PI / 2; rope.position.y = 5.0; g.add(rope);
+    return g;
+  }
+  function setSeason(sz) {
+    seasonDeco.forEach(function (d) { scene.remove(d.g); }); seasonDeco = []; if (snowPts) { scene.remove(snowPts); snowPts = null; }
+    seasonCur = sz; if (!sz) return;
+    for (var k = 0; k < 4; k++) { var g = G.merge(decoArch(sz)); g.position.z = 20 + k * 40; scene.add(g); seasonDeco.push({ g: g }); collectGlows(g); }
+    if (sz.deco === "snow") { snowPts = makeEmbers(0xffffff); snowPts.material.size = 0.14; snowPts.userData.snow = true; scene.add(snowPts); }
+  }
+  function setPet(id) {
+    if (petG) { scene.remove(petG); petG = null; }
+    petId = id || ""; petInfo = id && window.PETS ? window.PETS.byId(id) : null;
+    if (!petInfo) return;
+    petG = window.PETS.build(id); G.mergeBones(petG); petG.scale.setScalar(1.25); scene.add(petG);
+  }
   function setSkin(skin) {
     skinCur = skin; var p = hero.root.position.clone(), r = hero.root.rotation.y;
     scene.remove(hero.root); hero = MD.hero(skin); G.mergeBones(hero.root); hero.root.position.copy(p); hero.root.rotation.y = r; scene.add(hero.root);
@@ -702,22 +839,24 @@ window.ENGINE = (function () {
     newRun(Object.assign({ fast: true }, opts || {}));
     var oldHooks = hooks; hooks = {};
     var guard = 0;
-    while (mode === "run" && st.t < (maxT || 600) && guard++ < 2e6) step(1 / 120);
+    while ((mode === "run" || mode === "win") && st.t < (maxT || 600) && guard++ < 2e6) { if (mode === "win") { winTick(1 / 30); continue; } step(1 / 120); }
     var r = stats(); r.crashed = mode === "crash"; r.speed = st.speed; r.world = W.id;
     hooks = oldHooks; auto = was; autoErr = wasErr; toMenu();
     return r;
   }
 
   return {
-    init: init, setWorld: setWorld, setSkin: setSkin, newRun: newRun, input: input, continueRun: continueRun, endRun: endRun,
+    init: init, setWorld: setWorld, setSkin: setSkin, setPet: setPet, setSeason: setSeason, newRun: newRun, input: input, continueRun: continueRun, endRun: endRun,
     toMenu: toMenu, sim: sim, showPlaza: showPlaza, hidePlaza: hidePlaza, plazaUpgrade: plazaUpgrade, iconURL: iconURL, unlockAudio: unlockAudio, DIMS: DIMS,
     on: function (k, f) { hooks[k] = f; }, onHud: function (f) { hudCb = f; },
     setPaused: function (p) { paused = !!p; lastT = 0; }, isPaused: function () { return paused; },
     setSound: function (on) { try { if (window.AUDIO) window.AUDIO.setOn(on); } catch (e) {} },
-    setMenuLift: function (v) { menuLift = v; }, giveBars: function (n) { if (st) { st.bars += n; sfx("bar"); } }, setTurntable: function (on) { turntable = !!on; },
+    setMenuLift: function (v) { menuLift = v; },
+    setQuality: function (lvl) { if (lvl === "auto") { perf.auto = true; G.setQuality(2); } else { perf.auto = false; G.setQuality(lvl); } applyLevel(); },
+    fps: function () { return perf.fps; }, giveBars: function (n) { if (st) { st.bars += n; sfx("bar"); } }, setTurntable: function (on) { turntable = !!on; },
     auto: function (on) { if (on !== undefined) auto = !!on; return auto; },
     mode: function () { return mode; }, state: function () { return st; }, world: function () { return W; },
-    _advance: function (sec, frames) { for (var i = 0; i < sec * 120 && mode === "run"; i++) step(1 / 120); if (hudCb && st) hudCb(st); for (var f = 0; f < (frames || 1); f++) animate(1 / 30, performance.now() + f * 33); renderer.render(scene, camera); return mode; },
+    _advance: function (sec, frames) { for (var i = 0; i < sec * 120 && (mode === "run" || mode === "win"); i++) { if (mode === "win") { winTick(1 / 120); continue; } step(1 / 120); } if (hudCb && st) hudCb(st); for (var f = 0; f < (frames || 1); f++) animate(1 / 30, performance.now() + f * 33); renderer.render(scene, camera); return mode; },
     _giveJet: function () { if (st && mode === "run") giveBoost("jet"); },
     _dbg: function () { return { obstacles: obstacles.length, pickups: pickups.length, props: props.length, coinsFree: coinFree.length, calls: renderer.info.render.calls, tris: renderer.info.render.triangles, quality: G.quality().level }; }
   };

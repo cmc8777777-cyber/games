@@ -6,6 +6,7 @@
   var lang = "ru";
   function t(k) { var s = (I18N[lang] && I18N[lang][k]) || I18N.ru[k] || k; for (var i = 1; i < arguments.length; i++) s = s.split("{" + (i - 1) + "}").join(arguments[i]); return s; }
   function nm(o) { return o.name[lang] || o.name.ru; }
+  function cap(x) { return x.charAt(0).toUpperCase() + x.slice(1); }
   /* множественное число: ru — 1 слиток, 2 слитка, 5 слитков; en — 1 bar, 2 bars */
   var PL = { ru: { coin: ["монета", "монеты", "монет"], bar: ["слиток", "слитка", "слитков"], key: ["ключ", "ключа", "ключей"], time: ["раз", "раза", "раз"] },
     en: { coin: ["coin", "coins"], bar: ["gold bar", "gold bars"], key: ["key", "keys"], time: ["time", "times"] } };
@@ -35,16 +36,18 @@
     S.wallet = jp(PF.get("sg.wallet"), { coins: 0, bars: 0, keys: 1 });
     S.prog = jp(PF.get("sg.prog"), {});
     S.prog.skins = S.prog.skins || ["courier"]; S.prog.worlds = S.prog.worlds || ["town"]; S.prog.claimed = S.prog.claimed || [];
-    S.prog.st = S.prog.st || {}; S.prog.up = S.prog.up || {}; S.prog.builds = S.prog.builds || {};
+    S.prog.st = S.prog.st || {}; S.prog.up = S.prog.up || {}; S.prog.builds = S.prog.builds || {}; S.prog.pets = S.prog.pets || {};
     S.daily = jp(PF.get("sg.daily"), {});
     S.week = jp(PF.get("sg.week"), {});
+    S.season = jp(PF.get("sg.season"), {});
     S.sel = jp(PF.get("sg.sel"), { skin: "courier", world: "town" });
+    if (S.sel.pet && !S.prog.pets[S.sel.pet]) S.sel.pet = "";
     S.set = jp(PF.get("sg.set"), { snd: 2, lang: "" }); if (S.set.snd == null) S.set.snd = S.set.sound === 0 ? 0 : 2;
     if (S.prog.skins.indexOf(S.sel.skin) < 0 || !D.SKINS.some(function (x) { return x.id === S.sel.skin; })) S.sel.skin = "courier";
     if (!worldOpen(S.sel.world) || !worldById(S.sel.world).ready) S.sel.world = "town";
   }
   function save(k) { PF.put("sg." + k, JSON.stringify(S[k])); }
-  function saveAll() { ["wallet", "prog", "daily", "week", "sel", "set"].forEach(save); }
+  function saveAll() { ["wallet", "prog", "daily", "week", "season", "sel", "set"].forEach(save); }
   function st(k) { return Number(S.prog.st[k]) || 0; }
   function addStat(k, v) { S.prog.st[k] = st(k) + v; }
 
@@ -62,6 +65,13 @@
     var wk = Math.floor((today + 3) / 7);   // неделя с понедельника
     if (S.week.wk !== wk) { S.week = { wk: wk, prog: {}, claimed: {}, worlds: [], chest: false }; save("week"); ch = true; }
     return ch;
+  }
+  /* ---------- сезонное событие ---------- */
+  function seasonNow() {
+    var Z = D.SEASONS, k = Math.floor((dayNum() - Z.epoch) / Z.days), idx = ((k % Z.list.length) + Z.list.length) % Z.list.length;
+    var left = Z.days - (((dayNum() - Z.epoch) % Z.days) + Z.days) % Z.days;
+    if (S.season.k !== k) { S.season = { k: k, id: Z.list[idx].id, n: 0, got: [] }; save("season"); }
+    return { def: Z.list[idx], left: left, k: k };
   }
   function weekAdd(id, v) { if (!S.week || !S.week.prog) return; S.week.prog[id] = (S.week.prog[id] || 0) + v; save("week"); }
   function weekDaysLeft() { return 7 - ((dayNum() + 3) % 7); }
@@ -89,6 +99,7 @@
     if (g.t === "world") return buildCount(g.w) >= 15;
     if (g.t === "days") return st("days") >= g.n;
     if (g.t === "ads") return st("ads") >= g.n;
+    if (g.t === "boss") return S.prog.claimed.indexOf("boss:" + g.w) >= 0;
     return false;
   }
   function statFor(k) { return k === "builds" ? buildTotal() : st(k); }
@@ -110,6 +121,7 @@
 
   /* ================= Реклама и Премиум ================= */
   function prem() { return PF.premium(); }
+  function vib(p) { if (S.set && S.set.vib === 0) return; try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
   function rewarded(cb) {
     if (!PF.canReward()) { toast(PF.hasSdk() ? t("adFail") : t("adFailLocal")); return; }
     PF.rewarded(function (ok) { if (ok) { addStat("ads", 1); save("prog"); } else toast(t("adFail")); cb(ok); });
@@ -122,18 +134,30 @@
     screen = id;
     document.documentElement.classList.toggle("running", id === "hud" || id === "crash" || id === "pause");
   }
+  /* плавный счёт и «прыжок» значка при изменении */
+  function countTo(e, v) {
+    var cur = Number(e.dataset.v || 0); if (cur === v && e.textContent) return;
+    e.dataset.v = v; var chip = e.parentNode; chip.classList.remove("bump"); void chip.offsetWidth; if (e.textContent) chip.classList.add("bump");
+    var from = cur, t0 = performance.now(), d = Math.abs(v - from) > 5 && e.textContent ? 600 : 0;
+    (function tick() { var k = d ? Math.min(1, (performance.now() - t0) / d) : 1; e.textContent = fmt(from + (v - from) * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(tick); })();
+  }
   function refreshTop() {
-    $("#wCoins").textContent = fmt(S.wallet.coins); $("#wBars").textContent = fmt(S.wallet.bars); $("#wKeys").textContent = fmt(S.wallet.keys);
+    countTo($("#wCoins"), S.wallet.coins); countTo($("#wBars"), S.wallet.bars); countTo($("#wKeys"), S.wallet.keys);
     $("#worldName").textContent = nm(worldById(S.sel.world));
     var ev = $("#eventChip"); if (ev) { ev.hidden = !isWeekend(); ev.textContent = t("weekendEvent"); }
+    var sn = seasonNow(), sc = $("#seasonChip"); if (sc) { sc.innerHTML = "<b>" + esc(nm(sn.def)) + "</b> · " + esc(cap(sn.def.token[lang])) + ": " + fmt(S.season.n || 0) + " · " + t("seasonLeftShort", sn.left); sc.style.setProperty("--sc", hex(sn.def.color)); sc.classList.toggle("dot", D.SEASONS.tiers.some(function (need, i) { return (S.season.n || 0) >= need && !(S.season.got || []).some(function (g) { return g === i; }); })); }
+    E.setSeason(sn.def);
     var badge = {
       tasks: S.daily.tasks && S.daily.tasks.some(function (x) { return x.prog >= x.goal && !x.claimed; }) || (allTasksDone() && !S.daily.chest) || (S.daily.wordN >= 6 && !S.daily.wordChest) || D.WEEKLY.some(function (w) { return S.week.prog && (S.week.prog[w.id] || 0) >= w.goal && !(S.week.claimed && S.week.claimed[w.id]); }),
+      profile: D.ACHIEVEMENTS.some(function (a) { return !achDone(a) && achVal(a) >= a.n; }),
       chests: st("calLast") < dayNum() || PF.now() >= st("chestAt") + D.FREE_CHEST_MS && PF.canReward(),
       skins: D.SKINS.some(function (s) { return !owns(s.id) && (skinReady(s) || (s.get.t === "coins" && S.wallet.coins >= s.get.n)); }),
       world: D.WORLDS.some(function (w, i) { return w.ready && worldOpen(w.id) && builds(w.id).some(function (lv, b) { return lv < 3 && S.wallet.bars >= buildCost(b, lv, w.id); }); }),
+      pets: PETS.LIST.some(function (p) { var l = S.prog.pets[p.id] || 0; return l ? l < 5 && S.wallet.coins >= PETS.UPGRADE[l] : (p.get.t === "coins" ? S.wallet.coins >= p.get.n : petReady(p)); }),
       workshop: D.BOOST_ORDER.some(function (k) { var lv = S.prog.up[k] || 0; return lv < 5 && S.wallet.coins >= D.UPGRADE_COST[lv]; })
     };
     renderStart();
+    $("#recBtn").classList.toggle("dot", !!badge.profile);
     Object.keys(badge).forEach(function (k) { var b = $("#mb-" + k); if (b) b.classList.toggle("dot", !!badge[k]); });
   }
   function applyLang() {
@@ -161,9 +185,9 @@
   }
   function renderPanel() {
     var body = $("#panel .pbody"); body.innerHTML = "";
-    var titles = { skins: "skins", world: "worldTitle", tasks: "tasksTitle", workshop: "workshopTitle", chests: "chestsTitle", records: "recordsTitle" };
+    var titles = { profile: "profileTitle", season: "seasonTitle", pets: "petsTitle", skins: "skins", world: "worldTitle", tasks: "tasksTitle", workshop: "workshopTitle", chests: "chestsTitle", records: "recordsTitle" };
     $("#panel .ptitle").textContent = t(titles[panelId]);
-    ({ skins: panelSkins, world: panelWorld, tasks: panelTasks, workshop: panelWorkshop, chests: panelChests, records: panelRecords })[panelId](body);
+    ({ profile: panelProfile, season: panelSeason, pets: panelPets, skins: panelSkins, world: panelWorld, tasks: panelTasks, workshop: panelWorkshop, chests: panelChests, records: panelRecords })[panelId](body);
     refreshTop();
   }
   function btn(text, cls, fn, disabled) { var b = el("button", "btn " + (cls || ""), text); b.disabled = !!disabled; b.onclick = function (e) { e.stopPropagation(); E.unlockAudio(); if (!b.disabled) AUDIO.sfx("click"); fn(); }; return b; }
@@ -184,13 +208,15 @@
     if (g.t === "days") return t("getDays", g.n, Math.min(g.n, st("days")));
     if (g.t === "ads") return t("getAds", g.n, Math.min(g.n, st("ads")));
     if (g.t === "buy") return t("getBuy");
+    if (g.t === "boss") return t("getBoss", nm(worldById(g.w)));
+    if (g.t === "season") { var sd = D.SEASONS.list.filter(function (x) { return x.id === g.s; })[0]; return t("getSeason", nm(sd)); }
     return "";
   }
   function perkText(p) {
     var k = Object.keys(p)[0], v = p[k];
     return t("perk_" + k, k === "coins" || k === "bars" || k === "chase" || k === "build" ? Math.round(v * 100) : v);
   }
-  var SKIN_GROUPS = [["coins", ["start", "coins"]], ["tasks", ["task"]], ["gifts", ["world", "days"]], ["videos", ["ads"]], ["special", ["buy"]]];
+  var SKIN_GROUPS = [["coins", ["start", "coins"]], ["tasks", ["task", "boss"]], ["gifts", ["world", "days", "season"]], ["videos", ["ads"]], ["special", ["buy"]]];
   function panelSkins(body) {
     THUMBS.onOne = function (id, url) { if (art("hero-" + id)) return; var im = document.querySelector('#panel img[data-th="' + id + '"]'); if (im) { im.src = url; im.classList.add("ok"); } };
     THUMBS.renderAll(D.SKINS);
@@ -232,6 +258,133 @@
   }
   function buySkin(id) { toast(t("buying")); SKINSHOP.buy(id).then(function (ok) { if (!ok) toast(t("buyFail")); else PF.save(); }); }
 
+  /* ---------- Достижения ---------- */
+  function achVal(a) {
+    if (a.stat === "builds") return buildTotal();
+    if (a.stat === "worlds") return D.WORLDS.filter(function (w) { return worldOpen(w.id); }).length;
+    if (a.stat === "skins") return S.prog.skins.length;
+    if (a.stat === "pets") return Object.keys(S.prog.pets || {}).length;
+    if (a.stat === "bosses") return S.prog.claimed.filter(function (c) { return c.indexOf("boss:") === 0; }).length;
+    return st(a.stat);
+  }
+  function achDone(a) { return S.prog.claimed.indexOf("ach:" + a.id) >= 0; }
+  function achCheck() {   // новые выполненные — тост и вибрация (награду забирают в профиле)
+    var seen = S.prog.st.achSeen || 0, ready = D.ACHIEVEMENTS.filter(function (a) { return !achDone(a) && achVal(a) >= a.n; });
+    if (ready.length > seen) { toast(t("achNew", nm(ready[ready.length - 1]))); vib([30, 30, 60]); AUDIO.sfx("bar"); }
+    S.prog.st.achSeen = ready.length;
+    return ready.length;
+  }
+  function panelProfile(body) {
+    var sk = skinById(S.sel.skin), av = art("hero-" + sk.id) || THUMBS.get(sk.id), name = (window.__playerName || t("anon"));
+    var lvl = Math.floor(Math.sqrt(st("distAll") / 400)) + 1, nextAt = Math.pow(lvl, 2) * 400, prevAt = Math.pow(lvl - 1, 2) * 400, pct = Math.min(100, (st("distAll") - prevAt) / (nextAt - prevAt) * 100);
+    var head = el("div", "profhead");
+    head.innerHTML = '<div class="pav">' + (av ? '<img alt="" src="' + av + '">' : "") + '</div><div class="pname"><b>' + esc(name) + '</b><span>' + t("profLevel", lvl) + '</span><div class="bar"><i style="width:' + pct + '%"></i></div><span class="muted">' + t("profNext", fmt(Math.max(0, nextAt - st("distAll")))) + "</span></div>";
+    body.appendChild(head);
+    var gr = el("div", "pstats");
+    [["profRuns", st("runs")], ["bestAll", fmt(st("best")) + " " + t("m")], ["profDist", (st("distAll") / 1000).toFixed(1).replace(".", lang === "ru" ? "," : ".") + " " + t("km")], ["profCoins", fmt(st("coinsAll"))], ["caughtAll", st("caught")], ["profBuilds", buildTotal()], ["profBosses", achVal({ stat: "bosses" })], ["daysTotalShort", st("days")]]
+      .forEach(function (x) { gr.appendChild(el("div", "pst", "<b>" + x[1] + "</b><span>" + t(x[0]) + "</span>")); });
+    body.appendChild(gr);
+    // настройки
+    var set = el("div", "task"); set.innerHTML = '<div class="tt">' + t("settings") + "</div>";
+    set.appendChild(btn(t(S.set.vib === 0 ? "vibOff" : "vibOn"), "ghost small", function () { S.set.vib = S.set.vib === 0 ? 1 : 0; save("set"); if (S.set.vib) vib(40); renderPanel(); }));
+    var ql = S.set.q == null ? "auto" : S.set.q;
+    set.appendChild(btn(t("quality") + ": " + t("q_" + ql), "ghost small", function () { var order = ["auto", 2, 1, 0], i = order.indexOf(ql); S.set.q = order[(i + 1) % 4]; save("set"); E.setQuality(S.set.q); renderPanel(); }));
+    set.appendChild(btn(t(["sndOff", "sndNoMusic", "sndOn"][S.set.snd]), "ghost small", function () { $("#sndBtn").click(); renderPanel(); }));
+    body.appendChild(set);
+    // достижения
+    var doneN = D.ACHIEVEMENTS.filter(achDone).length;
+    body.appendChild(el("h3", "sec", t("achTitle", doneN, D.ACHIEVEMENTS.length)));
+    D.ACHIEVEMENTS.slice().sort(function (a, b) { var ra = achDone(a) ? 2 : achVal(a) >= a.n ? 0 : 1, rb = achDone(b) ? 2 : achVal(b) >= b.n ? 0 : 1; return ra - rb; }).forEach(function (a) {
+      var v = achVal(a), done = achDone(a), row = el("div", "ach" + (done ? " done" : v >= a.n ? " ready" : ""));
+      row.innerHTML = '<i class="medal"></i><div class="ai"><b>' + esc(nm(a)) + '</b><span class="muted">' + t("ach_" + a.stat, fmt(a.n)) + " · " + t("reward", rewardText(a.r)) + '</span><div class="bar"><i style="width:' + Math.min(100, v / a.n * 100) + '%"></i></div></div>';
+      if (!done && v >= a.n) row.appendChild(btn(t("claim"), "ok small", function () { S.prog.claimed.push("ach:" + a.id); addReward(a.r); save("prog"); toast(rewardText(a.r)); achCheck(); renderPanel(); }));
+      body.appendChild(row);
+    });
+    // рекорды и лидеры
+    body.appendChild(el("h3", "sec", t("recordsTitle")));
+    panelRecords(body);
+  }
+
+  /* ---------- Панель события ---------- */
+  function panelSeason(body) {
+    var now = seasonNow(), Z = D.SEASONS, d = now.def, n = S.season.n || 0, sk = skinById(d.skin);
+    var head = el("div", "seasonhead"); head.style.setProperty("--sc", hex(d.color));
+    head.innerHTML = "<b>" + esc(nm(d)) + "</b><span>" + t("seasonLeft", now.left) + '</span><span class="stok">' + esc(cap(d.token[lang])) + ": " + fmt(n) + "</span>";
+    body.appendChild(head);
+    body.appendChild(el("p", "muted", t("seasonHow", d.token[lang], Z.catchTokens)));
+    Z.tiers.forEach(function (need, i) {
+      var r = Z.rewards[i], got = S.season.got && S.season.got.indexOf(i) >= 0, row = el("div", "task tier" + (n >= need ? " reach" : ""));
+      var txt = r.skin ? t("seasonSkin", nm(sk)) : r.chest ? (r.chest === "big" ? t("bigChest") : t("smallChest")) : rewardText(r);
+      row.innerHTML = '<div class="tt">' + (i + 1) + ". " + esc(txt) + '</div><div class="bar"><i style="width:' + Math.min(100, n / need * 100) + '%"></i><span>' + fmt(Math.min(n, need)) + " / " + fmt(need) + "</span></div>";
+      row.appendChild(got ? btn(t("done"), "ghost", function () {}, true) : btn(t("claim"), "ok", function () {
+        S.season.got = (S.season.got || []).concat([i]); save("season");
+        if (r.skin) { giveSkin(d.skin); S.sel.skin = d.skin; save("sel"); E.setSkin(sk); toast(nm(sk) + " ✓"); }
+        else if (r.chest) openChest(r.chest); else { addReward(r); toast(rewardText(r)); }
+        renderPanel();
+      }, n < need));
+      body.appendChild(row);
+    });
+  }
+
+  /* ---------- Финальные погони ---------- */
+  function bossState(wid) {
+    if (S.prog.claimed.indexOf("boss:" + wid) >= 0) return "won";
+    return buildCount(wid) >= D.BOSS.needBuilds ? "open" : "locked";
+  }
+  function bossResult(wid, s) {
+    if (!s.boss || !s.boss.won) { setTimeout(function () { toast(t("bossLost")); }, 400); return; }
+    var first = S.prog.claimed.indexOf("boss:" + wid) < 0, b = D.BOSS.list[wid], txt;
+    if (first) {
+      S.prog.claimed.push("boss:" + wid); var r = b.reward;
+      addReward({ bars: r.bars || 0, keys: r.keys || 0 });
+      if (r.pet && !S.prog.pets[r.pet]) S.prog.pets[r.pet] = 1;
+      if (r.skin) giveSkin(r.skin);
+      txt = rewardText(r) + (r.pet ? ", " + nm(PETS.byId(r.pet)) : "") + (r.skin ? ", " + nm(skinById(r.skin)) : "");
+    } else if (S.daily["boss_" + wid] !== 1) { S.daily["boss_" + wid] = 1; addReward({ bars: D.BOSS.replayBars }); txt = rewardText({ bars: D.BOSS.replayBars }); save("daily"); }
+    else txt = t("bossNoReplay");
+    addStat("bossWins", 1); save("prog");
+    setTimeout(function () { modal(t("bossWin"), (art("thief-run") ? '<img class="boss-img" alt="" src="' + art("thief-run") + '">' : "") + '<p class="big">' + t("bossWinText") + "<br><b>" + txt + "</b></p>"); }, 300);
+  }
+  function bossCard(body, w) {
+    var stt = bossState(w.id), b = D.BOSS.list[w.id], c = el("div", "task bosscard " + stt);
+    c.innerHTML = '<div class="tt">' + t("bossTitle") + '</div><div class="muted">' + (stt === "locked" ? t("bossLocked", Math.min(D.BOSS.needBuilds, buildCount(w.id)), D.BOSS.needBuilds) : stt === "won" ? t("bossWon") : t("bossInfo", fmt(b.target))) + "</div>" +
+      (stt !== "won" ? '<div class="muted">' + t("reward", rewardText(b.reward) + (b.reward.pet ? ", " + nm(PETS.byId(b.reward.pet)) : "") + (b.reward.skin ? ", " + nm(skinById(b.reward.skin)) : "")) + "</div>" : "");
+    if (stt !== "locked") c.appendChild(btn(stt === "won" ? t("bossAgain") : t("bossGo"), stt === "won" ? "ghost" : "buy", function () { startBoss(w.id); }));
+    body.appendChild(c);
+  }
+
+  /* ---------- Питомцы ---------- */
+  function petCond(p) {
+    var g = p.get;
+    if (g.t === "coins") return t("getCoins", fmt(g.n));
+    if (g.t === "task") return t("getTask", g.stat === "boostsAll" ? t("statBoosts", g.n, Math.min(g.n, st("boostsAll"))) : t("statCaught", g.n, Math.min(g.n, st("caught"))));
+    if (g.t === "days") return t("getDays", g.n, Math.min(g.n, st("days")));
+    if (g.t === "boss") return t("getBoss", nm(worldById(g.w)));
+    return "";
+  }
+  function petReady(p) { var g = p.get; return g.t === "task" ? st(g.stat) >= g.n : g.t === "days" ? st("days") >= g.n : g.t === "boss" ? S.prog.claimed.indexOf("boss:" + g.w) >= 0 : false; }
+  function panelPets(body) {
+    var list = PETS.LIST.map(function (p) { return { id: p.id, pet: true }; });
+    THUMBS.onOne = function (id, url) { var im = document.querySelector('#panel img[data-th="' + id + '"]'); if (im) { im.src = url; im.classList.add("ok"); } };
+    THUMBS.renderAll(list);
+    body.appendChild(el("p", "muted", t("petsNote")));
+    PETS.LIST.forEach(function (p) {
+      var lvl = S.prog.pets[p.id] || 0, row = el("div", "petrow" + (S.sel.pet === p.id ? " on" : "")), th = art("pet-" + p.id) || THUMBS.get("pet:" + p.id);
+      row.innerHTML = '<div class="pthumb"><img class="th3d' + (th ? " ok" : "") + '" alt="" data-th="pet:' + p.id + '"' + (th ? ' src="' + th + '"' : "") + "></div>" +
+        '<div class="pinfo"><b>' + esc(nm(p)) + '</b><span class="pab">' + t("pet_" + p.id, Math.round(p.v(Math.max(1, lvl)))) + "</span>" +
+        (lvl ? '<span class="pips">' + [1, 2, 3, 4, 5].map(function (q) { return '<i class="' + (q <= lvl ? "on" : "") + '"></i>'; }).join("") + "</span>" + (lvl < 5 ? '<span class="muted">' + t("petNext", t("pu_" + p.id, Math.round(p.v(lvl + 1)))) + "</span>" : "") : '<span class="muted">' + esc(petCond(p)) + "</span>") + "</div>";
+      var col = el("div", "pbtns");
+      if (!lvl) {
+        if (p.get.t === "coins") col.appendChild(btn("● " + fmt(p.get.n), "gold", function () { if (S.wallet.coins < p.get.n) return; S.wallet.coins -= p.get.n; S.prog.pets[p.id] = 1; S.sel.pet = p.id; save("wallet"); save("prog"); save("sel"); E.setPet(p.id); renderPanel(); }, S.wallet.coins < p.get.n));
+        else col.appendChild(btn(t("claim"), "ok", function () { S.prog.pets[p.id] = 1; S.sel.pet = p.id; save("prog"); save("sel"); E.setPet(p.id); toast(nm(p) + " ✓"); renderPanel(); }, !petReady(p)));
+      } else {
+        col.appendChild(S.sel.pet === p.id ? btn(t("petWith"), "ghost", function () { S.sel.pet = ""; save("sel"); E.setPet(""); renderPanel(); }) : btn(t("petTake"), "ok", function () { S.sel.pet = p.id; save("sel"); E.setPet(p.id); renderPanel(); }));
+        if (lvl < 5) { var c = PETS.UPGRADE[lvl]; col.appendChild(btn("▲ " + fmt(c), "gold small", function () { if (S.wallet.coins < c) return; S.wallet.coins -= c; S.prog.pets[p.id] = lvl + 1; save("wallet"); save("prog"); AUDIO.sfx("boost"); renderPanel(); }, S.wallet.coins < c)); }
+      }
+      row.appendChild(col); body.appendChild(row);
+    });
+  }
+
   /* ---------- Мир и стройка ---------- */
   var worldTab = null;
   function house(w, b, lv) {
@@ -265,6 +418,7 @@
     info.appendChild(S.sel.world === w.id ? btn(t("chosen"), "ghost", function () {}, true) : btn(t("choose"), "ok", function () { S.sel.world = w.id; save("sel"); E.setWorld(w.id); renderPanel(); }));
     info.appendChild(el("span", "muted", t("bonus", Math.round((coinMul() - 1) * 100))));
     body.appendChild(info);
+    bossCard(body, w);
     var bl = builds(w.id), list = el("div", "blist");
     w.buildings.forEach(function (b, k) {
       var lv = bl[k], row = el("div", "brow"), cost = lv < 3 ? buildCost(k, lv, w.id) : 0;
@@ -346,7 +500,7 @@
     body.appendChild(me);
     var bd = el("div", "task"); bd.innerHTML = '<div class="tt">' + t("boardTitle") + '</div><div class="muted">' + t("loading") + "</div>"; body.appendChild(bd);
     loadBoard(function (r) {
-      if (panelId !== "records") return;
+      if (panelId !== "records" && panelId !== "profile") return;
       if (!r || !r.entries || !r.entries.length) { bd.innerHTML = '<div class="tt">' + t("boardTitle") + '</div><div class="muted">' + t(PF.hasSdk() ? "boardEmpty" : "boardLocal") + "</div>"; return; }
       bd.innerHTML = '<div class="tt">' + t("boardTitle") + "</div>" + r.entries.map(function (e) {
         var n = (e.player && e.player.publicName) || t("anon"), mine = r.userRank && e.rank === r.userRank;
@@ -415,14 +569,17 @@
 
   /* ================= Забег ================= */
   var runInfo = null, crashTimer = 0;
+  var bossRun = null;
+  function startBoss(wid) { bossRun = wid; S.sel.world = wid; save("sel"); startRun(); }
   function startRun() {
     ensureDay(); closePanelQuiet(); E.unlockAudio();
     E.setWorld(S.sel.world); E.setSkin(skinById(S.sel.skin));
     var letters = D.LETTERS[lang], letter = S.daily.wordN < 6 ? letters[S.daily.wordN] : "";
-    var ev = isWeekend() ? D.WEEKEND : {}, tut = !st("tutDone") && !E.auto();
+    var ev = isWeekend() ? D.WEEKEND : {}, tut = !st("tutDone") && !E.auto(), petSel = S.sel.pet && S.prog.pets[S.sel.pet] ? { id: S.sel.pet, lvl: S.prog.pets[S.sel.pet] } : null;
     var sb = {}; Object.keys(startSel).forEach(function (k) { if (startSel[k] && S.wallet.coins >= D.START_BOOSTS[k]) { S.wallet.coins -= D.START_BOOSTS[k]; sb[k] = true; } }); startSel = {}; save("wallet"); renderStart();
-    E.newRun({ tutorial: tut, startShield: sb.shield, startJet: sb.jet, startX2: sb.x2, coinMul: coinMul(), levels: S.prog.up, letter: letter, perk: skinById(S.sel.skin).perk || {}, eventBars: ev.bars || 0, catchBonus: ev.catchBonus || 0 });
-    runInfo = { x2: false };
+    var bossOpt = bossRun ? D.BOSS.list[bossRun] : null, sz = seasonNow().def; $(".chase span[data-t]").textContent = bossOpt ? t("bossBar") : t("chase");
+    E.newRun({ season: sz, boss: bossOpt, pet: petSel, tutorial: tut, startShield: sb.shield, startJet: sb.jet, startX2: sb.x2, coinMul: coinMul(), levels: S.prog.up, letter: letter, perk: skinById(S.sel.skin).perk || {}, eventBars: ev.bars || 0, catchBonus: ev.catchBonus || 0 });
+    runInfo = { x2: false, boss: bossRun }; bossRun = null;
     show("hud"); PF.setPlaying(true);
     $("#hudHint").hidden = st("runs") > 2 || tut; $("#hudHint").textContent = $("#hint").textContent; $("#tut").hidden = true;
   }
@@ -444,14 +601,15 @@
   function hud(s) {
     var now = performance.now(); if (now - lastHud < 60) return; lastHud = now;
     $("#hCoins").textContent = fmt(s.coins); $("#hDist").textContent = fmt(s.dist) + " " + t("m"); $("#hBars").textContent = s.bars;
-    $("#chaseFill").style.width = Math.min(100, s.chase) + "%";
+    var bs = s.boss; $("#chaseFill").style.width = (bs ? Math.min(100, s.dist / bs.target * 100) : Math.min(100, s.chase)) + "%";
+    $(".chase").classList.toggle("bossbar", !!bs);
     var bx = $("#hBoosts"), html = "";
     D.BOOST_ORDER.forEach(function (k) { if (s.boost[k] > 0) { var full = D.BOOSTS[k].dur[Math.min(5, S.prog.up[k] || 0)]; html += '<div class="hb"><img alt="" src="' + E.iconURL(k) + '"><i style="width:' + Math.min(100, s.boost[k] / full * 100) + '%"></i></div>'; } });
     if (bx.innerHTML !== html) bx.innerHTML = html;
     if (s.dist > 120) $("#hudHint").hidden = true;
   }
   function onCrash(s) {
-    PF.setPlaying(false);
+    PF.setPlaying(false); vib(90);
     if (E.auto() && window.__autoEnd !== false) { setTimeout(function () { E.endRun(); }, 300); return; }
     show("crash");
     var keyCost = s.continues + 1, box = $("#crashBtns"); box.innerHTML = "";
@@ -469,19 +627,23 @@
     PF.setPlaying(false); clearTimeout(crashTimer);
     var newBest = s.dist > st("best");
     S.wallet.coins += s.coins; S.wallet.bars += s.bars;
+    addStat("boostsAll", s.boosts); addStat("barsAll", s.bars); addStat("jumpsAll", s.jumps); addStat("tokensAll", s.tokens || 0); addStat("distAll", s.dist);
     addStat("runs", 1); S.prog.st.best = Math.max(st("best"), s.dist); addStat("coinsAll", s.coins); addStat("caught", s.caught);
     if (s.letter && S.daily.wordN < 6) S.daily.wordN++;
     (S.daily.tasks || []).forEach(function (x) {
       var v = { coins: s.coins, dist: s.dist, boosts: s.boosts, jumps: s.jumps, slides: s.slides, bars: s.bars, caught: s.caught, runs: 1 }[x.id] || 0;
       if (x.id === "coins" || x.id === "dist") x.prog = Math.max(x.prog, v); else x.prog += v;
     });
+    if (runInfo && runInfo.boss) bossResult(runInfo.boss, s);
+    if (s.tokens) { seasonNow(); S.season.n = (S.season.n || 0) + s.tokens; save("season"); }
     var wbest = "best_" + S.sel.world; S.prog.st[wbest] = Math.max(st(wbest), s.dist);
     weekAdd("wdist", s.dist); weekAdd("wcoins", s.coins); weekAdd("wcaught", s.caught);
     if (S.week.worlds && S.week.worlds.indexOf(S.sel.world) < 0) { S.week.worlds.push(S.sel.world); S.week.prog.wworlds = S.week.worlds.length; save("week"); }
     if (newBest) submitScore(s.dist);
     save("wallet"); save("prog"); save("daily");
+    setTimeout(achCheck, 900);
     lastRun = s;
-    $("#rDist").textContent = fmt(s.dist) + " " + t("m"); $("#rCoins").textContent = fmt(s.coins); $("#rBars").textContent = s.bars; $("#rCaught").textContent = s.caught;
+    $("#rDist").textContent = fmt(s.dist) + " " + t("m"); $("#rCoins").textContent = fmt(s.coins); $("#rBars").textContent = s.bars; $("#rCaught").textContent = s.caught; var rt = $("#rTokens"); if (rt) { rt.textContent = s.tokens || 0; rt.previousElementSibling.textContent = cap(seasonNow().def.token[lang]); }
     $("#rBest").textContent = newBest ? t("newBest") : t("best") + ": " + fmt(st("best")) + " " + t("m"); $("#rBest").classList.toggle("nb", newBest);
     var xb = $("#x2Btn"); xb.hidden = s.coins < 10; xb.disabled = false; xb.textContent = prem() ? t("x2Prem") : t("x2Ad");
     show("results"); refreshTop();
@@ -531,10 +693,17 @@
       lang = S.set.lang || ((PF.hasSdk() ? PF.lang() : (navigator.language || "ru")).slice(0, 2) === "ru" ? "ru" : "en");
       if (["ru", "en"].indexOf(lang) < 0) lang = "ru";
       applySound();
-      E.setSkin(skinById(S.sel.skin)); E.setWorld(S.sel.world);
-      E.on("crash", onCrash); E.on("end", onEnd); E.onHud(hud);
-      E.on("caught", function () { var n = D.RUN.catchReward + (isWeekend() ? D.WEEKEND.catchBonus : 0); toast(t("caughtToast", n + " " + pl(n, "bar"))); });
-      E.on("stumble", function () { toast(t("stumbleToast")); });
+      if (S.set.q != null && S.set.q !== "auto") E.setQuality(S.set.q); else if (S.set.qAuto != null) { E.setQuality("auto"); GFX.setQuality(S.set.qAuto); }
+      if (/[?&]fps=1/.test(location.search)) { var fm = document.createElement("div"); fm.id = "fpsMeter"; document.body.appendChild(fm); }
+      E.setSkin(skinById(S.sel.skin)); E.setWorld(S.sel.world); E.setPet(S.sel.pet || "");
+      E.on("crash", onCrash);
+      E.on("quality", function (q) { S.set.qAuto = q; save("set"); });
+      E.on("fps", function (f, q) { var e = $("#fpsMeter"); if (e) e.textContent = f + " FPS · q" + q; });
+      E.on("bossWin", function () { toast(t("bossCaught")); vib([60, 40, 120]); });
+      E.on("warn", function () { toast(t("owlWarn")); vib(40); });
+      E.on("petAct", function (id) { toast(t("petAct_" + id)); }); E.on("end", onEnd); E.onHud(hud);
+      E.on("caught", function () { vib([40, 30, 40]); var n = D.RUN.catchReward + (isWeekend() ? D.WEEKEND.catchBonus : 0); toast(t("caughtToast", n + " " + pl(n, "bar"))); });
+      E.on("stumble", function () { toast(t("stumbleToast")); vib(30); });
       E.on("letter", function (l) { toast(t("letterToast", l)); });
       E.on("tut", function (a) {
         var el2 = $("#tut");
@@ -551,6 +720,7 @@
           .then(function () { try { Premium.maybeCard(); } catch (e) {} });
       } catch (e) {}
       SKINSHOP.init(PF.sdk(), grantProduct).then(function () { if (panelId) renderPanel(); });
+      try { var sdk = PF.sdk(); if (sdk && sdk.getPlayer) sdk.getPlayer({ scopes: false }).then(function (pl) { var n = pl.getName && pl.getName(); if (n) window.__playerName = n; }, function () {}); } catch (e) {}
       applyLang(); show("menu");
       if (!st("introSeen")) showIntro();
       $("#loading").hidden = true;

@@ -56,7 +56,7 @@ window.PF = (function () {
       var m = Object.assign({}, y, x);
       m.skins = union(x.skins, y.skins); m.worlds = union(x.worlds, y.worlds); m.claimed = union(x.claimed, y.claimed);
       function maxObj(p, q) { var r = {}; [p || {}, q || {}].forEach(function (o) { Object.keys(o).forEach(function (s) { r[s] = Math.max(r[s] || 0, Number(o[s]) || 0); }); }); return r; }
-      m.st = maxObj(x.st, y.st); m.up = maxObj(x.up, y.up);
+      m.st = maxObj(x.st, y.st); m.up = maxObj(x.up, y.up); m.pets = maxObj(x.pets, y.pets);
       m.builds = {}; [x.builds || {}, y.builds || {}].forEach(function (o) { Object.keys(o).forEach(function (w) {
         var cur = m.builds[w] || [0, 0, 0, 0, 0]; m.builds[w] = cur.map(function (v, i) { return Math.max(v, Number((o[w] || [])[i]) || 0); });
       }); });
