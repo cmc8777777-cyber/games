@@ -63,6 +63,7 @@ window.KP = window.KP || {};
 
   KP.aiHurt = function (ch, by) {
     var A = ch.ai; if (!A || !enemy(ch, by)) return;
+    if (ch.onGround && ch.state === "ground" && !(ch.rollT > 0) && rnd() < A.skill * 0.22) { var ra = Math.atan2(by.x - ch.x, by.z - ch.z) + (rnd() < 0.5 ? 1.57 : -1.57); ch.rollT = 0.55; ch.rollX = Math.sin(ra); ch.rollZ = Math.cos(ra); }
     if (!A.target || !A.see || (A.target !== by && rnd() < 0.6)) { A.target = by; A.reactT = A.react * 0.6; }
     shareTarget(ch, by);
     var canBuild = (A.T.build || (A.skill > 0.6 && rnd() < 0.3)) && A.buildCd <= 0 && ch.wood >= 10 && ch.state === "ground";
@@ -144,6 +145,7 @@ window.KP = window.KP || {};
       var a = Math.atan2(ch.z - Z.tz, ch.x - Z.tx), rr = Z.tr * (0.3 + rnd() * 0.4);
       A.goal = { x: Z.tx + Math.cos(a) * rr, z: Z.tz + Math.sin(a) * rr }; A.goalKind = "zone"; A.cover = null;
     }
+    if (ch.state === "drive") return;   // за рулём только цель и зона
     // 3. лечение — по возможности из укрытия или в «коробке» из стен
     A.healWant = (ch.hp < 60 && (ch.items.tube || ch.items.pal)) || (ch.sh < 50 && ch.items.lac);
     if (A.healWant && ch.healT <= 0 && !outNow) {
@@ -166,9 +168,20 @@ window.KP = window.KP || {};
       if (KP.place(ch, "ramp") === "ok") { A.rampCd = 1.2; A.climb = G.time + 1.6; }
       ch.yaw = sv;
     }
+    if (ch.state === "ground" && !A.target && (A.vehCd || 0) <= G.time) {
+      var inWater = W3.height(ch.x, ch.z) < -0.5;
+      var far = A.goal && Math.hypot(A.goal.x - ch.x, A.goal.z - ch.z) > 55;
+      if (inWater || far) {
+        var vh = KP.nearVehicle(ch, inWater ? 30 : 18, !inWater);
+        if (vh && (!inWater || vh.T.water)) { A.vehGoal = vh; A.vehCd = G.time + 8; }
+      }
+    }
     if (A.target && !hurry) return;
     if (hurry) return;
-    // 5. союзник держится рядом с лидером
+    // 5. командные режимы: к точкам захвата / навстречу соперникам
+    var og = KP.objGoal && KP.objGoal(ch);
+    if (og) { if (!A.goal || A.goalKind !== "obj" || A.goalT <= 0 || Math.hypot(A.goal.x - ch.x, A.goal.z - ch.z) < 3) { A.goal = og; A.goalKind = "obj"; A.goalT = 6; } A.goalT -= 0.2; return; }
+    // 5б. союзник держится рядом с лидером
     var L = T.follow || ch.team !== undefined ? leaderOf(ch) : null;
     if (L && dist(ch, L) > 20) { A.goal = { x: L.x + (rnd() - 0.5) * 8, z: L.z + (rnd() - 0.5) * 8 }; A.goalKind = "follow"; A.goalT = 3; return; }
     // 6. лут, ящики, доски, перемещение
@@ -220,10 +233,20 @@ window.KP = window.KP || {};
     return { x: tx + (rnd() - 0.5) * 2 * r, y: ty + (rnd() - 0.5) * 1.4 * r, z: tz + (rnd() - 0.5) * 2 * r };
   }
 
+  KP.aiThink = think;
   /* один шаг бота на земле */
   function act(ch, dt) {
     var A = ch.ai, T = A.T;
     A.think -= dt; if (A.think <= 0) { A.think = 0.2; think(ch); }
+    if (A.vehGoal) {   // бежит к транспорту и садится
+      var vg = A.vehGoal;
+      if (vg.driver || A.target) A.vehGoal = null;
+      else {
+        var vx = vg.x - ch.x, vz = vg.z - ch.z, vd = Math.hypot(vx, vz);
+        if (vd < vg.rad + 1.4) { A.vehGoal = null; if (KP.enterVehicle(ch, vg)) return; }
+        else { ch.mvx = vx / vd * 5.6; ch.mvz = vz / vd * 5.6; ch.yaw = Math.atan2(vx, vz); return; }
+      }
+    }
     A.buildCd -= dt; A.reactT -= dt;
     var spd = ch.healT > 0 ? 2.5 : 5.6, mx = 0, mz = 0, face = null, fireOk = false;
     var t = A.target;
@@ -243,7 +266,8 @@ window.KP = window.KP || {};
       if (ch.hp + ch.sh < 45 && A.type !== "rusher" && (A.retreatT || 0) <= 0 && rnd() < 0.02 && (ch.items.tube || ch.items.pal || ch.items.lac || !T.hunt)) { A.retreatT = 3 + rnd() * 3; if (T.cover) { A.cover = findCover(ch, t); A.coverUntil = G.time + 4; } }
       if (A.retreatT > 0) { A.retreatT -= dt; app = -1.4; if (A.retreatT <= 0) { A.target = null; KP.startHeal(ch); } }
       if (A.ambush) { spd = 3.2; app = d > 18 ? 1 : 0; strafeK = 0; }   // подкрадывается, не стреляет
-      if (T.still && ch.cur > 0 && ch.slots[ch.cur] && KP.WEAPONS[ch.slots[ch.cur].id].zoom && d > 30 && A.see) { app = 0; strafeK = 0; }   // снайпер стоит
+      ch.crouch = false;
+      if (T.still && ch.cur > 0 && ch.slots[ch.cur] && KP.WEAPONS[ch.slots[ch.cur].id].zoom && d > 30 && A.see) { app = 0; strafeK = 0; ch.crouch = true; }   // снайпер стоит пригнувшись
       if (A.climb && G.time < A.climb) { app = 1; strafeK = 0; }   // забегает на рампу
       if (!A.see && A.lastSeen) { var lx = A.lastSeen.x - ch.x, lz = A.lastSeen.z - ch.z, ll = Math.hypot(lx, lz) || 1; mx = lx / ll; mz = lz / ll; }
       else { mx = dx * app + (-dz) * A.strafe * strafeK; mz = dz * app + dx * A.strafe * strafeK; }

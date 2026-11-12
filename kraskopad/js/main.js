@@ -7,23 +7,28 @@
 
   /* ---------- настройки и прогресс ---------- */
   function jget(k, d) { try { var v = JSON.parse(PF.get(k)); return v && typeof v === "object" ? v : d; } catch (e) { return d; } }
-  var SET = { sens: 1, snd: 1, mus: 1, q: isTouch ? "low" : "high", lang: "" };
+  var SET = { sens: 1, snd: 1, mus: 1, q: isTouch ? "low" : "high", qmode: "auto", lang: "", map: "isle" };
+  /* уровень качества (Э14): 2 — тени и трава, 1 — без теней, 0 — облегчённый (меньше пикселей, короче дальность, без кустов).
+     «Авто»: старт по устройству, при просадке FPS во время матча понижается сам. */
+  var QL = 2, fpsAcc = 0, fpsN = 0, fpsT = 0, qlCd = 0;
+  function qlFromSet() { return SET.qmode === "high" ? 2 : SET.qmode === "low" ? 0 : (isTouch ? 1 : 2); }
   var PROG = { v: 2, xp: 0, pp: 0, st: {}, ch: {}, own: {}, skin: 0, paint: 0, wrap: 0, emote: 0 };
   function saveSet() { PF.put("kp.set", JSON.stringify(SET)); }
   function saveProg() { PF.put("kp.prog", JSON.stringify(PROG)); }
   function loadAll() {
     var s = jget("kp.set", {}); Object.keys(s).forEach(function (k) { SET[k] = s[k]; });
-    var p = jget("kp.prog", {}); PROG.xp = Number(p.xp) || 0; PROG.pp = Number(p.pp) || 0; PROG.st = p.st || {}; PROG.ch = p.ch || {}; PROG.own = p.own || {};
+    var p = jget("kp.prog", {}); PROG.xp = Number(p.xp) || 0; PROG.pp = Number(p.pp) || 0; PROG.pp2 = Number(p.pp2) || 0; PROG.sq = p.sq; PROG.ach = p.ach || {}; PROG.ws = p.ws || {}; PROG.st = p.st || {}; PROG.ch = p.ch || {}; PROG.own = p.own || {};
     PROG.skin = p.skin || 0; PROG.paint = p.paint || 0; PROG.wrap = p.wrap || 0; PROG.emote = p.emote || 0; PROG.dq = p.dq; PROG.wq = p.wq;
     if (!p.v && (PROG.skin === 10 || PROG.skin === 11)) PROG.skin = PROG.skin === 10 ? 24 : 12;   // перенос номеров скинов из v0.1
     if (PROG.skin >= KP.SKINS.length) PROG.skin = 0;
-    PROG.v = 2; KP.META.ensureQuests(PROG);
+    PROG.v = 2; KP.META.ensureQuests(PROG); KP.META.ensureSeason(PROG);
   }
   function lvlInfo(xp) { return KP.META.lvlInfo(xp); }
   function isOpen(kind, i) { return KP.META.isOpen(PROG, kind, i); }
   function st(k) { return Number(PROG.st[k]) || 0; }
 
   /* ---------- сцена ---------- */
+  var aurora = null;
   var renderer, scene, camera, world, sun, sky, hemi, rain, zoneMesh, planeMesh, millBlades, beacon;
   /* время суток и погода (Э3): выбирается на каждый матч */
   var ATMOS = {
@@ -31,6 +36,9 @@
     sunset: { sun: [-0.7, 0.2, 0.45], sc: "#ffb070", si: 1.05, hs: "#ffc9a0", hg: "#4a3e3a", hi: 0.55, fog: "#e8b994", far: 0.95, top: "#3a4f8a", mid: "#d98a6a", hor: "#ffcf9a", glow: "#ffd09a" },
     morning: { sun: [0.6, 0.3, -0.5], sc: "#ffe2bd", si: 0.85, hs: "#d8e4f0", hg: "#5b5a48", hi: 0.7, fog: "#d8dfe4", far: 0.8, top: "#5a86c0", mid: "#a9c7e2", hor: "#e9e6df", glow: "#fff1d9" },
     storm: { sun: [0.3, 0.8, 0.2], sc: "#c9d2dc", si: 0.45, hs: "#a8b4c0", hg: "#3e423f", hi: 0.75, fog: "#8e9aa4", far: 0.72, top: "#4a5560", mid: "#7c8792", hor: "#9aa4ad", glow: "#c9d2dc", rain: true },
+    frost: { sun: [0.5, 0.45, -0.4], sc: "#f2f6ff", si: 0.95, hs: "#dcecff", hg: "#9aa6b0", hi: 0.75, fog: "#d6e2ea", far: 0.9, top: "#3f74b5", mid: "#9cc2e2", hor: "#e6eef4", glow: "#ffffff" },
+    snow: { sun: [0.3, 0.8, 0.2], sc: "#e2e8ef", si: 0.5, hs: "#c8d2dc", hg: "#8a949c", hi: 0.85, fog: "#c3ccd4", far: 0.65, top: "#7a8794", mid: "#a8b3bd", hor: "#c9d1d8", glow: "#e2e8ef", snow: true },
+    polar: { sun: [-0.7, 0.18, 0.4], sc: "#ffb9a0", si: 0.9, hs: "#ffd2c4", hg: "#8a8090", hi: 0.62, fog: "#e7c2c0", far: 0.95, top: "#36477a", mid: "#c58fa8", hor: "#ffd2b8", glow: "#ffd2b8" },
     dusk: { sun: [0.2, 0.12, -0.9], sc: "#9fb2ff", si: 0.5, hs: "#6f7fb0", hg: "#2c2a35", hi: 0.6, fog: "#4e5a7a", far: 0.85, top: "#141c3a", mid: "#3c4a7a", hor: "#8a7aa0", glow: "#b0b8ff" }
   };
   var atm = ATMOS.day;
@@ -41,7 +49,8 @@
     FOGC.set(atm.fog); scene.fog.color.copy(FOGC); scene.background.copy(FOGC);
     var u = sky.material.uniforms; u.top.value.set(atm.top); u.mid.value.set(atm.mid); u.hor.value.set(atm.hor); u.sunCol.value.set(atm.glow); u.sun.value.copy(SUN_DIR);
     sun.position.copy(SUN_DIR).multiplyScalar(120);
-    if (rain) rain.visible = !!atm.rain;
+    if (aurora) aurora.visible = name === "polar" || name === "dusk";
+    if (rain) { rain.visible = !!(atm.rain || atm.snow); rain.material.color.set(atm.snow ? "#ffffff" : "#c8d6e2"); rain.material.opacity = atm.snow ? 0.8 : 0.45; rain.userData.snow = !!atm.snow; }
     applyQuality();
   }
   function makeRain() {
@@ -54,7 +63,7 @@
   var FOGC = new THREE.Color("#c6d8e0"), GREY = new THREE.Color("#8d949c"), SUN_DIR = new THREE.Vector3(0.45, 0.62, 0.35).normalize();
   function initScene() {
     var cv = $("cv");
-    KP.quality = SET.q;
+    QL = qlFromSet(); SET.q = QL === 2 ? "high" : "low"; KP.quality = SET.q;
     renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: SET.q === "high", powerPreference: "high-performance" });
     renderer.shadowMap.enabled = SET.q === "high"; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     applyQuality();
@@ -66,19 +75,9 @@
     if (SET.q === "high") {
       sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); var sc = sun.shadow.camera; sc.left = -42; sc.right = 42; sc.top = 42; sc.bottom = -42; sc.near = 10; sc.far = 260; sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.03;
     }
-    sky = KP.makeSky(scene, SUN_DIR); makeRain();
-    world = W3.build(scene, SET.q);
+    sky = KP.makeSky(scene, SUN_DIR); makeRain(); aurora = KP.makeAurora(scene);
     KP.initFx(scene);
-    // ящики снабжения (сундуки)
-    world.chests.forEach(function (c) {
-      c.y = W3.height(c.x, c.z);
-      var g = new THREE.Group(), box = new THREE.Mesh(KP.GEO.chest, KP.mat("#2b3036")); box.position.y = 0.35; box.castShadow = true; g.add(box);
-      var trim = new THREE.Mesh(KP.GEO.box, KP.mat("#ffc531", "glow")); trim.scale.set(1.16, 0.06, 0.81); trim.position.y = 0.52; g.add(trim);
-      var lid = new THREE.Mesh(KP.GEO.lid, KP.mat("#3a4048")); lid.position.y = 0.76; g.add(lid);
-      var beam = new THREE.Mesh(KP.GEO.beam, new THREE.MeshBasicMaterial({ color: "#ffc531", transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })); beam.position.y = 3.6; g.add(beam);
-      g.position.set(c.x, c.y, c.z); g.rotation.y = c.x * 7 % 6.28; g.userData.lid = lid; g.userData.beam = beam; c.mesh = g; scene.add(g);
-    });
-    KP.chests = world.chests;
+    W3.load(SET.map || "isle"); setupWorld();
     // зона — стена серой хмари
     var zg = new THREE.CylinderGeometry(1, 1, 160, 64, 1, true);
     zoneMesh = new THREE.Mesh(zg, new THREE.MeshBasicMaterial({ color: "#77818c", transparent: true, opacity: 0.32, side: THREE.DoubleSide, depthWrite: false, fog: false }));
@@ -93,26 +92,58 @@
     [0, Math.PI / 2, Math.PI, -Math.PI / 2].forEach(function (r) { pm.add(new THREE.BoxGeometry(0.3, 3.6, 3.2), Math.sin(r) * 1.6, Math.cos(r) * 1.6, -12, 0, 0, r, 1, 1, 1, "#2a2e33"); });
     planeMesh = new THREE.Mesh(pm.build(), new THREE.MeshLambertMaterial({ vertexColors: true, map: KP.tex().wall }));
     planeMesh.visible = false; scene.add(planeMesh);
+    window.addEventListener("resize", onResize); onResize();
+    buildMinimapBase();
+  }
+  /* мир текущей карты: остров, ящики снабжения, анимированные объекты (всё в world.root — для смены карты) */
+  function setupWorld() {
+    millBlades = null; beacon = null;
+    world = W3.build(scene, SET.q);
+    // ящики снабжения (сундуки)
+    world.chests.forEach(function (c) {
+      c.y = W3.height(c.x, c.z);
+      var g = new THREE.Group(), box = new THREE.Mesh(KP.GEO.chest, KP.mat("#2b3036")); box.position.y = 0.35; box.castShadow = true; g.add(box);
+      var trim = new THREE.Mesh(KP.GEO.box, KP.mat("#ffc531", "glow")); trim.scale.set(1.16, 0.06, 0.81); trim.position.y = 0.52; g.add(trim);
+      var lid = new THREE.Mesh(KP.GEO.lid, KP.mat("#3a4048")); lid.position.y = 0.76; g.add(lid);
+      var beam = new THREE.Mesh(KP.GEO.beam, new THREE.MeshBasicMaterial({ color: "#ffc531", transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })); beam.position.y = 3.6; g.add(beam);
+      g.position.set(c.x, c.y, c.z); g.rotation.y = c.x * 7 % 6.28; g.userData.lid = lid; g.userData.beam = beam; c.mesh = g; world.root.add(g);
+    });
+    KP.chests = world.chests;
     // анимированные объекты локаций
     world.anim.forEach(function (a) {
       if (a.kind === "mill") {
         millBlades = new THREE.Group(); millBlades.position.set(a.x, a.y, a.z);
         for (var b = 0; b < 4; b++) { var bl = new THREE.Mesh(KP.GEO.box, KP.mat(b % 2 ? "#e9e2d2" : "#8a6a4c")); bl.scale.set(0.8, 6.5, 0.1); bl.position.y = 3.3; var piv = new THREE.Group(); piv.rotation.z = b * Math.PI / 2; piv.add(bl); millBlades.add(piv); }
-        scene.add(millBlades);
+        world.root.add(millBlades);
       } else if (a.kind === "beacon") {
         beacon = new THREE.Sprite(new THREE.SpriteMaterial({ map: KP.tex().glow, color: "#fff2b0", blending: THREE.AdditiveBlending, transparent: true, depthWrite: false }));
-        beacon.position.set(a.x, a.y, a.z); beacon.scale.set(6, 6, 6); scene.add(beacon);
+        beacon.position.set(a.x, a.y, a.z); beacon.scale.set(6, 6, 6); world.root.add(beacon);
       }
     });
-    window.addEventListener("resize", onResize); onResize();
-    buildMinimapBase();
+  }
+  function switchMap(id) {
+    if (id === W3.map && world) return;
+    clearMatch();
+    if (world && world.root) { scene.remove(world.root); world.root.traverse(function (o) { if (o.geometry) o.geometry.dispose(); }); }
+    (G.vehicles || []).forEach(function (v) { if (v.mesh) scene.remove(v.mesh); }); G.vehicles = [];
+    W3.load(id); setupWorld(); buildMinimapBase(); showcaseSpot = null;
+    SET.map = id; saveSet();
   }
   function applyQuality() {
     if (!renderer) return;
     var dpr = window.devicePixelRatio || 1;
-    renderer.setPixelRatio(SET.q === "high" ? Math.min(dpr, 2) : Math.min(dpr, isTouch ? 1.25 : 1));
-    if (scene) scene.fog.far = (SET.q === "high" ? 175 : 130) * (atm ? atm.far : 1);
+    renderer.setPixelRatio(QL === 2 ? Math.min(dpr, 2) : QL === 1 ? Math.min(dpr, isTouch ? 1.25 : 1) : Math.min(dpr, 0.8));
+    if (scene) scene.fog.far = (QL === 2 ? 175 : QL === 1 ? 135 : 105) * (atm ? atm.far : 1);
+    var sh = QL === 2;
+    if (sun && (renderer.shadowMap.enabled !== sh || sun.castShadow !== sh)) {
+      renderer.shadowMap.enabled = sh; sun.castShadow = sh;
+      if (sh && !sun.shadow.map) { sun.shadow.mapSize.set(2048, 2048); var sc = sun.shadow.camera; sc.left = -42; sc.right = 42; sc.top = 42; sc.bottom = -42; sc.near = 10; sc.far = 260; sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.03; sc.updateProjectionMatrix(); }
+      if (scene) scene.traverse(function (o) { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (m) { m.needsUpdate = true; }); });
+    }
+    KP.quality = sh ? "high" : "low";
+    if (world) { if (world.grass) world.grass.visible = QL === 2; if (world.bushes) world.bushes.visible = QL > 0; }
   }
+  function setQL(n, why) { if (n === QL) return; QL = n; applyQuality(); if (why && G.running) toast(KP.t("qAuto"), 2); }
   function onResize() {
     var w = window.innerWidth, h = window.innerHeight;
     renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
@@ -140,6 +171,7 @@
       if (/^Digit[1-5]$/.test(e.code)) act("slot", Number(e.code.slice(5)) - 1);
       if (e.code === "KeyP") togglePause(true);
       if (e.code === "KeyM") toggleMap();
+      if (e.code === "KeyC") act("crouch"); if (e.code === "KeyV") act("roll");
     });
     window.addEventListener("keyup", function (e) { IN.keys[e.code] = false; });
     var cv = $("cv");
@@ -194,7 +226,7 @@
     var fireTouch = null;
     // кнопка «Огонь»: держать = стрелять, вести пальцем = поворот камеры
     $("bFire").addEventListener("touchstart", function (e) { e.preventDefault(); e.stopPropagation(); var t = e.changedTouches[0]; IN.fire = true; fireTouch = t.identifier; if (lookId === null) { lookId = t.identifier; lx = t.clientX; ly = t.clientY; } }, { passive: false });
-    var btn = { bEmote: "emote", bGren: "throw", bCyc: "cycle", bJump: "jump", bWall: "wall", bRamp: "ramp", bHeal: "heal", bReload: "reload", bTake: "take", bAim: "aim", bPauseT: "pause" };
+    var btn = { bCrouch: "crouch", bRoll: "roll", bEmote: "emote", bGren: "throw", bCyc: "cycle", bJump: "jump", bWall: "wall", bRamp: "ramp", bHeal: "heal", bReload: "reload", bTake: "take", bAim: "aim", bPauseT: "pause" };
     Object.keys(btn).forEach(function (id) {
       $(id).addEventListener("touchstart", function (e) { e.preventDefault(); e.stopPropagation(); audioInit(); act(btn[id]); }, { passive: false });
       $(id).addEventListener("click", function () { if (!isTouch) act(btn[id]); });
@@ -214,9 +246,11 @@
     var p = G.player; if (!G.running || !p) return;
     if (a === "pause") { togglePause(true); return; }
     if (p.state === "plane") { if (a === "jump") IN.jump = true; return; }
-    if (p.state === "drive") { if (a === "take") KP.exitVehicle(p); return; }
+    if (p.state === "drive") { if (a === "take" && !KP.exitVehicle(p)) toast(KP.t("noShore")); return; }
     if (!p.alive || p.state !== "ground") { if (a === "jump") IN.jump = true; return; }
     if (a === "jump") IN.jump = true;
+    else if (a === "crouch") p.crouch = !p.crouch;
+    else if (a === "roll") { if (p.onGround && !(p.rollT > 0)) { var rd = inputDir(), rl = Math.hypot(rd[0], rd[1]); if (rl < 0.2) { rd = [Math.sin(IN.yaw), Math.cos(IN.yaw)]; rl = 1; } p.rollT = 0.55; p.rollX = rd[0] / rl; p.rollZ = rd[1] / rl; p.healT = 0; KP.sfx("swing", 0, 0, true); } }
     else if (a === "emote") { p.emote = { anim: KP.META.EMOTES[PROG.emote].anim, t: 0 }; }
     else if (a === "throw") { p.yaw = IN.yaw; var tp = aimPoint(false); if (!KP.throwItem(p, tp.x, tp.y, tp.z)) toast(KP.t("noGren")); }
     else if (a === "cycle") { var ks = ["gren", "smoke", "pop"], ci = ks.indexOf(p.thr); for (var q = 1; q <= 3; q++) { var nk = ks[(ci + q) % 3]; if (p.items[nk] > 0 || q === 3) { p.thr = nk; break; } } toast(KP.t("i_" + p.thr)); }
@@ -246,7 +280,7 @@
     G.buildList.slice().forEach(function (b) { W3.removeCol(b); if (b.mesh) scene.remove(b.mesh); }); G.buildList.length = 0; G.builds = {};
     world.trees.concat(world.crates).forEach(function (c) { c.hp = c.kind === "tree" ? 60 : 40; if (!c.alive) { W3.addCol(c); if (c.setVis) c.setVis(true); } });
     world.chests.forEach(function (c) { c.open = false; if (c.mesh) { c.mesh.userData.lid.rotation.x = 0; c.mesh.userData.lid.position.z = 0; } });
-    if (KP.clearFx) KP.clearFx();
+    if (KP.clearFx) KP.clearFx(); if (KP.modeClear) KP.modeClear(); if (KP.eventClear) KP.eventClear();
     (G.smokes || []).forEach(function (s) { if (s.vis) s.vis(true); }); if (G.smokes) G.smokes.length = 0;
   }
   function startMatch(mode, headless) {
@@ -264,7 +298,7 @@
     if (G.auto || headless) p.ai = KP.makeAI("auto", G.autoSkill || 0.7);
     var types = first ? ["rookie", "rookie", "looter", "rookie", "sneaky", "looter"] : ["rookie", "looter", "rusher", "sniper", "builder", "sneaky", "looter", "rookie", "builder"];
     for (var i = 1; i < M.n; i++) {
-      var team = Math.floor(i / TS), ally = team === 0;
+      var team = Math.floor(i / TS), ally = team === 0 && !M.rules;
       var ty = ally ? "ally" : M.train ? "dummy" : types[Math.floor(rnd() * types.length)];
       var sk = ally ? Math.min(0.85, 0.45 + 0.03 * L) : Math.max(0.05, Math.min(0.95, skillBase + (rnd() - 0.5) * 0.3 + (ty === "rookie" ? -0.15 : 0)));
       KP.makeChar({ name: names[i % names.length], skin: Math.floor(rnd() * KP.SKINS.length), paint: ally ? p.paint : KP.PAINTS[Math.floor(rnd() * 7)].c, ai: KP.makeAI(ty, sk), team: team, ally: ally && !p.ai });
@@ -289,20 +323,22 @@
       else leads[c.team] = c;
     });
     KP.zoneInit(mode);
-    if (!headless) { var an = ["day", "day", "sunset", "morning", "storm", "dusk"]; applyAtmos(G.forceAtmos || (M.train ? "day" : an[Math.floor(rnd() * an.length)])); KP.audio.music(M.train ? "match" : "drop"); KP.audio.ambience(G.atmos); }
+    if (!headless) { var an = W3.MAP.atmos; applyAtmos(G.forceAtmos || (M.train ? an[0] : an[Math.floor(rnd() * an.length)])); KP.audio.music(M.train ? "match" : "drop"); KP.audio.ambience(G.atmos); }
     if (M.train && !M.tutor) {   // тренировка: всё оружие, доски и предметы сразу, мишени-боты не стреляют, хмари нет
       p.slots = [{ id: 0 }, { id: 4, r: 2, mag: 25 }, { id: 3, r: 2, mag: 5 }, { id: 5, r: 2, mag: 4 }, { id: 6, r: 2, mag: 4 }];
       p.wood = 300; p.items.tube = 6; p.items.pal = 2; p.items.lac = 4; p.items.gren = 4; p.items.smoke = 3; p.items.pop = 3; p.hp = 100; p.sh = 50;
       G.plane.t = 0.35;
     }
     if (G.mods && G.mods.wood) G.chars.forEach(function (c) { c.wood = G.mods.wood; });
-    G.spec = null; G.teamPlace = {}; G.tutor = null; $("tut").style.display = "none"; G.locShown = -2; G.time = 0; G.zoneKO = 0; G.calmT = M.train ? 0 : mode === "quick" ? 75 : 160; G.running = true; G.ended = false; G.paused = false; G.mode = mode; G.zoneAcc = 0; G.endT = 0;
+    if (M.rules) KP.modeSetup(M);
+    KP.eventSetup(M, mode);
+    G.spec = null; G.teamPlace = {}; G.killcam = null; G.rec = []; G.tutor = null; $("tut").style.display = "none"; G.locShown = -2; G.time = 0; G.zoneKO = 0; G.calmT = M.train || M.rules ? 0 : mode === "quick" ? 75 : 160; G.running = true; G.ended = false; G.paused = false; G.mode = mode; G.zoneAcc = 0; G.endT = 0;
     MATCH = { mode: mode, n: M.n, start: Date.now(), dmg0: 0 };
     IN.yaw = Math.atan2(G.plane.bx - G.plane.ax, G.plane.bz - G.plane.az); IN.pitch = -0.25; IN.fire = false; IN.aim = false; IN.jump = false;
     if (M.tutor) setupTutor(p);
     if (!headless) {
       show(null); $("hud").style.display = "block"; document.body.classList.add("inmatch");
-      if (!M.train) toast(KP.t("jumpHint"), 5);
+      if (!M.train && !M.rules) toast(KP.t("jumpHint"), 5); else if (M.rules) toast(KP.t(mode + "Hint"), 5);
       if (st("m") < 2 && !M.train) setTimeout(function () { if (G.running) toast(KP.t("tutorial"), 6); }, 6000);
       PF.setPlaying(true);
       planeMesh.visible = true;
@@ -343,7 +379,7 @@
       T.i++; KP.sfx("chest", 0, 0, true);
       if (T.i >= TUT.length) {
         $("tut").innerHTML = KP.t("tutDone"); bigMsg(KP.t("tutDone"), 3);
-        if (!PROG.tut) { PROG.tut = 1; PROG.xp += 100; PROG.pp = (PROG.pp || 0) + 100; saveProg(); }
+        if (!PROG.tut) { PROG.tut = 1; PROG.xp += 100; PROG.pp2 = (PROG.pp2 || 0) + 100; KP.META.checkAch(PROG).forEach(function () { PROG.xp += 100; }); saveProg(); }
       } else showTut();
     }
   }
@@ -389,11 +425,19 @@
       // на земле
       c.bloom = Math.max(0, (c.bloom || 0) - dt * 2.2);
       if (c.state === "drive") {
-        var v = c.veh, dd = inputDir(), fw = IN.mz + (IN.keys.KeyW || IN.keys.ArrowUp ? 1 : 0) - (IN.keys.KeyS || IN.keys.ArrowDown ? 1 : 0), st2 = IN.mx + (IN.keys.KeyD || IN.keys.ArrowRight ? 1 : 0) - (IN.keys.KeyA || IN.keys.ArrowLeft ? 1 : 0);
-        KP.driveVehicle(v, Math.max(-1, Math.min(1, fw)), -Math.max(-1, Math.min(1, st2)), dt);
-        c.x = v.x; c.z = v.z; c.y = v.y + 0.35; c.yaw = v.yaw; c.mvx = v.mvx; c.mvz = v.mvz;
+        var v = c.veh;
+        if (ctrlAI) {   // бот за рулём: думает как обычно, едет к цели
+          c.ai.think -= dt; if (c.ai.think <= 0) { c.ai.think = 0.25; KP.aiThink(c); }
+          var dr = KP.aiDrive(c, dt);
+          if (dr.exit) { if (KP.exitVehicle(c)) continue; dr = { thr: 0, steer: 0 }; }
+          KP.driveVehicle(v, dr.thr, dr.steer, dt);
+        } else {
+          var fw = IN.mz + (IN.keys.KeyW || IN.keys.ArrowUp ? 1 : 0) - (IN.keys.KeyS || IN.keys.ArrowDown ? 1 : 0), st2 = IN.mx + (IN.keys.KeyD || IN.keys.ArrowRight ? 1 : 0) - (IN.keys.KeyA || IN.keys.ArrowLeft ? 1 : 0);
+          KP.driveVehicle(v, Math.max(-1, Math.min(1, fw)), -Math.max(-1, Math.min(1, st2)), dt);
+        }
+        c.x = v.x; c.z = v.z; c.y = v.y + v.T.h; c.yaw = v.yaw; c.mvx = v.mvx; c.mvz = v.mvz;
         if (tick && KP.outside(c)) KP.damage(c, Math.max(1, Z.dps || 1), null, "zone");
-        if (!c.alive) KP.exitVehicle(c);
+        if (!c.alive) KP.exitVehicle(c, true);
         continue;
       }
       c.cd = Math.max(0, c.cd - dt); c.swapT = Math.max(0, c.swapT - dt); if (c.swingT) c.swingT = Math.max(0, c.swingT - dt);
@@ -401,10 +445,12 @@
       if (c.healT > 0) { c.healT -= dt; if (c.healT <= 0) { var it = KP.ITEMS[c.healKind]; if (c.items[c.healKind] > 0) { c.items[c.healKind]--; if (it.hp) c.hp = Math.min(100, c.hp + it.hp); if (it.sh) c.sh = Math.min(100, c.sh + it.sh); c.heals = (c.heals || 0) + 1; } c.healT = 0; } }
       if (ctrlAI) KP.aiAct(c, dt);
       else playerControl(c, dt);
+      if (c.rollT > 0) { c.rollT -= dt; c.mvx = c.rollX * 9; c.mvz = c.rollZ * 9; c.crouch = false; }
       KP.moveChar(c, dt); KP.vehicleBlock(c);
       if (tick && KP.outside(c)) KP.damage(c, Math.max(1, Z.dps || 1), null, "zone");
     }
-    KP.updateProj(dt); KP.smokeTick(dt);
+    KP.updateProj(dt); KP.smokeTick(dt); KP.eventStep(dt);
+    if (!G.headless) { G.recT = (G.recT || 0) + dt; if (G.recT >= 0.1) { G.recT = 0; G.rec = G.rec || []; G.rec.push(G.chars.map(function (c) { return [c.x, c.y, c.z, c.yaw, c.alive && c.state !== "plane" ? 1 : 0]; })); if (G.rec.length > 40) G.rec.shift(); } }
     (G.vehicles || []).forEach(function (v) { if (!v.driver && Math.abs(v.speed) > 0.1) KP.driveVehicle(v, 0, 0, dt); });
     if (P.t > 0.05) KP.zoneUpdate(dt);
     for (var k = 0; k < G.loot.length; k++) if (G.loot[k].noPick > 0) G.loot[k].noPick -= dt;
@@ -427,7 +473,12 @@
       if (!p.alive) { p.alive = true; p.hp = 100; p.state = "ground"; if (p.mesh) { scene.remove(p.mesh); p.mesh = KP.charMesh(p.skin, p.paint); scene.add(p.mesh); p.cur = -1; KP.equip(p, 0); } }
       IN.jump = false; return;
     }
-    // конец матча
+    // конец матча: командные и раундовые режимы — свои правила
+    if (G.modeState) {
+      if (!G.ended) { if (KP.modeStep(dt)) { G.ended = true; G.endT = G.time; if (!G.headless) { KP.sfx(G.win ? "win" : "lose", 0, 0, true); bigMsg(KP.t(G.win ? "win" : "lose"), 3); } } }
+      else if (G.time - G.endT > (G.headless ? 0 : 2.6) && G.running) finishMatch();
+      IN.jump = false; return;
+    }
     if (!G.ended) {
       var teams = {}, nt = 0, alive = 0;
       G.chars.forEach(function (c) { if (c.alive) { alive++; if (!teams[c.team]) { teams[c.team] = 1; nt++; } } });
@@ -437,7 +488,7 @@
       else if (G.time > 900) { G.ended = true; G.win = false; p.place = nt; G.endT = G.time; }
       // игрок выбит, команда ещё в игре — наблюдаем за союзником
       if (!p.alive && myAlive && !G.headless) { if (!G.spec || !G.spec.alive) { G.spec = null; G.chars.forEach(function (c) { if (c.alive && c.team === p.team && !G.spec) G.spec = c; }); } }
-    } else if (G.time - G.endT > (G.headless ? 0 : 2.6) && G.running) finishMatch();
+    } else if (G.time - G.endT > (G.headless ? 0 : G.killcam ? 3.8 : 2.6) && G.running) finishMatch();
   }
   function inputDir() {
     var f = IN.mz, r = IN.mx, k = IN.keys;
@@ -447,9 +498,9 @@
     return [sy * f - cy * r, cy * f + sy * r];
   }
   function playerControl(p, dt) {
-    var d = inputDir(), sp = p.healT > 0 ? 2.8 : (IN.aim ? 4.2 : 6.2);
+    var d = inputDir(), sp = (p.healT > 0 ? 2.8 : (IN.aim ? 4.2 : 6.2)) * (p.crouch ? 0.55 : 1);
     p.mvx = d[0] * sp; p.mvz = d[1] * sp; p.yaw = IN.yaw; p.aiming = IN.aim;
-    if (IN.jump && p.onGround) { p.vy = 8.6; p.onGround = false; }
+    if (IN.jump && p.onGround) { p.vy = 8.6; p.onGround = false; p.crouch = false; }
     if (IN.fire) {
       if (p.cur === 0) KP.fire(p, 0, 0, 0);
       else { var t = aimPoint(true); if (KP.fire(p, t.x, t.y, t.z)) { var ww = KP.WEAPONS[p.slots[p.cur].id]; IN.pitch = Math.min(0.95, IN.pitch + (ww.kick || 0) * 0.6); IN.yaw += (Math.random() - 0.5) * (ww.kick || 0) * 0.3; } }
@@ -510,18 +561,24 @@
     var sec = Math.round(G.endT);
     var xpPlace = Math.round(100 * (N - place) / (N - 1)), xpKo = p.kos * 25, xpWin = win ? 100 : 0, xpTime = Math.floor(sec / 6);
     var gain = Math.round((xpPlace + xpKo + xpWin + xpTime) * ((G.mods && G.mods.xp) || 1));
-    var res = { win: win, place: place, n: N, kos: p.kos, dmg: Math.round(p.dmg), sec: sec, gain: gain, built: p.built, chests: p.chests || 0, thrown: p.thrown || 0, driven: p.driven || 0, heals: p.heals || 0 };
+    var res = { win: win, place: place, n: N, kos: p.kos, dmg: Math.round(p.dmg), sec: sec, gain: gain, built: p.built, chests: p.chests || 0, thrown: p.thrown || 0, driven: p.driven || 0, heals: p.heals || 0, crystals: p.crystals || 0, drops: p.drops || 0 };
     G.lastRes = res;
     if (G.headless) return;
     var L0 = lvlInfo(PROG.xp).L, T0 = KP.META.passTier(PROG).tier, before = KP.META.openList(PROG);
     var q = KP.META.applyMatch(PROG, res);
     res.quests = q.done; res.qxp = q.xp;
-    PROG.xp += gain + q.xp; PROG.pp = (PROG.pp || 0) + gain + q.xp;
+    PROG.xp += gain + q.xp; PROG.pp2 = (PROG.pp2 || 0) + gain + q.xp;
     PROG.st.m = st("m") + 1; if (win) PROG.st.w = st("w") + 1; PROG.st.ko = st("ko") + p.kos; PROG.st.dmg = st("dmg") + res.dmg;
     PROG.st.kmax = Math.max(st("kmax"), p.kos); PROG.st.bp = Math.max(st("bp"), 100 - place);
     if (place <= 5) PROG.st.t5 = st("t5") + 1; PROG.st.chests = st("chests") + res.chests; PROG.st.built = st("built") + (p.built || 0);
     PROG.st.time = st("time") + sec; PROG.st.drv = st("drv") + Math.round(res.driven);
     if (win) PROG.ch.win = 1; if (p.kos >= 5) PROG.ch.ko5 = 1; if (st("w") >= 10) PROG.ch.win10 = 1;
+    PROG.st.thr = st("thr") + res.thrown; PROG.st.cryst = st("cryst") + res.crystals; PROG.st.drops = st("drops") + res.drops;
+    if (win) { var wkey = { trio: "wTrio", cap: "wCap", tdm: "wTdm", lr: "wLr" }[G.mode]; if (wkey) PROG.st[wkey] = st(wkey) + 1; if (W3.map === "frost") PROG.st.wFrost = st("wFrost") + 1; }
+    PROG.ws = PROG.ws || {};
+    Object.keys(p.koW || {}).concat(Object.keys(p.dmgW || {})).forEach(function (w) { var o = PROG.ws[w] = PROG.ws[w] || { k: 0, d: 0 }; o.k += (p.koW && p.koW[w]) || 0; o.d += Math.round((p.dmgW && p.dmgW[w]) || 0); });
+    Object.keys(p.dmgW || {}).forEach(function (w) { PROG.ws[w].k -= 0; });
+    res.ach = KP.META.checkAch(PROG); res.ach.forEach(function () { PROG.xp += 100; PROG.pp2 = (PROG.pp2 || 0) + 100; });
     var L1 = lvlInfo(PROG.xp).L, T1 = KP.META.passTier(PROG).tier, after = KP.META.openList(PROG);
     saveProg();
     res.newLvl = L1 > L0 ? L1 : 0; res.newTier = T1 > T0 ? T1 : 0;
@@ -541,6 +598,7 @@
     feed.unshift({ s: s, t: G.time, me: ch.isPlayer || (by && by.isPlayer) }); if (feed.length > 4) feed.pop(); renderFeed();
     if (by && by.isPlayer && ch !== by) { bigMsg(KP.t("youKo", ch.name), 1.6); KP.sfx("ko"); }
     if (by && by.ai && !by.isPlayer && Math.random() < 0.3) by.emote = { anim: KP.META.EMOTES[Math.floor(Math.random() * KP.META.EMOTES.length)].anim, t: 0 };
+    if (ch.isPlayer && by && by !== ch && G.rec && G.rec.length > 5) G.killcam = { by: by.id, me: ch.id, t0: G.time, frames: G.rec.slice(-32), wname: ch.koWid !== undefined && KP.WEAPONS[ch.koWid] ? KP.t("w" + ch.koWid) : "", hp: Math.max(0, Math.round(by.hp)) };
     if (ch.isPlayer) { bigMsg(KP.t("lose"), 2.5); KP.sfx("lose", 0, 0, true); if (by && by !== ch) toast(KP.t("byWho", by.name), 3); }
   };
   KP.onHit = function (ch, d, by, kind) {
@@ -574,7 +632,7 @@
     miniBase = document.createElement("canvas"); miniBase.width = miniBase.height = W3.N;
     var c = miniBase.getContext("2d"), img = c.createImageData(W3.N, W3.N);
     for (var i = 0; i < W3.N; i++) for (var j = 0; j < W3.N; j++) {
-      var h = W3.H[i * W3.N + j], o = (i * W3.N + j) * 4, col = h < -0.3 ? [29, 110, 135] : h < 1.0 ? [205, 182, 138] : h > 13 ? [140, 136, 128] : [84, 128, 62];
+      var h = W3.H[i * W3.N + j], o = (i * W3.N + j) * 4, col = W3.MAP.winter ? (h < -0.3 ? [42, 95, 120] : h < 0.5 ? [180, 214, 228] : h > 13 ? [120, 128, 136] : [226, 233, 238]) : (h < -0.3 ? [29, 110, 135] : h < 1.0 ? [205, 182, 138] : h > 13 ? [140, 136, 128] : [84, 128, 62]);
       img.data[o] = col[0]; img.data[o + 1] = col[1]; img.data[o + 2] = col[2]; img.data[o + 3] = 255;
     }
     c.putImageData(img, 0, 0);
@@ -599,6 +657,7 @@
     var P = G.plane; if (P && P.t < 1) { ctx.strokeStyle = "rgba(255,80,160,0.9)"; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(X(P.ax), X(P.az)); ctx.lineTo(X(P.bx), X(P.bz)); ctx.stroke(); ctx.setLineDash([]); }
     W3.POIS.forEach(function (q) { ctx.fillStyle = "rgba(255,255,255,0.9)"; ctx.font = "bold " + (big ? Math.round(S / 45) : 8) + "px sans-serif"; ctx.textAlign = "center"; ctx.fillText(KP.t(q.key), X(q.x), X(q.z) - 3); });
     G.chars.forEach(function (c) { if (c !== p && c.alive && c.team === p.team && c.state !== "plane") { ctx.fillStyle = "#2fd6ff"; ctx.beginPath(); ctx.arc(X(c.x), X(c.z), 3.2, 0, 6.3); ctx.fill(); } });
+    if (KP.modeMini) KP.modeMini(ctx, X, k); KP.eventMini(ctx, X);
     var px = p.state === "plane" ? P.ax + (P.bx - P.ax) * P.t : p.x, pz = p.state === "plane" ? P.az + (P.bz - P.az) * P.t : p.z;
     ctx.save(); ctx.translate(X(px), X(pz)); ctx.rotate(-IN.yaw + Math.PI);
     ctx.fillStyle = "#ffe14d"; ctx.strokeStyle = "#222"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(4.5, 5); ctx.lineTo(-4.5, 5); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
@@ -631,7 +690,9 @@
       var m = c.mesh; if (!m) return;
       if (c.state === "plane") { m.visible = false; return; }
       if (c.state === "out") { var lift = Math.max(0, c.outT - 0.6); m.position.y = c.y + lift * lift * 2.2; m.visible = c.outT < 4; if (m.userData.drone) m.userData.drone.rotation.y += dt * 9; return; }
-      var far = Math.abs(c.x - cx) + Math.abs(c.z - cz) > 210; m.visible = !far;
+      var md = Math.abs(c.x - cx) + Math.abs(c.z - cz), far = md > 210; m.visible = !far;
+      var lod = md > 75 && !G.killcam;   // дальний боец: только тело (меньше вызовов отрисовки)
+      if (m.userData.lod !== lod) { m.userData.lod = lod; var PP = m.userData.parts; PP.arms.visible = !lod; PP.acc.visible = !lod; PP.legs[0].visible = PP.legs[1].visible = !lod; }
       if (far) return;
       m.position.set(c.x, c.y, c.z); m.rotation.y = c.yaw;
       var P = m.userData.parts, sw = c.state === "ground" ? Math.sin(c.walk) * 0.6 : 0.3;
@@ -640,14 +701,21 @@
       P.legs[0].rotation.x = moving ? sw : (c.state === "ground" ? 0 : 0.35); P.legs[1].rotation.x = moving ? -sw : (c.state === "ground" ? 0 : -0.2);
       P.umb.visible = c.state === "glide";
       m.rotation.x = c.state === "fall" ? 0.75 : 0;
-      P.shadow.visible = c.state === "ground" && SET.q !== "high";
+      P.shadow.visible = c.state === "ground" && QL < 2;
       var pitch = c.isPlayer && !G.auto ? IN.pitch : (c.aimPt ? Math.atan2(c.aimPt.y - c.y - 1.4, Math.hypot(c.aimPt.x - c.x, c.aimPt.z - c.z)) : 0);
       c.kick = Math.max(0, (c.kick || 0) - dt * 0.35);
       P.arms.rotation.x = c.swingT ? -1.6 * c.swingT * 4 + 0.6 : (c.reloadT > 0 ? 0.55 : (c.healT > 0 ? 0.8 : -pitch * 0.8 - c.kick * 3)) + (moving ? Math.sin(c.walk * 2) * 0.04 : 0);
       P.arms.position.y = 1.45 + (moving ? Math.abs(Math.sin(c.walk)) * 0.03 : 0);
       m.userData.yoff = 0; m.userData.spin = 0; m.rotation.z = 0;
+      if (c.rollT > 0) { m.rotation.x = (1 - c.rollT / 0.55) * Math.PI * 2; m.userData.yoff = -0.35 * Math.sin((1 - c.rollT / 0.55) * Math.PI); P.legs[0].rotation.x = P.legs[1].rotation.x = -1.2; }
+      else if (c.crouch && c.state === "ground") { P.legs[0].rotation.x = -0.75 + (moving ? sw * 0.4 : 0); P.legs[1].rotation.x = -0.75 - (moving ? sw * 0.4 : 0); m.userData.yoff = -0.32; }
+      if (c.reloadT > 0) P.hand.rotation.z = Math.sin(c.reloadT * 9) * 0.35; else P.hand.rotation.z = 0;
       if (c.emote) { c.emote.t += dt; if (c.emote.t > 2.6 || moving || c.cd > 0.05) c.emote = null; else emotePose(m, c.emote.anim, c.emote.t); }
       m.position.y = c.y + (m.userData.yoff || 0); if (m.userData.spin) m.rotation.y = c.yaw + m.userData.spin;
+      if (p && c !== p && c.team === p.team && G.teamSize > 1) {   // метка союзника над головой
+        if (!m.userData.tag) { m.userData.tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: KP.tex().glow, color: "#2fd6ff", depthTest: false, transparent: true })); m.userData.tag.position.y = 2.35; m.userData.tag.scale.set(0.45, 0.45, 0.45); m.add(m.userData.tag); }
+        m.userData.tag.visible = true;
+      } else if (m.userData.tag) m.userData.tag.visible = false;
     });
     G.loot.forEach(function (it) { if (!it.mesh) return; var vis = Math.abs(it.x - cx) + Math.abs(it.z - cz) < 75; it.mesh.visible = vis; if (vis) it.mesh.userData.spin.rotation.y += dt * 1.6; });
     G.buildList.forEach(function (b) {
@@ -662,11 +730,12 @@
       planeMesh.rotation.y = Math.atan2(P2.bx - P2.ax, P2.bz - P2.az); if (P2.t >= 1) planeMesh.visible = false;
     }
     if (millBlades) millBlades.rotation.z += dt * 0.8;
-    KP.renderVehicles();
+    KP.renderVehicles(); if (KP.modeRender) KP.modeRender(); KP.eventRender(dt);
+    if (aurora && aurora.visible) { aurora.material.uniforms.t.value = performance.now() / 1000; aurora.position.set(camera.position.x, 0, camera.position.z); }
     if (beacon) beacon.material.opacity = 0.55 + 0.45 * Math.sin(performance.now() / 400);
     sky.position.copy(camera.position); KP.audio.listener(camera.position.x, camera.position.z, IN.yaw);
     if (SET.q === "high") { var fp = p && (G.running || G.ended) ? p : { x: 0, y: 0, z: 0 }; sun.target.position.set(fp.x, fp.y, fp.z); sun.position.set(fp.x + SUN_DIR.x * 120, fp.y + SUN_DIR.y * 120, fp.z + SUN_DIR.z * 120); }
-    world.chests.forEach(function (c) { if (c.mesh) c.mesh.userData.beam.visible = !c.open; });
+    KP.chests.forEach(function (c) { if (c.mesh && c.mesh.userData.beam) c.mesh.userData.beam.visible = !c.open; });
     KP.updateFx(dt);
     // туман серее в хмари
     var out = p && G.running && p.alive && p.state === "ground" && KP.outside(p);
@@ -674,11 +743,23 @@
     scene.fog.near = out ? 8 : (atm.rain ? 25 : 45); sky.visible = !out;
     if (rain && rain.visible) {
       rain.position.set(camera.position.x, camera.position.y - 8, camera.position.z);
-      var rp = rain.geometry.attributes.position, ra = rp.array, fallD = dt * 26;
-      for (var ri = 0; ri < ra.length; ri += 6) { ra[ri + 1] -= fallD; ra[ri + 4] -= fallD; if (ra[ri + 4] < 0) { ra[ri + 1] += 24; ra[ri + 4] += 24; } }
+      var rp = rain.geometry.attributes.position, ra = rp.array, snowy = rain.userData.snow, fallD = dt * (snowy ? 3 : 26), tt = performance.now() / 1000;
+      for (var ri = 0; ri < ra.length; ri += 6) {
+        ra[ri + 1] -= fallD; ra[ri + 4] -= fallD;
+        if (snowy) { var sw = Math.sin(tt + ri) * dt * 0.6; ra[ri] += sw; ra[ri + 3] = ra[ri] + 0.06; ra[ri + 4] = ra[ri + 1] - 0.08; ra[ri + 5] = ra[ri + 2]; }
+        if (ra[ri + 4] < 0) { ra[ri + 1] += 24; ra[ri + 4] += 24; }
+      }
       rp.needsUpdate = true;
     }
     $("grey").style.opacity = out ? 1 : 0;
+    var kc = G.killcam, kt = kc ? G.time - kc.t0 : 99;
+    if (kc && kt < 3.3) {   // повтор: последние 3 с глазами выбившего
+      var fr = kc.frames[Math.min(kc.frames.length - 1, Math.floor(kt / 0.1))];
+      G.chars.forEach(function (c, ci) { var f = fr[ci]; if (!f || !c.mesh) return; c.mesh.visible = !!f[4] || ci === kc.me; c.mesh.position.set(f[0], f[1], f[2]); c.mesh.rotation.y = f[3]; c.mesh.rotation.x = 0; });
+      var kf = fr[kc.by], vf = fr[kc.me];
+      if (kf && vf) { var ka = Math.atan2(vf[0] - kf[0], vf[2] - kf[2]); camera.position.set(kf[0] - Math.sin(ka) * 3.2 - Math.cos(ka) * 0.8, kf[1] + 2.1, kf[2] - Math.cos(ka) * 3.2 + Math.sin(ka) * 0.8); camera.lookAt(vf[0], vf[1] + 1.1, vf[2]); }
+      $("kcam").style.display = "block"; setHTML("kcam", "<b>" + KP.t("replay") + "</b>" + esc(G.chars[kc.by].name) + (kc.wname ? " · " + esc(kc.wname) : "") + " · " + KP.t("hpLeft", kc.hp));
+    } else if ($("kcam").style.display !== "none") $("kcam").style.display = "none";
     renderer.render(scene, camera);
     nums.forEach(function (el) {
       if (!el || el.style.display === "none") return; var u = el.userData; u.t -= dt; u.y += dt * 1.5;
@@ -701,7 +782,8 @@
     setHTML("wood", "<i class=ic style='background:#c49a66'></i>" + p.wood);
     var alive = 0; G.chars.forEach(function (c) { if (c.alive) alive++; });
     setTxt("alive", KP.t("alive", alive)); setTxt("kos", KP.t("kos", p.kos));
-    var Z = G.zone, zt = G.train ? KP.t("trainHud") : Z.final ? KP.t("zoneFinal") : Z.shrinking ? KP.t("zoneMove", fmt(KP.zoneLeft())) : KP.t("zoneWait", fmt(KP.zoneLeft()));
+    var mh = KP.modeHud && KP.modeHud();
+    var Z = G.zone, zt = mh ? mh : G.train ? KP.t("trainHud") : Z.final ? KP.t("zoneFinal") : Z.shrinking ? KP.t("zoneMove", fmt(KP.zoneLeft())) : KP.t("zoneWait", fmt(KP.zoneLeft()));
     setTxt("zoneTxt", zt); $("zoneTxt").classList.toggle("warn", Z.shrinking);
     var s = p.slots[p.cur], w = s ? KP.WEAPONS[s.id] : KP.WEAPONS[0];
     setHTML("ammo", w.melee ? KP.t("w0") : (p.reloadT > 0 ? "<small>" + KP.t("reloading") + "</small>" : s.mag + " <small>/ " + w.mag + "</small>"));
@@ -712,18 +794,18 @@
       var el = $("slot" + i); el.className = cls; el.style.borderColor = x ? col : "rgba(255,255,255,0.25)";
       var lab = x ? KP.t("w" + x.id) : "", key = "sl" + i + lab; if (hudCache["slt" + i] !== key) { hudCache["slt" + i] = key; el.innerHTML = "<b>" + (i + 1) + "</b><span>" + lab + "</span>"; }
     }
-    if (G.teamSize > 1) {
+    if (G.teamSize > 1 && G.teamSize <= 3) {
       var th = ""; G.chars.forEach(function (c) { if (c !== p && c.team === p.team) th += "<div class=tm" + (c.alive ? "" : " dead") + "><span>" + esc(c.name) + "</span><i style='width:" + Math.max(0, c.hp) * 0.6 + "px'></i><u style='width:" + c.sh * 0.6 + "px'></u></div>"; });
       setHTML("team", th);
     } else setHTML("team", "");
     setHTML("items", "<i class=ic style='background:#57e08a'></i>" + p.items.tube + " <i class=ic style='background:#e8efe9'></i>" + p.items.pal + " <i class=ic style='background:#3fb6ff'></i>" + p.items.lac + " <i class=ic style='background:#2a7bff'></i>" + p.items.big);
     var nv = p.state === "ground" && p.alive && !nearestLoot(p, 2.2) && !KP.nearChest(p, 2.2) ? KP.nearVehicle(p, 2.6) : null;
     var showTake = p.alive && (p.state === "drive" || (p.state === "ground" && (KP.nearChest(p, 2.2) || nearestLoot(p, 2.2) || nv)));
-    setTxt("bTake", p.state === "drive" ? KP.t("exitV") : nv ? KP.t("enterV") : KP.t("take"));
+    setTxt("bTake", p.state === "drive" ? KP.t("exitV") : nv ? KP.t("enter_" + nv.kind) : KP.t("take"));
     var gk = p.items[p.thr] > 0 ? p.thr : (["gren", "smoke", "pop"].filter(function (q) { return p.items[q] > 0; })[0] || p.thr);
     setHTML("grenChip", "<i class=ic style='background:" + KP.ITEMS[gk].col + "'></i>" + KP.t("i_" + gk) + " " + p.items[gk] + (isTouch ? "" : " <small>[G] [B]</small>"));
     $("bTake").style.display = showTake ? "flex" : "none";
-    if (showTake && !isTouch && (p.state === "drive" || nv)) { setHTML("takeHint", "<kbd>E</kbd>" + (p.state === "drive" ? KP.t("exitV") : KP.t("enterV"))); $("takeHint").style.display = "block"; }
+    if (showTake && !isTouch && (p.state === "drive" || nv)) { setHTML("takeHint", "<kbd>E</kbd>" + (p.state === "drive" ? KP.t("exitV") : KP.t("enter_" + nv.kind))); $("takeHint").style.display = "block"; }
     else if (showTake && !isTouch) { var it = nearestLoot(p, 2.2), ch = KP.nearChest(p, 2.2); setHTML("takeHint", "<kbd>E</kbd>" + (ch ? KP.t("chest") : it.t === "w" ? "<span style='color:" + KP.RAR[it.r].c + "'>" + KP.t("w" + it.id) + " · " + KP.t("r" + it.r) + "</span>" : KP.t("i_" + it.id))); $("takeHint").style.display = "block"; }
     else $("takeHint").style.display = "none";
     $("bJumpPlane").style.display = p.state === "plane" ? "block" : "none";
@@ -758,7 +840,8 @@
   function menu() {
     G.running = false; G.ended = false; document.body.classList.remove("inmatch"); $("hud").style.display = "none";
     if (planeMesh) planeMesh.visible = false;
-    clearMatch(); G.zone = null; if (sky) applyAtmos("sunset");
+    clearMatch(); G.zone = null; if (sky) applyAtmos(W3.MAP.winter ? "polar" : "sunset");
+    $("bMap").innerHTML = KP.t("mapLbl") + ": <b>" + KP.t("map_" + W3.map) + "</b>";
     KP.audio.music("menu"); KP.audio.ambience("menu"); $("bTutor").className = PROG.tut ? "" : "gold"; toggleMap(false);
     var I = lvlInfo(PROG.xp);
     $("mLvl").textContent = KP.t("lvl", I.L); $("mXpFill").style.width = (100 * I.cur / I.need) + "%"; $("mXp").textContent = KP.t("xp", I.cur, I.need);
@@ -767,6 +850,7 @@
     $("bLang").textContent = KP.lang === "ru" ? "EN" : "RU";
     var ev = KP.todayEvent(); $("bEvent").innerHTML = KP.t("event") + ": " + KP.t(ev.key) + "<small>" + KP.t(ev.key + "d") + " · ×" + ev.xp + " " + KP.t("resXp") + "</small>";
     $("pcHelp").style.display = isTouch ? "none" : "block";
+    $("scrMenu").classList.toggle("artbg", !!(KP.ART && KP.ART.bg && KP.ART.bg.indexOf("bg_menu") >= 0 && W3.map === "isle"));   // фон Художника на тропической карте
 
     show("scrMenu");
   }
@@ -825,14 +909,25 @@
     KP.equip(showcase, 1);
   }
   function stats() {
+    var I = lvlInfo(PROG.xp), rk = ["rank0", "rank1", "rank2", "rank3", "rank4", "rank5"][Math.min(5, Math.floor(I.L / 10))];
+    var h = "<div class=passHead><b>" + KP.t("lvl", I.L) + " · " + KP.t(rk) + "</b><small>" + KP.t("achCount", Object.keys(PROG.ach || {}).length, KP.META.ACH.length) + "</small></div><div class=prof><div>";
     var rows = [["stM", st("m")], ["stW", st("w")], ["stT5", st("t5")], ["stKo", st("ko")], ["stKmax", st("kmax")], ["stBest", st("bp") ? 100 - st("bp") : "—"], ["stDmg", st("dmg")], ["stBuilt", st("built")], ["stChests", st("chests")], ["stDrv", st("drv") + " " + KP.t("unitM")], ["stTime", Math.round(st("time") / 60) + " " + KP.t("unitMin")]];
-    $("statList").innerHTML = rows.map(function (r) { return "<div class=row><span>" + KP.t(r[0]) + "</span><b>" + r[1] + "</b></div>"; }).join("");
+    h += "<h3>" + KP.t("stats") + "</h3>" + rows.map(function (r) { return "<div class=row><span>" + KP.t(r[0]) + "</span><b>" + r[1] + "</b></div>"; }).join("");
+    h += "<h3>" + KP.t("byWeapon") + "</h3><div class=row><span>" + KP.t("weapon") + "</span><span>" + KP.t("resKos") + " · " + KP.t("resDmg") + "</span></div>";
+    [0, 1, 2, 3, 4, 5, 6, "gren", "ram"].forEach(function (w) { var o = (PROG.ws || {})[w]; if (!o) return; h += "<div class=row><span>" + (typeof w === "number" ? KP.t("w" + w) : KP.t(w === "gren" ? "i_gren" : "ramKo")) + "</span><b>" + o.k + " · " + o.d + "</b></div>"; });
+    h += "</div><div><h3>" + KP.t("achs") + "</h3><div class=achs>";
+    KP.META.achList(PROG).forEach(function (a) { h += "<div class='ach" + (a.done ? " done" : "") + "'><b>" + KP.t(a.key) + "</b><div class=bar><i style='width:" + (100 * a.cur / a.goal) + "%'></i></div><small>" + a.cur + " / " + a.goal + "</small></div>"; });
+    h += "</div></div></div>";
+    $("statList").innerHTML = h;
     show("scrStats");
   }
   /* боевой пропуск: 50 ступеней, бесплатная ветка и ветка Премиума */
+  var passSeason = 0;
   function passScreen() {
-    var PT = KP.META.passTier(PROG), R = KP.META.passRewards(), prem = KP.META.premOn();
-    var h = "<div class=passHead><b>" + KP.t("season") + "</b><span>" + KP.t("tier", PT.tier, KP.META.TIERS) + "</span><div class=bar><i style='width:" + (100 * PT.cur / PT.size) + "%'></i></div><small>" + KP.t("passHow", KP.META.TIER_SIZE) + " · " + (prem ? KP.t("premOn") : KP.t("premOff")) + "</small></div><div class=passRow>";
+    var S = passSeason || KP.META.SEASON, PT = KP.META.passTier(PROG, S), R = KP.META.passRewards(S), prem = KP.META.premOn();
+    var h = "<div class=tabs>" + [1, 2].map(function (n) { return "<button class='small" + (n === S ? " on" : "") + "' data-season=" + n + ">" + KP.t("season" + n) + "</button>"; }).join("") + "</div>";
+    if (S < KP.META.SEASON) h += "<small class=dim>" + KP.t("seasonOld") + "</small>";
+    h += "<div class=passHead><b>" + KP.t("season" + S) + "</b><span>" + KP.t("tier", PT.tier, KP.META.TIERS) + "</span><div class=bar><i style='width:" + (100 * PT.cur / PT.size) + "%'></i></div><small>" + KP.t("passHow", KP.META.TIER_SIZE) + " · " + (prem ? KP.t("premOn") : KP.t("premOff")) + "</small></div><div class=passRow>";
     for (var t = 1; t <= KP.META.TIERS; t++) {
       var got = PT.tier >= t, f = R.free[t] || [], pr = R.prem[t] || [];
       if (!f.length && !pr.length && t % 5) continue;
@@ -842,18 +937,20 @@
     }
     h += "</div>";
     $("passList").innerHTML = h; show("scrPass");
+    Array.prototype.forEach.call($("passList").querySelectorAll("[data-season]"), function (el) { el.onclick = function () { passSeason = +el.getAttribute("data-season"); passScreen(); }; });
   }
   function questScreen() {
     KP.META.ensureQuests(PROG);
     var h = "";
-    [["daily", PROG.dq.l, 150], ["weekly", PROG.wq.l, 500]].forEach(function (g) {
+    KP.META.ensureSeason(PROG);
+    [["daily", PROG.dq.l, 150], ["weekly", PROG.wq.l, 500], ["seasonQ", PROG.sq.l, 600]].forEach(function (g) {
       h += "<h3>" + KP.t(g[0]) + " · +" + g[2] + " " + KP.t("resXp") + "</h3>";
       g[1].forEach(function (q) { h += "<div class='quest" + (q.d ? " done" : "") + "'><span>" + esc(KP.META.questText(q)) + "</span><b>" + Math.min(q.p, q.g) + " / " + q.g + "</b><div class=bar><i style='width:" + (100 * Math.min(1, q.p / q.g)) + "%'></i></div></div>"; });
     });
     $("questList").innerHTML = h; show("scrQuest");
   }
   function settings() {
-    $("sSens").value = SET.sens; $("sSnd").textContent = SET.snd ? KP.t("on") : KP.t("off"); $("sMus").textContent = SET.mus ? KP.t("on") : KP.t("off"); $("sQ").textContent = SET.q === "high" ? KP.t("qHigh") : KP.t("qLow");
+    $("sSens").value = SET.sens; $("sSnd").textContent = SET.snd ? KP.t("on") : KP.t("off"); $("sMus").textContent = SET.mus ? KP.t("on") : KP.t("off"); $("sQ").textContent = SET.qmode === "auto" ? KP.t("qAutoLbl") : SET.qmode === "high" ? KP.t("qHigh") : KP.t("qLow");
     show("scrSet");
   }
   function showResults(r) {
@@ -865,7 +962,7 @@
     var I = lvlInfo(PROG.xp);
     $("rLvl").textContent = KP.t("lvl", I.L) + " · " + KP.t("xp", I.cur, I.need); $("rXpFill").style.width = (100 * I.cur / I.need) + "%";
     var notes = []; if (r.newLvl) notes.push(KP.t("newLvl", r.newLvl)); if (r.newTier) notes.push(KP.t("newTier", r.newTier));
-    (r.quests || []).forEach(function (u) { notes.push(KP.t("questDone", u)); }); r.unl.forEach(function (u) { notes.push(KP.t("unlocked", u)); });
+    (r.quests || []).forEach(function (u) { notes.push(KP.t("questDone", u)); }); (r.ach || []).forEach(function (a) { notes.push(KP.t("achDone", KP.t(a))); }); r.unl.forEach(function (u) { notes.push(KP.t("unlocked", u)); });
     $("rNotes").innerHTML = notes.map(function (n) { return "<div>▸ " + esc(n) + "</div>"; }).join("");
     $("bX2").style.display = PF.canReward() ? "block" : "none"; $("bX2").disabled = false; $("bX2").textContent = PF.premium() ? KP.t("x2prem") : KP.t("x2");
     if (window.Premium && PF.sdk()) setTimeout(function () { if (!G.running) window.Premium.maybeCard(); }, 900);
@@ -880,6 +977,10 @@
   function bindUI() {
     $("bSolo").onclick = function () { audioInit(); startMatch("solo"); };
     $("bTrio").onclick = function () { audioInit(); startMatch("trio"); };
+    $("bCap").onclick = function () { audioInit(); startMatch("cap"); };
+    $("bTdm").onclick = function () { audioInit(); startMatch("tdm"); };
+    $("bLr").onclick = function () { audioInit(); startMatch("lr"); };
+    $("bMap").onclick = function () { var ids = Object.keys(W3.MAPS), i = ids.indexOf(W3.map); switchMap(ids[(i + 1) % ids.length]); menu(); };
     $("bEvent").onclick = function () { audioInit(); startMatch("event"); };
     $("bTrain").onclick = function () { audioInit(); startMatch("train"); };
     $("bQuick").onclick = function () { audioInit(); startMatch("quick"); };
@@ -894,14 +995,14 @@
     $("mini").addEventListener("click", function () { toggleMap(); }); $("mini").addEventListener("touchstart", function (e) { e.preventDefault(); e.stopPropagation(); toggleMap(); }, { passive: false });
     $("bigmap").addEventListener("click", function () { toggleMap(false); }); $("bigmap").addEventListener("touchstart", function (e) { e.preventDefault(); toggleMap(false); }, { passive: false });
     Array.prototype.forEach.call(document.querySelectorAll("button"), function (b) { b.addEventListener("click", function () { audioInit(); KP.sfx("ui"); }); });
-    $("sQ").onclick = function () { SET.q = SET.q === "high" ? "low" : "high"; applyQuality(); saveSet(); settings(); };
+    $("sQ").onclick = function () { SET.qmode = SET.qmode === "auto" ? "low" : SET.qmode === "low" ? "high" : "auto"; setQL(qlFromSet()); saveSet(); settings(); };
     $("bAgain").onclick = function () { PF.interstitial(function () { startMatch(G.mode || "solo"); }); };
     $("bMenu").onclick = function () { PF.interstitial(menu); };
     $("bX2").onclick = function () {
       $("bX2").disabled = true;
       PF.rewarded(function (got) {
         if (!got) { $("bX2").disabled = false; return; }
-        var r = G.lastRes, L0 = lvlInfo(PROG.xp).L, before = KP.META.openList(PROG); PROG.xp += r.gain; PROG.pp = (PROG.pp || 0) + r.gain;
+        var r = G.lastRes, L0 = lvlInfo(PROG.xp).L, before = KP.META.openList(PROG); PROG.xp += r.gain; PROG.pp2 = (PROG.pp2 || 0) + r.gain;
         var L1 = lvlInfo(PROG.xp).L, after = KP.META.openList(PROG); saveProg();
         r.newLvl = L1 > L0 ? L1 : r.newLvl; r.unl = r.unl.concat(after.filter(function (x) { return before.indexOf(x) < 0; }).map(KP.META.itemName)); r.gain *= 2;
         showResults(r); $("bX2").style.display = "none"; toast(KP.t("x2done"));
@@ -914,14 +1015,20 @@
     $("bJumpPlane").addEventListener("touchstart", function (e) { e.preventDefault(); e.stopPropagation(); IN.jump = true; }, { passive: false });
     $("lockHint").onclick = function () { lockPtr(); };
   }
+  KP.ui = { toast: function (s, t) { toast(s, t); }, big: function (s, t) { bigMsg(s, t); } };
   PF.onPause = function (p) { G.sysPaused = p; KP.audio.pause(p); };
 
   /* ---------- главный цикл ---------- */
   var last = performance.now(), acc = 0;
   function frame(now) {
     requestAnimationFrame(frame);
-    var dt = Math.min(0.1, (now - last) / 1000); last = now;
+    var raw = (now - last) / 1000, dt = Math.min(0.1, raw); last = now;
     if (G.sysPaused) return;
+    // замер FPS во время матча и авто-качество
+    if (G.running && !G.paused && raw > 0 && raw < 1) {
+      fpsAcc += raw; fpsN++; fpsT += raw; qlCd -= raw;
+      if (fpsT > 3) { G.fps = Math.round(fpsN / fpsAcc); fpsAcc = 0; fpsN = 0; fpsT = 0; if (SET.qmode === "auto" && qlCd <= 0 && G.fps < 38 && QL > 0) { setQL(QL - 1, true); qlCd = 6; } }
+    }
     if (G.running && !G.paused) {
       acc += dt * (G.timeScale || 1); var n = 0;
       while (acc >= DT && n < 8) { step(DT); acc -= DT; n++; }
@@ -947,10 +1054,10 @@
         .then(function () { if (!G.running) { menu(); window.Premium.maybeCard(); } });
       window.Premium.onChange(function () { if (!G.running) menu(); });
     }
-    applyAtmos("sunset");
     menu();
     requestAnimationFrame(frame);
     PF.ready();
     if (window.__shot) setTimeout(window.__shot, 50);
+    if (window.__autotest) setTimeout(window.__autotest, 80);
   });
 })(window.KP);

@@ -27,12 +27,15 @@ button.ev small{display:block;font-size:11px;letter-spacing:.04em;text-transform
 button.small{min-width:0;font-size:13px;padding:9px 16px}
 button:disabled{opacity:.45}
 .menuL{position:absolute;left:clamp(16px,6vw,80px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;max-width:min(560px,92vw);max-height:100vh;padding:12px 0}
-.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mgrid button{min-width:0}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mgrid.g3{grid-template-columns:1fr 1fr 1fr}.mgrid button{min-width:0}
 .msec{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.msec button{min-width:0}
 .pm-on .menuR{top:60px}
 @media (max-height:520px){.ttl{font-size:30px}.ttl::after{margin-top:6px;height:3px}.menuL{gap:5px}.menuL button{padding:8px 16px;font-size:14px}.menuL button.pri{font-size:17px;padding:10px 18px}.sub{margin-bottom:6px!important;font-size:11px}#pcHelp{display:none!important}.lvlbox{padding:6px 10px;min-width:200px}}
 .menuR{position:absolute;right:clamp(16px,4vw,48px);top:clamp(16px,4vh,40px);display:flex;flex-direction:column;align-items:flex-end;gap:8px}
-#scrMenu{background:linear-gradient(90deg,rgba(8,11,16,.85) 0%,rgba(8,11,16,.35) 50%,rgba(8,11,16,0) 100%)}
+#scrMenu{background:linear-gradient(90deg,rgba(8,11,16,.85) 0%,rgba(8,11,16,.35) 50%,rgba(8,11,16,0) 100%);isolation:isolate}
+#scrMenu.artbg{background:#0d1217}
+#scrMenu.artbg::before{content:"";position:absolute;inset:0;z-index:-1;transform:scaleX(-1);background:linear-gradient(270deg,rgba(8,11,16,.88) 0%,rgba(8,11,16,.4) 45%,rgba(8,11,16,0) 70%),url(img/bg_menu.webp) center/cover no-repeat}
+@media (orientation:portrait){#scrLoad{background-image:url(img/bg_loading.webp)!important}.menuR{display:none}.menuL{left:12px;right:12px;max-width:none;top:50%}.menuL button{font-size:13px;padding:10px 12px;white-space:normal}.menuL button.pri{font-size:16px}.mgrid.g3{grid-template-columns:1fr 1fr}}
 .lvlbox{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--acc2);padding:10px 14px;min-width:240px}
 .lvlbox b{font-size:20px;letter-spacing:.06em}
 .bar{height:6px;background:rgba(255,255,255,.12);overflow:hidden;margin:7px 0}
@@ -174,6 +177,12 @@ body.touch.portrait #rot{display:block}
 .tierC .rw{min-height:44px;padding:4px;background:rgba(0,0,0,.25);margin-bottom:4px;line-height:1.3}
 .tierC .rw.pr{border-left:2px solid var(--gold)}
 .dim{color:var(--dim)}
+.prof{display:grid;grid-template-columns:1fr 1.2fr;gap:20px}@media (max-width:700px){.prof{grid-template-columns:1fr}}
+.achs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.ach{background:rgba(255,255,255,.05);border:1px solid var(--line);padding:6px 8px;font-size:12px;opacity:.75}.ach.done{opacity:1;border-color:var(--gold)}.ach .bar{margin:4px 0}.ach small{color:var(--dim)}
+#bCrouch{right:200px;bottom:240px;width:44px;height:44px;font-size:8px}#bRoll{left:76px;bottom:110px;width:50px;height:50px;font-size:9px}
+#kcam{display:none;position:absolute;left:50%;bottom:120px;transform:translateX(-50%);background:rgba(10,14,20,.85);border:1px solid var(--line);border-left:3px solid #ff4f6a;padding:8px 16px;font-size:15px;white-space:nowrap}
+#kcam b{color:#ff4f6a;text-transform:uppercase;letter-spacing:.14em;margin-right:10px}
 .quest{padding:8px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:14px}
 .quest .bar{grid-column:1/3;margin:0}.quest.done span{color:var(--acc2)}
 #bEmote{left:50%;margin-left:28px;width:40px;height:40px;font-size:16px;border-radius:4px}
@@ -220,6 +229,9 @@ body:not(.touch) #bEmote{display:none}
   <div class="tb" id="bTake" data-t="take"></div>
   <div class="tb" id="bPauseT">II</div>
   <div class="tb" id="bEmote">☺</div>
+  <div class="tb" id="bCrouch" data-t="crouch"></div>
+  <div class="tb" id="bRoll" data-t="roll"></div>
+  <div id="kcam"></div>
   <div id="rot" data-t="rotate"></div>
 </div>
 
@@ -229,8 +241,10 @@ body:not(.touch) #bEmote{display:none}
   <div class="menuL">
     <div class="ttl" data-t="title"></div>
     <div class="sub" data-t="subtitle" style="margin-bottom:18px"></div>
+    <button id="bMap" class="ev small" style="text-transform:none;letter-spacing:.04em"></button>
     <button id="bSolo" class="pri" data-t="solo"></button>
     <div class="mgrid"><button id="bTrio" data-t="trio"></button><button id="bQuick" data-t="quick"></button></div>
+    <div class="mgrid g3"><button id="bCap" class="small" data-t="cap"></button><button id="bTdm" class="small" data-t="tdm"></button><button id="bLr" class="small" data-t="lr"></button></div>
     <button id="bEvent" class="ev"></button>
     <div class="mgrid"><button id="bTutor" data-t="tutor"></button><button id="bTrain" data-t="train"></button></div>
     <div class="msec"><button id="bPass" class="small" data-t="pass"></button><button id="bQuest" class="small" data-t="quests"></button><button id="bWard" class="small" data-t="wardrobe"></button><button id="bStats" class="small" data-t="stats"></button><button id="bSet" class="small" data-t="settings"></button></div>
@@ -246,7 +260,7 @@ body:not(.touch) #bEmote{display:none}
 <div class="scr" id="scrWard" style="align-items:flex-start;padding-left:clamp(16px,4vw,48px)"><div class="panel" id="wardList" style="max-width:min(560px,58vw);max-height:78vh;overflow:auto"></div><button class="bBack small" data-t="back"></button></div>
 <div class="scr" id="scrPass"><div class="panel" id="passList" style="max-width:96vw"></div><button class="bBack small" data-t="back"></button></div>
 <div class="scr" id="scrQuest"><div class="panel" id="questList" style="max-width:520px"></div><button class="bBack small" data-t="back"></button></div>
-<div class="scr" id="scrStats"><h3 data-t="stats"></h3><div class="panel" id="statList" style="max-width:440px"></div><button class="bBack small" data-t="back"></button></div>
+<div class="scr" id="scrStats"><div class="panel" id="statList" style="max-width:900px;max-height:80vh;overflow:auto"></div><button class="bBack small" data-t="back"></button></div>
 <div class="scr" id="scrSet">
   <div class="panel" style="max-width:440px">
     <div class="row"><span data-t="sens"></span><input id="sSens" type="range" min="0.3" max="2.2" step="0.1"></div>
@@ -273,6 +287,8 @@ body:not(.touch) #bEmote{display:none}
 <script src="js/world.js"></script>
 <script src="js/core.js"></script>
 <script src="js/vehicles.js"></script>
+<script src="js/modes.js"></script>
+<script src="js/events.js"></script>
 <script src="js/models.js"></script>
 <script src="js/art.js"></script>
 <script src="js/meta.js"></script>

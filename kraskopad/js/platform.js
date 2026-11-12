@@ -54,10 +54,12 @@ window.PF = (function () {
     if (k === "kp.prog") return function (a, b) {   // прогресс: опыт и статистика — максимум, выполненные задания — объединение, выбранный скин — локальный
       var x = jp(a), y = jp(b); if (!x || !y || typeof x !== "object" || typeof y !== "object") return null;
       var m = Object.assign({}, y, x);
-      m.xp = Math.max(Number(x.xp) || 0, Number(y.xp) || 0); m.pp = Math.max(Number(x.pp) || 0, Number(y.pp) || 0);
+      m.xp = Math.max(Number(x.xp) || 0, Number(y.xp) || 0); m.pp = Math.max(Number(x.pp) || 0, Number(y.pp) || 0); m.pp2 = Math.max(Number(x.pp2) || 0, Number(y.pp2) || 0);
       m.own = Object.assign({}, y.own || {}, x.own || {});
       m.tut = (x.tut || y.tut) ? 1 : 0;
-      ["dq", "wq"].forEach(function (k) {   // задания: берём более новый набор; если тот же — прогресс по максимуму
+      m.ach = Object.assign({}, y.ach || {}, x.ach || {});
+      m.ws = {}; [y.ws || {}, x.ws || {}].forEach(function (o) { Object.keys(o).forEach(function (w) { var a = m.ws[w] || { k: 0, d: 0 }; m.ws[w] = { k: Math.max(a.k, o[w].k || 0), d: Math.max(a.d, o[w].d || 0) }; }); });
+      ["dq", "wq", "sq"].forEach(function (k) {   // задания: берём более новый набор; если тот же — прогресс по максимуму
         var a = x[k], b = y[k]; if (!a || !b) { m[k] = a || b; return; }
         if (a.k !== b.k) { m[k] = a.k > b.k ? a : b; return; }
         m[k] = { k: a.k, l: a.l.map(function (q, i) { var o = b.l[i] || q; return { t: q.t, g: q.g, p: Math.max(q.p || 0, o.p || 0), d: (q.d || o.d) ? 1 : 0 }; }) };

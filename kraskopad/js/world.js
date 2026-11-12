@@ -19,47 +19,82 @@ window.KP = window.KP || {};
   function fbm(x, z) { return vnoise(x, z) * 0.6 + vnoise(x * 2.1 + 7, z * 2.1 + 3) * 0.3 + vnoise(x * 4.3 + 1, z * 4.3 + 9) * 0.1; }
   function smoothstep(a, b, x) { var t = Math.max(0, Math.min(1, (x - a) / (b - a))); return sm(t); }
 
-  /* 10 локаций. kind — набор построек; bias — какой лут здесь чаще (номер оружия → множитель веса) */
-  var POIS = [
-    { key: "poi0", kind: "port", x: -138, z: 22, r: 26, flat: 1.5, bias: { 4: 1.6, 2: 1.3 } },
-    { key: "poi1", kind: "city", x: 2, z: 4, r: 36, bias: { 1: 1.2, 2: 1.4, 3: 1.2 } },
-    { key: "poi2", kind: "forest", x: -56, z: -86, r: 38, bias: { 3: 1.5 } },
-    { key: "poi3", kind: "peak", x: 108, z: -32, r: 18, bias: { 5: 3 } },
-    { key: "poi4", kind: "factory", x: 88, z: 86, r: 28, bias: { 6: 2.5, 4: 1.2 } },
-    { key: "poi5", kind: "camp", x: -122, z: -48, r: 18, bias: { 4: 1.4, 5: 1.4 }, items: 1.6 },
-    { key: "poi6", kind: "beach", x: 26, z: -144, r: 20, flat: 1.1, bias: { 1: 1.4, 3: 1.4 } },
-    { key: "poi7", kind: "farm", x: -76, z: 96, r: 26, bias: { 3: 1.5, 2: 1.2 } },
-    { key: "poi8", kind: "lighthouse", x: 6, z: 150, r: 14, bias: { 5: 2 } },
-    { key: "poi9", kind: "dam", x: 36, z: 86, r: 20, bias: { 4: 1.5, 6: 1.3 } }
-  ];
-  var LAKE = { x: 40, z: 108, r: 17 };
-
+  /* ---------- карты (Э10): у каждой свой рельеф, локации, палитра, погода ---------- */
+  function gauss(x, z, cx, cz, r, h) { var dx = x - cx, dz = z - cz; return h * Math.exp(-(dx * dx + dz * dz) / (2 * r * r)); }
+  var MAPS = {
+    isle: {
+      seed: 20261112, winter: false, atmos: ["day", "day", "sunset", "morning", "storm", "dusk"],
+      pois: [
+        { key: "poi0", kind: "port", x: -138, z: 22, r: 26, flat: 1.5, bias: { 4: 1.6, 2: 1.3 } },
+        { key: "poi1", kind: "city", x: 2, z: 4, r: 36, bias: { 1: 1.2, 2: 1.4, 3: 1.2 } },
+        { key: "poi2", kind: "forest", x: -56, z: -86, r: 38, bias: { 3: 1.5 } },
+        { key: "poi3", kind: "peak", x: 108, z: -32, r: 18, bias: { 5: 3 } },
+        { key: "poi4", kind: "factory", x: 88, z: 86, r: 28, bias: { 6: 2.5, 4: 1.2 } },
+        { key: "poi5", kind: "camp", x: -122, z: -48, r: 18, bias: { 4: 1.4, 5: 1.4 }, items: 1.6 },
+        { key: "poi6", kind: "beach", x: 26, z: -144, r: 20, flat: 1.1, bias: { 1: 1.4, 3: 1.4 } },
+        { key: "poi7", kind: "farm", x: -76, z: 96, r: 26, bias: { 3: 1.5, 2: 1.2 } },
+        { key: "poi8", kind: "lighthouse", x: 6, z: 150, r: 14, bias: { 5: 2 } },
+        { key: "poi9", kind: "dam", x: 36, z: 86, r: 20, bias: { 4: 1.5, 6: 1.3 } }
+      ],
+      lake: { x: 40, z: 108, r: 17, h: -2.2 },
+      noflat: { peak: 1, lighthouse: 1, forest: 1 },
+      raw: function (x, z) {
+        var d = Math.sqrt(x * x + z * z) / IR + (vnoise(x * 0.025 + 11, z * 0.025 + 5) - 0.5) * 0.2;
+        var land = smoothstep(1.02, 0.84, d);
+        var h = -3.4 + land * 4.8 + land * land * (fbm(x * 0.013, z * 0.013) * 10 - 3.6);
+        h += gauss(x, z, 108, -32, 24, 26) + gauss(x, z, 6, 150, 14, 9) + gauss(x, z, 70, 40, 30, 8);
+        return h;
+      }
+    },
+    frost: {
+      seed: 20261113, winter: true, atmos: ["frost", "snow", "polar", "frost", "snow"],
+      pois: [
+        { key: "wpoi0", kind: "station", x: -34, z: 112, r: 24, bias: { 4: 1.5, 2: 1.2 }, items: 1.4 },
+        { key: "wpoi1", kind: "resort", x: 92, z: 66, r: 28, bias: { 1: 1.3, 3: 1.4 } },
+        { key: "wpoi2", kind: "harbor", x: -142, z: -8, r: 26, flat: 1.4, bias: { 4: 1.6, 6: 1.3 } },
+        { key: "wpoi3", kind: "mine", x: 64, z: -96, r: 22, bias: { 3: 1.6, 6: 1.6 } },
+        { key: "wpoi4", kind: "village", x: -62, z: -54, r: 32, bias: { 1: 1.3, 2: 1.4 } },
+        { key: "wpoi5", kind: "observatory", x: 18, z: 8, r: 16, bias: { 5: 3 } },
+        { key: "wpoi6", kind: "radar", x: -112, z: 78, r: 18, bias: { 4: 1.4, 5: 1.6 } },
+        { key: "wpoi7", kind: "icelake", x: 120, z: -30, r: 26, flat: 0.15, bias: { 2: 1.4, 3: 1.3 } }
+      ],
+      lake: null,
+      noflat: { observatory: 1 },
+      raw: function (x, z) {
+        var d = Math.sqrt(x * x * 0.85 + z * z * 1.1) / IR + (vnoise(x * 0.02 + 31, z * 0.02 + 7) - 0.5) * 0.28;
+        var land = smoothstep(1.02, 0.82, d);
+        var h = -3.6 + land * 5.2 + land * land * (fbm(x * 0.011 + 5, z * 0.011) * 12 - 4.2);
+        // хребет с северо-востока на юго-запад и пик обсерватории в центре
+        var t = Math.max(0, Math.min(1, ((x + 90) * 0.7 + (z + 70) * 0.7) / 260)), rx = -90 + t * 182, rz = -70 + t * 182, rd = Math.hypot(x - rx, z - rz);
+        h += land * 14 * Math.exp(-rd * rd / (2 * 22 * 22)) * (0.6 + 0.4 * vnoise(x * 0.03, z * 0.03));
+        h += gauss(x, z, 18, 8, 20, 22);
+        return h;
+      }
+    }
+  };
+  var MAP = MAPS.isle, POIS = [], LAKE = null, H = new Float32Array(N * N), mapId = "isle";
   function rawH(x, z) {
-    var d = Math.sqrt(x * x + z * z) / IR + (vnoise(x * 0.025 + 11, z * 0.025 + 5) - 0.5) * 0.2;
-    var land = smoothstep(1.02, 0.84, d);
-    var h = -3.4 + land * 4.8;
-    h += land * land * (fbm(x * 0.013, z * 0.013) * 10 - 3.6);
-    var p = POIS[3], dx = x - p.x, dz = z - p.z;
-    h += 26 * Math.exp(-(dx * dx + dz * dz) / (2 * 24 * 24));                       // Пик Ветров
-    var q = POIS[8]; dx = x - q.x; dz = z - q.z; h += 9 * Math.exp(-(dx * dx + dz * dz) / (2 * 14 * 14));   // утёс маяка
-    dx = x - 70; dz = z - 40; h += 8 * Math.exp(-(dx * dx + dz * dz) / (2 * 30 * 30));   // холмы за плотиной
-    dx = x - LAKE.x; dz = z - LAKE.z; var ld = Math.sqrt(dx * dx + dz * dz);           // озеро у плотины
-    if (ld < LAKE.r + 10) h = h + ((-2.2) - h) * smoothstep(LAKE.r + 10, LAKE.r - 4, ld);
+    var h = MAP.raw(x, z);
+    if (LAKE) { var ld = Math.hypot(x - LAKE.x, z - LAKE.z); if (ld < LAKE.r + 10) h = h + (LAKE.h - h) * smoothstep(LAKE.r + 10, LAKE.r - 4, ld); }
     return h;
   }
-  var H = new Float32Array(N * N);
-  (function () {
-    POIS.forEach(function (p) { if (p.kind !== "peak" && p.kind !== "lighthouse" && p.kind !== "forest") p.level = p.flat || Math.max(1.8, rawH(p.x, p.z)); });
+  /* загрузить карту: рельеф, локации, пустая сетка коллизий */
+  function load(id) {
+    mapId = MAPS[id] ? id : "isle"; MAP = MAPS[mapId];
+    POIS = MAP.pois.map(function (p) { return Object.assign({}, p); }); LAKE = MAP.lake;
+    POIS.forEach(function (p) { if (!MAP.noflat[p.kind]) p.level = p.flat !== undefined ? p.flat : Math.max(1.8, rawH(p.x, p.z)); });
     for (var i = 0; i < N; i++) for (var j = 0; j < N; j++) {
       var x = -HALF + j * STEP, z = -HALF + i * STEP, h = rawH(x, z);
-      POIS.forEach(function (p) {
-        if (p.level === undefined) return;
-        var dd = Math.sqrt((x - p.x) * (x - p.x) + (z - p.z) * (z - p.z)), w = smoothstep(p.r + 18, p.r + 2, dd);
-        h = h + (p.level - h) * w;
-      });
+      for (var q = 0; q < POIS.length; q++) {
+        var pp = POIS[q]; if (pp.level === undefined) continue;
+        var dd = Math.sqrt((x - pp.x) * (x - pp.x) + (z - pp.z) * (z - pp.z)), w = smoothstep(pp.r + 18, pp.r + 2, dd);
+        h = h + (pp.level - h) * w;
+      }
       H[i * N + j] = h;
     }
-  })();
+    for (var g2 = 0; g2 < grid.length; g2++) grid[g2].length = 0;
+    if (KP.world) { KP.world.POIS = POIS; KP.world.LAKE = LAKE; KP.world.map = mapId; KP.world.MAP = MAP; }
+  }
   function height(x, z) {
     var fx = (x + HALF) / STEP, fz = (z + HALF) / STEP;
     if (fx < 0) fx = 0; if (fz < 0) fz = 0; if (fx > N - 1.001) fx = N - 1.001; if (fz > N - 1.001) fz = N - 1.001;
@@ -126,8 +161,9 @@ window.KP = window.KP || {};
   KP.Merger = Merger;
 
   /* ---------- построение мира ---------- */
-  function build(scene, quality) {
-    var rnd = mulberry(20261112), TX = KP.tex(), hi = quality === "high";
+  function build(scene0, quality) {
+    var rnd = mulberry(MAP.seed), TX = KP.tex(), hi = quality === "high", WIN = MAP.winter;
+    var scene = new THREE.Group(); scene0.add(scene);   // всё мира — в одной группе, чтобы сменить карту
     var M = new Merger(0.25);
     var B = new THREE.BoxGeometry(1, 1, 1), CYL = new THREE.CylinderGeometry(1, 1, 1, 10), CYL6 = new THREE.CylinderGeometry(1, 1, 1, 6);
     var boxes = [], circles = [], chests = [], lootSpots = [], anim = [];
@@ -347,6 +383,82 @@ window.KP = window.KP || {};
         house(cx - 6, cz - 7, 7, 5, 2, pi, true);
         for (k = 0; k < 3; k++) sandbags(cx + 8 + k * 3, cz - 8, 2.5, false);
         chests.push({ x: cx + 6, z: cz - 3, poi: pi }); spots(cx, cz - 5, 8, 6, pi);
+      } else if (p.kind === "station") {   // полярная станция: купола, модули, антенны
+        for (k = 0; k < 4; k++) {
+          a = k * 1.57 + 0.4; x = cx + Math.cos(a) * 12; z = cz + Math.sin(a) * 12; var sy = height(x, z);
+          M.add(new THREE.SphereGeometry(4.5, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), x, sy - 0.2, z, 0, 0, 0, 1, 0.8, 1, k % 2 ? "#e9edf0" : "#d84a3a");
+          M.add(B, x, sy + 1, z + 4.4, 0, 0, 0, 1.6, 2.2, 0.3, "#3a4048");
+          solid(x - 3.2, x + 3.2, z - 3.2, z + 3.2, sy - 0.5, sy + 3.6); spots(x, z, 4.5, 3, pi);
+        }
+        for (k = 0; k < 3; k++) { x = cx - 6 + k * 6; z = cz; if (free(x, z, 2)) container(x, z, true, undefined, pick(["#c43b32", "#e9edf0", "#2f6a8a"])); }
+        var ay = height(cx + 2, cz - 8);
+        M.add(CYL6, cx + 2, ay + 9, cz - 8, 0, 0, 0, 0.2, 18, 0.2, "#c9cdd2"); M.add(new THREE.CylinderGeometry(1.4, 0.2, 1, 12), cx + 2, ay + 15, cz - 8, 0.6, 0, 0, 1, 1, 1, "#e9edf0"); pillar(cx + 2, cz - 8, 0.4, ay + 18);
+        chests.push({ x: cx, z: cz + 4, poi: pi }); chests.push({ x: cx + 9, z: cz - 3, poi: pi });
+      } else if (p.kind === "resort") {   // горнолыжный курорт: шале и опоры подъёмника
+        for (k = 0; k < 6; k++) {
+          a = rnd() * 6.28; x = cx + Math.cos(a) * (6 + rnd() * 18); z = cz + Math.sin(a) * (6 + rnd() * 18);
+          if (!free(x, z, 6)) continue;
+          var gy3 = baseY(x, z, 7, 7), hh3 = rnd() < 0.5 ? 3.4 : 6.4;
+          M.add(B, x, gy3 + hh3 / 2 - 0.4, z, 0, 0, 0, 7, hh3 + 0.8, 7, pick(["#8a5a3a", "#6e4a32", "#9a6b45"]));
+          var ch2 = new THREE.CylinderGeometry(1, 1, 1, 3, 1); ch2.rotateZ(Math.PI / 2); ch2.rotateX(Math.PI / 2);
+          M.add(ch2, x, gy3 + hh3 + 1.7, z, 0, Math.PI / 2, 0, 4.2, 7.6, 4.4, "#f2f5f7");
+          windows(x, z, 7, 7, gy3, hh3 > 4 ? 2 : 1);
+          solid(x - 3.5, x + 3.5, z - 3.5, z + 3.5, gy3 - 0.5, gy3 + hh3 + 3.4); spots(x, z, 3.5, 3, pi);
+          if (rnd() < 0.5) chests.push({ x: x + 4.6, z: z, poi: pi });
+        }
+        for (k = 0; k < 5; k++) { x = cx - 20 - k * 14; z = cz - 10 - k * 12; var py2 = height(x, z); M.add(B, x, py2 + 5, z, 0, 0.8, 0, 0.5, 10, 0.5, "#9aa0a6"); M.add(B, x, py2 + 10, z, 0, 0.8, 0, 4, 0.4, 0.4, "#9aa0a6"); pillar(x, z, 0.4, py2 + 10); }
+      } else if (p.kind === "harbor") {   // ледокольная гавань: корпус судна, контейнеры, краны
+        var hx = cx - 26, hz = cz, hy = -0.4;
+        M.add(B, hx, hy + 2.5, hz, 0, 0, 0, 9, 6, 34, "#b8322a"); M.add(B, hx, hy + 5.8, hz, 0, 0, 0, 9.2, 0.6, 34.2, "#2a2e33");
+        M.add(B, hx, hy + 9, hz - 8, 0, 0, 0, 7, 6, 7, "#e9edf0"); M.add(B, hx, hy + 10.5, hz - 4.4, 0, 0, 0, 6, 1.2, 0.1, "#2b3944");
+        M.add(CYL, hx, hy + 14, hz - 9, 0, 0, 0, 1, 4, 1, "#c9a13a");
+        solid(hx - 4.5, hx + 4.5, hz - 17, hz + 17, hy - 2, hy + 12.5);
+        for (k = 0; k < 2; k++) { x = cx + 6 + k * 13; z = cz - 12; var wy = baseY(x, z, 10, 14); M.add(B, x, wy + 3.5, z, 0, 0, 0, 10, 7, 14, pick(["#7b8790", "#6f7f7a"])); M.add(B, x, wy + 7.2, z, 0, 0, 0, 10.6, 0.5, 14.6, "#e9edf0"); solid(x - 5, x + 5, z - 7, z + 7, wy - 0.5, wy + 7.4); spots(x, z, 7, 5, pi); chests.push({ x: x - 6.3, z: z + 2, poi: pi }); }
+        var HC = ["#a5452f", "#2f6a8a", "#3f7a4a", "#c98a2f"];
+        for (k = 0; k < 8; k++) { x = cx + 2 + (k % 4) * 7; z = cz + 8 + Math.floor(k / 4) * 3.2; if (free(x, z, 1)) { var tp2 = container(x, z, false, undefined, pick(HC)); if (rnd() < 0.3) container(x, z, false, tp2, pick(HC)); } }
+        spots(cx + 10, cz + 10, 6, 5, pi);
+      } else if (p.kind === "mine") {   // шахта: вход в штольню, сараи, вагонетки
+        var my2 = height(cx, cz + 14);
+        M.add(B, cx, my2 + 3, cz + 14, 0, 0, 0, 8, 6, 6, "#5a5148"); M.add(B, cx, my2 + 2, cz + 11, 0, 0, 0, 4.4, 4, 0.2, "#151515");
+        M.add(B, cx, my2 + 4.4, cz + 10.9, 0, 0, 0, 5.6, 0.6, 0.6, "#6e4a32");
+        solid(cx - 4, cx + 4, cz + 11, cz + 17, my2 - 0.5, my2 + 6);
+        for (k = -6; k <= 6; k++) M.add(B, cx, height(cx, cz + k * 2) + 0.06, cz + k * 2, 0, 0, 0, 1.6, 0.08, 0.25, "#4a3a2c");
+        for (k = 0; k < 3; k++) { x = cx + (k - 1) * 0.0 + 0.5; z = cz - 6 + k * 5; var cy2 = height(x, z); M.add(B, x, cy2 + 0.8, z, 0, 0, 0, 1.3, 1, 1.8, "#6a6f75"); solid(x - 0.65, x + 0.65, z - 0.9, z + 0.9, cy2 - 0.3, cy2 + 1.3, "house"); }
+        for (k = 0; k < 3; k++) { a = rnd() * 6.28; x = cx + Math.cos(a) * 14; z = cz + Math.sin(a) * 14; if (free(x, z, 5)) house(x, z, 6, 5, 1, pi, true); }
+        chests.push({ x: cx + 5, z: cz + 9, poi: pi }); chests.push({ x: cx - 6, z: cz - 2, poi: pi }); spots(cx, cz, 5, 6, pi);
+      } else if (p.kind === "village") {   // деревня: дома и колокольня
+        for (k = 0; k < 9; k++) {
+          a = rnd() * 6.28; x = cx + Math.cos(a) * (8 + rnd() * 22); z = cz + Math.sin(a) * (8 + rnd() * 22);
+          if (!free(x, z, 5.5)) continue;
+          house(x, z, 6.5 + rnd() * 2, 6 + rnd() * 2, rnd() < 0.3 ? 2 : 1, pi, false);
+        }
+        var vy = height(cx, cz);
+        M.add(B, cx, vy + 6, cz, 0, 0, 0, 3.6, 12, 3.6, "#e2ddd2"); var cn = new THREE.ConeGeometry(0.75, 1, 4); cn.rotateY(Math.PI / 4); M.add(cn, cx, vy + 14, cz, 0, 0, 0, 4.4, 4, 4.4, "#3d5b58");
+        solid(cx - 1.8, cx + 1.8, cz - 1.8, cz + 1.8, vy - 0.5, vy + 16);
+        chests.push({ x: cx + 3, z: cz + 3, poi: pi });
+      } else if (p.kind === "observatory") {   // обсерватория на пике
+        var oy = height(cx, cz);
+        M.add(CYL, cx, oy + 2.5, cz, 0, 0, 0, 4.5, 5, 4.5, "#e2e6ea"); M.add(new THREE.SphereGeometry(4.6, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), cx, oy + 5, cz, 0, 0, 0, 1, 1, 1, "#c9cdd2");
+        M.add(B, cx, oy + 8.2, cz + 1, 0.5, 0, 0, 1.2, 0.3, 4, "#2b3944");
+        pillar(cx, cz, 4.6, oy + 9.6); spots(cx, cz, 5, 6, pi);
+        chests.push({ x: cx + 6, z: cz + 2, poi: pi }); chests.push({ x: cx - 6, z: cz - 3, poi: pi });
+        for (k = 0; k < 3; k++) { a = rnd() * 6.28; sandbags(cx + Math.cos(a) * 9, cz + Math.sin(a) * 9, 3, rnd() < 0.5); }
+      } else if (p.kind === "radar") {   // радарная база
+        var ry = height(cx, cz);
+        M.add(CYL6, cx, ry + 6, cz, 0, 0, 0, 0.6, 12, 0.6, "#9aa0a6"); M.add(new THREE.SphereGeometry(4, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), cx, ry + 12, cz, 2.2, 0, 0, 1, 0.35, 1, "#e9edf0");
+        pillar(cx, cz, 0.8, ry + 14);
+        for (k = 0; k < 6; k++) { a = k / 6 * 6.28; sandbags(cx + Math.cos(a) * 11, cz + Math.sin(a) * 11, 3.5, Math.abs(Math.cos(a)) > 0.7); }
+        house(cx + 14, cz - 4, 7, 5, 1, pi, true); house(cx - 12, cz + 8, 6, 5, 1, pi, true);
+        chests.push({ x: cx + 3, z: cz + 3, poi: pi }); spots(cx, cz, 6, 5, pi);
+      } else if (p.kind === "icelake") {   // лагерь на льду: рыбацкие домики
+        for (k = 0; k < 7; k++) {
+          a = rnd() * 6.28; x = cx + Math.cos(a) * (4 + rnd() * 18); z = cz + Math.sin(a) * (4 + rnd() * 18);
+          if (!free(x, z, 2.6)) continue;
+          var iy = height(x, z); M.add(B, x, iy + 1.2, z, 0, 0, 0, 2.6, 2.4, 2.6, pick(["#c43b32", "#2f6a8a", "#e8c31f", "#3f7a4a"]));
+          M.add(B, x, iy + 2.5, z, 0, 0, 0, 2.9, 0.25, 2.9, "#2a2e33");
+          solid(x - 1.3, x + 1.3, z - 1.3, z + 1.3, iy - 0.3, iy + 2.6); spots(x, z, 1.4, 2, pi);
+          if (rnd() < 0.4) chests.push({ x: x + 2.2, z: z, poi: pi });
+        }
       }
     });
     // одиночные фермерские домики и укрытия в поле
@@ -360,8 +472,9 @@ window.KP = window.KP || {};
     // Рельеф
     var tg = new THREE.PlaneGeometry(HALF * 2, HALF * 2, N - 1, N - 1); tg.rotateX(-Math.PI / 2);
     var pos = tg.attributes.position, cols = new Float32Array(pos.count * 3), col = new THREE.Color(), c2 = new THREE.Color();
-    var SAND = new THREE.Color("#cdb68a"), WETS = new THREE.Color("#9f8a63"), G1 = new THREE.Color("#4f7f34"), G2 = new THREE.Color("#6d9440"), DRY = new THREE.Color("#8f8f4c"),
-      ROCK = new THREE.Color("#7d7a73"), ROCK2 = new THREE.Color("#9a958b"), DIRT = new THREE.Color("#7a6449"), FOR = new THREE.Color("#3f6a2c");
+    var PAL = WIN ? ["#b9c4cc", "#7f8d96", "#eef3f6", "#e2e9ee", "#cdd8de", "#6f747a", "#8d949a", "#9aa2a8", "#d7e0e6"] : ["#cdb68a", "#9f8a63", "#4f7f34", "#6d9440", "#8f8f4c", "#7d7a73", "#9a958b", "#7a6449", "#3f6a2c"];
+    var SAND = new THREE.Color(PAL[0]), WETS = new THREE.Color(PAL[1]), G1 = new THREE.Color(PAL[2]), G2 = new THREE.Color(PAL[3]), DRY = new THREE.Color(PAL[4]),
+      ROCK = new THREE.Color(PAL[5]), ROCK2 = new THREE.Color(PAL[6]), DIRT = new THREE.Color(PAL[7]), FOR = new THREE.Color(PAL[8]), ICE = new THREE.Color("#a9d6e6");
     for (var v = 0; v < pos.count; v++) {
       var x = pos.getX(v), z = pos.getZ(v), jj = Math.round((x + HALF) / STEP), ii = Math.round((z + HALF) / STEP), h = H[ii * N + jj];
       pos.setY(v, h);
@@ -370,8 +483,8 @@ window.KP = window.KP || {};
       else if (h < 1.3) col.copy(SAND).lerp(G2, smoothstep(0.9, 1.3, h));
       else {
         col.copy(G1).lerp(G2, n1); col.lerp(DRY, smoothstep(0.55, 0.85, n2) * 0.7);
-        var fp = POIS[2]; if (Math.hypot(x - fp.x, z - fp.z) < fp.r + 10) col.lerp(FOR, 0.6);
-        POIS.forEach(function (p) { if (p.level !== undefined && p.kind !== "beach" && Math.hypot(x - p.x, z - p.z) < p.r * 0.8) col.lerp(p.kind === "city" || p.kind === "factory" || p.kind === "port" || p.kind === "dam" ? new THREE.Color("#8a8679") : DIRT, 0.55); });
+        POIS.forEach(function (fp) { if (fp.kind === "forest" && Math.hypot(x - fp.x, z - fp.z) < fp.r + 10) col.lerp(FOR, 0.6); if (fp.kind === "icelake" && Math.hypot(x - fp.x, z - fp.z) < fp.r + 6) col.copy(ICE).lerp(new THREE.Color("#ffffff"), n1 * 0.3); });
+        POIS.forEach(function (p) { if (p.level !== undefined && p.kind !== "beach" && p.kind !== "icelake" && Math.hypot(x - p.x, z - p.z) < p.r * 0.8) col.lerp(p.kind === "city" || p.kind === "factory" || p.kind === "port" || p.kind === "dam" ? new THREE.Color("#8a8679") : DIRT, 0.55); });
         if (sl > 0.45 || h > 14) { c2.copy(ROCK).lerp(ROCK2, n1); col.lerp(c2, Math.min(1, Math.max(smoothstep(0.45, 0.8, sl), smoothstep(14, 18, h)))); }
       }
       cols[v * 3] = col.r; cols[v * 3 + 1] = col.g; cols[v * 3 + 2] = col.b;
@@ -381,7 +494,7 @@ window.KP = window.KP || {};
     var terrain = new THREE.Mesh(tg, new THREE.MeshLambertMaterial({ vertexColors: true, map: gt }));
     terrain.receiveShadow = true; scene.add(terrain);
 
-    var water = new THREE.Mesh(new THREE.PlaneGeometry(1600, 1600, 1, 1), new THREE.MeshPhongMaterial({ color: "#1d7f96", specular: "#bfefff", shininess: 90, transparent: true, opacity: 0.86, map: TX.rock }));
+    var water = new THREE.Mesh(new THREE.PlaneGeometry(1600, 1600, 1, 1), new THREE.MeshPhongMaterial({ color: WIN ? "#2a5f78" : "#1d7f96", specular: "#bfefff", shininess: 90, transparent: true, opacity: 0.86, map: TX.rock }));
     water.material.map.repeat.set(160, 160);
     water.rotation.x = -Math.PI / 2; water.position.y = -0.25; scene.add(water);
 
@@ -395,11 +508,12 @@ window.KP = window.KP || {};
     for (var t = 0; t < 4000 && trees.length < maxTrees; t++) {
       var x2 = (rnd() * 2 - 1) * 175, z2 = (rnd() * 2 - 1) * 175, h2 = height(x2, z2);
       if (h2 < 0.9 || slope(x2, z2) > 0.6) continue;
-      var fp2 = POIS[2], inForest = Math.hypot(x2 - fp2.x, z2 - fp2.z) < fp2.r + 8;
+      var inForest = POIS.some(function (fp) { return fp.kind === "forest" && Math.hypot(x2 - fp.x, z2 - fp.z) < fp.r + 8; }) || (WIN && vnoise(x2 * 0.02 + 3, z2 * 0.02) > 0.55);
       if (!inForest && vnoise(x2 * 0.03 + 50, z2 * 0.03) < 0.5 && rnd() < 0.8) continue;
       if (POIS.some(function (p) { return p.kind !== "forest" && p.kind !== "beach" && Math.hypot(p.x - x2, p.z - z2) < p.r * 0.75; })) continue;
+      if (WIN && h2 < 0.5) continue;
       if (!free(x2, z2, 2.2)) continue;
-      var type = h2 < 2.4 && Math.hypot(x2, z2) > 118 ? "palm" : (h2 > 10 ? "pine" : (inForest && rnd() < 0.45 ? "pine" : "broad"));
+      var type = WIN ? "snowpine" : h2 < 2.4 && Math.hypot(x2, z2) > 118 ? "palm" : (h2 > 10 ? "pine" : (inForest && rnd() < 0.45 ? "pine" : "broad"));
       var tr = { x: x2, z: z2, r: 0.5, top: h2 + 7, y: h2, hp: 60, wood: 15, kind: "tree", type: type, s: 0.85 + rnd() * 0.45, rot: rnd() * 6.28 };
       addCol(tr); trees.push(tr); circles.push(tr);
     }
@@ -434,10 +548,13 @@ window.KP = window.KP || {};
       if (type === "broad") {
         m.add(new THREE.CylinderGeometry(0.18, 0.32, 3.2, 6), 0, 1.6, 0, 0, 0, 0, 1, 1, 1, "#5e4632");
         m.add(new THREE.CylinderGeometry(0.08, 0.12, 1.6, 5), 0.5, 2.9, 0, 0, 0, -0.7, 1, 1, 1, "#5e4632");
-        [[0, 4.3, 0, 1.9], [1.1, 3.8, 0.4, 1.4], [-0.9, 3.9, -0.5, 1.5], [0.2, 5.2, -0.3, 1.3]].forEach(function (b, i) { m.add(new THREE.IcosahedronGeometry(1, 1), b[0], b[1], b[2], i, i * 2, 0, b[3], b[3] * 0.85, b[3], ["#3f6e2e", "#4d7d34", "#466f2c", "#55853a"][i]); });
-      } else if (type === "pine") {
+        [[0, 4.3, 0, 1.9], [1.1, 3.8, 0.4, 1.4], [-0.9, 3.9, -0.5, 1.5], [0.2, 5.2, -0.3, 1.3]].forEach(function (b, i) { m.add(new THREE.IcosahedronGeometry(1, 0), b[0], b[1], b[2], i, i * 2, 0, b[3], b[3] * 0.85, b[3], ["#3f6e2e", "#4d7d34", "#466f2c", "#55853a"][i]); });
+      } else if (type === "pine" || type === "snowpine") {
         m.add(new THREE.CylinderGeometry(0.15, 0.28, 2.2, 6), 0, 1.1, 0, 0, 0, 0, 1, 1, 1, "#5a4330");
-        [[2.1, 2.4, 2.6], [3.6, 1.9, 2.2], [4.9, 1.4, 1.9], [6.0, 0.9, 1.6]].forEach(function (c, i) { m.add(new THREE.ConeGeometry(1, 1, 7), 0, c[0], 0, 0, i, 0, c[1], c[2], c[1], ["#2f5634", "#355e38", "#3a663c", "#3f6d40"][i]); });
+        [[2.1, 2.4, 2.6], [3.6, 1.9, 2.2], [4.9, 1.4, 1.9], [6.0, 0.9, 1.6]].forEach(function (c, i) {
+          m.add(new THREE.ConeGeometry(1, 1, 7), 0, c[0], 0, 0, i, 0, c[1], c[2], c[1], ["#2f5634", "#355e38", "#3a663c", "#3f6d40"][i]);
+          if (type === "snowpine") m.add(new THREE.ConeGeometry(1, 1, 7), 0, c[0] + c[2] * 0.22, 0, 0, i, 0, c[1] * 0.78, c[2] * 0.55, c[1] * 0.78, "#eef3f6");   // снег на лапах
+        });
       } else {   // пальма: изогнутый ствол + листья
         for (var s = 0; s < 6; s++) m.add(new THREE.CylinderGeometry(0.17 - s * 0.01, 0.2 - s * 0.01, 1.1, 6), s * s * 0.03, 0.55 + s * 1.0, 0, 0, 0, -0.05 - s * 0.03, 1, 1, 1, s % 2 ? "#8a7253" : "#7d6648");
         for (var f = 0; f < 7; f++) { var a = f / 7 * 6.28; m.add(new THREE.BoxGeometry(0.5, 0.05, 2.6), 0.75 + Math.sin(a) * 1.1, 6.2, Math.cos(a) * 1.1, -0.35, a, 0, 1, 1, 1, f % 2 ? "#4f8a3a" : "#5c9842"); }
@@ -446,8 +563,9 @@ window.KP = window.KP || {};
       return m.build();
     }
     var dummy = new THREE.Object3D(), treeMeshes = {}, barkMat = new THREE.MeshLambertMaterial({ vertexColors: true, map: TX.bark });
-    ["broad", "pine", "palm"].forEach(function (type) {
+    ["broad", "pine", "palm", "snowpine"].forEach(function (type) {
       var list = trees.filter(function (tr) { return tr.type === type; });
+      if (!list.length) return;   // пустой InstancedMesh без цветов ломает общий шейдер
       var im = new THREE.InstancedMesh(treeGeo(type), barkMat, Math.max(1, list.length));
       im.castShadow = true; im.receiveShadow = false;
       list.forEach(function (tr, k) {
@@ -485,11 +603,11 @@ window.KP = window.KP || {};
     // кусты (без коллизий) и трава
     var bushG = (function () { var m = new Merger(1); [[0, 0.5, 0, 0.8], [0.6, 0.4, 0.2, 0.6], [-0.5, 0.45, -0.2, 0.65]].forEach(function (b, i) { m.add(new THREE.IcosahedronGeometry(1, 0), b[0], b[1], b[2], i, i, 0, b[3], b[3] * 0.8, b[3], ["#3e6a2c", "#4a7832", "#567f38"][i]); }); return m.build(); })();
     var bushes = [], grass = [];
-    for (var bb = 0; bb < 3000 && bushes.length < (hi ? 420 : 220); bb++) { var bx = (rnd() * 2 - 1) * 170, bz = (rnd() * 2 - 1) * 170; if (height(bx, bz) > 1.2 && slope(bx, bz) < 0.45 && free(bx, bz, 1.2)) bushes.push([bx, height(bx, bz), bz, 0.45 + rnd() * 0.6]); }
+    for (var bb = 0; bb < 3000 && bushes.length < (WIN ? 120 : hi ? 420 : 220); bb++) { var bx = (rnd() * 2 - 1) * 170, bz = (rnd() * 2 - 1) * 170; if (height(bx, bz) > 1.2 && slope(bx, bz) < 0.45 && free(bx, bz, 1.2)) bushes.push([bx, height(bx, bz), bz, 0.45 + rnd() * 0.6]); }
     var bushM = new THREE.InstancedMesh(bushG, new THREE.MeshLambertMaterial({ vertexColors: true, map: TX.bark }), Math.max(1, bushes.length));
     bushes.forEach(function (b, k) { dummy.position.set(b[0], b[1] - 0.1, b[2]); dummy.rotation.set(0, k, 0); dummy.scale.set(b[3], b[3], b[3]); dummy.updateMatrix(); bushM.setMatrixAt(k, dummy.matrix); });
     scene.add(bushM);
-    if (hi) {
+    if (hi && !WIN) {
       var gg = new Merger(1);
       for (var bl = 0; bl < 5; bl++) { var ga = bl / 5 * 3.14; gg.add(new THREE.PlaneGeometry(0.07, 0.45), Math.cos(ga) * 0.12, 0.3, Math.sin(ga) * 0.12, 0.25 * (bl % 2 ? 1 : -1), ga, 0, 1, 1, 1, bl % 2 ? "#5d8a3a" : "#6f9a44"); }
       for (var gr = 0; gr < 9000 && grass.length < 3200; gr++) { var gx2 = (rnd() * 2 - 1) * 165, gz2 = (rnd() * 2 - 1) * 165, gh = height(gx2, gz2); if (gh > 1.4 && gh < 12 && slope(gx2, gz2) < 0.35 && vnoise(gx2 * 0.05, gz2 * 0.05) > 0.35) grass.push([gx2, gh, gz2]); }
@@ -497,8 +615,16 @@ window.KP = window.KP || {};
       grass.forEach(function (g3, k) { dummy.position.set(g3[0], g3[1] - 0.05, g3[2]); dummy.rotation.set(0, k, 0); var s3 = 0.6 + hash(k, 3) * 0.6; dummy.scale.set(s3, s3, s3); dummy.updateMatrix(); grassM.setMatrixAt(k, dummy.matrix); });
       scene.add(grassM);
     }
-    return { terrain: terrain, water: water, boxes: boxes, circles: circles, trees: trees, rocks: rocks, crates: crates, chests: chests, lootSpots: lootSpots, pois: POIS, anim: anim };
+    return { root: scene, grass: typeof grassM !== "undefined" ? grassM : null, bushes: bushM, terrain: terrain, water: water, boxes: boxes, circles: circles, trees: trees, rocks: rocks, crates: crates, chests: chests, lootSpots: lootSpots, pois: POIS, anim: anim };
   }
 
-  KP.world = { HALF: HALF, IR: IR, height: height, slope: slope, build: build, query: query, addCol: addCol, removeCol: removeCol, POIS: POIS, LAKE: LAKE, vnoise: vnoise, H: H, N: N, STEP: STEP };
+  function vehSpots() {
+    if (mapId === "isle") return null;
+    var land = [], water = [];
+    POIS.forEach(function (p, i) { var a = i * 1.7; land.push([i % 3 === 0 ? "buggy" : "quad", p.x + Math.cos(a) * (p.r + 6), p.z + Math.sin(a) * (p.r + 6)]); });
+    for (var k = 0; k < 6; k++) { var a2 = k / 6 * 6.28 + 0.3; water.push([Math.cos(a2) * 172, Math.sin(a2) * 172]); }
+    return { land: land, water: water };
+  }
+  KP.world = { MAPS: MAPS, load: load, VEH: vehSpots, HALF: HALF, IR: IR, height: height, slope: slope, build: build, query: query, addCol: addCol, removeCol: removeCol, POIS: POIS, LAKE: LAKE, vnoise: vnoise, H: H, N: N, STEP: STEP, map: mapId };
+  load("isle");
 })(window.KP);

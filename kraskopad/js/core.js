@@ -56,7 +56,18 @@ window.KP = window.KP || {};
     { suit: "#1b4a5a", pants: "#163c4a", vest: "#2a7a8a", vest2: "#f2d27a", skin: "#c88a62", helm: "hair", helmCol: "#e0c27a", prem: 28, lvl: 55 },
     { f: true, suit: "#22252a", pants: "#1c1e22", vest: "#33373d", vest2: "#5a5f66", skin: "#f0c8aa", helm: "hair", helmCol: "#121212", prem: 38, lvl: 60 },
     { suit: "#f2f4f6", pants: "#d8dde2", vest: "#ffffff", vest2: "#ff3d8b", skin: "#e0ae8c", helm: "helmet", helmCol: "#ffffff", pass: 45 },
-    { f: true, suit: "#dfe3e8", pants: "#b9c0c8", vest: "#f2f4f6", vest2: "#ffc531", skin: "#efc6a8", helm: "helmet", helmCol: "#ffc531", ch: "win10" }
+    { f: true, suit: "#dfe3e8", pants: "#b9c0c8", vest: "#f2f4f6", vest2: "#ffc531", skin: "#efc6a8", helm: "helmet", helmCol: "#ffc531", ch: "win10" },
+    /* сезон 2 «Северное сияние» */
+    { suit: "#c43b32", pants: "#2a2d31", vest: "#e9edf0", vest2: "#c43b32", skin: "#e0b294", helm: "hood", helmCol: "#e9edf0", pass: 2, s: 2 },
+    { f: true, suit: "#1d3a4a", pants: "#16283a", vest: "#2a8a7a", vest2: "#8cf0c8", skin: "#f0c8aa", helm: "hair", helmCol: "#bfe8ff", pass: 8, s: 2 },
+    { suit: "#e8ecef", pants: "#cfd5da", vest: "#9aa2a8", vest2: "#3a3f46", skin: "#d8a888", helm: "mask", helmCol: "#f2f4f6", pass: 12, s: 2 },
+    { suit: "#2a2d31", pants: "#1c1e22", vest: "#b8322a", vest2: "#e8c31f", skin: "#c48d6c", helm: "helmet", helmCol: "#b8322a", pass: 16, s: 2 },
+    { f: true, suit: "#9fb4c4", pants: "#6f8496", vest: "#dfe8ee", skin: "#f2d0b8", helm: "hood", helmCol: "#dfe8ee", pass: 22, s: 2 },
+    { f: true, suit: "#1c1830", pants: "#141022", vest: "#5a3fa8", vest2: "#7dffb0", skin: "#e8b898", helm: "helmet", helmCol: "#7dffb0", pass: 30, s: 2 },
+    { suit: "#5b6168", pants: "#3b4046", vest: "#cfd5da", vest2: "#2fd6ff", skin: "#d6a283", helm: "cap", helmCol: "#2fd6ff", pass: 38, s: 2 },
+    { f: true, suit: "#bfe8ff", pants: "#8fb8d0", vest: "#e9f6ff", vest2: "#7fd3ff", skin: "#f4d8c4", helm: "hair", helmCol: "#f4f8fb", prem: 10, lvl: 45, s: 2 },
+    { suit: "#3d4a3a", pants: "#2f3a2c", vest: "#e9edf0", vest2: "#5d6e44", skin: "#c88a62", helm: "hat", helmCol: "#e9edf0", prem: 24, lvl: 52, s: 2 },
+    { suit: "#e9f6ff", pants: "#bfe8ff", vest: "#ffffff", vest2: "#7fd3ff", skin: "#e8c4a8", helm: "helmet", helmCol: "#bfe8ff", pass: 50, s: 2 }
   ];
   var PAINTS = [
     { c: "#ff3d8b", lvl: 1 }, { c: "#2f9bff", lvl: 1 }, { c: "#7be03a", lvl: 3 }, { c: "#ff8a1f", lvl: 5 },
@@ -66,6 +77,9 @@ window.KP = window.KP || {};
     solo: { n: 25, zone: [[60, 35, 110, 1], [40, 30, 65, 2], [30, 25, 36, 4], [25, 20, 18, 7], [20, 18, 7, 10], [12, 15, 0, 16]], r0: 200 },
     trio: { n: 24, team: 3, zone: [[60, 35, 110, 1], [40, 30, 65, 2], [30, 25, 36, 4], [25, 20, 18, 7], [20, 18, 7, 10], [12, 15, 0, 16]], r0: 200 },
     train: { n: 9, zone: [], r0: 230, train: true },
+    cap: { n: 16, team: 8, rules: "cap", arena: 70, zone: [], r0: 70 },
+    tdm: { n: 24, team: 12, rules: "tdm", arena: 85, zone: [], r0: 85 },
+    lr: { n: 16, rules: "lr", zone: [[6, 16, 32, 3], [5, 14, 12, 6], [4, 12, 0, 12]], r0: 62 },
     tutor: { n: 4, zone: [], r0: 230, train: true, tutor: true },
     event: { n: 20, zone: [[50, 30, 95, 1], [35, 26, 55, 2], [26, 22, 30, 4], [22, 18, 14, 7], [16, 15, 5, 10], [10, 12, 0, 16]], r0: 200 },
     quick: { n: 12, zone: [[40, 22, 70, 2], [24, 18, 40, 3], [18, 15, 20, 6], [14, 12, 8, 10], [10, 10, 0, 16]], r0: 130 }
@@ -257,7 +271,8 @@ window.KP = window.KP || {};
     if (c.mesh) { c.mesh.userData.lid.rotation.x = -1.2; c.mesh.userData.lid.position.z = -0.35; }
     burst(c.x, c.y + 1, c.z, "#ffd84a", 12, 6);
     var a = rnd() * 6.28;
-    spawnLoot(c.x + Math.cos(a) * 1.2, c.z + Math.sin(a) * 1.2, randomWeapon(1, c.poi >= 0 && W3.POIS[c.poi] ? W3.POIS[c.poi].bias : null));
+    spawnLoot(c.x + Math.cos(a) * 1.2, c.z + Math.sin(a) * 1.2, randomWeapon(c.legend ? 3 : 1, c.poi >= 0 && W3.POIS[c.poi] ? W3.POIS[c.poi].bias : null));
+    if (c.legend) { spawnLoot(c.x + Math.cos(a + 4) * 1.4, c.z + Math.sin(a + 4) * 1.4, randomWeapon(3)); spawnLoot(c.x + Math.cos(a + 1) * 1.4, c.z + Math.sin(a + 1) * 1.4, { t: "i", id: "big", n: 1 }); if (ch) ch.drops = (ch.drops || 0) + 1; }
     spawnLoot(c.x + Math.cos(a + 2) * 1.2, c.z + Math.sin(a + 2) * 1.2, randomItem());
     if (ch) { ch.wood = Math.min(500, ch.wood + 10); ch.chests = (ch.chests || 0) + 1; }
     KP.sfx && KP.sfx("chest", c.x, c.z);
@@ -310,7 +325,7 @@ window.KP = window.KP || {};
   }
   KP.makeChar = makeChar;
 
-  function damage(ch, d, by, kind) {
+  function damage(ch, d, by, kind, wid) {
     if (!ch.alive || d <= 0) return;
     if (by && by !== ch && by.team === ch.team) return;   // по своим урона нет
     if (ch.isPlayer && window.__shotGod) d *= 0.05;   // только для сцен скриншотов (?shot=)
@@ -320,7 +335,11 @@ window.KP = window.KP || {};
     var real = d;
     if (kind !== "zone" && ch.sh > 0) { var a = Math.min(ch.sh, d); ch.sh -= a; d -= a; }
     ch.hp -= d; ch.healT = 0;
-    if (by && by !== ch) { ch.lastHitBy = by; ch.hitT = G.time; by.dmg += real; }
+    if (by && by !== ch) {
+      ch.lastHitBy = by; ch.hitT = G.time; by.dmg += real;
+      var wk = wid !== undefined ? wid : kind === "melee" ? 0 : kind; ch.lastWid = wk;   // статистика по оружию
+      by.dmgW = by.dmgW || {}; by.dmgW[wk] = (by.dmgW[wk] || 0) + real;
+    }
     if (KP.onHit) KP.onHit(ch, real, by, kind);
     if (ch.ai && by && by !== ch && KP.aiHurt) KP.aiHurt(ch, by);
     if (ch.hp <= 0) knockout(ch, by, kind);
@@ -335,7 +354,7 @@ window.KP = window.KP || {};
       var tl = {}; G.chars.forEach(function (c) { if (c.alive) tl[c.team] = 1; });
       G.teamPlace = G.teamPlace || {}; G.teamPlace[ch.team] = Object.keys(tl).length + 1;
     }
-    if (by && by !== ch && kind !== "zone") by.kos++;
+    if (by && by !== ch && kind !== "zone") { by.kos++; by.koW = by.koW || {}; var kw = ch.lastWid !== undefined ? ch.lastWid : "x"; by.koW[kw] = (by.koW[kw] || 0) + 1; ch.koWid = kw; }
     // всё выпадает
     var k = 0;
     for (var i = 1; i <= 4; i++) if (ch.slots[i]) { var a = (k++) * 1.3; spawnLoot(ch.x + Math.cos(a) * 1.4, ch.z + Math.sin(a) * 1.4, { t: "w", id: ch.slots[i].id, r: ch.slots[i].r }); }
@@ -360,7 +379,8 @@ window.KP = window.KP || {};
     var mx = ch.x + Math.sin(ch.yaw) * fwd - Math.cos(ch.yaw) * 0.12, my = ch.y + 1.3, mz = ch.z + Math.cos(ch.yaw) * fwd + Math.sin(ch.yaw) * 0.12;
     var dx = tx - mx, dy = ty - my, dz = tz - mz, L = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
     dx /= L; dy /= L; dz /= L;
-    var spr = w.spr * (ch.onGround ? 1 : 1.6) * (ch.aiming && !w.pel ? 0.55 : 1) * (1 + (ch.bloom || 0)) * (Math.hypot(ch.mvx, ch.mvz) > 3 ? 1.25 : 1) * Math.PI / 180;
+    if (ch.rollT > 0) return false;
+    var spr = w.spr * (ch.onGround ? 1 : 1.6) * (ch.crouch ? 0.7 : 1) * (ch.aiming && !w.pel ? 0.55 : 1) * (1 + (ch.bloom || 0)) * (Math.hypot(ch.mvx, ch.mvz) > 3 ? 1.25 : 1) * Math.PI / 180;
     ch.bloom = Math.min(w.maxB || 0, (ch.bloom || 0) + (w.bloom || 0));
     var n = w.pel || 1, col = paintColor(ch.paint), dm = w.dmg * RAR[s.r].m;
     for (var i = 0; i < n; i++) {
@@ -417,7 +437,7 @@ window.KP = window.KP || {};
     G.chars.forEach(function (o) {
       if (o === ch || !o.alive || o.state !== "ground") return;
       var dx = o.x - ch.x, dz = o.z - ch.z, d = Math.hypot(dx, dz);
-      if (d < 2.8 && Math.abs(o.y - ch.y) < 2 && (dx * fx + dz * fz) / (d || 1) > 0.4) { damage(o, 20, ch, "melee"); hit = true; }
+      if (d < 2.8 && Math.abs(o.y - ch.y) < 2 && (dx * fx + dz * fz) / (d || 1) > 0.4) { damage(o, 20, ch, "melee", 0); hit = true; }
     });
     var px = ch.x + fx * 1.6, pz = ch.z + fz * 1.6, near = W3.query(px - 1.6, pz - 1.6, px + 1.6, pz + 1.6);
     for (var i = 0; i < near.length; i++) {
@@ -471,7 +491,7 @@ window.KP = window.KP || {};
     G.chars.forEach(function (o) {
       if (!o.alive || o.state !== "ground") return;
       var d = Math.hypot(o.x - x, o.y + 1 - y, o.z - z);
-      if (d < R) damage(o, p.dmg * (1 - 0.6 * d / R) * (o === p.owner ? 0.35 : 1), p.owner, "splash");
+      if (d < R) damage(o, p.dmg * (1 - 0.6 * d / R) * (o === p.owner ? 0.35 : 1), p.owner, "splash", p.thr ? "gren" : 6);
     });
     var near = W3.query(x - R, z - R, x + R, z + R);
     near.forEach(function (c) { if ((c.kind === "wall" || c.kind === "ramp") && x > c.x0 - R && x < c.x1 + R && z > c.z0 - R && z < c.z1 + R) hurtBuild(c, p.dmg * 2); });
@@ -489,11 +509,11 @@ window.KP = window.KP || {};
       // персонажи
       for (var k = 0; k < G.chars.length; k++) {
         var o = G.chars[k]; if (!o.alive || o === p.owner || o.state === "plane") continue;
-        var cx = o.x, cy = o.y + 1.05, cz = o.z;
+        var cx = o.x, cy = o.y + (o.crouch ? 0.75 : 1.05), cz = o.z;
         var ux = nx - p.x, uy = ny - p.y, uz = nz - p.z, wx = cx - p.x, wy = cy - p.y, wz = cz - p.z;
         var tt = Math.max(0, Math.min(1, (wx * ux + wy * uy + wz * uz) / (segL * segL || 1)));
         var qx = p.x + ux * tt - cx, qy = p.y + uy * tt - cy, qz = p.z + uz * tt - cz;
-        var rad = o.isPlayer ? 0.75 : 0.85;
+        var rad = (o.isPlayer ? 0.75 : 0.85) * (o.rollT > 0 ? 0.6 : o.crouch ? 0.85 : 1);
         if (qx * qx + qy * qy * 0.45 + qz * qz < rad * rad && tt < hitT) { hitT = tt; hitC = o; }
       }
       // дома и постройки
@@ -518,7 +538,7 @@ window.KP = window.KP || {};
         if (p.thr === "smoke") smokeAt(hx, hy, hz);
         else if (p.thr === "pop") popWall(hx, hz, p.owner);
         else if (p.splash) explode(p, hx, hy, hz);
-        else if (hitC) { damage(hitC, p.dmg, p.owner, "shot"); burst(hx, hy, hz, p.col, 5, 5); KP.sparks && KP.sparks(hx, hy, hz, hitC.sh > 0 ? 6 : 3, hitC.sh > 0 ? "#8fdcff" : undefined); }
+        else if (hitC) { damage(hitC, p.dmg, p.owner, "shot", p.wid); burst(hx, hy, hz, p.col, 5, 5); KP.sparks && KP.sparks(hx, hy, hz, hitC.sh > 0 ? 6 : 3, hitC.sh > 0 ? "#8fdcff" : undefined); }
         else if (hitB) { if (hitB.kind === "wall" || hitB.kind === "ramp") hurtBuild(hitB, p.dmg); burst(hx, hy, hz, p.col, 4, 4); KP.sparks && KP.sparks(hx, hy, hz, 3); }
         else if (hitProp) { burst(hx, hy, hz, p.col, 3, 4); }
         else { splat(hx, gh, hz, p.col, p.wid === 3 ? 0.25 : 0.4); burst(hx, gh + 0.1, hz, p.col, 2, 3); KP.sparks && KP.sparks(hx, gh + 0.1, hz, 2); }
