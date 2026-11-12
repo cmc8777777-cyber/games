@@ -403,6 +403,7 @@ var PF=(function(){var y=null,pl=null,cdirty=null,ctm=0,ok=false,ready=false,wan
   return new Promise(function(res){var tm=setTimeout(res,4000);
    try{window.YaGames.init().then(function(sdk){y=sdk;ok=true;try{sdk.on('game_api_pause',function(){apiP=true;ch()});sdk.on('game_api_resume',function(){apiP=false;ch()})}catch(e){}tryReady();try{sdk.getPlayer({scopes:false}).then(function(p){pl=p},function(){})}catch(e){}clearTimeout(tm);res()},function(){clearTimeout(tm);res()})}catch(e){clearTimeout(tm);res()}})};
  /* облачное сохранение: player.setData (через 1,5 с после последнего изменения и при сворачивании); без SDK/входа — только localStorage */
+ self.lastMv=function(){return lastMv};
  self.cloudGet=function(){if(!ok)return Promise.resolve(null);return new Promise(function(res){var tm=setTimeout(function(){res(null)},3000);
   function go(){if(!pl){clearTimeout(tm);res(null);return}try{pl.getData(['mv','pm']).then(function(d){clearTimeout(tm);if(d&&d.mv)lastMv=d.mv;res(d&&(d.mv||d.pm)?{mv:d.mv||null,pm:d.pm||null}:null)},function(){clearTimeout(tm);res(null)})}catch(e){clearTimeout(tm);res(null)}}
   if(pl)go();else setTimeout(go,300)})};
@@ -474,7 +475,7 @@ function fresh(){return{day:1,food:150,ants:{work:18,sold:5,nurse:7},brood:[0,0,
  ch:{store:1,nursery:1,dorm:1,barracks:0,farm:0},project:null,forecast:null,knowl:1,hedge:{},winters:0,
  last:null,log:[],ads:0,goalsOk:[]}}
 var BESTV=0;
-function cloudPush(sv){var d={t:Date.now(),save:sv,best:BESTV};try{localStorage.setItem(SAVE+'-t',String(d.t))}catch(e){}PF.cloudSet(d)}
+function cloudPush(sv){var lm=PF.lastMv&&PF.lastMv();if(sv&&sv.day<=3&&lm&&lm.save&&lm.save.day>sv.day)return;/* не затирать облачный прогресс почти пустой новой партией (облако ответило поздно / новое устройство) */var d={t:Date.now(),save:sv,best:BESTV};try{localStorage.setItem(SAVE+'-t',String(d.t))}catch(e){}PF.cloudSet(d)}
 function save(){try{localStorage.setItem(SAVE,JSON.stringify(s))}catch(e){}cloudPush(s)}
 function load(){try{var t=localStorage.getItem(SAVE);if(!t)return null;var o=JSON.parse(t);if(o&&o.ants&&o.day)return o}catch(e){}return null}
 function sOf(d){return Math.floor(((d-1)%40)/10)}
@@ -644,7 +645,7 @@ function newGame(){s=fresh();over=false;busy=false;Q=[];tab='tasks';save();$('mo
  enq(function(done){info(TX('s260'),TX('s261'),done,TX('s262'))})}
 function start(){PF.cloudGet().then(function(c){try{var pmc=c&&c.pm;c=c?c.mv:null;if(pmc&&window.Premium){var lp=localStorage.getItem('muraveynik-premium');localStorage.setItem('muraveynik-premium',Premium.mergeState(lp,pmc))}}catch(e){}try{var lt=+localStorage.getItem(SAVE+'-t')||0,lb=+localStorage.getItem(BEST)||0;
  if(c){if(c.best>lb){localStorage.setItem(BEST,String(c.best))}
-  if(c.t>lt){if(c.save)localStorage.setItem(SAVE,JSON.stringify(c.save));else localStorage.removeItem(SAVE);localStorage.setItem(SAVE+'-t',String(c.t))}}
+  var lsv=null;try{lsv=load()}catch(e){}var freshLocal=!!(lsv&&lsv.day<=3&&c.save&&c.save.day>lsv.day);if(c.t>lt||freshLocal){if(c.save)localStorage.setItem(SAVE,JSON.stringify(c.save));else localStorage.removeItem(SAVE);localStorage.setItem(SAVE+'-t',String(c.t))}}
  BESTV=Math.max(lb,c&&c.best||0)}catch(e){}start2()},start2)}
 var PMT={ru:{perks:["Полноэкранная реклама отключается.","При нажатии на кнопку с роликом награда выдаётся сразу, без просмотра.","Подсказки и игровые лимиты остаются прежними."],
  note:"Оплата один раз. Премиум действует 30 дней или год — в зависимости от выбранного товара. Автопродления и повторных списаний нет.",
