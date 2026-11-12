@@ -103,8 +103,8 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
 .pick .nm{font-family:var(--f-cyr);font-size:14px;line-height:1.05;text-align:center;hyphens:auto}
 .pick .pr{display:flex;align-items:center;gap:3px;font-family:var(--f-display);font-size:13px;font-weight:700;color:var(--gold)}
 .pick .pr img{width:13px;height:13px;margin:0}
-.pick:disabled{opacity:.5}
-.pick:disabled .pr{color:var(--accent)}
+.pick:disabled,.pick.cant{opacity:.5}
+.pick:disabled .pr,.pick.cant .pr{color:var(--accent)}
 .fact{font-size:13px;line-height:1.4;color:var(--muted);margin:6px 0 0}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
 .act{min-height:48px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;gap:4px}
@@ -663,15 +663,29 @@ function mkEnemy(e, isBoss){
   });
 }
 const XPROF = [
-  [/пушк|тюфяк|артилл|пищал|мортир/, {cost:170, range:180, dmg:70, cd:2.4, splash:44, proj:'stone', bonusVs:{armor:1.5}, look:['machine','none','stone'], note:'Ядро бьёт по площади'}],
-  [/танк|самол/, {cost:200, range:170, dmg:60, cd:1.4, splash:36, proj:'bullet', look:['machine','none','bullet'], note:'Бьёт далеко и по площади'}],
-  [/требуш|катапул|баллист/, {cost:160, range:200, dmg:60, cd:2.3, splash:42, proj:'stone', look:['machine','none','stone'], note:'Камни летят далеко и бьют по площади'}],
-  [/арбалет|самостр/, {cost:110, range:150, dmg:30, cd:1.1, proj:'bolt', bonusVs:{armor:1.3}, look:['human','crossbow','bolt'], note:'Болт пробивает доспех'}],
-  [/пулем|винтов|ружь|автомат|мушкет|стрельц|штык|полк/, {cost:140, range:150, dmg:26, cd:0.6, proj:'bullet', look:['human','musket','bullet'], note:'Частая стрельба издалека'}],
-  [/гуляй/, {cost:150, range:140, dmg:34, cd:0.9, proj:'bullet', look:['machine','none','bullet'], note:'Подвижная крепость с пищалями'}],
-  [/рыцар|латни|катафракт|стремен|конниц/, {cost:130, range:85, dmg:44, cd:1.3, proj:null, look:['rider','spear',null], note:'Тяжёлый удар в ближнем бою'}],
+  [/пушк|тюфяк|артилл|пищал|мортир|cannon|bombard/, {cost:170, range:180, dmg:70, cd:2.4, splash:44, proj:'stone', bonusVs:{armor:1.5}, look:['machine','none','stone'], note:'Ядро бьёт по площади'}],
+  [/танк|самол|tank|plane/, {cost:200, range:170, dmg:60, cd:1.4, splash:36, proj:'bullet', look:['machine','none','bullet'], note:'Бьёт далеко и по площади'}],
+  [/требуш|катапул|баллист|trebuchet|catapult|ballist/, {cost:160, range:200, dmg:60, cd:2.3, splash:42, proj:'stone', look:['machine','none','stone'], note:'Камни летят далеко и бьют по площади'}],
+  [/арбалет|самостр|crossbow/, {cost:110, range:150, dmg:30, cd:1.1, proj:'bolt', bonusVs:{armor:1.3}, look:['human','crossbow','bolt'], note:'Болт пробивает доспех'}],
+  [/пулем|винтов|ружь|автомат|мушкет|стрельц|штык|полк|machine gun|rifle|musket|strelts|bayonet|regiment/, {cost:140, range:150, dmg:26, cd:0.6, proj:'bullet', look:['human','musket','bullet'], note:'Частая стрельба издалека'}],
+  [/гуляй|fortress/, {cost:150, range:140, dmg:34, cd:0.9, proj:'bullet', look:['machine','none','bullet'], note:'Подвижная крепость с пищалями'}],
+  [/рыцар|латни|катафракт|стремен|конниц|knight|cataphract|stirrup|cavalry/, {cost:130, range:85, dmg:44, cd:1.3, proj:null, look:['rider','spear',null], note:'Тяжёлый удар в ближнем бою'}],
   [/./, {cost:130, range:90, dmg:40, cd:1.2, proj:null, look:['human','sword',null], note:'Сильный удар в ближнем бою'}]
 ];
+// рисунки Художника (12.11): имя файла art/web/fighters/<имя>.webp по названию оружия; нет рисунка — вид кодом
+const XART = [[/тюфяк|early cannon/, 'tyufyak'], [/пищал|hand cannon/, 'pishchal'], [/пушк|cannon/, 'cannon'], [/танк|tank/, 'tank'], [/самол|plane/, 'plane'],
+  [/пулем|machine gun/, 'machinegun'], [/стрельц|strelts/, 'strelets'], [/штык|bayonet/, 'bayonet'], [/арбалет|самостр|crossbow/, 'crossbowman'],
+  [/рыцар|латни|knight/, 'knight_plate'], [/гуляй|fortress/, 'gulyay_gorod'], [/требуш|катапул|trebuchet|catapult/, 'trebuchet']];
+const XIMG = {};
+function xImg(name){
+  const n = String(name || '').toLowerCase(), hit = XART.find(([re]) => re.test(n)); if (!hit) return null;
+  const f = hit[1];
+  if (!XIMG[f]) { const im = new Image(); XIMG[f] = im;
+    // загрузилась — перерисовать бойцов открытой битвы (до этого он нарисован кодом)
+    im.onload = () => { if (B && !SIM && TOWER_ORDER.some(k => DEFS[k].xImg === f)) { buildSprites(); buildIcons(); buildBattleUI(); refreshUI(); } };
+    im.src = 'art/web/fighters/' + f + '.webp'; }
+  return f;
+}
 function xSprite(look, own){
   const [kind, weapon, proj] = look, all = [].concat(own, ...Object.values(window.BATTLES || {}).map(b => b.defenders || []));
   const m = all.find(d => d.sprite && d.sprite.kind === kind && d.sprite.weapon === weapon) || all.find(d => d.sprite && d.sprite.kind === kind && d.proj === proj) || all.find(d => d.sprite && d.sprite.kind === kind) || own[0];
@@ -680,7 +694,7 @@ function xSprite(look, own){
 function xDef(l, i, own){
   const p = (XPROF.find(([re]) => re.test(String(l.name || '').toLowerCase())) || XPROF[XPROF.length - 1])[1];
   return Object.assign({id:'x' + i, name:l.name, cost:p.cost, range:p.range, dmg:p.dmg, cd:p.cd, splash:p.splash || 0, proj:p.proj, bonusVs:p.bonusVs || {}, special:null,
-    note:T(p.note), fact:T('Оружие другой эпохи: ') + (l.line || ''), sprite:xSprite(p.look, own), xtra:true});
+    note:T(p.note), fact:T('Оружие другой эпохи: ') + (l.line || ''), sprite:xSprite(p.look, own), xImg:xImg(l.name), xtra:true});
 }
 function dmgMul(t, d){
   const bv = t.bonusVs || {}; let m = 1;
@@ -910,6 +924,7 @@ function gateNotify(){
   const now = TOWER_ORDER.filter(k => GATE[k] === G.wave + 1);
   if (now.length) toast(now.map(k => icT(k)).join('') + '<b>' + T('Открыто: ') + now.map(k => esc(DEFS[k].name)).join(', ') + '!</b> ' + T('Оружие другой эпохи — в ряду внизу. Ставь его на кружок у дороги.'), 7);
 }
+function noCoins(k){ toast(icT(k)+'<b>'+esc(DEFS[k].name)+': '+T('не хватает монет')+'.</b> '+T('Нужно {n}, у тебя {m}.').replace('{n}', DEFS[k].cost).replace('{m}', G.coins), 3.5); }
 function build(pad, type){
   const def = DEFS[type];
   const free = G.fTok.unit > 0;   // «Ветеран» с Колеса Фортуны: один воин даром (при продаже за него ничего не вернут)
@@ -1081,6 +1096,11 @@ function tinted(src,col){ const c = cnv(src.width,src.height,1), g = c.getContex
 function blob(size,stops){ const c = cnv(size,size,1), g = c.getContext('2d'), r=size/2, gr = g.createRadialGradient(r,r,0,r,r,r); for (const [o,col] of stops) gr.addColorStop(o,col); g.fillStyle=gr; g.fillRect(0,0,size,size); return c; }
 // рисунок юнита: особый (для битвы) или по полям sprite
 function spriteFor(id, unit, isDef){
+  const xi = isDef && unit && unit.xImg && XIMG[unit.xImg];
+  if (xi && xi.complete && xi.naturalWidth) {
+    const k = Math.min(60 / xi.naturalWidth, 56 / xi.naturalHeight), dw = xi.naturalWidth * k, dh = xi.naturalHeight * k;
+    return {draw:g => g.drawImage(xi, -dw/2, 6 - dh, dw, dh), w:68, h:66, ay:60, top:52, foot:7, scale:1, special:true};
+  }
   const ov = TH.spriteDraw[B.id] && TH.spriteDraw[B.id][id];
   if (ov) { const [w,h,ay,top,foot] = ov.box; return {draw:ov.draw, w, h, ay, top:top || 40, foot:foot == null ? 7 : foot, scale:ov.scale || 1, special:true}; }
   const s = (unit && unit.sprite) || {}, bx = TH.figBox(s), sc = (+s.size || 1) * (isDef ? 1.1 : 1.02), era = B.era;
@@ -1523,7 +1543,8 @@ function renderSheet(){
     let h = '<h3><span>'+(free ? T('Ветеран Фортуны — даром!') : T('Кого поставить?'))+T('</span><button data-close aria-label="Закрыть">×</button></h3><div class="grid3">');
     for (const k of TOWER_ORDER){ const d = DEFS[k];
       const op = towerOpen(k);
-      h += '<button class="pick'+(op ? '' : ' gated')+'" data-b="'+esc(k)+'"'+(!op || G.coins<d.cost&&!free?' disabled':'')+'>'+icT(k)+'<span class="nm'+nmLong(d.name)+'">'+esc(d.name)+'</span><span class="pr">'+(!op ? '🔒 '+esc(gateText(k)) : free ? T('даром') : icCoin()+d.cost)+'</span></button>'; }
+      const poor = op && G.coins < d.cost && !free;
+      h += '<button class="pick'+(op ? '' : ' gated')+(poor ? ' cant' : '')+'" data-b="'+esc(k)+'"'+(!op ? ' disabled' : poor ? ' aria-disabled="true"' : '')+'>'+icT(k)+'<span class="nm'+nmLong(d.name)+'">'+esc(d.name)+'</span><span class="pr">'+(!op ? '🔒 '+esc(gateText(k)) : free ? T('даром') : icCoin()+d.cost)+'</span></button>'; }
     s.innerHTML = h + '</div>';
   } else {
     s.dataset.mode = 'tower';
@@ -1543,7 +1564,7 @@ function closeSheet(){ G.sel = -1; ui.sheet.hidden = true; ui.sheet.dataset.mode
 ui.sheet.addEventListener('click', ev => {
   const b = ev.target.closest('button'); if (!b) return;
   if (b.hasAttribute('data-close')) closeSheet();
-  else if (b.dataset.b) { const k = b.dataset.b, fresh = !G.enc[k]; if (build(G.sel, k)) { closeSheet(); builtToast(k, fresh); } }
+  else if (b.dataset.b) { const k = b.dataset.b, fresh = !G.enc[k]; if (build(G.sel, k)) { closeSheet(); builtToast(k, fresh); } else if (towerOpen(k) && G.coins < DEFS[k].cost && !(G.fTok.unit > 0)) noCoins(k); }
   else if (b.dataset.art) { const id = b.dataset.art; closeSheet(); showArticle(id); }
   else if (b.hasAttribute('data-up')) { upgrade(G.sel); renderSheet(); }
   else if (b.hasAttribute('data-sell')) { sell(G.sel); closeSheet(); }
@@ -1942,7 +1963,7 @@ ui.roster.addEventListener('click', ev => {
   if (b.dataset.l !== undefined) { const d = LOCKED[+b.dataset.l]; closeSheet(); toast(img(IC['l_'+b.dataset.l])+'<b>'+esc(d.name)+':</b> '+esc(d.line)+T(' Построить нельзя.')); return; }
   const k = b.dataset.t, d = DEFS[k];
   if (!towerOpen(k)) { closeSheet(); toast(icT(k)+'<b>'+esc(d.name)+': '+esc(gateText(k))+'.</b> '+esc(d.fact || ''), 5); return; }
-  if (G.sel >= 0 && !G.towers[G.sel]) { const fresh = !G.enc[k]; if (build(G.sel, k)) { closeSheet(); builtToast(k, fresh); } return; }
+  if (G.sel >= 0 && !G.towers[G.sel]) { const fresh = !G.enc[k]; if (build(G.sel, k)) { closeSheet(); builtToast(k, fresh); } else if (G.coins < d.cost && !(G.fTok.unit > 0)) noCoins(k); return; }
   toast(icT(k)+'<b>'+esc(d.name)+' · '+icCoin()+d.cost+'.</b> '+esc(d.note || '')+'. '+esc(d.fact || '')+T(' <br>Нажми на кружок у дороги, чтобы поставить.'), 5);
 });
 ui.ab.forEach(b => b.addEventListener('click', () => {
