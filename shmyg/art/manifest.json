@@ -1,1 +1,14 @@
-{}
+{
+ "hero-courier": "art/hero-courier.webp",
+ "hero-dragon": "art/hero-dragon.webp",
+ "hero-golden": "art/hero-golden.webp",
+ "hero-samurai": "art/hero-samurai.webp",
+ "hero-sporty": "art/hero-sporty.webp",
+ "thief-run": "art/thief-run.webp",
+ "world-dunes-h": "art/world-dunes-h.webp",
+ "world-dunes-v": "art/world-dunes-v.webp",
+ "world-snow-h": "art/world-snow-h.webp",
+ "world-snow-v": "art/world-snow-v.webp",
+ "world-town-h": "art/world-town-h.webp",
+ "world-town-v": "art/world-town-v.webp"
+}

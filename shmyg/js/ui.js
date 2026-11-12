@@ -192,7 +192,7 @@
   }
   var SKIN_GROUPS = [["coins", ["start", "coins"]], ["tasks", ["task"]], ["gifts", ["world", "days"]], ["videos", ["ads"]], ["special", ["buy"]]];
   function panelSkins(body) {
-    THUMBS.onOne = function (id, url) { var im = document.querySelector('#panel img[data-th="' + id + '"]'); if (im) { im.src = url; im.classList.add("ok"); } };
+    THUMBS.onOne = function (id, url) { if (art("hero-" + id)) return; var im = document.querySelector('#panel img[data-th="' + id + '"]'); if (im) { im.src = url; im.classList.add("ok"); } };
     THUMBS.renderAll(D.SKINS);
     SKIN_GROUPS.forEach(function (gr) {
       body.appendChild(el("h3", "sec", t("sg_" + gr[0])));
@@ -209,7 +209,7 @@
   function skinCard(s, grid) {
     {
       var own = owns(s.id), card = el("div", "card skin" + (S.sel.skin === s.id ? " on" : "") + (s.get.t === "buy" ? " paid" : "") + (previewSkin === s.id ? " pv" : ""));
-      var th = art("hero-" + s.id) || THUMBS.get(s.id); card.innerHTML = '<div class="thwrap">' + (th ? '<img class="th3d ok" alt="" data-th="' + s.id + '" src="' + th + '">' : '<img class="th3d" alt="" data-th="' + s.id + '">' + skinThumb(s)) + (owns(s.id) ? '' : '<i class="lock"></i>') + '</div><div class="nm">' + esc(nm(s)) + '</div><div class="cond">' + esc(own ? t("owned") : skinCond(s)) + "</div>" + (s.perk ? '<div class="perk">' + esc(perkText(s.perk)) + "</div>" : s.get.t === "buy" ? '<div class="perk look">' + t("lookOnly") + "</div>" : "");
+      var ha = art("hero-" + s.id), th = ha || THUMBS.get(s.id); card.innerHTML = '<div class="thwrap' + (ha ? " artw" : "") + '">' + (th ? '<img class="th3d ok" alt="" data-th="' + s.id + '" src="' + th + '">' : '<img class="th3d" alt="" data-th="' + s.id + '">' + skinThumb(s)) + (owns(s.id) ? '' : '<i class="lock"></i>') + '</div><div class="nm">' + esc(nm(s)) + '</div><div class="cond">' + esc(own ? t("owned") : skinCond(s)) + "</div>" + (s.perk ? '<div class="perk">' + esc(perkText(s.perk)) + "</div>" : s.get.t === "buy" ? '<div class="perk look">' + t("lookOnly") + "</div>" : "");
       card.onclick = function () { previewSkin = s.id; E.setSkin(s); renderPanel(); };
       var b;
       if (own) b = S.sel.skin === s.id ? btn(t("equipped"), "ghost", function () {}, true) : btn(t("equip"), "ok", function () { S.sel.skin = s.id; previewSkin = null; save("sel"); E.setSkin(s); renderPanel(); });
@@ -247,6 +247,8 @@
     });
     body.appendChild(tabs);
     var w = worldById(cur), i = worldIdx(cur), open = worldOpen(cur);
+    var wb = art("world-" + cur + "-h");
+    if (wb) { var bn = el("div", "wbanner" + (open ? "" : " locked")); bn.style.backgroundImage = "url(" + wb + ")"; bn.innerHTML = "<b>" + esc(nm(w)) + "</b>"; body.appendChild(bn); }
     E.showPlaza(w.id, builds(w.id), w.buildings.map(function (b) { return b.color; }));
     var info = el("div", "winfo");
     if (!w.ready) { info.innerHTML = '<p class="muted">' + t("soon") + "</p><p>" + t("lockedBuilds", nm(D.WORLDS[i - 1]), Math.min(5, buildCount(D.WORLDS[i - 1].id))) + "<br>" + t("lockedCoins", fmt(w.unlock.coins)) + "</p>"; body.appendChild(info); return; }
@@ -523,6 +525,7 @@
   /* ================= Запуск ================= */
   function boot() {
     E.init($("#c"));
+    loadArt().then(loadingArt);
     Promise.all([PF.init(), loadArt()]).then(function () {
       load(); ensureDay();
       lang = S.set.lang || ((PF.hasSdk() ? PF.lang() : (navigator.language || "ru")).slice(0, 2) === "ru" ? "ru" : "en");
@@ -549,6 +552,7 @@
       } catch (e) {}
       SKINSHOP.init(PF.sdk(), grantProduct).then(function () { if (panelId) renderPanel(); });
       applyLang(); show("menu");
+      if (!st("introSeen")) showIntro();
       $("#loading").hidden = true;
       PF.ready();
       
@@ -573,6 +577,18 @@
   function applySound() {
     AUDIO.setOn(S.set.snd > 0); AUDIO.setMusic(S.set.snd > 1);
     var b = $("#sndBtn"); b.classList.toggle("off", S.set.snd === 0); b.style.opacity = S.set.snd === 1 ? 0.75 : "";
+  }
+  /* вступление: вор с мешком (картинка Художника), история в двух фразах */
+  function showIntro() {
+    var th = art("thief-run"), hc = art("hero-courier");
+    var pics = (hc ? '<img class="intro-hero" alt="" src="' + hc + '">' : "") + (th ? '<img class="intro-thief" alt="" src="' + th + '">' : "");
+    modal(t("introTitle"), '<div class="intro">' + pics + '</div><p class="big">' + t("story") + "</p>", function () { S.prog.st.introSeen = 1; save("prog"); });
+    $("#modal .mok").textContent = t("introGo");
+  }
+  /* фон загрузки и меню: картинка мира (если есть) под 3D-сценой не нужна — используем на экране загрузки */
+  function loadingArt() {
+    var a = art("world-" + (S.sel && S.sel.world || "town") + (innerWidth / innerHeight < 1 ? "-v" : "-h"));
+    if (a) { var l = $("#loading"); l.style.backgroundImage = "linear-gradient(rgba(10,8,24,.35),rgba(10,8,24,.75)),url(" + a + ")"; }
   }
   function renderPanelSoft() { var b = $("#panel .pbody"), y = b.scrollTop; renderPanel(); b.scrollTop = y; }
 
