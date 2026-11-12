@@ -39,6 +39,7 @@ select{font:inherit;font-size:13px;background:var(--panel2);color:var(--txt);bor
 button{font:inherit;font-weight:600;color:var(--txt);background:var(--panel2);border:1px solid var(--line);border-radius:12px;min-height:46px;padding:0 10px;cursor:pointer}
 button:active{transform:scale(.97)}
 button:disabled{opacity:.4}
+button.dim{opacity:.4}
 button.go{background:linear-gradient(#ffb14a,#e8832a);border-color:#ffd49a;color:#2a1600}
 #bottom button.go{flex:1.6}
 button.blue{background:linear-gradient(#4aa8ff,#2a74d0);border-color:#9bd0ff;color:#04162e}
@@ -885,17 +886,17 @@ function modsModal(){
  S.mods.forEach(function(m,i){h+='<tr><td>'+T[m.t].ic+' '+TN(m.t)+'</td><td>'+T[m.t].d+'</td><td>'+T[m.t].nt+'</td><td>'+(m.dmg?'<span class="tag bad">'+L('сломан','broken')+'</span>':'<span class="tag ok">ok</span>')+'</td></tr>'});
  h+='</table><p class="small">'+L('Расход в кВт·ч в сутки. Батарея: '+capE()+' кВт·ч, мест: '+beds()+', запасы до '+capR()+'.','Usage in kWh per day. Battery: '+capE()+' kWh, beds: '+beds()+', storage up to '+capR()+'.')+'</p><h2 style="margin-top:12px">'+L('Построить','Build')+'</h2>';
  Object.keys(T).forEach(function(k){
-  h+='<div class="row"><span class="l">'+T[k].ic+' <b>'+TN(k)+'</b> <span class="small">'+TI(k)+'</span></span><button data-b="'+k+'" '+(S.credits<T[k].c||S.mods.length>=12?'disabled':'')+'>'+T[k].c+' ₵</button></div>';
+  h+='<div class="row"><span class="l">'+T[k].ic+' <b>'+TN(k)+'</b> <span class="small">'+TI(k)+'</span></span><button data-b="'+k+'"'+(S.credits<T[k].c||S.mods.length>=12?' class="dim"':'')+'>'+T[k].c+' ₵</button></div>';
  });
  modal(L('Модули базы','Base modules'),h,[{t:L('Закрыть','Close'),f:function(){closeModal()}}]);
- document.querySelectorAll('#sheet [data-b]').forEach(function(b){b.onclick=function(){var k=b.dataset.b;if(S.credits<T[k].c)return;S.credits-=T[k].c;S.mods.push({t:k});log(L('Построен модуль: ','Module built: ')+TN(k));refresh();save();modsModal()}});
+ document.querySelectorAll('#sheet [data-b]').forEach(function(b){b.onclick=function(){var k=b.dataset.b;if(S.mods.length>=12){toast(L('Максимум 12 модулей','Maximum 12 modules'));return}if(S.credits<T[k].c){toast(L('Не хватает '+(T[k].c-S.credits)+' ₵. Монеты — за расчёт ночи и ответы Земле.','Need '+(T[k].c-S.credits)+' more ₵. Earn ₵ with the night calculation and answers to Earth.'));return}S.credits-=T[k].c;S.mods.push({t:k});log(L('Построен модуль: ','Module built: ')+TN(k));refresh();save();modsModal()}});
 }
 function shopModal(cb){
  var items=[[L('⚙ Аварийные ячейки','⚙ Emergency cells'),L('+10 кВт·ч','+10 kWh'),10,function(){S.res.cells+=10}],[L('🫁 Кислород','🫁 Oxygen'),L('+10 кг','+10 kg'),10,function(){S.res.o2=r1(Math.min(capR(),S.res.o2+10))}],[L('💧 Вода','💧 Water'),L('+20 л','+20 L'),10,function(){S.res.water=r1(Math.min(capR(),S.res.water+20))}],[L('🍲 Еда','🍲 Food'),L('+10 пайков','+10 rations'),10,function(){S.res.food=r1(Math.min(capR(),S.res.food+10))}],[L('🔧 Запчасть','🔧 Spare part'),L('+1 шт','+1 pc'),10,function(){S.res.parts++}]];
  var h='<p class="small">'+L('Дорогая доставка с Земли. Склад вмещает не больше '+capR()+' каждого запаса; аварийные ячейки сгорают, когда батареи пусты.','Expensive delivery from Earth. Storage holds at most '+capR()+' of each supply; emergency power cells are used up when the batteries run out.')+'</p>';
- items.forEach(function(it,i){h+='<div class="row"><span class="l">'+it[0]+' <span class="small">'+it[1]+'</span></span><button data-s="'+i+'" '+(S.credits<it[2]?'disabled':'')+'>'+it[2]+' ₵</button></div>'});
+ items.forEach(function(it,i){h+='<div class="row"><span class="l">'+it[0]+' <span class="small">'+it[1]+'</span></span><button data-s="'+i+'"'+(S.credits<it[2]?' class="dim"':'')+'>'+it[2]+' ₵</button></div>'});
  modal(L('Закупки с Земли','Supplies from Earth'),h,[{t:cb?L('Продолжить','Continue'):L('Закрыть','Close'),c:cb?'go':'',f:function(){closeModal();if(cb)cb()}}]);
- document.querySelectorAll('#sheet [data-s]').forEach(function(b){b.onclick=function(){var it=items[+b.dataset.s];if(S.credits<it[2])return;S.credits-=it[2];it[3]();refresh();save();shopModal(cb)}});
+ document.querySelectorAll('#sheet [data-s]').forEach(function(b){b.onclick=function(){var it=items[+b.dataset.s];if(S.credits<it[2]){toast(L('Не хватает '+(it[2]-S.credits)+' ₵. Монеты — за расчёт ночи и ответы Земле.','Need '+(it[2]-S.credits)+' more ₵. Earn ₵ with the night calculation and answers to Earth.'));return}S.credits-=it[2];it[3]();refresh();save();shopModal(cb)}});
 }
 var CALCROWS_RU=[['energy','⚡ Энергия','кВт·ч','Сложи ночной расход всех модулей и умножи на 14.'],['water','💧 Вода','л','Люди × 2,5 л × 14. Рециклер возвращает половину.'],['o2','🫁 Кислород','кг','Люди × 1 кг × 14.'],['food','🍲 Еда','пайков','Люди × 1 × 14.']];
 var CALCROWS_EN=[['energy','⚡ Energy','kWh','Add up the night usage of all modules and multiply by 14.'],['water','💧 Water','L','Crew members × 2.5 L × 14. The recycler recovers half the water.'],['o2','🫁 Oxygen','kg','People × 1 kg × 14.'],['food','🍲 Food','rations','People × 1 × 14.']];
@@ -969,7 +970,7 @@ function renderCrew(){
    var o=document.createElement('option');o.value=k;o.textContent=tk(k)+(CRATER[k]?' '+CRATER[k].km+L(' км',' km'):'');if(c.task===k)o.selected=true;sel.appendChild(o);
   });
   sel.disabled=busy;
-  sel.onchange=function(){c.task=sel.value;save()};
+  sel.onchange=function(){c.task=sel.value;save();if((c.task==='drillO'||c.task==='drillW')&&cntOk('drill')<1)toast(L('Для бура нужна рабочая буровая. Построй её в «Модулях» (70 ₵).','Drilling needs a working Drilling Rig. Build one in Modules (70 ₵).'));else if(c.task==='repair'&&!S.mods.some(function(m){return m.dmg}))toast(L('Пока ничего не сломано — ремонт не понадобится.','Nothing is broken right now, so no repair is needed.'))};
   d.appendChild(sel);box.appendChild(d);
  });
 }
