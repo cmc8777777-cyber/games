@@ -82,6 +82,11 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
 .unit .pr{display:flex;align-items:center;gap:2px;font-family:var(--f-display);font-size:13px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
 .unit .pr img{width:13px;height:13px;margin:0}
 .unit.locked{background:var(--panel-2);border-style:dashed;box-shadow:none}
+.unit.xtra{border-color:var(--gold);border-width:2px}
+.unit .gt{display:none;font-family:var(--f-body);font-size:10px;line-height:1.05;text-align:center;color:var(--muted)}
+.unit.gated{background:var(--panel-2);border-style:dashed;box-shadow:none}.unit.gated img{filter:grayscale(1) contrast(.85);opacity:.7}
+.unit.gated .pr{display:none}.unit.gated .gt{display:block}
+.pick.gated .pr{font-family:var(--f-body);font-size:11px;font-weight:400;color:var(--muted)}
 .unit.locked img{filter:grayscale(1) contrast(.85);opacity:.75}
 .unit.locked .nm{color:var(--muted)}
 .unit.cant .pr{color:var(--accent)}
@@ -640,6 +645,9 @@ function rawRoad(b){
 
 // ---------- Состояние текущей битвы ----------
 let B = null, PATH = [], SEG = [], PATH_LEN = 0, PADS = [];
+// оружие по волнам: GATE[id] = волна, к которой открывается «оружие другой эпохи» (x0…x3)
+const UNLOCK_WAVES = [5, 10, 15, 20];
+let GATE = {};
 let DEFS = {}, TOWER_ORDER = [], ENEMIES = {}, LOCKED = [], ABIL = {}, ABIL_IDS = [], CHAPTERS = [], WAVES = [], CONTENT = {}, ENC = [], ENC_BY = {}, CH_ART = [], REWARD_ORDER = [], MUL = {}, UI = {};
 let BAL = null;
 const BAL0 = {hpK:0.7, hpG:0.09, hpG2:0.0, hpCh:[1,1,1,1.05,1.15,1.25], spd:1.25, rew:[0.5,0.36,0.34,0.44,0.48,0.5], waveBonus:[12,2], early:10};
@@ -653,6 +661,26 @@ function mkEnemy(e, isBoss){
     guard:sp.includes('guard'), rally:sp.includes('rally'), stealth:sp.includes('stealth'), heal:sp.includes('heal'), burrow:sp.includes('burrow'), climb:sp.includes('climb'),
     mount: kind === 'rider' || kind === 'chariot' || kind === 'beast', lives:Math.max(1, +e.lives || 1), r:+e.r || 12, hp:+e.hp, spd:+e.spd, rew:+e.rew || 0
   });
+}
+const XPROF = [
+  [/пушк|тюфяк|артилл|пищал|мортир/, {cost:170, range:180, dmg:70, cd:2.4, splash:44, proj:'stone', bonusVs:{armor:1.5}, look:['machine','none','stone'], note:'Ядро бьёт по площади'}],
+  [/танк|самол/, {cost:200, range:170, dmg:60, cd:1.4, splash:36, proj:'bullet', look:['machine','none','bullet'], note:'Бьёт далеко и по площади'}],
+  [/требуш|катапул|баллист/, {cost:160, range:200, dmg:60, cd:2.3, splash:42, proj:'stone', look:['machine','none','stone'], note:'Камни летят далеко и бьют по площади'}],
+  [/арбалет|самостр/, {cost:110, range:150, dmg:30, cd:1.1, proj:'bolt', bonusVs:{armor:1.3}, look:['human','crossbow','bolt'], note:'Болт пробивает доспех'}],
+  [/пулем|винтов|ружь|автомат|мушкет|стрельц|штык|полк/, {cost:140, range:150, dmg:26, cd:0.6, proj:'bullet', look:['human','musket','bullet'], note:'Частая стрельба издалека'}],
+  [/гуляй/, {cost:150, range:140, dmg:34, cd:0.9, proj:'bullet', look:['machine','none','bullet'], note:'Подвижная крепость с пищалями'}],
+  [/рыцар|латни|катафракт|стремен|конниц/, {cost:130, range:85, dmg:44, cd:1.3, proj:null, look:['rider','spear',null], note:'Тяжёлый удар в ближнем бою'}],
+  [/./, {cost:130, range:90, dmg:40, cd:1.2, proj:null, look:['human','sword',null], note:'Сильный удар в ближнем бою'}]
+];
+function xSprite(look, own){
+  const [kind, weapon, proj] = look, all = [].concat(own, ...Object.values(window.BATTLES || {}).map(b => b.defenders || []));
+  const m = all.find(d => d.sprite && d.sprite.kind === kind && d.sprite.weapon === weapon) || all.find(d => d.sprite && d.sprite.kind === kind && d.proj === proj) || all.find(d => d.sprite && d.sprite.kind === kind) || own[0];
+  return m && m.sprite ? JSON.parse(JSON.stringify(m.sprite)) : {kind:'human'};
+}
+function xDef(l, i, own){
+  const p = (XPROF.find(([re]) => re.test(String(l.name || '').toLowerCase())) || XPROF[XPROF.length - 1])[1];
+  return Object.assign({id:'x' + i, name:l.name, cost:p.cost, range:p.range, dmg:p.dmg, cd:p.cd, splash:p.splash || 0, proj:p.proj, bonusVs:p.bonusVs || {}, special:null,
+    note:T(p.note), fact:T('Оружие другой эпохи: ') + (l.line || ''), sprite:xSprite(p.look, own), xtra:true});
 }
 function dmgMul(t, d){
   const bv = t.bonusVs || {}; let m = 1;
@@ -672,13 +700,15 @@ function loadBattle(b){
   // чтобы время под обстрелом было как в эталоне; balance.spd в данных битвы задаёт множитель вручную.
   if (!(b.balance && b.balance.spd)) BAL.spd = BAL0.spd * Math.max(0.55, Math.min(1, PATH_LEN / REF_PATH_LEN)) * ((b.balance && b.balance.spdK) || 1);
   PADS = Array.isArray(b.plots) && b.plots.length ? b.plots.map(p => [+p.x, +p.y]) : STD_PADS.map(p => p.slice());
-  DEFS = {}; TOWER_ORDER = [];
-  for (const d of b.defenders) { DEFS[d.id] = Object.assign({}, d, {cost:+d.cost, range:+d.range, dmg:+d.dmg || 0, cd:+d.cd || 0, splash:+d.splash || 0, specials:SPECIALS(d.special)}); TOWER_ORDER.push(d.id); }
+  DEFS = {}; TOWER_ORDER = []; GATE = {};
+  const xs = (b.locked || []).slice(0, UNLOCK_WAVES.length).map((l, i) => xDef(l, i, b.defenders));
+  for (const d of b.defenders.concat(xs)) { DEFS[d.id] = Object.assign({}, d, {cost:+d.cost, range:+d.range, dmg:+d.dmg || 0, cd:+d.cd || 0, splash:+d.splash || 0, specials:SPECIALS(d.special)}); TOWER_ORDER.push(d.id); }
+  xs.forEach((d, i) => { GATE[d.id] = UNLOCK_WAVES[i]; });
   ENEMIES = {};
   for (const e of b.enemies) ENEMIES[e.id] = mkEnemy(e, false);
   for (const e of (b.bosses || [])) ENEMIES[e.id] = mkEnemy(e, true);
   MUL = {}; for (const t in DEFS) { MUL[t] = {}; for (const k in ENEMIES) MUL[t][k] = dmgMul(DEFS[t], ENEMIES[k]); }
-  LOCKED = (b.locked || []).slice(0, 4);
+  LOCKED = [];   // бывшие «закрытые» анахронизмы теперь бойцы x0…x3 (открываются по волнам)
   ABIL = {}; ABIL_IDS = [];
   (b.abilities || []).slice(0, 2).forEach((a, i) => { const id = a.id || ('ab'+i); ABIL[id] = Object.assign({dur:6}, a, {id, cd:+a.cooldown || 45}); ABIL_IDS.push(id); });
   WAVES = b.waves.map(w => Object.assign({}, w, {g:(w.g || []).filter(gr => ENEMIES[gr[0]])}));
@@ -847,7 +877,7 @@ function endWave(){
   if (G.wave >= WAVES.length) { finish(true); return; }
   G.coins += BAL.waveBonus[0] + BAL.waveBonus[1]*G.wave;
   G.state = 'intermission'; G.timer = 15; G.fastWave = false; G.slowWave = false;
-  showWaveCard(); persist(); maybeEvent(); refreshUI();
+  showWaveCard(); persist(); maybeEvent(); refreshUI(); gateNotify();
 }
 function quizCorrect(){ let n = 0; for (const q of (CONTENT.quiz || [])) if (q && G.quiz[q.wave] === q.answer) n++; return n; }
 function finish(win){
@@ -872,10 +902,18 @@ function towerStats(t){
   return {range:def.range*rm, dmg:def.dmg*m, cd:def.cd, lvl:t.lvl};
 }
 function upgradeCost(t){ return t.lvl >= 3 ? 0 : Math.round(DEFS[t.type].cost * (t.lvl === 1 ? 0.7 : 1.0)); }
+function towerOpen(k){ const n = GATE[k]; return !n || G.wave + (G.state === 'wave' ? 0 : 1) >= n; }
+const gateText = k => T('Откроется на {n}-й волне').replace('{n}', GATE[k]);
+// в передышке перед волной-порогом — заметное сообщение «Открыто: …»
+function gateNotify(){
+  if (SIM) return;
+  const now = TOWER_ORDER.filter(k => GATE[k] === G.wave + 1);
+  if (now.length) toast(now.map(k => icT(k)).join('') + '<b>' + T('Открыто: ') + now.map(k => esc(DEFS[k].name)).join(', ') + '!</b> ' + T('Оружие другой эпохи — в ряду внизу. Ставь его на кружок у дороги.'), 7);
+}
 function build(pad, type){
   const def = DEFS[type];
   const free = G.fTok.unit > 0;   // «Ветеран» с Колеса Фортуны: один воин даром (при продаже за него ничего не вернут)
-  if (!def || !PADS[pad] || G.towers[pad] || (!free && G.coins < def.cost) || !isPlaying()) return false;
+  if (!def || !PADS[pad] || G.towers[pad] || !towerOpen(type) || (!free && G.coins < def.cost) || !isPlaying()) return false;
   if (free) G.fTok.unit--; else G.coins -= def.cost;
   G.towers[pad] = {type, lvl:1, spent:free ? 0 : def.cost, cd:0, x:PADS[pad][0], y:PADS[pad][1], flash:0, id:pad};
   unlock(type);
@@ -1438,7 +1476,7 @@ function splitName(n){ const w = String(n).split(' '); if (w.length < 2) return 
 function buildBattleUI(){
   let h = '';
   for (const k of TOWER_ORDER){ const d = DEFS[k];
-    h += '<button class="unit" data-t="'+esc(k)+'">'+icT(k)+'<span class="nm'+nmLong(d.name)+'">'+esc(d.name)+'</span><span class="pr">'+icCoin()+d.cost+'</span></button>'; }
+    h += '<button class="unit'+(d.xtra ? ' xtra' : '')+'" data-t="'+esc(k)+'">'+icT(k)+'<span class="nm'+nmLong(d.name)+'">'+esc(d.name)+'</span><span class="pr">'+icCoin()+d.cost+'</span>'+(GATE[k] ? '<span class="gt">🔒 '+esc(gateText(k))+'</span>' : '')+'</button>'; }
   LOCKED.forEach((d,i)=>{ h += '<button class="unit locked" data-l="'+i+'" aria-label="'+esc(d.name)+T(' — недоступно">')+img(IC['l_'+i])+'<span class="nm'+nmLong(d.name)+'">'+esc(d.name)+T('</span><span class="pr" style="color:var(--muted)">закрыто</span></button>'); });
   ui.roster.innerHTML = h; ui.roster.scrollLeft = 0;
   ui.ab.forEach((b,i) => { const id = ABIL_IDS[i]; b.hidden = !id; if (!id) return; b.dataset.k = id; b.setAttribute('aria-label', ABIL[id].name); b.querySelector('img').src = IC['a_'+id]; b.querySelector('.lbl').innerHTML = splitName(ABIL[id].name); });
@@ -1461,9 +1499,9 @@ function refreshUI(){
   ui.ab.forEach(b => { const k = b.dataset.k; if (!k || !G.abil[k]) return; const a = G.abil[k];
     b.querySelector('.med').style.setProperty('--p', (a.cd > 0 ? (1 - a.cd/ABIL[k].cd)*100 : 100) + '%');
     b.classList.toggle('cooling', a.cd > 0 && a.act <= 0); b.classList.toggle('active', a.act > 0); });
-  ui.roster.querySelectorAll('.unit[data-t]').forEach(b => b.classList.toggle('cant', G.coins < DEFS[b.dataset.t].cost && !(G.fTok.unit > 0)));
+  ui.roster.querySelectorAll('.unit[data-t]').forEach(b => { const k = b.dataset.t, op = towerOpen(k); b.classList.toggle('gated', !op); b.classList.toggle('cant', op && G.coins < DEFS[k].cost && !(G.fTok.unit > 0)); });
   if (!ui.sheet.hidden && ui.sheet.dataset.mode) {
-    const key = ui.sheet.dataset.mode + G.coins + G.sel + (G.towers[G.sel] ? G.towers[G.sel].lvl : 0) + '/' + G.fTok.unit;
+    const key = ui.sheet.dataset.mode + G.coins + G.sel + (G.towers[G.sel] ? G.towers[G.sel].lvl : 0) + '/' + G.fTok.unit + '/' + G.wave + G.state;
     if (key !== lastUI) renderSheet();
   }
 }
@@ -1484,7 +1522,8 @@ function renderSheet(){
     const free = G.fTok.unit > 0;
     let h = '<h3><span>'+(free ? T('Ветеран Фортуны — даром!') : T('Кого поставить?'))+T('</span><button data-close aria-label="Закрыть">×</button></h3><div class="grid3">');
     for (const k of TOWER_ORDER){ const d = DEFS[k];
-      h += '<button class="pick" data-b="'+esc(k)+'"'+(G.coins<d.cost&&!free?' disabled':'')+'>'+icT(k)+'<span class="nm'+nmLong(d.name)+'">'+esc(d.name)+'</span><span class="pr">'+(free ? T('даром') : icCoin()+d.cost)+'</span></button>'; }
+      const op = towerOpen(k);
+      h += '<button class="pick'+(op ? '' : ' gated')+'" data-b="'+esc(k)+'"'+(!op || G.coins<d.cost&&!free?' disabled':'')+'>'+icT(k)+'<span class="nm'+nmLong(d.name)+'">'+esc(d.name)+'</span><span class="pr">'+(!op ? '🔒 '+esc(gateText(k)) : free ? T('даром') : icCoin()+d.cost)+'</span></button>'; }
     s.innerHTML = h + '</div>';
   } else {
     s.dataset.mode = 'tower';
@@ -1902,6 +1941,7 @@ ui.roster.addEventListener('click', ev => {
   const b = ev.target.closest('button'); if (!b) return;
   if (b.dataset.l !== undefined) { const d = LOCKED[+b.dataset.l]; closeSheet(); toast(img(IC['l_'+b.dataset.l])+'<b>'+esc(d.name)+':</b> '+esc(d.line)+T(' Построить нельзя.')); return; }
   const k = b.dataset.t, d = DEFS[k];
+  if (!towerOpen(k)) { closeSheet(); toast(icT(k)+'<b>'+esc(d.name)+': '+esc(gateText(k))+'.</b> '+esc(d.fact || ''), 5); return; }
   if (G.sel >= 0 && !G.towers[G.sel]) { const fresh = !G.enc[k]; if (build(G.sel, k)) { closeSheet(); builtToast(k, fresh); } return; }
   toast(icT(k)+'<b>'+esc(d.name)+' · '+icCoin()+d.cost+'.</b> '+esc(d.note || '')+'. '+esc(d.fact || '')+T(' <br>Нажми на кружок у дороги, чтобы поставить.'), 5);
 });
