@@ -407,7 +407,7 @@ T.land.hannibal = function(g, env){
     E(g,x+rx*.45,y-ry*.05,7,4.5,'#9fb466','rgba(60,80,30,.6)',.6);
     cypress(g,x+rx*.45,y-ry*.05+1,.55);
     for (let i=0;i<22;i++){ const a=Math.PI*.15+R()*Math.PI*.7+(i%2?Math.PI:0), px=x+Math.cos(a)*(rx+2), py=y+Math.sin(a)*(ry+2); Ln(g,px,py,px+(R()-.5)*2,py-5-R()*4,'#5f7f37',1); }
-    signV4(g,x+4,y-ry-22,'Тразименское озеро',-1,9.4);
+    signV4(g,x+4,y-ry-22,window.T('Тразименское озеро'),-1,9.4);
   }
   const stream = (fy,lw,col,dy) => { g.beginPath(); for (let x=X0-5;x<=X1+5;x+=4){ const y=fy(x)+(dy||0); x===X0-5?g.moveTo(x,y):g.lineTo(x,y);} g.strokeStyle=col; g.lineWidth=lw; g.lineCap='round'; g.stroke(); };
   stream(riverY,18,'#cdb98a'); stream(riverY,13,'#4f8db2'); stream(riverY,8.5,'#72b2d6',-.8); stream(riverY,2.4,'rgba(200,232,248,.6)',-2.2);
@@ -469,7 +469,7 @@ T.land.hannibal = function(g, env){
     }
   }
   for (let i=0;i<330;i++){ const x=X0+PR()*(X1-X0), y=64+PR()*1480; if (!free(x,y,-6)) continue; E(g,x,y,.9,.9,['#d8452f','#f4efe0','#e9c54a','#c95a8a'][(PR()*4)|0]); }
-  signV4(g,135,64,'Из-за Альп',-1,10);
+  signV4(g,135,64,window.T('Из-за Альп'),-1,10);
   env.paintPlates(g);
 };
 T.land.hannibal.mini = function(g,sx,sy,MMW){

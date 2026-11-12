@@ -356,7 +356,7 @@ Object.assign(THEMES.decorSize, {vineyard:34, field:36, tiledHouse:16, woodHouse
 
 /* ---------------- fortress: roman (стены Рима из «Ганнибала») ---------------- */
 THEMES.fortress.roman = function(g,W,yTop,battle){
-  const fz = (battle && battle.fortress) || {}, name = fz.name || 'РИМ', banner = fz.banner || 'SPQR';
+  const fz = (battle && battle.fortress) || {}, name = fz.name || window.T('РИМ'), banner = fz.banner || 'SPQR';
   g.save(); g.translate(-5 + (W-390)/2, yTop - 500);   // рисунок сделан в старой рамке 400×600
   const X0 = 0, X1 = 400 + Math.max(0, W-390), Y1 = 664;
   // храм с фронтоном и купол над стеной

@@ -96,7 +96,7 @@ F.greek = function(g,W,yTop,b){
   rectGate(g,cx,yTop+68,bot+2,17,'#bfb39a','#7a4a22');
   P(g,[cx-24,yTop+62,cx,yTop+50,cx+24,yTop+62],'#d8cfbb',INK,1);
   shieldMedal(g,cx,yTop+58,8.4,'#b3261e',fz.banner || 'Λ');
-  plaque(g,cx-96,yTop+82,fz.name || 'ФЕРМОПИЛЫ','#f1eadc','#7c1f16');
+  plaque(g,cx-96,yTop+82,fz.name || window.T('ФЕРМОПИЛЫ'),'#f1eadc','#7c1f16');
   for (const x of [cx+62, cx+94]) { E(g,x,yTop+90,7,7,'#b8862f',INK,.8); E(g,x,yTop+90,5,5,null,'#e8c25a',.8); Ln(g,x-3,yTop+93,x+3,yTop+87,'#7c1f16',1.4); }
 };
 
@@ -116,7 +116,7 @@ F.persian = function(g,W,yTop,b){
   for (const x of [36, W-36]) { RR(g,x-18,top-12,36,bot-top+12,1,'#d6b47c',INK,1); courses(g,x-17,x+17,top-10,bot,'#dcbd84','#c9a46a',5.4,9,x,'rgba(130,95,50,.4)'); RR(g,x-18,top+2,36,9,0,'#2f5f9e',INK,.5); stepped(g,x-18,x+18,top-11,9,'#d9b878'); }
   archGate(g,cx,yTop+60,bot+2,16,'#2f5f9e','#8a5a2b',true);
   banner(g,cx,yTop+34,fz.banner || '☀','#7d2390','#f6d47a');
-  plaque(g,cx-98,yTop+90,fz.name || 'ЛАГЕРЬ','#f6ead0','#2f5f9e','rgba(47,95,158,.7)');
+  plaque(g,cx-98,yTop+90,fz.name || window.T('ЛАГЕРЬ'),'#f6ead0','#2f5f9e','rgba(47,95,158,.7)');
 };
 
 /* ---------- Галлия: оппидум, «галльская стена» ---------- */
@@ -135,7 +135,7 @@ F.gallic = function(g,W,yTop,b){
   RR(g,cx-34,yTop+42,68,8,1,'#7a5230',INK,1); for (let x=cx-32; x<cx+32; x+=6) RR(g,x,yTop+36,4,7,.6,'#8a5a2b',INK,.5);
   rectGate(g,cx,yTop+62,bot+2,18,'#6b4423','#7a4a22');
   banner(g,cx,yTop+50,fz.banner || '◉','#2f6b3a','#f6d47a');
-  plaque(g,cx-100,yTop+92,fz.name || 'ОППИДУМ','#efe2c6','#2f4a2a','rgba(107,74,42,.8)');
+  plaque(g,cx-100,yTop+92,fz.name || window.T('ОППИДУМ'),'#efe2c6','#2f4a2a','rgba(107,74,42,.8)');
 };
 
 /* ---------- Лагерь Спартака: частокол ---------- */
@@ -155,7 +155,7 @@ F.slaveCamp = function(g,W,yTop,b){
   RR(g,cx-20,yTop+70,40,bot-yTop-68,0,'#5a3a1e',INK,1); for (let x=cx-18; x<cx+20; x+=5) Ln(g,x,yTop+72,x,bot,'rgba(30,18,6,.5)',.8); Ln(g,cx-20,yTop+90,cx+20,yTop+84,'#8a6a3a',2);
   Ln(g,cx-34,yTop+30,cx-34,yTop+8,INK,1.4); P(g,[cx-34,yTop+8,cx-18,yTop+12,cx-34,yTop+17],'#b8281e',INK,.8);
   banner(g,cx,yTop+48,fz.banner || '⚔','#b8281e','#f6ead0');
-  plaque(g,cx-102,yTop+100,fz.name || 'ЛАГЕРЬ','#efe2c6','#7c1f16','rgba(107,74,42,.8)');
+  plaque(g,cx-102,yTop+100,fz.name || window.T('ЛАГЕРЬ'),'#efe2c6','#7c1f16','rgba(107,74,42,.8)');
 };
 
 /* ---------- Византия: стены Феодосия ---------- */
@@ -176,7 +176,7 @@ F.byzantine = function(g,W,yTop,b){
   for (const x of [28, 128, W-128, W-28]) { RR(g,x-15,top-18,30,bot-top+18,1,'#dccdae',INK,1); for (let y=top-6; y<bot; y+=22) RR(g,x-15,y,30,6,0,'#b25a3a'); merlons(g,x-15,x+15,top-18,6,6,3,'#e3d5b8'); g.fillStyle='rgba(0,0,0,.1)'; g.fillRect(x+7,top-17,7,bot-top+17); }
   archGate(g,cx,yTop+58,bot+2,17,'#d9b45a','#7a4a22',true);
   banner(g,cx,yTop+30,fz.banner || '☧','#6b1d7a','#f6d47a');
-  plaque(g,cx-95,yTop+80,fz.name || 'КОНСТАНТИНОПОЛЬ','#f4ecd8','#6b1d7a','rgba(107,29,122,.6)');
+  plaque(g,cx-95,yTop+80,fz.name || window.T('КОНСТАНТИНОПОЛЬ'),'#f4ecd8','#6b1d7a','rgba(107,29,122,.6)');
 };
 
 /* ---------- Франки: старые римские стены Тура и церковь ---------- */
@@ -195,7 +195,7 @@ F.frankish = function(g,W,yTop,b){
   for (const x of [48, W-48]) { RR(g,x-20,top-20,40,bot-top+20,1,'#bfae8c',INK,1); RR(g,x-23,top-24,46,8,1,'#8a5a2b',INK,.9); P(g,[x-25,top-24,x,top-40,x+25,top-24],'#6e4a2a',INK,1); }
   archGate(g,cx,yTop+62,bot+2,17,'#bfae8c','#6b4423',true);
   banner(g,cx,yTop+34,fz.banner || '✝','#2f4f8e','#f6ead0','#e2c27a');
-  plaque(g,cx-96,yTop+86,fz.name || 'ТУР','#f1eadc','#2f4f8e','rgba(47,79,142,.6)');
+  plaque(g,cx-96,yTop+86,fz.name || window.T('ТУР'),'#f1eadc','#2f4f8e','rgba(47,79,142,.6)');
 };
 
 /* ---------- Русь: деревянная крепость ---------- */
@@ -212,7 +212,7 @@ F.rusWood = function(g,W,yTop,b){
   RR(g,cx-18,yTop+60,36,bot-yTop-58,1,'#7a5230',INK,1);
   rectGate(g,cx,yTop+70,bot+2,15,'#5a3a1e','#6b4423');
   banner(g,cx,yTop+44,fz.banner || '☦','#b8281e','#f6d47a');
-  plaque(g,cx-100,yTop+92,fz.name || 'КРЕПОСТЬ','#efe2c6','#7c1f16','rgba(107,74,42,.8)');
+  plaque(g,cx-100,yTop+92,fz.name || window.T('КРЕПОСТЬ'),'#efe2c6','#7c1f16','rgba(107,74,42,.8)');
 };
 
 /* ---------- Русь: белокаменная крепость ---------- */
@@ -227,7 +227,7 @@ F.rusStone = function(g,W,yTop,b){
   tentRoof(g,cx,yTop+27,28,26,'#6b7f6a','#c9a227');
   archGate(g,cx,yTop+64,bot+2,15,'#d8cfbd','#6b4423',true);
   banner(g,cx,yTop+40,fz.banner || '☦','#b8281e','#f6d47a');
-  plaque(g,cx-98,yTop+88,fz.name || 'КРЕПОСТЬ','#f4f0e6','#7c1f16','rgba(140,130,110,.8)');
+  plaque(g,cx-98,yTop+88,fz.name || window.T('КРЕПОСТЬ'),'#f4f0e6','#7c1f16','rgba(140,130,110,.8)');
 };
 
 /* ---------- Москва: Кремль ---------- */
@@ -246,6 +246,6 @@ F.moscow = function(g,W,yTop,b){
   swallow(g,cx-26,cx+26,yTop+22,7,'#b8483a'); RR(g,cx-20,yTop+6,40,15,1,'#ead9bc',INK,.9); tentRoof(g,cx,yTop+7,22,22,'#4f7a5a','#e2b44a');
   archGate(g,cx,yTop+66,bot+2,15,'#ead9bc','#6b4423',true);
   banner(g,cx,yTop+38,fz.banner || '☦','#b8281e','#f6d47a');
-  plaque(g,cx-100,yTop+92,fz.name || 'МОСКВА','#f4ecd8','#7c1f16','rgba(122,40,30,.6)');
+  plaque(g,cx-100,yTop+92,fz.name || window.T('МОСКВА'),'#f4ecd8','#7c1f16','rgba(122,40,30,.6)');
 };
 })();

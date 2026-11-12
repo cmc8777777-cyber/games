@@ -1,9 +1,11 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8">
-<title>Крепость: 10 битв</title>
+<title>Битвы истории: защити крепость</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Forum&display=swap">
+<style>/* шрифты локально (fonts/, SIL OFL 1.1): на Яндекс Играх внешние запросы запрещены */
+@font-face{font-family:'Cinzel';font-style:normal;font-weight:600 800;font-display:swap;src:url(fonts/Cinzel-600-800-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Forum';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/Forum-400-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Forum';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/Forum-400-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+</style>
 <style>
 /* Кампания «Крепость»: тот же облик, что у v4 «Ганнибал у ворот» (мрамор, пергамент, меандр), плюс карта мира с 10 битвами. */
 :root{
@@ -80,6 +82,11 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
 .unit .pr{display:flex;align-items:center;gap:2px;font-family:var(--f-display);font-size:13px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
 .unit .pr img{width:13px;height:13px;margin:0}
 .unit.locked{background:var(--panel-2);border-style:dashed;box-shadow:none}
+.unit.xtra{border-color:var(--gold);border-width:2px}
+.unit .gt{display:none;font-family:var(--f-body);font-size:10px;line-height:1.05;text-align:center;color:var(--muted)}
+.unit.gated{background:var(--panel-2);border-style:dashed;box-shadow:none}.unit.gated img{filter:grayscale(1) contrast(.85);opacity:.7}
+.unit.gated .pr{display:none}.unit.gated .gt{display:block}
+.pick.gated .pr{font-family:var(--f-body);font-size:11px;font-weight:400;color:var(--muted)}
 .unit.locked img{filter:grayscale(1) contrast(.85);opacity:.75}
 .unit.locked .nm{color:var(--muted)}
 .unit.cant .pr{color:var(--accent)}
@@ -164,7 +171,8 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
 .hbtn.encb.fresh{box-shadow:inset 0 0 0 2px var(--panel),inset 0 0 0 3px rgba(180,133,43,.45),0 0 0 2px var(--gold-hi)}
 .scard.encw{max-width:440px;display:flex;flex-direction:column;overflow:hidden;text-align:left;padding:12px 10px 10px}
 .enc-h{display:flex;align-items:center;gap:8px;padding:0 2px 6px;border-bottom:1px solid var(--line);flex:none}
-.scard .enc-h h2{flex:1;font-size:25px;margin:0;color:var(--accent);white-space:nowrap;min-width:0}
+.scard .enc-h h2{flex:1;font-size:25px;margin:0;color:var(--accent);white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
+:lang(en) .scard .enc-h h2{white-space:normal;font-size:21px;line-height:1.1}
 .enc-h .cnt{font-family:var(--f-display);font-weight:700;font-size:14px;white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
 .enc-h .xx{flex:none;width:44px;height:44px;border:0;background:transparent;font-size:26px;color:var(--muted)}
 .enc-b{overflow-y:auto;min-height:0;overscroll-behavior:contain;touch-action:pan-y;padding:0 2px 4px}
@@ -315,6 +323,12 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
 #chestCtl .cta{margin:0;padding:0 16px}
 #chestCtl p{margin:0;font-size:14px}
 .warn.good{color:#3f6a26}
+/* Премиум: цвета общего модуля из токенов игры; кнопка только на спокойных экранах */
+:root{--pm-paper:var(--panel);--pm-paper2:var(--panel-2);--pm-ink:var(--ink);--pm-muted:var(--muted);--pm-line:var(--line);--pm-red:var(--accent);--pm-redink:var(--accent-ink);--pm-gold:var(--gold-hi);--pm-scrim:var(--overlay);--pm-z:40}
+.pm-hide .pm-corner{display:none!important}
+.mapt{position:relative}
+.mapt h1 small{display:block;font-size:.5em;letter-spacing:.12em;color:var(--muted);margin-top:2px}
+.langb{position:absolute;top:2px;left:10px;width:48px;height:44px;border-radius:22px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font-family:var(--f-display);font-weight:700;font-size:15px;cursor:pointer}
 </style>
 
 <div id="app">
@@ -377,7 +391,7 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
     </div>
   </div>
   <div id="scrMap">
-    <div class="maphd marble meander"><img class="banner" src="art/web/banner.jpg" alt="Защитники разных эпох у крепости"><div class="mapt"><h1>Крепость</h1><div class="sub" id="mapProg">Кампания · 10 битв</div></div></div>
+    <div class="maphd marble meander"><img class="banner" src="art/web/banner.jpg" alt="Защитники разных эпох у крепости"><div class="mapt"><button class="langb" id="btnLang" aria-label="English">EN</button><h1>Битвы истории<small>защити крепость</small></h1><div class="sub" id="mapProg">Кампания · 10 битв</div></div></div>
     <div class="mapbody">
       <div class="mapfort"><button class="fbtn big" id="fbFort"><img data-ic="wheel" alt=""><span>Дары Фортуны<small>Колесо: <span class="ftime">можно крутить!</span></small><small id="fbChestT">Сундук: день 1 из 7</small></span><img data-ic="chest" alt=""></button></div>
       <div class="mapcv"><canvas id="mapc" aria-label="Карта битв"></canvas></div>
@@ -387,6 +401,515 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
   </div>
 </div>
 
+<script src="/sdk.js"></script>
+<script>
+/* Слой платформы (по образцу Кругосветки): Яндекс Игры SDK, если игра запущена на площадке; пауза, реклама, облачное сохранение.
+   Без SDK (сайт, файл, локальный сервер) все вызовы — заглушки, игра работает как раньше.
+   Игра читает и пишет свои ключи (krepost-camp-*) через PF.get/put/del: localStorage + зеркало в памяти + облако player.setData. */
+window.PF = (function () {
+  'use strict';
+  var ysdk = null, player = null, sdkOk = false, cloudOk = false, gaveUp = false;
+  var wantReady = false, readyDone = false, adBusy = false, tabHidden = false, apiPaused = false, gpOn = false, wantGp = false;
+  var lastAdAt = 0, bornAt = Date.now();
+  var AD_FIRST_MS = 120000;   // полноэкранная: не раньше 2 минут после загрузки; дальше не чаще раза в Premium.config.adGapMs (5 минут, решение владельца 8.11)
+  var PREM_KEY = 'krepost-camp-premium';
+  function adGap() { try { return (window.Premium && window.Premium.config && window.Premium.config.adGapMs) || 300000; } catch (e) { return 300000; } }
+  function premiumOn() { try { return !!(window.Premium && window.Premium.active()); } catch (e) { return false; } }
+  var INIT_TIMEOUT_MS = 4000, SYNC_DELAY_MS = 2500, T_KEY = 'krepost-camp-syncT';
+  var mem = {}, dirty = false, syncTimer = 0;
+  // время изменения каждого ключа (мс); удалённый ключ: время есть, значения в mem нет. По нему и сливаем облако с устройством.
+  var KT_KEY = 'krepost-camp-keyT', kt = {}, lsOk = false, setErr = 0;
+  var self = { onPause: function () {}, onCloud: function () {}, mergers: {} };
+  function isSynced(k) { return k !== T_KEY && k !== KT_KEY && k.indexOf('krepost-camp-') === 0; }
+  function log() { try { console.info.apply(console, ['[krepost-save]'].concat([].slice.call(arguments))); } catch (e) {} }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+  function seedMem() {
+    try { localStorage.setItem('krepost-camp-probe', '1'); lsOk = localStorage.getItem('krepost-camp-probe') === '1'; localStorage.removeItem('krepost-camp-probe'); } catch (e) { lsOk = false; }
+    try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (isSynced(k) || k === T_KEY) mem[k] = localStorage.getItem(k); } } catch (e) {}
+    try { var o = JSON.parse(localStorage.getItem(KT_KEY) || '{}'); if (o && typeof o === 'object') kt = o; } catch (e) {}
+    log('localStorage:', lsOk ? 'работает' : 'НЕДОСТУПЕН', '| ключей игры:', Object.keys(mem).filter(isSynced).length, '| адрес:', location.origin);
+  }
+  function ktSave() { lsSet(KT_KEY, JSON.stringify(kt)); }
+  function keyT(k) { return kt[k] || (Object.prototype.hasOwnProperty.call(mem, k) ? localT() : 0); }
+  function localT() { return Number(mem[T_KEY]) || 0; }
+  function schedule() { if (!syncTimer && player && cloudOk) syncTimer = setTimeout(function () { flush(false); }, SYNC_DELAY_MS); }
+  function touch() { var t = String(Date.now()); mem[T_KEY] = t; lsSet(T_KEY, t); dirty = true; schedule(); }
+  self.get = function (k) { if (Object.prototype.hasOwnProperty.call(mem, k)) return mem[k]; try { return localStorage.getItem(k); } catch (e) { return null; } };
+  self.put = function (k, raw) { raw = String(raw); mem[k] = raw; lsSet(k, raw); if (isSynced(k)) { kt[k] = Date.now(); ktSave(); touch(); } };
+  self.del = function (k) { delete mem[k]; lsDel(k); if (isSynced(k)) { kt[k] = Date.now(); ktSave(); touch(); } };
+  /* облако: слияние по ключам. У каждого ключа побеждает более позднее изменение (на устройстве или в облаке);
+     ключи с правилом слияния (прогресс кампании, Премиум) объединяются — побеждает больший прогресс.
+     Пустой ответ облака (гость, нет данных) ничего не стирает. Старый снимок v1 без времени ключей: время ключа = _t снимка. */
+  function importCloud(data) {
+    var d = data && typeof data === 'object' ? data : {}, ct = Number(d._t) || 0, blob = d.d && typeof d.d === 'object' ? d.d : {}, ckt = d.kt && typeof d.kt === 'object' ? d.kt : {};
+    var keys = {}, took = 0, kept = 0, merged = 0, changedAny = false;
+    Object.keys(mem).forEach(function (k) { if (isSynced(k)) keys[k] = 1; });
+    Object.keys(kt).forEach(function (k) { if (isSynced(k)) keys[k] = 1; });
+    Object.keys(blob).forEach(function (k) { if (isSynced(k)) keys[k] = 1; });
+    Object.keys(ckt).forEach(function (k) { if (isSynced(k)) keys[k] = 1; });
+    Object.keys(keys).forEach(function (k) {
+      var hasL = Object.prototype.hasOwnProperty.call(mem, k), hasC = typeof blob[k] === 'string';
+      var lt = keyT(k), cT = Number(ckt[k]) || (hasC ? ct : 0), lv = hasL ? mem[k] : null, cv = hasC ? blob[k] : null;
+      var fn = self.mergers[k];
+      if (fn && hasL && hasC && lv !== cv) {
+        var m = null; try { m = fn(lv, cv); } catch (e) {}
+        if (typeof m === 'string') { if (m !== lv) { mem[k] = m; lsSet(k, m); changedAny = true; } if (m !== cv) dirty = true; kt[k] = Math.max(lt, cT); merged++; return; }
+      }
+      if (cT > lt || (cT === lt && hasC && !hasL)) {   // при равном времени лучше значение, чем пустота: удаление всегда обновляет время
+        if (hasC) { if (lv !== cv) { mem[k] = cv; lsSet(k, cv); changedAny = true; } } else if (hasL) { delete mem[k]; lsDel(k); changedAny = true; }
+        kt[k] = cT; took++;
+      } else if (lt > cT || (hasL && !hasC)) { dirty = true; kept++; }
+    });
+    ktSave();
+    if (ct > localT()) { mem[T_KEY] = String(ct); lsSet(T_KEY, String(ct)); }
+    cloudOk = true;
+    log('облако: ' + (blob && Object.keys(blob).length ? 'снимок v' + (d.v || 1) + ', ключей ' + Object.keys(blob).length : 'пусто') + ' | взято из облака: ' + took + ', оставлено с устройства: ' + kept + ', объединено: ' + merged);
+    if (dirty) schedule();
+    if (changedAny) try { self.onCloud(); } catch (e) {}
+  }
+  function flush(now) {
+    clearTimeout(syncTimer); syncTimer = 0;
+    if (!dirty || !player || !cloudOk) return;
+    dirty = false;
+    try { var p = player.setData(snapshot(), !!now); if (p && p.then) p.then(function () { if (setErr) { setErr = 0; log('setData снова работает'); } }, function (e) { dirty = true; if (!setErr++) log('setData ОШИБКА:', e && (e.message || e)); }); } catch (e) { dirty = true; if (!setErr++) log('setData ОШИБКА:', e && e.message); }
+  }
+  function snapshot() { var d = {}, t = {}; Object.keys(mem).forEach(function (k) { if (isSynced(k) && mem[k] != null) d[k] = mem[k]; }); Object.keys(kt).forEach(function (k) { if (isSynced(k)) t[k] = kt[k]; }); return { v: 2, _t: localT(), d: d, kt: t }; }
+  /* запись в облако с подтверждением: Promise<true>, когда данные сохранены (нужна Премиуму: сначала запись, потом consumePurchase) */
+  self.save = function () {
+    clearTimeout(syncTimer); syncTimer = 0;
+    if (!player || !cloudOk) return Promise.resolve(false);
+    dirty = false;
+    try { return Promise.resolve(player.setData(snapshot(), true)).then(function () { return true; }, function () { dirty = true; return false; }); }
+    catch (e) { dirty = true; return Promise.resolve(false); }
+  };
+  self.sdk = function () { return ysdk; };
+  /* пауза (реклама, скрытая вкладка, пауза от площадки) и GameplayAPI */
+  self.paused = function () { return adBusy || tabHidden || apiPaused; };
+  function applyGp() {
+    if (!sdkOk || !readyDone) return;
+    var should = wantGp && !self.paused(); if (should === gpOn) return; gpOn = should;
+    try { var g = ysdk.features && ysdk.features.GameplayAPI; if (g) { if (should) g.start(); else g.stop(); } } catch (e) {}
+  }
+  function changed() { applyGp(); try { self.onPause(self.paused()); } catch (e) {} }
+  function onVis() { tabHidden = !!document.hidden; changed(); if (tabHidden) flush(true); }
+  self.setPlaying = function (on) { wantGp = !!on; applyGp(); };
+  function tryReady() { if (readyDone || !wantReady || !sdkOk) return; readyDone = true; try { var l = ysdk.features && ysdk.features.LoadingAPI; if (l) l.ready(); } catch (e) {} applyGp(); }
+  self.ready = function () { wantReady = true; tryReady(); };
+  self.init = function () {
+    seedMem();
+    try { document.addEventListener('visibilitychange', onVis); window.addEventListener('pagehide', function () { try { self.onPause(true); } catch (e) {} flush(true); }); } catch (e) {}
+    if (!window.YaGames || !window.YaGames.init) return Promise.resolve();
+    return new Promise(function (resolve) {
+      var timer = setTimeout(function () { gaveUp = true; resolve(); }, INIT_TIMEOUT_MS);
+      function fin() { clearTimeout(timer); resolve(); }
+      window.YaGames.init().then(function (sdk) {
+        ysdk = sdk; sdkOk = true;
+        try { sdk.on('game_api_pause', function () { apiPaused = true; changed(); }); sdk.on('game_api_resume', function () { apiPaused = false; changed(); }); } catch (e) {}
+        tryReady();
+        return sdk.getPlayer({ scopes: false }).then(function (p) {
+            player = p; var mode = ''; try { mode = p.getMode ? p.getMode() : ''; } catch (e) {}
+            log('игрок:', mode === 'lite' ? 'гость (lite)' : 'авторизован', '| SDK загружен');
+            return p.getData();
+          })
+          .then(function (data) { importCloud(data); }, function (e) { log('игрок или getData: ОШИБКА —', e && (e.message || e), '| сохранение только на устройстве'); });
+      }).then(fin, fin);
+    });
+  };
+  self.hasSdk = function () { return sdkOk; };
+  /* язык площадки (ysdk.environment.i18n.lang), '' без SDK */
+  self.lang = function () { try { return (sdkOk && ysdk.environment && ysdk.environment.i18n && ysdk.environment.i18n.lang) || ''; } catch (e) { return ''; } };
+  /* реклама */
+  function adBegin() { adBusy = true; changed(); }
+  function adEnd() { adBusy = false; changed(); }
+  /* полноэкранная в логической паузе; done — ровно один раз, когда игра может продолжать (сразу, если рекламы нет) */
+  self.interstitial = function (done) {
+    if (adBusy) return;
+    var now = Date.now(), allowedAt = lastAdAt ? lastAdAt + adGap() : bornAt + AD_FIRST_MS;
+    if (premiumOn() || !sdkOk || !ysdk.adv || !ysdk.adv.showFullscreenAdv || now < allowedAt) { done(); return; }   // при Премиуме рекламы нет
+    var fin = false;
+    function end(shown) { if (fin) return; fin = true; if (shown) { lastAdAt = Date.now(); try { if (window.Premium) window.Premium.noteFullscreen(); } catch (e) {} } adEnd(); done(); }
+    adBegin();
+    try { ysdk.adv.showFullscreenAdv({ callbacks: { onClose: function (w) { end(w); }, onError: function () { end(false); }, onOffline: function () { end(false); } } }); } catch (e) { end(false); }
+  };
+  self.premium = premiumOn;
+  self.canReward = function () { return !!(premiumOn() || (sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo)); };
+  /* ролик за награду: done(true) — только если игрок досмотрел; при Премиуме награда сразу, без ролика */
+  self.rewarded = function (done) {
+    if (premiumOn()) { done(true); return; }
+    if (!self.canReward()) { done(false); return; }
+    var fin = false, got = false;
+    function end() { if (fin) return; fin = true; adEnd(); done(got); }
+    adBegin();
+    try { ysdk.adv.showRewardedVideo({ callbacks: { onRewarded: function () { got = true; }, onClose: end, onError: end } }); } catch (e) { end(); }
+  };
+  return self;
+})();
+</script>
+<!-- PREMIUM_BEGIN: общий модуль publish/shared/premium/premium.js, обновлять через build/embed-premium.mjs; школьная сборка вырезает -->
+<script>
+/* Премиум: общий модуль для браузерных игр на Яндекс Играх.
+   Платный Премиум на срок (30 дней или год), без автопродления: «используемая» покупка, срок считается по серверному
+   времени Яндекса и хранится в облачных данных игрока. Подробно: README.md рядом с этим файлом.
+   Модуль ничего не знает об игре: хранилище, звук и реклама подключаются через init() и несколько вызовов хозяина.
+   Без SDK, без покупок или без созданных товаров в консоли кнопка и карточки скрыты, игра работает как раньше. */
+window.Premium = (function () {
+  "use strict";
+  var DAY = 86400000;
+
+  /* ---- Настройки: все числа и товары в одном месте ---- */
+  var config = {
+    adGapMs: 5 * 60 * 1000,     // интервал полноэкранной рекламы; хозяин читает его при показе (решение владельца 8 ноября: 5 минут)
+    cardEvery: 3,               // карточка «Надоела реклама?» после каждой 3-й показанной полноэкранной рекламы
+    remindDays: 3,              // напоминание о конце Премиума за столько дней и меньше (раз в сутки)
+    pollMs: 60000,              // как часто сверять срок с серверным временем
+    tokensKeep: 20,             // сколько токенов последних покупок помнить
+    products: {                 // id товара в консоли Яндекса → срок
+      premium_30: { days: 30 },
+      premium_365: { days: 365 }
+    },
+    order: ["premium_30", "premium_365"],
+    corner: true,               // кнопка «Премиум» в углу экрана
+    zIndex: 50
+  };
+
+  /* ---- Тексты по умолчанию (нейтральные; не обещать отсутствие чужих блоков рекламы, платформа может показывать свои). Игра подставляет свои финальные тексты. Подмена: Premium.init({ texts: { ru: {...}, en: {...} } }) ---- */
+  var TEXTS = {
+    ru: {
+      btn: "Премиум", btnOn: "Премиум · {0} д.", title: "Премиум",
+      activeUntil: "Активен до {0}. Осталось {1}.",
+      notActive: "Сейчас Премиум не включён.",
+      perks: ["Полноэкранная реклама отключается.", "Награды за ролики выдаются сразу, без просмотра.", "Правила и сложность игры не меняются: Премиум не помогает выигрывать."],
+      p30: "Премиум на 30 дней", p365: "Премиум на год",
+      validTo: "Будет действовать до {0}", buy: "Купить", endBuy: "Купить Премиум", extend: "Продлить",
+      note: "Один платёж, без автопродления: больше ничего не спишется. Если Премиум уже идёт, новый срок добавится к концу.",
+      close: "Закрыть", later: "Не сейчас",
+      adTitle: "Надоела реклама?", adText: "Премиум отключает полноэкранную рекламу, а награды за ролики выдаёт сразу. 30 дней за {0}, не продлевается сам.", adMore: "Узнать про Премиум",
+      soonTitle: "Премиум скоро закончится", soonText: "Осталось {0}. Продлить?",
+      endTitle: "Премиум закончился", endText: "Реклама вернулась. Можно включить Премиум снова.",
+      busy: "Ждём подтверждения оплаты…", done: "Готово! Премиум активен до {0}.",
+      fail: "Покупка не прошла. Деньги не списаны.", saveFail: "Оплата принята, но срок пока не сохранился. Не закрывайте игру, мы повторим при следующем запуске.",
+      d1: "{0} день", d2: "{0} дня", d5: "{0} дней", free: "Ян", lang: "ru-RU"
+    },
+    en: {
+      btn: "Premium", btnOn: "Premium · {0} d", title: "Premium",
+      activeUntil: "Active until {0}. {1} left.",
+      notActive: "Premium is not active.",
+      perks: ["Full-screen ads are disabled.", "Rewards for videos are given instantly, no watching.", "The rules and difficulty stay the same: Premium does not help you win."],
+      p30: "Premium for 30 days", p365: "Premium for a year",
+      validTo: "Will be active until {0}", buy: "Buy", endBuy: "Buy Premium", extend: "Extend",
+      note: "One payment, no auto-renewal: nothing else will be charged. If Premium is already running, the new period is added to the end.",
+      close: "Close", later: "Not now",
+      adTitle: "Tired of ads?", adText: "Premium removes full-screen ads and gives video rewards instantly. 30 days for {0}, no auto-renewal.", adMore: "About Premium",
+      soonTitle: "Premium ends soon", soonText: "{0} left. Extend?",
+      endTitle: "Premium has ended", endText: "Ads are back. You can turn Premium on again.",
+      busy: "Waiting for payment confirmation…", done: "Done! Premium is active until {0}.",
+      fail: "The purchase did not go through. You were not charged.", saveFail: "Payment accepted, but the period is not saved yet. Keep the game open, we will retry on the next start.",
+      d1: "{0} day", d2: "{0} days", d5: "{0} days", free: "Yan", lang: "en-GB"
+    }
+  };
+
+  /* ---- Состояние ---- */
+  var sdk = null, payments = null, store = null;
+  var lang = "ru", texts = TEXTS.ru;
+  var catalog = {};                   // id → описание товара из консоли
+  var st = blank();
+  var off = 0;                        // запасная поправка серверного времени, если serverTime() недоступен
+  var ready = false, canBuy = false, busy = false, chain = Promise.resolve();
+  var listeners = [], pollTimer = 0, lastActive = false;
+  var ui = { corner: null, ov: null, box: null, status: "", mode: "", style: null, lastFocus: null };
+
+  function blank() { return { until: 0, tokens: [], ads: 0, cardAt: 0, remindDay: 0, endShown: 0 }; }
+  function clean(o) {
+    var r = blank();
+    if (!o || typeof o !== "object") return r;
+    r.until = Math.max(0, Number(o.until) || 0);
+    r.tokens = Array.isArray(o.tokens) ? o.tokens.filter(function (t) { return typeof t === "string"; }).slice(-config.tokensKeep) : [];
+    r.ads = Math.max(0, Math.floor(Number(o.ads) || 0));
+    r.cardAt = Math.max(0, Math.floor(Number(o.cardAt) || 0));
+    r.remindDay = Math.max(0, Math.floor(Number(o.remindDay) || 0));
+    r.endShown = Math.max(0, Number(o.endShown) || 0);
+    return r;
+  }
+  function parse(raw) { try { return clean(typeof raw === "string" ? JSON.parse(raw) : raw); } catch (e) { return blank(); } }
+  /* Слияние двух снимков (облако и устройство): срок и счётчики берём большие, токены объединяем.
+     Хозяин вызывает при импорте облака, иначе срок мог бы пропасть при конфликте двух устройств. */
+  function mergeState(a, b) {
+    var x = parse(a), y = parse(b), r = blank(), seen = {};
+    r.until = Math.max(x.until, y.until); r.ads = Math.max(x.ads, y.ads); r.cardAt = Math.max(x.cardAt, y.cardAt);
+    r.remindDay = Math.max(x.remindDay, y.remindDay); r.endShown = Math.max(x.endShown, y.endShown);
+    y.tokens.concat(x.tokens).forEach(function (t) { if (!seen[t]) { seen[t] = 1; r.tokens.push(t); } });
+    r.tokens = r.tokens.slice(-config.tokensKeep);
+    return JSON.stringify(r);
+  }
+  function persist() { try { if (store && store.set) store.set(JSON.stringify(st)); } catch (e) {} }
+  function loadState() { try { st = parse(store && store.get ? store.get() : null); } catch (e) { st = blank(); } }
+
+  /* ---- Серверное время: часы устройства не используем ---- */
+  function now() {
+    if (sdk && typeof sdk.serverTime === "function") {
+      try { var t = sdk.serverTime(); if (typeof t === "number" && t > 0) { off = t - Date.now(); return t; } } catch (e) {}
+    }
+    return Date.now() + off;
+  }
+  function active() { return st.until > now(); }
+  function daysLeft() { var ms = st.until - now(); return ms > 0 ? Math.ceil(ms / DAY) : 0; }
+  function available() { return !!(ready && canBuy); }
+
+  /* ---- Утилиты текста ---- */
+  function fmt(s) { var a = arguments; return String(s).replace(/\{(\d)\}/g, function (m, i) { var v = a[Number(i) + 1]; return v == null ? "" : v; }); }
+  function tx(k) { var v = texts[k]; return v != null ? v : (TEXTS.ru[k] != null ? TEXTS.ru[k] : k); }
+  function plural(n) {
+    if (lang === "en") return fmt(n === 1 ? tx("d1") : tx("d2"), n);
+    var m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return fmt(tx("d1"), n);
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return fmt(tx("d2"), n);
+    return fmt(tx("d5"), n);
+  }
+  function dateStr(ms) {
+    try { return new Date(ms).toLocaleDateString(tx("lang"), { day: "numeric", month: "long", year: "numeric" }).replace(/\s*г\.$/, ""); }   // без «г.», чтобы в конце фразы не было «г..»
+    catch (e) { return new Date(ms).toISOString().slice(0, 10); }
+  }
+  function priceOf(id) { var c = catalog[id]; return c && c.price ? String(c.price) : ""; }
+  function dayIdx() { return Math.floor(now() / DAY); }
+  function emit() { var a = active(); lastActive = a; listeners.slice().forEach(function (f) { try { f(a); } catch (e) {} }); renderCorner(); if (ui.ov && ui.mode === "shop") renderShop(); }
+
+  /* ---- Покупка и начисление: запись в облако подтверждена, и только потом consumePurchase ---- */
+  function grant(p) {
+    var id = p && p.productID, tok = p && p.purchaseToken, prod = config.products[id];
+    if (!prod || !tok) return Promise.resolve(false);
+    if (st.tokens.indexOf(tok) < 0) {
+      var base = Math.max(now(), st.until);
+      st.until = base + prod.days * DAY;
+      st.tokens.push(tok); if (st.tokens.length > config.tokensKeep) st.tokens.shift();
+      persist();
+    }
+    return Promise.resolve(store && store.save ? store.save() : false).then(function (ok) {
+      if (!ok) { var e = new Error("save"); e.code = "save"; throw e; }
+      // срок уже сохранён: если закрыть покупку не вышло, её закроют при следующем запуске, второй раз срок не начислится
+      return Promise.resolve(payments.consumePurchase(tok)).then(function () {}, function () {});
+    }).then(function () { emit(); return true; });
+  }
+  function queue(f) { var r = chain.then(f, f); chain = r.then(function () {}, function () {}); return r; }
+  function checkPurchases() {
+    return queue(function () {
+      return payments.getPurchases().then(function (list) {
+        list = Array.isArray(list) ? list : (list && list.purchases) || [];
+        return list.reduce(function (p, item) { return p.then(function () { return grant(item).catch(function () {}); }); }, Promise.resolve());
+      });
+    }).catch(function () {}).then(function () { emit(); });
+  }
+  function buy(id) {
+    if (busy || !canBuy || !config.products[id]) return Promise.resolve(false);
+    busy = true; setStatus(tx("busy")); renderShop();
+    return queue(function () {
+      return payments.purchase({ id: id, developerPayload: "pm" }).then(function (p) {
+        return grant(p).then(function () { setStatus(fmt(tx("done"), dateStr(st.until))); return true; }, function (e) {
+          setStatus(e && e.code === "save" ? tx("saveFail") : tx("fail")); return false;
+        });
+      }, function () { setStatus(tx("fail")); return false; });
+    }).then(function (r) { busy = false; renderShop(); return r; }, function () { busy = false; renderShop(); return false; });
+  }
+
+  /* ---- Вызовы хозяина ---- */
+  function noteFullscreen() { st.ads++; persist(); }
+  /* Показать карточку на спокойном экране (меню, результат). Возвращает true, если карточка открыта. */
+  function maybeCard() {
+    if (!available() || ui.ov) return false;
+    if (active()) {
+      if (daysLeft() <= config.remindDays && st.remindDay !== dayIdx()) { st.remindDay = dayIdx(); persist(); openCard("soon"); return true; }
+      return false;
+    }
+    if (st.until > 0 && st.endShown !== st.until) { st.endShown = st.until; persist(); openCard("end"); return true; }
+    if (config.cardEvery > 0 && Math.floor(st.ads / config.cardEvery) > Math.floor(st.cardAt / config.cardEvery)) { st.cardAt = st.ads; persist(); openCard("ad"); return true; }
+    return false;
+  }
+
+  /* ---- Интерфейс ---- */
+  var CSS = ".pm-corner{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:max(12px,env(safe-area-inset-right,0px));z-index:var(--pm-z,50);display:inline-flex;align-items:center;gap:5px;" +
+    "min-height:40px;padding:0 12px;border-radius:20px;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:var(--pm-gold,#f2c14e);color:#2a2110;font:600 14px/1 var(--f-display,system-ui,sans-serif);letter-spacing:.02em;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.25)}" +
+    ".pm-corner[hidden]{display:none}.pm-corner.on{background:var(--pm-paper,var(--paper,#f4edd9));color:var(--pm-ink,var(--fg,#22304a))}" +
+    ".pm-corner:focus-visible,.pm-btn:focus-visible,.pm-x:focus-visible{outline:3px solid var(--pm-focus,var(--focus,#1d5cc0));outline-offset:2px}" +
+    ".pm-ov{position:fixed;inset:0;z-index:calc(var(--pm-z,50) + 10);display:grid;place-items:center;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px));background:var(--pm-scrim,rgba(20,18,12,.5))}" +
+    ".pm-ov[hidden]{display:none}.pm-box{position:relative;box-sizing:border-box;width:100%;max-width:420px;max-height:calc(100% - 8px);overflow-y:auto;background:var(--pm-paper,var(--paper,#f4edd9));color:var(--pm-ink,var(--fg,#22304a));" +
+    "border:1.5px solid var(--pm-ink,var(--fg,#22304a));border-radius:12px;padding:18px 18px 16px;box-shadow:0 10px 34px rgba(0,0,0,.4);font:15px/1.4 var(--f-body,system-ui,sans-serif);-webkit-user-select:none;user-select:none}" +
+    ".pm-box h2{margin:0 36px 8px 0;font:600 22px/1.2 var(--f-display,system-ui,sans-serif);text-wrap:balance}.pm-box p{margin:0 0 10px}.pm-sub{color:var(--pm-muted,var(--muted,#615d4f));font-size:14px}" +
+    ".pm-x{position:absolute;top:8px;right:8px;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:transparent;color:inherit;font-size:20px;line-height:1;cursor:pointer}" +
+    ".pm-perks{margin:0 0 12px;padding-left:20px}.pm-perks li{margin:0 0 4px}" +
+    ".pm-prod{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:10px 12px;margin:0 0 10px;border:1.5px solid var(--pm-line,var(--line,#b9ab86));border-radius:10px;background:var(--pm-paper2,var(--paper-2,#ebe1c6))}" +
+    ".pm-prod b{font:600 17px/1.2 var(--f-display,system-ui,sans-serif)}.pm-prod .pm-price{font:600 17px/1 var(--f-display,system-ui,sans-serif);font-variant-numeric:tabular-nums;white-space:nowrap}" +
+    ".pm-prod .pm-sub{grid-column:1 / -1}.pm-btn{box-sizing:border-box;min-height:44px;padding:0 16px;border-radius:8px;border:1.5px solid var(--pm-ink,var(--fg,#22304a));background:transparent;color:inherit;font:600 16px/1 var(--f-display,system-ui,sans-serif);cursor:pointer}" +
+    ".pm-btn.main{background:var(--pm-red,var(--red,#b3352b));border-color:var(--pm-red,var(--red,#b3352b));color:var(--pm-redink,var(--red-ink,#fff7ea))}.pm-btn:disabled{opacity:.55;cursor:default}" +
+    ".pm-prod .pm-btn{grid-column:1 / -1;width:100%}.pm-row{display:flex;gap:10px;flex-wrap:wrap}.pm-row .pm-btn{flex:1 1 140px}" +
+    ".pm-status{min-height:20px;margin:6px 0 0;font-size:14px;font-style:italic}@media (prefers-reduced-motion:no-preference){.pm-box{animation:pmIn .2s ease-out}}@keyframes pmIn{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}";
+
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function ensureUi() {
+    if (ui.style) return;
+    ui.style = el("style"); ui.style.textContent = CSS; document.head.appendChild(ui.style);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && ui.ov) closeOv(); });
+  }
+  function renderCorner() {
+    if (!config.corner || typeof document === "undefined") return;
+    var show = ready && (canBuy || active());
+    try { document.documentElement.classList.toggle("pm-on", !!show); } catch (e) {}
+    if (!show) { if (ui.corner) ui.corner.hidden = true; return; }
+    ensureUi();
+    if (!ui.corner) {
+      ui.corner = el("button", "pm-corner"); ui.corner.type = "button"; ui.corner.id = "pmCorner";
+      ui.corner.addEventListener("click", function () { openShop(); });
+      document.body.appendChild(ui.corner);
+    }
+    var on = active();
+    ui.corner.hidden = false;
+    ui.corner.classList.toggle("on", on);
+    // звезда и подпись отдельными элементами: хозяин может скрыть подпись на тесном экране (.pm-lbl), кнопка остаётся звездой
+    ui.corner.textContent = "";
+    ui.corner.appendChild(el("span", "pm-st", "★"));
+    ui.corner.appendChild(el("span", "pm-lbl", on ? fmt(tx("btnOn"), daysLeft()) : tx("btn")));
+    ui.corner.setAttribute("aria-label", on ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("btn"));
+  }
+  function setStatus(s) { ui.status = s || ""; var n = ui.box && ui.box.querySelector(".pm-status"); if (n) n.textContent = ui.status; }
+  function mountOv() {
+    ensureUi(); closeOv(true);
+    ui.lastFocus = document.activeElement;
+    ui.ov = el("div", "pm-ov"); ui.ov.setAttribute("role", "dialog"); ui.ov.setAttribute("aria-modal", "true");
+    ui.box = el("div", "pm-box"); ui.ov.appendChild(ui.box);
+    ui.ov.addEventListener("click", function (e) { if (e.target === ui.ov) closeOv(); });
+    document.body.appendChild(ui.ov);
+  }
+  function closeOv(quiet) {
+    if (ui.ov && ui.ov.parentNode) ui.ov.parentNode.removeChild(ui.ov);
+    ui.ov = null; ui.box = null; ui.mode = ""; ui.status = "";
+    if (!quiet && ui.lastFocus && ui.lastFocus.focus) { try { ui.lastFocus.focus({ preventScroll: true }); } catch (e) {} }
+  }
+  function xBtn() { var b = el("button", "pm-x", "×"); b.type = "button"; b.setAttribute("aria-label", tx("close")); b.addEventListener("click", function () { closeOv(); }); return b; }
+  function productCard(id) {
+    var days = config.products[id].days, c = el("div", "pm-prod");
+    var base = Math.max(now(), st.until);
+    c.appendChild(el("b", "", id === "premium_365" ? tx("p365") : tx("p30")));
+    c.appendChild(el("span", "pm-price", priceOf(id) || ""));
+    c.appendChild(el("span", "pm-sub", fmt(tx("validTo"), dateStr(base + days * DAY))));
+    var b = el("button", "pm-btn main", active() ? tx("extend") : tx("buy")); b.type = "button"; b.disabled = busy; b.setAttribute("data-pm-buy", id);
+    b.addEventListener("click", function () { buy(id); });
+    c.appendChild(b);
+    return c;
+  }
+  function renderShop() {
+    if (!ui.box || ui.mode !== "shop") return;
+    var b = ui.box; b.textContent = "";
+    b.appendChild(xBtn());
+    var h = el("h2", "", tx("title")); h.id = "pmTitle"; b.appendChild(h);
+    ui.ov.setAttribute("aria-labelledby", "pmTitle");
+    b.appendChild(el("p", "", active() ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("notActive")));
+    var ul = el("ul", "pm-perks"); texts.perks.forEach(function (s) { ul.appendChild(el("li", "", s)); }); b.appendChild(ul);
+    config.order.forEach(function (id) { if (catalog[id]) b.appendChild(productCard(id)); });
+    b.appendChild(el("p", "pm-sub", tx("note")));
+    var s = el("p", "pm-status", ui.status); s.setAttribute("role", "status"); s.setAttribute("aria-live", "polite"); b.appendChild(s);
+  }
+  function openShop() {
+    if (!ready || (!canBuy && !active())) return;
+    mountOv(); ui.mode = "shop"; renderShop();
+    var f = ui.box.querySelector(".pm-prod .pm-btn") || ui.box.querySelector(".pm-x"); if (f) try { f.focus({ preventScroll: true }); } catch (e) {}
+  }
+  function openCard(kind) {
+    mountOv(); ui.mode = "card:" + kind;
+    var b = ui.box, p30 = priceOf("premium_30");
+    var title = kind === "ad" ? tx("adTitle") : kind === "soon" ? tx("soonTitle") : tx("endTitle");
+    var text = kind === "ad" ? fmt(tx("adText"), p30 || ("99 " + tx("free"))) : kind === "soon" ? fmt(tx("soonText"), plural(daysLeft())) : tx("endText");
+    b.appendChild(xBtn());
+    var h = el("h2", "", title); h.id = "pmTitle"; b.appendChild(h); ui.ov.setAttribute("aria-labelledby", "pmTitle");
+    b.appendChild(el("p", "", text));
+    var row = el("div", "pm-row");
+    var go = el("button", "pm-btn main", kind === "ad" ? tx("adMore") : (kind === "soon" ? tx("extend") : tx("endBuy"))); go.type = "button";
+    go.addEventListener("click", function () { openShop(); });
+    var no = el("button", "pm-btn", tx("later")); no.type = "button"; no.addEventListener("click", function () { closeOv(); });
+    row.appendChild(go); row.appendChild(no); b.appendChild(row);
+    try { no.focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  /* ---- Запуск ---- */
+  function setLang(l) {
+    lang = l === "en" ? "en" : "ru"; texts = Object.assign({}, TEXTS.ru, TEXTS[lang] || {});
+    renderCorner(); if (ui.ov) { if (ui.mode === "shop") renderShop(); else { var m = ui.mode.split(":")[1]; openCard(m); } }
+  }
+  function tick() {
+    var a = active();
+    if (a !== lastActive) emit(); else renderCorner();
+  }
+  function init(o) {
+    o = o || {};
+    if (o.config) Object.keys(o.config).forEach(function (k) { config[k] = o.config[k]; });
+    if (o.texts) Object.keys(o.texts).forEach(function (l) { TEXTS[l] = Object.assign(TEXTS[l] || {}, o.texts[l]); });
+    sdk = o.sdk || null; store = o.store || null;
+    setLang(o.lang || lang);
+    loadState();
+    ready = true; lastActive = active();
+    try { document.addEventListener("visibilitychange", function () { if (!document.hidden) tick(); }); } catch (e) {}
+    clearInterval(pollTimer); pollTimer = setInterval(tick, config.pollMs);
+    renderCorner();
+    if (!sdk || typeof sdk.getPayments !== "function") return Promise.resolve(false);
+    return sdk.getPayments({ signed: false }).then(function (pay) {
+      payments = pay;
+      return pay.getCatalog();
+    }).then(function (list) {
+      list = Array.isArray(list) ? list : [];
+      list.forEach(function (c) { if (c && config.products[c.id]) catalog[c.id] = c; });
+      canBuy = !!(store && store.save && config.order.some(function (id) { return catalog[id]; }));
+      renderCorner();
+      return canBuy ? checkPurchases().then(function () { return true; }) : false;
+    }).catch(function () { canBuy = false; renderCorner(); return false; });
+  }
+
+  return {
+    config: config,
+    init: init, setLang: setLang,
+    active: active, until: function () { return st.until; }, daysLeft: daysLeft, available: available,
+    noteFullscreen: noteFullscreen, maybeCard: maybeCard, openShop: openShop,
+    onChange: function (f) { if (typeof f === "function") listeners.push(f); },
+    mergeState: mergeState,
+    refresh: function () { return canBuy ? checkPurchases() : Promise.resolve(); },
+    _state: function () { return JSON.parse(JSON.stringify(st)); }
+  };
+})();
+</script>
+<!-- PREMIUM_END -->
+<script src="i18n/en-ui.js"></script>
+<script src="i18n/en-battles.js"></script>
+<script>
+/* Язык: русский / английский (9.11). Выбирается при запуске: выбор игрока (krepost-camp-lang) → язык площадки (?lang= в адресе Яндекс Игр,
+   потом ysdk.environment.i18n.lang) → язык браузера. ru/be/kk/uk/uz/ky/tg/tt → русский, остальное → английский.
+   Смена языка — только на карте битв и с перезагрузкой страницы: так все тексты (в том числе посчитанные при загрузке) сразу на нужном языке.
+   T('русский текст') → перевод из I18N_UI_EN; нет перевода — остаётся русский. Данные битв переводит applyBattlesEn() по BATTLES_EN. */
+window.LANG_KEY = 'krepost-camp-lang';
+window.langOf = function (l) { l = String(l || '').toLowerCase().slice(0, 2); return ['ru','be','kk','uk','uz','ky','tg','tt'].indexOf(l) >= 0 ? 'ru' : 'en'; };
+window.LANG = (function () {
+  var saved = PF.get(LANG_KEY); if (saved === 'ru' || saved === 'en') return saved;
+  var u = ''; try { u = new URLSearchParams(location.search).get('lang') || ''; } catch (e) {}
+  if (u) return langOf(u);
+  try { var s1 = sessionStorage.getItem('krepost-camp-lang-auto'); if (s1 === 'ru' || s1 === 'en') return s1; } catch (e) {}
+  return langOf((navigator.languages && navigator.languages[0]) || navigator.language);
+})();
+document.documentElement.lang = LANG;
+window.T = function (s) { if (LANG !== 'en') return s; var d = window.I18N_UI_EN || {}; return Object.prototype.hasOwnProperty.call(d, s) ? d[s] : s; };
+window.applyBattlesEn = function () {
+  if (LANG !== 'en' || !window.BATTLES || !window.BATTLES_EN) return;
+  for (var id in BATTLES_EN) { var b = BATTLES[id], m = BATTLES_EN[id]; if (!b || !m) continue;
+    for (var path in m) { var keys = path.replace(/\[(\d+)\]/g, '.$1').split('.'), o = b;
+      for (var i = 0; i < keys.length - 1 && o; i++) o = o[keys[i]];
+      if (o && typeof o[keys[keys.length - 1]] === 'string' && m[path]) o[keys[keys.length - 1]] = m[path]; } }
+};
+// статичный HTML: текст и подписи (aria-label, alt, title) по точному совпадению
+window.trDom = function (root) {
+  if (LANG !== 'en') return;
+  var w = document.createTreeWalker(root || document.body, NodeFilter.SHOW_TEXT), n, list = [];
+  while ((n = w.nextNode())) list.push(n);
+  list.forEach(function (x) { var t = x.nodeValue, k = t.trim(); if (k && /[А-Яа-яЁё]/.test(k)) { var e = T(k); if (e !== k) x.nodeValue = t.replace(k, e); } });
+  (root || document).querySelectorAll('[aria-label],[alt],[title]').forEach(function (el) {
+    ['aria-label','alt','title'].forEach(function (a) { var v = el.getAttribute(a); if (v && /[А-Яа-яЁё]/.test(v)) el.setAttribute(a, T(v)); }); });
+  if (/[А-Яа-яЁё]/.test(document.title)) document.title = T(document.title);
+};
+</script>
 <script src="themes/base.js"></script>
 <script src="themes/sprites.js"></script>
 <script src="themes/fortress.js"></script>
@@ -401,7 +924,6 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
 <script src="battles/ice.js"></script>
 <script src="battles/kulikovo.js"></script>
 <script src="battles/moscow1612.js"></script>
-<script src="tools/autoplay.js"></script>
 <script>
 (function(){
 'use strict';
@@ -416,11 +938,11 @@ const SIM_Q = /[?&]open=all\b/.test(location.search);
 // ---------- Битвы ----------
 const BATTLES = window.BATTLES || {};
 const CAMPAIGN = [
-  {id:'thermopylae', title:'Фермопилы', year:'480 г. до н. э.'}, {id:'gaugamela', title:'Гавгамелы', year:'331 г. до н. э.'},
-  {id:'hannibal', title:'Ганнибал у ворот', year:'218–202 гг. до н. э.'}, {id:'spartacus', title:'Спартак', year:'73–71 гг. до н. э.'},
-  {id:'alesia', title:'Алезия', year:'52 г. до н. э.'}, {id:'constantinople', title:'Константинополь', year:'717–718 гг.'},
-  {id:'poitiers', title:'Пуатье', year:'732 г.'}, {id:'ice', title:'Ледовое побоище', year:'1242 г.'},
-  {id:'kulikovo', title:'Куликовская битва', year:'1380 г.'}, {id:'moscow1612', title:'Минин и Пожарский', year:'1612 г.'}
+  {id:'thermopylae', title:T('Фермопилы'), year:T('480 г. до н. э.')}, {id:'gaugamela', title:T('Гавгамелы'), year:T('331 г. до н. э.')},
+  {id:'hannibal', title:T('Ганнибал у ворот'), year:T('218–202 гг. до н. э.')}, {id:'spartacus', title:T('Спартак'), year:T('73–71 гг. до н. э.')},
+  {id:'alesia', title:T('Алезия'), year:T('52 г. до н. э.')}, {id:'constantinople', title:T('Константинополь'), year:T('717–718 гг.')},
+  {id:'poitiers', title:T('Пуатье'), year:T('732 г.')}, {id:'ice', title:T('Ледовое побоище'), year:T('1242 г.')},
+  {id:'kulikovo', title:T('Куликовская битва'), year:T('1380 г.')}, {id:'moscow1612', title:T('Минин и Пожарский'), year:T('1612 г.')}
 ];
 function validBattle(b){
   return b && Array.isArray(b.defenders) && b.defenders.length && Array.isArray(b.enemies) && Array.isArray(b.waves) && b.waves.length && b.content;
@@ -451,6 +973,9 @@ function rawRoad(b){
 
 // ---------- Состояние текущей битвы ----------
 let B = null, PATH = [], SEG = [], PATH_LEN = 0, PADS = [];
+// оружие по волнам: GATE[id] = волна, к которой открывается «оружие другой эпохи» (x0…x3)
+const UNLOCK_WAVES = [5, 10, 15, 20];
+let GATE = {};
 let DEFS = {}, TOWER_ORDER = [], ENEMIES = {}, LOCKED = [], ABIL = {}, ABIL_IDS = [], CHAPTERS = [], WAVES = [], CONTENT = {}, ENC = [], ENC_BY = {}, CH_ART = [], REWARD_ORDER = [], MUL = {}, UI = {};
 let BAL = null;
 const BAL0 = {hpK:0.7, hpG:0.09, hpG2:0.0, hpCh:[1,1,1,1.05,1.15,1.25], spd:1.25, rew:[0.5,0.36,0.34,0.44,0.48,0.5], waveBonus:[12,2], early:10};
@@ -464,6 +989,26 @@ function mkEnemy(e, isBoss){
     guard:sp.includes('guard'), rally:sp.includes('rally'), stealth:sp.includes('stealth'), heal:sp.includes('heal'), burrow:sp.includes('burrow'), climb:sp.includes('climb'),
     mount: kind === 'rider' || kind === 'chariot' || kind === 'beast', lives:Math.max(1, +e.lives || 1), r:+e.r || 12, hp:+e.hp, spd:+e.spd, rew:+e.rew || 0
   });
+}
+const XPROF = [
+  [/пушк|тюфяк|артилл|пищал|мортир/, {cost:170, range:180, dmg:70, cd:2.4, splash:44, proj:'stone', bonusVs:{armor:1.5}, look:['machine','none','stone'], note:'Ядро бьёт по площади'}],
+  [/танк|самол/, {cost:200, range:170, dmg:60, cd:1.4, splash:36, proj:'bullet', look:['machine','none','bullet'], note:'Бьёт далеко и по площади'}],
+  [/требуш|катапул|баллист/, {cost:160, range:200, dmg:60, cd:2.3, splash:42, proj:'stone', look:['machine','none','stone'], note:'Камни летят далеко и бьют по площади'}],
+  [/арбалет|самостр/, {cost:110, range:150, dmg:30, cd:1.1, proj:'bolt', bonusVs:{armor:1.3}, look:['human','crossbow','bolt'], note:'Болт пробивает доспех'}],
+  [/пулем|винтов|ружь|автомат|мушкет|стрельц|штык|полк/, {cost:140, range:150, dmg:26, cd:0.6, proj:'bullet', look:['human','musket','bullet'], note:'Частая стрельба издалека'}],
+  [/гуляй/, {cost:150, range:140, dmg:34, cd:0.9, proj:'bullet', look:['machine','none','bullet'], note:'Подвижная крепость с пищалями'}],
+  [/рыцар|латни|катафракт|стремен|конниц/, {cost:130, range:85, dmg:44, cd:1.3, proj:null, look:['rider','spear',null], note:'Тяжёлый удар в ближнем бою'}],
+  [/./, {cost:130, range:90, dmg:40, cd:1.2, proj:null, look:['human','sword',null], note:'Сильный удар в ближнем бою'}]
+];
+function xSprite(look, own){
+  const [kind, weapon, proj] = look, all = [].concat(own, ...Object.values(window.BATTLES || {}).map(b => b.defenders || []));
+  const m = all.find(d => d.sprite && d.sprite.kind === kind && d.sprite.weapon === weapon) || all.find(d => d.sprite && d.sprite.kind === kind && d.proj === proj) || all.find(d => d.sprite && d.sprite.kind === kind) || own[0];
+  return m && m.sprite ? JSON.parse(JSON.stringify(m.sprite)) : {kind:'human'};
+}
+function xDef(l, i, own){
+  const p = (XPROF.find(([re]) => re.test(String(l.name || '').toLowerCase())) || XPROF[XPROF.length - 1])[1];
+  return Object.assign({id:'x' + i, name:l.name, cost:p.cost, range:p.range, dmg:p.dmg, cd:p.cd, splash:p.splash || 0, proj:p.proj, bonusVs:p.bonusVs || {}, special:null,
+    note:T(p.note), fact:T('Оружие другой эпохи: ') + (l.line || ''), sprite:xSprite(p.look, own), xtra:true});
 }
 function dmgMul(t, d){
   const bv = t.bonusVs || {}; let m = 1;
@@ -483,13 +1028,15 @@ function loadBattle(b){
   // чтобы время под обстрелом было как в эталоне; balance.spd в данных битвы задаёт множитель вручную.
   if (!(b.balance && b.balance.spd)) BAL.spd = BAL0.spd * Math.max(0.55, Math.min(1, PATH_LEN / REF_PATH_LEN)) * ((b.balance && b.balance.spdK) || 1);
   PADS = Array.isArray(b.plots) && b.plots.length ? b.plots.map(p => [+p.x, +p.y]) : STD_PADS.map(p => p.slice());
-  DEFS = {}; TOWER_ORDER = [];
-  for (const d of b.defenders) { DEFS[d.id] = Object.assign({}, d, {cost:+d.cost, range:+d.range, dmg:+d.dmg || 0, cd:+d.cd || 0, splash:+d.splash || 0, specials:SPECIALS(d.special)}); TOWER_ORDER.push(d.id); }
+  DEFS = {}; TOWER_ORDER = []; GATE = {};
+  const xs = (b.locked || []).slice(0, UNLOCK_WAVES.length).map((l, i) => xDef(l, i, b.defenders));
+  for (const d of b.defenders.concat(xs)) { DEFS[d.id] = Object.assign({}, d, {cost:+d.cost, range:+d.range, dmg:+d.dmg || 0, cd:+d.cd || 0, splash:+d.splash || 0, specials:SPECIALS(d.special)}); TOWER_ORDER.push(d.id); }
+  xs.forEach((d, i) => { GATE[d.id] = UNLOCK_WAVES[i]; });
   ENEMIES = {};
   for (const e of b.enemies) ENEMIES[e.id] = mkEnemy(e, false);
   for (const e of (b.bosses || [])) ENEMIES[e.id] = mkEnemy(e, true);
   MUL = {}; for (const t in DEFS) { MUL[t] = {}; for (const k in ENEMIES) MUL[t][k] = dmgMul(DEFS[t], ENEMIES[k]); }
-  LOCKED = (b.locked || []).slice(0, 4);
+  LOCKED = [];   // бывшие «закрытые» анахронизмы теперь бойцы x0…x3 (открываются по волнам)
   ABIL = {}; ABIL_IDS = [];
   (b.abilities || []).slice(0, 2).forEach((a, i) => { const id = a.id || ('ab'+i); ABIL[id] = Object.assign({dur:6}, a, {id, cd:+a.cooldown || 45}); ABIL_IDS.push(id); });
   WAVES = b.waves.map(w => Object.assign({}, w, {g:(w.g || []).filter(gr => ENEMIES[gr[0]])}));
@@ -497,22 +1044,22 @@ function loadBattle(b){
   ENC = (CONTENT.encyclopedia || []).filter(a => a && a.id && a.title);
   ENC_BY = {}; for (const a of ENC) ENC_BY[a.id] = a;
   const battleArts = ENC.filter(a => a.kind === 'battle').map(a => a.id);
-  CHAPTERS = (b.chapters || []).map((c, i) => ({name:c.title || c.name || ('Глава '+(i+1)), year:c.year || '', fact:c.fact || '', lead:c.lead || (WAVES[i*5] && WAVES[i*5].lead) || null, article:c.article || battleArts[i] || null}));
-  while (CHAPTERS.length < 6) CHAPTERS.push({name:'Глава '+(CHAPTERS.length+1), year:'', fact:'', lead:null, article:null});
+  CHAPTERS = (b.chapters || []).map((c, i) => ({name:c.title || c.name || (T('Глава ')+(i+1)), year:c.year || '', fact:c.fact || '', lead:c.lead || (WAVES[i*5] && WAVES[i*5].lead) || null, article:c.article || battleArts[i] || null}));
+  while (CHAPTERS.length < 6) CHAPTERS.push({name:T('Глава ')+(CHAPTERS.length+1), year:'', fact:'', lead:null, article:null});
   REWARD_ORDER = Array.isArray(b.rewardOrder) ? b.rewardOrder : ENC.filter(a => a.kind === 'person' || a.kind === 'misc').map(a => a.id);
   if (!ENC_BY.fortuna) { const fa = Object.assign({}, FORT_ART); ENC.push(fa); ENC_BY.fortuna = fa; }   // открывается первым поворотом колеса, не наградой за ответ
 }
 // статья о Фортуне — та же, что в v4; общая для всех битв кампании
-const FORT_ART = {id:'fortuna', kind:'misc', title:'Фортуна — богиня удачи', hint:'Откроется, когда ты впервые покрутишь Колесо Фортуны.',
-  text:'Римляне верили, что удачей распоряжается богиня Фортуна. Её изображали с рулём корабля в руке — она правит судьбой человека, — и с рогом изобилия, из которого сыплются дары.\n'
-    + 'Римские поэты писали, что Фортуна крутит колесо: сегодня ты наверху, завтра внизу. Удача переменчива, на неё нельзя надеяться одну.\n'
-    + 'По преданию, первый храм Фортуне в Риме построил ещё царь Сервий Туллий. Полководцы просили у неё удачи перед битвой.\n'
-    + 'В войне с Ганнибалом римлянам казалось, что Фортуна от них отвернулась: Треббия, Тразименское озеро, Канны. Но Рим не сдался — и удача вернулась при Метавре и Заме. Римляне говорили: «Смелым помогает судьба».'};
+const FORT_ART = {id:'fortuna', kind:'misc', title:T('Фортуна — богиня удачи'), hint:T('Откроется, когда ты впервые покрутишь Колесо Фортуны.'),
+  text:T('Римляне верили, что удачей распоряжается богиня Фортуна. Её изображали с рулём корабля в руке — она правит судьбой человека, — и с рогом изобилия, из которого сыплются дары.\n')
+    + T('Римские поэты писали, что Фортуна крутит колесо: сегодня ты наверху, завтра внизу. Удача переменчива, на неё нельзя надеяться одну.\n')
+    + T('По преданию, первый храм Фортуне в Риме построил ещё царь Сервий Туллий. Полководцы просили у неё удачи перед битвой.\n')
+    + T('В войне с Ганнибалом римлянам казалось, что Фортуна от них отвернулась: Треббия, Тразименское озеро, Канны. Но Рим не сдался — и удача вернулась при Метавре и Заме. Римляне говорили: «Смелым помогает судьба».')};
 const chapterOf = n => Math.min(5, Math.floor((Math.max(1,n)-1)/5));
 const quizFor = n => (CONTENT.quiz || []).find(q => q && q.wave === n && Array.isArray(q.options)) || null;
 const eventAfter = n => (CONTENT.events || []).find(e => e && e.afterWave === n && Array.isArray(e.options)) || null;
 const waveFact = n => (CONTENT.waveFacts || [])[n-1] || '';
-const coinWord = () => UI.coinWord || 'монет';
+const coinWord = () => UI.coinWord || T('монет');
 function posAt(d){
   d = Math.max(0, Math.min(PATH_LEN, d));
   let lo = 0, hi = SEG.length-1;
@@ -525,8 +1072,15 @@ function segDistY(y){ let m = 1e9; for (const s of SEG){ const a=Math.min(s.y1,s
 
 // ---------- Прогресс кампании ----------
 const PROG_KEY = 'krepost-camp-progress';
-function readProg(){ try { const p = JSON.parse(localStorage.getItem(PROG_KEY) || 'null'); if (p && p.v === 1 && p.done) return p; } catch(e){} return {v:1, done:{}}; }
-function writeProg(p){ try { localStorage.setItem(PROG_KEY, JSON.stringify(p)); } catch(e){} }
+function readProg(){ try { const p = JSON.parse(PF.get(PROG_KEY) || 'null'); if (p && p.v === 1 && p.done) return p; } catch(e){} return {v:1, done:{}}; }
+function writeProg(p){ PF.put(PROG_KEY, JSON.stringify(p)); }
+// слияние облака и устройства (PF.mergers): побеждает больший прогресс, а не более поздняя запись
+PF.mergers[PROG_KEY] = (a, b) => {
+  const pa = JSON.parse(a), pb = JSON.parse(b), done = Object.assign({}, pb.done || {});
+  for (const [id, r] of Object.entries(pa.done || {})) { const o = done[id]; done[id] = o ? {best:Math.max(o.best|0, r.best|0), quiz:Math.max(o.quiz|0, r.quiz|0), at:Math.max(o.at||0, r.at||0)} : r; }
+  return JSON.stringify({v:1, done});
+};
+PF.mergers['krepost-camp-premium'] = (a, b) => window.Premium && Premium.mergeState ? Premium.mergeState(a, b) : null;
 function isOpen(id){
   if (SIM_Q) return true;
   const i = CAMPAIGN.findIndex(c => c.id === id); if (i <= 0) return true;
@@ -543,7 +1097,7 @@ function reset(){
   Object.assign(G, {
     state:'menu', coins:+st.coins || 150, lives:+st.lives || 20, maxLives:+st.lives || 20, wave:0, timer:15, waveTime:0, speed:G.speed || 1, paused:false,
     enemies:[], towers:PADS.map(()=>null), projs:[], fx:[], queue:[], time:0,
-    abil:{}, sel:-1, idSeq:1, quiz:{}, events:{}, enc:{}, fastNext:false, fastWave:false, quizArt:null, leaks:{},
+    abil:{}, sel:-1, idSeq:1, quiz:{}, events:{}, enc:{}, fastNext:false, fastWave:false, quizArt:null, leaks:{}, adCh:{},
     fBonus:0, fTok:{unit:0, slow:0, recharge:0}, slowWave:false   // Дары Фортуны: бонусные денарии этой партии и жетоны наград
   });
   for (const id of ABIL_IDS) G.abil[id] = {cd:0, act:0};
@@ -555,11 +1109,12 @@ function encCount(){ let n = 0; for (const a of ENC) if (G.enc[a.id]) n++; retur
 // Открытые статьи свитка копятся между партиями: свой ключ на каждую битву (9.11; раньше новая партия начинала свиток с нуля).
 // Статья о Фортуне открыта во всех битвах, если колесо хоть раз крутили.
 const encKey = id => 'krepost-camp-enc-' + id;
+for (const id of Object.keys(window.BATTLES || {})) PF.mergers[encKey(id)] = (a, b) => JSON.stringify([...new Set([].concat(JSON.parse(a) || [], JSON.parse(b) || []))]);
 function encLoad(){
-  try { const a = JSON.parse(localStorage.getItem(encKey(B.id)) || '[]'); if (Array.isArray(a)) for (const id of a) if (ENC_BY[id]) G.enc[id] = 1; } catch(e){}
+  try { const a = JSON.parse(PF.get(encKey(B.id)) || '[]'); if (Array.isArray(a)) for (const id of a) if (ENC_BY[id]) G.enc[id] = 1; } catch(e){}
   if (ENC_BY.fortuna && fRead().spins > 0) G.enc.fortuna = 1;
 }
-function encStore(){ if (SIM || !B) return; try { localStorage.setItem(encKey(B.id), JSON.stringify(ENC.filter(a => G.enc[a.id]).map(a => a.id))); } catch(e){} }
+function encStore(){ if (SIM || !B) return; PF.put(encKey(B.id), JSON.stringify(ENC.filter(a => G.enc[a.id]).map(a => a.id))); }
 function unlock(id){ if (!ENC_BY[id] || G.enc[id]) return null; G.enc[id] = 1; encStore(); refreshEncBtn(true); return ENC_BY[id]; }
 function unlockNotify(id){ const a = unlock(id); if (a && !SIM) ENC_NEW.push(a.title); return a; }
 function unlockReward(){
@@ -570,29 +1125,27 @@ function unlockReward(){
 // сохранение: снимок в начале каждой паузы между волнами и в начале каждой волны
 const SAVE_V = 1;
 let lastSnap = null;
-function readBest(){ try { return +localStorage.getItem(bestKey(B.id)) || 0; } catch(e){ return 0; } }
+function readBest(){ return +PF.get(bestKey(B.id)) || 0; }
 function snapshot(){
   const ab = {}; for (const id of ABIL_IDS) ab[id] = +G.abil[id].cd.toFixed(2);
   return {v:SAVE_V, id:B.id, wave:G.wave, coins:G.coins, lives:G.lives,
     towers:G.towers.map((t,i) => t ? {pad:i, type:t.type, lvl:t.lvl, spent:t.spent} : null).filter(Boolean),
     abil:ab, quiz:Object.assign({}, G.quiz), events:Object.assign({}, G.events), enc:ENC.filter(a => G.enc[a.id]).map(a => a.id),
-    fastNext:!!G.fastNext, fBonus:G.fBonus, fTok:Object.assign({}, G.fTok), t:Date.now()};
+    fastNext:!!G.fastNext, fBonus:G.fBonus, fTok:Object.assign({}, G.fTok), adCh:Object.assign({}, G.adCh), t:Date.now()};
 }
-function writeSave(s){ if (!s || SIM) return false; try { localStorage.setItem(saveKey(B.id), JSON.stringify(s)); return true; } catch(e){ return false; } }
+function writeSave(s){ if (!s || SIM) return false; PF.put(saveKey(B.id), JSON.stringify(s)); return true; }
 function readSave(id){
   id = id || (B && B.id);
   try {
-    const s = JSON.parse(localStorage.getItem(saveKey(id)) || 'null');
+    const s = JSON.parse(PF.get(saveKey(id)) || 'null');
     const nW = (BATTLES[id] && BATTLES[id].waves || []).length || 30;
     if (!s || s.v !== SAVE_V || s.id !== id || typeof s.wave !== 'number' || s.wave < 0 || s.wave >= nW || !(s.lives > 0)) return null;
     return s;
   } catch(e){ return null; }
 }
-function clearSave(){ lastSnap = null; if (SIM) return; try { localStorage.removeItem(saveKey(B.id)); } catch(e){} }
+function clearSave(){ lastSnap = null; if (SIM) return; PF.del(saveKey(B.id)); }
 function persist(){ if (G.state === 'intermission') { lastSnap = snapshot(); writeSave(lastSnap); } }
 function saveNow(){ if (SIM || !B) return; if (G.state === 'intermission') persist(); else if (G.state === 'wave' && lastSnap) writeSave(lastSnap); }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveNow(); });
-window.addEventListener('pagehide', saveNow);
 
 function startGame(){
   reset(); ENC_NEW = [];
@@ -616,6 +1169,7 @@ function continueGame(){
   for (const id of (s.enc || [])) if (ENC_BY[id]) G.enc[id] = 1;
   G.fastNext = !!s.fastNext;
   G.fBonus = Math.max(0, Math.min(FORT_CAP, s.fBonus|0));
+  G.adCh = Object.assign({}, s.adCh || {});
   const ft = s.fTok || {}; G.fTok = {unit:Math.min(2, ft.unit|0), slow:ft.slow ? 1 : 0, recharge:ft.recharge ? 1 : 0};
   G.state = 'intermission'; G.timer = 15;
   CAM.tgt = null; CAM.vel = 0; setCamera(CAM.max);
@@ -651,17 +1205,17 @@ function endWave(){
   if (G.wave >= WAVES.length) { finish(true); return; }
   G.coins += BAL.waveBonus[0] + BAL.waveBonus[1]*G.wave;
   G.state = 'intermission'; G.timer = 15; G.fastWave = false; G.slowWave = false;
-  showWaveCard(); persist(); maybeEvent(); refreshUI();
+  showWaveCard(); persist(); maybeEvent(); refreshUI(); gateNotify();
 }
 function quizCorrect(){ let n = 0; for (const q of (CONTENT.quiz || [])) if (q && G.quiz[q.wave] === q.answer) n++; return n; }
 function finish(win){
   G.state = win ? 'won' : 'lost';
   if (SIM) return;
-  closeSheet(); hideCard(); closeModals(); clearSave(); $('pausebox').hidden = true;
+  closeSheet(); hideCard(); closeModals(); clearSave(); $('pausebox').hidden = true; pmCard(1500);
   if (win) {
     for (const a of ENC) G.enc[a.id] = 1;
     encStore(); refreshEncBtn();
-    let best = 0; try { best = +localStorage.getItem(bestKey(B.id)) || 0; if (G.lives > best) localStorage.setItem(bestKey(B.id), String(G.lives)); } catch(e){}
+    let best = readBest(); if (G.lives > best) PF.put(bestKey(B.id), String(G.lives));
     best = Math.max(best, G.lives);
     const p = readProg(), old = p.done[B.id] || {}; p.done[B.id] = {best:Math.max(old.best || 0, G.lives), quiz:Math.max(old.quiz || 0, quizCorrect()), at:Date.now()}; writeProg(p);
     renderWin(best);
@@ -676,10 +1230,18 @@ function towerStats(t){
   return {range:def.range*rm, dmg:def.dmg*m, cd:def.cd, lvl:t.lvl};
 }
 function upgradeCost(t){ return t.lvl >= 3 ? 0 : Math.round(DEFS[t.type].cost * (t.lvl === 1 ? 0.7 : 1.0)); }
+function towerOpen(k){ const n = GATE[k]; return !n || G.wave + (G.state === 'wave' ? 0 : 1) >= n; }
+const gateText = k => T('Откроется на {n}-й волне').replace('{n}', GATE[k]);
+// в передышке перед волной-порогом — заметное сообщение «Открыто: …»
+function gateNotify(){
+  if (SIM) return;
+  const now = TOWER_ORDER.filter(k => GATE[k] === G.wave + 1);
+  if (now.length) toast(now.map(k => icT(k)).join('') + '<b>' + T('Открыто: ') + now.map(k => esc(DEFS[k].name)).join(', ') + '!</b> ' + T('Оружие другой эпохи — в ряду внизу. Ставь его на кружок у дороги.'), 7);
+}
 function build(pad, type){
   const def = DEFS[type];
   const free = G.fTok.unit > 0;   // «Ветеран» с Колеса Фортуны: один воин даром (при продаже за него ничего не вернут)
-  if (!def || !PADS[pad] || G.towers[pad] || (!free && G.coins < def.cost) || !isPlaying()) return false;
+  if (!def || !PADS[pad] || G.towers[pad] || !towerOpen(type) || (!free && G.coins < def.cost) || !isPlaying()) return false;
   if (free) G.fTok.unit--; else G.coins -= def.cost;
   G.towers[pad] = {type, lvl:1, spent:free ? 0 : def.cost, cd:0, x:PADS[pad][0], y:PADS[pad][1], flash:0, id:pad};
   unlock(type);
@@ -715,7 +1277,7 @@ function update(dt){
   G.time += dt;
   for (const k in G.abil){ const a = G.abil[k], was = a.act; a.cd = Math.max(0, a.cd-dt); a.act = Math.max(0, a.act-dt);
     // жетон «Милость богов» с Колеса Фортуны: как только действие способности кончилось, все способности снова готовы
-    if (G.fTok.recharge && was > 0 && a.act === 0) { G.fTok.recharge = 0; for (const j in G.abil) G.abil[j].cd = 0; floatText(W/2, CAM.y + VIEW_H*.7, 'Милость богов!', '#ffe07a'); } }
+    if (G.fTok.recharge && was > 0 && a.act === 0) { G.fTok.recharge = 0; for (const j in G.abil) G.abil[j].cd = 0; floatText(W/2, CAM.y + VIEW_H*.7, T('Милость богов!'), '#ffe07a'); } }
   if (G.state === 'intermission') { if (!quizOpen() && !eventOpen()) G.timer -= dt; if (G.timer <= 0) startWave(); }
   if (G.state === 'wave') {
     G.waveTime += dt;
@@ -743,7 +1305,7 @@ function update(dt){
       else {
         e.immune = Math.max(0, e.immune - dt);
         if (e.immune <= 0) for (const t of panics) {
-          if (Math.hypot(e.x-t.x, e.y-t.y) <= towerStats(t).range) { e.panic = 3; t.flash = 0.6; floatText(e.x, e.y-22, 'Паника!', '#fff'); break; }
+          if (Math.hypot(e.x-t.x, e.y-t.y) <= towerStats(t).range) { e.panic = 3; t.flash = 0.6; floatText(e.x, e.y-22, T('Паника!'), '#fff'); break; }
         }
       }
     } else if (e.panic > 0) { e.panic -= dt; dir = -1.4; }
@@ -1242,41 +1804,41 @@ function splitName(n){ const w = String(n).split(' '); if (w.length < 2) return 
 function buildBattleUI(){
   let h = '';
   for (const k of TOWER_ORDER){ const d = DEFS[k];
-    h += '<button class="unit" data-t="'+esc(k)+'">'+icT(k)+'<span class="nm'+nmLong(d.name)+'">'+esc(d.name)+'</span><span class="pr">'+icCoin()+d.cost+'</span></button>'; }
-  LOCKED.forEach((d,i)=>{ h += '<button class="unit locked" data-l="'+i+'" aria-label="'+esc(d.name)+' — недоступно">'+img(IC['l_'+i])+'<span class="nm'+nmLong(d.name)+'">'+esc(d.name)+'</span><span class="pr" style="color:var(--muted)">закрыто</span></button>'; });
+    h += '<button class="unit'+(d.xtra ? ' xtra' : '')+'" data-t="'+esc(k)+'">'+icT(k)+'<span class="nm'+nmLong(d.name)+'">'+esc(d.name)+'</span><span class="pr">'+icCoin()+d.cost+'</span>'+(GATE[k] ? '<span class="gt">🔒 '+esc(gateText(k))+'</span>' : '')+'</button>'; }
+  LOCKED.forEach((d,i)=>{ h += '<button class="unit locked" data-l="'+i+'" aria-label="'+esc(d.name)+T(' — недоступно">')+img(IC['l_'+i])+'<span class="nm'+nmLong(d.name)+'">'+esc(d.name)+T('</span><span class="pr" style="color:var(--muted)">закрыто</span></button>'); });
   ui.roster.innerHTML = h; ui.roster.scrollLeft = 0;
   ui.ab.forEach((b,i) => { const id = ABIL_IDS[i]; b.hidden = !id; if (!id) return; b.dataset.k = id; b.setAttribute('aria-label', ABIL[id].name); b.querySelector('img').src = IC['a_'+id]; b.querySelector('.lbl').innerHTML = splitName(ABIL[id].name); });
-  $('stCoins').title = UI.coinTitle || 'Монеты'; $('stLives').title = UI.livesTitle || 'Стены';
-  $('camTop').textContent = UI.camTop || 'Враг'; $('camBot').textContent = UI.camBottom || 'Стены';
-  $('btnAlps').setAttribute('aria-label', 'К началу дороги'); $('btnRome').setAttribute('aria-label', 'К крепости');
-  cv.setAttribute('aria-label', 'Поле боя: ' + (B.title || ''));
-  document.title = (B.title || 'Крепость') + ' — Крепость';
+  $('stCoins').title = UI.coinTitle || T('Монеты'); $('stLives').title = UI.livesTitle || T('Стены');
+  $('camTop').textContent = UI.camTop || T('Враг'); $('camBot').textContent = UI.camBottom || T('Стены');
+  $('btnAlps').setAttribute('aria-label', T('К началу дороги')); $('btnRome').setAttribute('aria-label', T('К крепости'));
+  cv.setAttribute('aria-label', T('Поле боя: ') + (B.title || ''));
+  document.title = (B.title || T('Битвы истории')) + T(' — Битвы истории');
 }
 let lastUI = '';
 function refreshUI(){
   if (SIM || !B) return;
   ui.coins.textContent = G.coins; ui.lives.textContent = G.lives; ui.coins.style.fontSize = G.coins >= 1000 ? '16px' : '';
   ui.wave.textContent = G.wave + '/' + WAVES.length;
-  if (G.state === 'intermission') { ui.next.disabled = false; ui.next.textContent = 'Следующая волна ▶ ' + Math.max(0,Math.ceil(G.timer)); }
-  else { ui.next.disabled = true; ui.next.textContent = G.state === 'wave' ? 'Идёт волна ' + G.wave : 'Следующая волна'; }
+  if (G.state === 'intermission') { ui.next.disabled = false; ui.next.textContent = T('Следующая волна ▶ ') + Math.max(0,Math.ceil(G.timer)); }
+  else { ui.next.disabled = true; ui.next.textContent = G.state === 'wave' ? T('Идёт волна ') + G.wave : T('Следующая волна'); }
   ui.speed.textContent = '×' + G.speed; ui.speed.setAttribute('aria-pressed', G.speed === 2 ? 'true':'false');
   ui.pause.textContent = G.paused ? '▶' : '❚❚'; ui.pause.setAttribute('aria-pressed', G.paused ? 'true':'false');
   $('pausebox').hidden = !(G.paused && isPlaying());
   ui.ab.forEach(b => { const k = b.dataset.k; if (!k || !G.abil[k]) return; const a = G.abil[k];
     b.querySelector('.med').style.setProperty('--p', (a.cd > 0 ? (1 - a.cd/ABIL[k].cd)*100 : 100) + '%');
     b.classList.toggle('cooling', a.cd > 0 && a.act <= 0); b.classList.toggle('active', a.act > 0); });
-  ui.roster.querySelectorAll('.unit[data-t]').forEach(b => b.classList.toggle('cant', G.coins < DEFS[b.dataset.t].cost && !(G.fTok.unit > 0)));
+  ui.roster.querySelectorAll('.unit[data-t]').forEach(b => { const k = b.dataset.t, op = towerOpen(k); b.classList.toggle('gated', !op); b.classList.toggle('cant', op && G.coins < DEFS[k].cost && !(G.fTok.unit > 0)); });
   if (!ui.sheet.hidden && ui.sheet.dataset.mode) {
-    const key = ui.sheet.dataset.mode + G.coins + G.sel + (G.towers[G.sel] ? G.towers[G.sel].lvl : 0) + '/' + G.fTok.unit;
+    const key = ui.sheet.dataset.mode + G.coins + G.sel + (G.towers[G.sel] ? G.towers[G.sel].lvl : 0) + '/' + G.fTok.unit + '/' + G.wave + G.state;
     if (key !== lastUI) renderSheet();
   }
 }
 function towerNote(d, st){
   const sp = d.specials, bits = [esc(d.note || '')];
-  if (d.dmg > 0) bits.push('урон '+Math.round(st.dmg));
-  if (sp.includes('wall')) bits.push('держит врага '+([1.5,1.9,2.3][st.lvl-1])+' с');
-  if (sp.includes('slow') && !(d.dmg > 0)) bits.push('замедляет на '+[40,48,55][st.lvl-1]+'%');
-  bits.push('дальность '+Math.round(st.range));
+  if (d.dmg > 0) bits.push(T('урон ')+Math.round(st.dmg));
+  if (sp.includes('wall')) bits.push(T('держит врага ')+([1.5,1.9,2.3][st.lvl-1])+T(' с'));
+  if (sp.includes('slow') && !(d.dmg > 0)) bits.push(T('замедляет на ')+[40,48,55][st.lvl-1]+'%');
+  bits.push(T('дальность ')+Math.round(st.range));
   return bits.filter(Boolean).join(' · ');
 }
 function renderSheet(){
@@ -1286,18 +1848,19 @@ function renderSheet(){
   if (!t) {
     s.dataset.mode = 'build';
     const free = G.fTok.unit > 0;
-    let h = '<h3><span>'+(free ? 'Ветеран Фортуны — даром!' : 'Кого поставить?')+'</span><button data-close aria-label="Закрыть">×</button></h3><div class="grid3">';
+    let h = '<h3><span>'+(free ? T('Ветеран Фортуны — даром!') : T('Кого поставить?'))+T('</span><button data-close aria-label="Закрыть">×</button></h3><div class="grid3">');
     for (const k of TOWER_ORDER){ const d = DEFS[k];
-      h += '<button class="pick" data-b="'+esc(k)+'"'+(G.coins<d.cost&&!free?' disabled':'')+'>'+icT(k)+'<span class="nm'+nmLong(d.name)+'">'+esc(d.name)+'</span><span class="pr">'+(free ? 'даром' : icCoin()+d.cost)+'</span></button>'; }
+      const op = towerOpen(k);
+      h += '<button class="pick'+(op ? '' : ' gated')+'" data-b="'+esc(k)+'"'+(!op || G.coins<d.cost&&!free?' disabled':'')+'>'+icT(k)+'<span class="nm'+nmLong(d.name)+'">'+esc(d.name)+'</span><span class="pr">'+(!op ? '🔒 '+esc(gateText(k)) : free ? T('даром') : icCoin()+d.cost)+'</span></button>'; }
     s.innerHTML = h + '</div>';
   } else {
     s.dataset.mode = 'tower';
     const d = DEFS[t.type], st = towerStats(t), uc = upgradeCost(t);
-    s.innerHTML = '<h3><span>'+icT(t.type)+esc(d.name)+' · ур. '+t.lvl+'</span><button data-close aria-label="Закрыть">×</button></h3>'
+    s.innerHTML = '<h3><span>'+icT(t.type)+esc(d.name)+T(' · ур. ')+t.lvl+T('</span><button data-close aria-label="Закрыть">×</button></h3>')
       + '<div class="fact" style="margin:0">'+towerNote(d, st)+'</div>'
-      + '<div class="row3"><button class="act up" data-up'+(t.lvl>=3||G.coins<uc?' disabled':'')+'>'+(t.lvl>=3?'Макс. уровень':'Улучшить · '+icCoin()+uc)+'</button>'
-      + '<button class="act" data-sell>Продать · +'+Math.floor(t.spent*0.6)+'</button>'
-      + '<button class="act" data-art="'+esc(t.type)+'" aria-label="Статья в свитке знаний"><span class="em">📜</span></button></div>'
+      + '<div class="row3"><button class="act up" data-up'+(t.lvl>=3||G.coins<uc?' disabled':'')+'>'+(t.lvl>=3?T('Макс. уровень'):T('Улучшить · ')+icCoin()+uc)+'</button>'
+      + T('<button class="act" data-sell>Продать · +')+Math.floor(t.spent*0.6)+'</button>'
+      + '<button class="act" data-art="'+esc(t.type)+T('" aria-label="Статья в свитке знаний"><span class="em">📜</span></button></div>')
       + '<p class="fact">'+esc(d.fact || '')+'</p>';
   }
   lastUI = s.dataset.mode + G.coins + G.sel + (t ? t.lvl : 0) + '/' + G.fTok.unit;
@@ -1317,7 +1880,7 @@ let toastTimer = 0;
 function toast(html, sec){ ui.toast.innerHTML = html; ui.toast.hidden = false; ui.sheet.hidden || (ui.toast.hidden = true); toastTimer = sec || 4; }
 function builtToast(k, fresh){
   const d = DEFS[k];
-  toast(icT(k)+'<b>'+esc(d.name)+'.</b> '+esc(d.fact || '')+(fresh && ENC_BY[k] ? '<span class="tnew">📜 В свитке знаний новая статья: «'+esc(ENC_BY[k].title)+'»</span>' : ''), fresh ? 5 : 4);
+  toast(icT(k)+'<b>'+esc(d.name)+'.</b> '+esc(d.fact || '')+(fresh && ENC_BY[k] ? T('<span class="tnew">📜 В свитке знаний новая статья: «')+esc(ENC_BY[k].title)+'»</span>' : ''), fresh ? 5 : 4);
 }
 function quizOpen(){
   if (SIM) return false;
@@ -1328,18 +1891,18 @@ function quizHTML(n){
   const q = quizFor(n); if (!q) return '';
   const ans = G.quiz[n];
   let h = '<div class="quiz">';
-  if (ans === -1) return h + '<p class="qex">Вопрос пропущен.</p></div>';
-  h += '<div class="qq"><span class="qm">ВОПРОС</span>'+esc(q.q)+'</div>';
+  if (ans === -1) return h + T('<p class="qex">Вопрос пропущен.</p></div>');
+  h += T('<div class="qq"><span class="qm">ВОПРОС</span>')+esc(q.q)+'</div>';
   q.options.forEach((o,i) => {
     let c = 'qo';
     if (ans !== undefined) c += i === q.answer ? ' ok' : i === ans ? ' bad' : ' dim';
-    h += '<button class="'+c+'" data-q="'+i+'"'+(ans !== undefined ? ' disabled' : '')+'><span class="k">'+'АБВГ'[i]+'</span><span>'+esc(o)+'</span></button>';
+    h += '<button class="'+c+'" data-q="'+i+'"'+(ans !== undefined ? ' disabled' : '')+'><span class="k">'+T('АБВГ')[i]+'</span><span>'+esc(o)+'</span></button>';
   });
-  if (ans === undefined) h += '<div class="qfoot"><span class="qrew">Верный ответ: +'+QUIZ_REWARD+' '+icCoin()+'</span><button class="qskip" data-skip>Пропустить</button></div>';
+  if (ans === undefined) h += T('<div class="qfoot"><span class="qrew">Верный ответ: +')+QUIZ_REWARD+' '+icCoin()+T('</span><button class="qskip" data-skip>Пропустить</button></div>');
   else if (ans === q.answer) {
     const art = G.quizArt && G.quizArt.n === n ? G.quizArt.title : '';
-    h += '<p class="qex good"><b>Верно! +'+QUIZ_REWARD+' '+esc(coinWord())+'.</b> '+esc(q.explain)+(art ? '<span class="qnew">📜 Новая статья в свитке: «'+esc(art)+'»</span>' : '')+'</p>';
-  } else h += '<p class="qex bad"><b>Не совсем.</b> Верный ответ — «'+esc(q.options[q.answer])+'». '+esc(q.explain)+'</p>';
+    h += T('<p class="qex good"><b>Верно! +')+QUIZ_REWARD+' '+esc(coinWord())+'.</b> '+esc(q.explain)+(art ? T('<span class="qnew">📜 Новая статья в свитке: «')+esc(art)+'»</span>' : '')+'</p>';
+  } else h += T('<p class="qex bad"><b>Не совсем.</b> Верный ответ — «')+esc(q.options[q.answer])+'». '+esc(q.explain)+'</p>';
   return h + '</div>';
 }
 function showWaveCard(){
@@ -1347,26 +1910,45 @@ function showWaveCard(){
   const n = G.wave + 1; if (n > WAVES.length) return;
   const w = WAVES[n-1], e = ENEMIES[w.lead] || ENEMIES[(w.g[0] || [])[0]] || {};
   const fact = esc(waveFact(n) || w.fact || e.fact || '');
-  const warn = (G.fastNext ? '<p class="warn">⚡ Эта волна идёт на 20% быстрее</p>' : '')
-    + (G.fTok.slow ? '<p class="warn good">Фортуна благосклонна: эта волна идёт на 20% медленнее</p>' : '');
+  const warn = (G.fastNext ? T('<p class="warn">⚡ Эта волна идёт на 20% быстрее</p>') : '')
+    + (G.fTok.slow ? T('<p class="warn good">Фортуна благосклонна: эта волна идёт на 20% медленнее</p>') : '');
   let top;
   if ((n-1) % 5 === 0) {
     const ci = chapterOf(n), c = CHAPTERS[ci];
     if (c.article) unlockNotify(c.article);
     const lead = ENEMIES[c.lead] ? c.lead : (w.lead || (w.g[0] || [])[0]);
     ui.card.className = 'card chap';
-    top = img(IC['e_'+lead],'por')+'<div><div class="ch">Глава '+(ci+1)+' из '+CHAPTERS.length+(c.year ? ' · '+esc(c.year) : '')+'</div><div class="t">'+esc(c.name)+'</div><p>'+esc(c.fact)+'</p><p class="nx">Волна <b>'+n+'</b>: '+esc(w.title || '')+'</p><p>'+fact+'</p>'+warn+'</div>';
+    top = img(IC['e_'+lead],'por')+T('<div><div class="ch">Глава ')+(ci+1)+T(' из ')+CHAPTERS.length+(c.year ? ' · '+esc(c.year) : '')+'</div><div class="t">'+esc(c.name)+'</div><p>'+esc(c.fact)+T('</p><p class="nx">Волна <b>')+n+'</b>: '+esc(w.title || '')+'</p><p>'+fact+'</p>'+warn+'</div>';
   } else {
     ui.card.className = 'card';
     const lead = ENEMIES[w.lead] ? w.lead : (w.g[0] || [])[0];
-    top = img(IC['e_'+lead],'por')+'<div><div class="t">Волна <b>'+n+'</b>: '+esc(w.title || '')+'</div><p>'+fact+'</p>'+warn+'</div>';
+    top = img(IC['e_'+lead],'por')+T('<div><div class="t">Волна <b>')+n+'</b>: '+esc(w.title || '')+'</div><p>'+fact+'</p>'+warn+'</div>';
   }
   const sc = ui.card.querySelector('.cin'), keep = sc && !ui.card.hidden ? sc.scrollTop : 0;
   ui.card.hidden = false;
-  ui.card.innerHTML = (quizOpen() ? '' : '<button class="x" aria-label="Скрыть">×</button>') + '<div class="cin"><div class="ctop">'+top+'</div>'+quizHTML(n)+fortCardHTML()+'</div>';
+  ui.card.innerHTML = (quizOpen() ? '' : T('<button class="x" aria-label="Скрыть">×</button>')) + '<div class="cin"><div class="ctop">'+top+'</div>'+quizHTML(n)+adHTML(n)+fortCardHTML()+'</div>';
   const nc = ui.card.querySelector('.cin'); if (nc && keep) nc.scrollTop = keep;
 }
 function hideCard(){ ui.card.hidden = true; }
+// ролик за награду (только на Яндекс Играх): между волнами, по кнопке, один раз за главу, после ответа на вопрос; с Премиумом — без ролика
+const AD_REWARD = 60;
+function adHTML(n){
+  if (SIM || G.state !== 'intermission' || !PF.canReward() || G.adCh[chapterOf(n)] || quizOpen()) return '';
+  if (PF.premium()) return T('<button class="adbtn" data-ad>★ Премиум: +')+AD_REWARD+T(' без ролика ')+icCoin()+T('<small>один раз за главу</small></button>');
+  return T('<button class="adbtn" data-ad>▶ Посмотреть рекламу: +')+AD_REWARD+' '+icCoin()+T('<small>один раз за главу, по желанию</small></button>');
+}
+function watchAd(){
+  const ch = chapterOf(G.wave + 1);
+  if (G.state !== 'intermission' || G.adCh[ch]) return;
+  PF.rewarded(got => {
+    if (got && G.state === 'intermission' && !G.adCh[ch]) {
+      G.adCh[ch] = 1; G.coins += AD_REWARD;
+      floatText(W/2, CAM.y + VIEW_H*.72, '+'+AD_REWARD+' 🪙', '#ffe07a'); persist();
+    }
+    if (G.state === 'intermission' && !ui.card.hidden) showWaveCard();
+    refreshUI();
+  });
+}
 function answerQuiz(i){
   const n = G.wave + 1, q = quizFor(n);
   if (!q || G.state !== 'intermission' || G.quiz[n] !== undefined) return false;
@@ -1389,6 +1971,7 @@ ui.card.addEventListener('click', ev => {
   if (b && b.dataset.q !== undefined) { answerQuiz(+b.dataset.q); return; }
   if (b && b.hasAttribute('data-skip')) { skipQuiz(); return; }
   if (b && b.hasAttribute('data-fort')) { openFort(); return; }
+  if (b && b.hasAttribute('data-ad')) { watchAd(); return; }
   if (quizOpen()) return;
   if (b && b.classList.contains('x')) { hideCard(); return; }
   if (ev.target.closest('.quiz')) return;
@@ -1404,22 +1987,22 @@ function maybeEvent(){
   const e = eventAfter(G.wave);
   if (G.state === 'intermission' && e && G.events[e.afterWave] === undefined) { renderEvent(e, null); scrEvent.hidden = false; G.paused = false; }
 }
-function eventBonusText(){ return UI.eventBonus || ('способности «'+ABIL_IDS.map(id => ABIL[id].name).join('» и «')+'» снова готовы.'); }
+function eventBonusText(){ return UI.eventBonus || (T('способности «')+ABIL_IDS.map(id => ABIL[id].name).join(T('» и «'))+T('» снова готовы.')); }
 function renderEvent(e, res){
   const chosen = G.events[e.afterWave];
-  let h = '<div class="sin"><div class="ch">Развилка истории · после волны '+e.afterWave+'</div><h2>'+esc(e.title)+'</h2>'+paras(e.text);
-  h += '<div class="eask">'+(chosen === undefined ? 'Как поступить?' : 'Твой выбор')+'</div>';
+  let h = T('<div class="sin"><div class="ch">Развилка истории · после волны ')+e.afterWave+'</div><h2>'+esc(e.title)+'</h2>'+paras(e.text);
+  h += '<div class="eask">'+(chosen === undefined ? T('Как поступить?') : T('Твой выбор'))+'</div>';
   e.options.forEach((o,i) => {
     let c = 'qo';
     if (chosen !== undefined) c += o.correct ? ' ok' : i === chosen ? ' bad' : ' dim';
-    h += '<button class="'+c+'" data-e="'+i+'"'+(chosen !== undefined ? ' disabled' : '')+'><span class="k">'+'АБВГ'[i]+'</span><span>'+esc(o.label)+'</span></button>';
+    h += '<button class="'+c+'" data-e="'+i+'"'+(chosen !== undefined ? ' disabled' : '')+'><span class="k">'+T('АБВГ')[i]+'</span><span>'+esc(o.label)+'</span></button>';
   });
   if (chosen !== undefined) {
     const o = e.options[chosen] || {};
     h += o.correct
-      ? '<div class="eres good"><b>Мудрое решение!</b>'+esc(o.result)+'<span class="eff">+'+EVENT_REWARD+' '+esc(coinWord())+', '+esc(eventBonusText())+'</span>'+(res && res.art ? '<span class="qnew">📜 Новая статья в свитке: «'+esc(res.art)+'»</span>' : '')+'</div>'
-      : '<div class="eres bad"><b>Ошибка дорого стоила.</b>'+esc(o.result)+'<span class="eff">−2 стены. Следующая волна придёт на 20% быстрее.</span></div>';
-    h += '</div><button class="cta" data-go>Дальше</button>';
+      ? T('<div class="eres good"><b>Мудрое решение!</b>')+esc(o.result)+'<span class="eff">+'+EVENT_REWARD+' '+esc(coinWord())+', '+esc(eventBonusText())+'</span>'+(res && res.art ? T('<span class="qnew">📜 Новая статья в свитке: «')+esc(res.art)+'»</span>' : '')+'</div>'
+      : T('<div class="eres bad"><b>Ошибка дорого стоила.</b>')+esc(o.result)+T('<span class="eff">−2 стены. Следующая волна придёт на 20% быстрее.</span></div>');
+    h += T('</div><button class="cta" data-go>Дальше</button>');
   } else h += '</div>';
   evBox.innerHTML = h;
   evBox.querySelector('.sin').scrollTop = 0;
@@ -1449,16 +2032,16 @@ evBox.addEventListener('click', ev => {
 // ---- свиток знаний ----
 const scrEnc = $('scrEnc'), scrArt = $('scrArt'), artBox = $('artBox');
 let encSeen = 0;
-function encSections(){ return [[UI.encUnits || 'Защитники',['unit']],[UI.encFoes || 'Враги',['enemy','boss']],['Полководцы',['person']],['Битвы',['battle']],['Как это устроено',['misc']]]; }
-function kindLabel(k){ return ({unit:UI.encUnits || 'Защитники', enemy:UI.encFoes || 'Враги', boss:UI.bossLabel || 'Вражеский полководец', person:'Полководцы', battle:'Битвы', misc:'Как это устроено'})[k] || 'Свиток знаний'; }
-const KIND_HINT = {unit:'Построй этого воина на поле — и статья откроется.', enemy:'Откроется, когда этот враг впервые выйдет на дорогу.', boss:'Откроется, когда этот полководец появится в бою.',
-  battle:'Откроется, когда начнётся эта глава.', person:'Отвечай верно на вопросы перед волнами и выбирай верно на развилках истории.', misc:'Отвечай верно на вопросы перед волнами и выбирай верно на развилках истории.'};
+function encSections(){ return [[UI.encUnits || T('Защитники'),['unit']],[UI.encFoes || T('Враги'),['enemy','boss']],[T('Полководцы'),['person']],[T('Битвы'),['battle']],[T('Как это устроено'),['misc']]]; }
+function kindLabel(k){ return ({unit:UI.encUnits || T('Защитники'), enemy:UI.encFoes || T('Враги'), boss:UI.bossLabel || T('Вражеский полководец'), person:T('Полководцы'), battle:T('Битвы'), misc:T('Как это устроено')})[k] || T('Свиток знаний'); }
+const KIND_HINT = {unit:T('Построй этого воина на поле — и статья откроется.'), enemy:T('Откроется, когда этот враг впервые выйдет на дорогу.'), boss:T('Откроется, когда этот полководец появится в бою.'),
+  battle:T('Откроется, когда начнётся эта глава.'), person:T('Отвечай верно на вопросы перед волнами и выбирай верно на развилках истории.'), misc:T('Отвечай верно на вопросы перед волнами и выбирай верно на развилках истории.')};
 function refreshEncBtn(fresh){
   if (SIM || !B) return;
   const n = encCount();
   $('encN').textContent = n + '/' + ENC.length;
   $('btnEnc').classList.toggle('fresh', !!fresh || (n > encSeen && G.state !== 'menu'));
-  $('btnEnc').setAttribute('aria-label', 'Свиток знаний: открыто ' + n + ' из ' + ENC.length);
+  $('btnEnc').setAttribute('aria-label', T('Свиток знаний: открыто ') + n + T(' из ') + ENC.length);
 }
 function renderEnc(){
   let h = '';
@@ -1466,19 +2049,19 @@ function renderEnc(){
     const list = ENC.filter(a => kinds.indexOf(a.kind) >= 0); if (!list.length) continue;
     h += '<h3>'+esc(name)+'<span>'+list.filter(a => G.enc[a.id]).length+'/'+list.length+'</span></h3><div class="etiles">';
     for (const a of list) { const o = !!G.enc[a.id];
-      h += '<button class="et'+(o?'':' lock')+'" data-a="'+esc(a.id)+'" aria-label="'+(o?esc(a.title):'Закрытая статья')+'">'+img(encIcon(a))+'<span>'+(o?esc(a.title):'?')+'</span></button>'; }
+      h += '<button class="et'+(o?'':' lock')+'" data-a="'+esc(a.id)+'" aria-label="'+(o?esc(a.title):T('Закрытая статья'))+'">'+img(encIcon(a))+'<span>'+(o?esc(a.title):'?')+'</span></button>'; }
     h += '</div>';
   }
   $('encBody').innerHTML = h;
-  $('encCnt').textContent = 'Открыто ' + encCount() + '/' + ENC.length;
+  $('encCnt').textContent = T('Открыто ') + encCount() + '/' + ENC.length;
 }
 function openEnc(){ if (G.state === 'menu') return; closeSheet(); renderEnc(); scrEnc.hidden = false; $('encBody').scrollTop = 0; encSeen = encCount(); refreshEncBtn(); }
 function closeEnc(){ scrEnc.hidden = true; }
 function showArticle(id){
   const a = ENC_BY[id]; if (!a) return false;
   const o = !!G.enc[id];
-  artBox.innerHTML = '<div class="sin"><div class="ahead">'+img(encIcon(a))+'<div><div class="ch">'+esc(kindLabel(a.kind))+'</div><h2>'+(o?esc(a.title):'Статья ещё не открыта')+'</h2></div></div>'
-    + (o ? paras(a.text) : '<p>'+(KIND_HINT[a.kind]||'')+'</p>') + '</div><button class="cta" data-close>Закрыть</button>';
+  artBox.innerHTML = '<div class="sin"><div class="ahead">'+img(encIcon(a))+'<div><div class="ch">'+esc(kindLabel(a.kind))+'</div><h2>'+(o?esc(a.title):T('Статья ещё не открыта'))+'</h2></div></div>'
+    + (o ? paras(a.text) : '<p>'+(KIND_HINT[a.kind]||'')+'</p>') + T('</div><button class="cta" data-close>Закрыть</button>');
   if (!o) artBox.querySelector('.ahead img').style.filter = 'grayscale(1) brightness(.6)';
   scrArt.hidden = false; artBox.querySelector('.sin').scrollTop = 0;
   return true;
@@ -1497,47 +2080,47 @@ function renderStart(){
   let btns;
   if (s) {
     const n = s.wave + 1, c = CHAPTERS[chapterOf(n)];
-    btns = '<button class="cta two" id="btnCont">Продолжить<small>волна '+n+', глава «'+esc(c.name)+'»</small></button><br>'
-      + '<button class="cta2" id="btnNew">Новая игра</button>'
-      + '<div class="confirm" id="confirmNew" hidden><p>Текущий прогресс этой битвы будет удалён.</p><div class="row2"><button class="act" data-cancel>Отмена</button><button class="act danger" data-really>Начать заново</button></div></div>';
-  } else btns = '<button class="cta" id="btnStart">'+esc(UI.startButton || 'В бой!')+'</button>';
+    btns = T('<button class="cta two" id="btnCont">Продолжить<small>волна ')+n+T(', глава «')+esc(c.name)+'»</small></button><br>'
+      + T('<button class="cta2" id="btnNew">Новая игра</button>')
+      + T('<div class="confirm" id="confirmNew" hidden><p>Текущий прогресс этой битвы будет удалён.</p><div class="row2"><button class="act" data-cancel>Отмена</button><button class="act danger" data-really>Начать заново</button></div></div>');
+  } else btns = '<button class="cta" id="btnStart">'+esc(UI.startButton || T('В бой!'))+'</button>';
   $('startBox').innerHTML = '<div class="sub">'+esc(UI.subtitle || B.year || '')+'</div>'
     + '<img class="por" src="'+IC.pStart+'" alt="">'
     + '<h1>'+esc(B.title)+'</h1>'
-    + '<div class="vs">'+esc(B.side || '')+' — против: '+esc(B.foe || '')+'</div>'
+    + '<div class="vs">'+esc(B.side || '')+T(' — против: ')+esc(B.foe || '')+'</div>'
     + paras(B.intro)
     + '<div id="startBtns">'+btns+'</div>'
-    + '<div class="best">'+(best ? 'Лучший результат: '+best+' стен' : '')+'</div>'
-    + '<button class="back" data-map>← К карте битв</button>';
+    + '<div class="best">'+(best ? T('Лучший результат: ')+best+T(' стен') : '')+'</div>'
+    + T('<button class="back" data-map>← К карте битв</button>');
 }
 function nextBattleId(){ const i = CAMPAIGN.findIndex(c => c.id === B.id); for (let j=i+1;j<CAMPAIGN.length;j++) if (validBattle(BATTLES[CAMPAIGN[j].id])) return CAMPAIGN[j].id; return null; }
 function renderWin(best){
   const nx = nextBattleId(), fin = !nx && artOk(ART.complete);
   $('winBox').innerHTML = '<div class="sub">'+esc(UI.winSub || B.year || '')+'</div>'
-    + (fin ? '<img class="por big" src="'+ART.complete.src+'" alt="Кампания пройдена: защитники всех эпох у крепости">' : '<img class="por" src="'+IC.pLaurel+'" alt="Лавровый венок">')
-    + '<h2>'+esc(UI.winTitle || 'Победа!')+'</h2><p>'+esc(B.victoryText || '')+'</p>'
+    + (fin ? '<img class="por big" src="'+ART.complete.src+T('" alt="Кампания пройдена: защитники всех эпох у крепости">') : '<img class="por" src="'+IC.pLaurel+T('" alt="Лавровый венок">'))
+    + '<h2>'+esc(UI.winTitle || T('Победа!'))+'</h2><p>'+esc(B.victoryText || '')+'</p>'
     + '<div class="score"><span>'+img(IC.walls)+'<span>'+G.lives+'</span></span><span>'+img(IC.coin)+'<span>'+G.coins+'</span></span></div>'
-    + '<p style="font-family:var(--f-cyr);font-size:17px;margin:4px 0">Пройдено '+WAVES.length+' волн, стены: '+G.lives+', лучший результат: '+best+'</p>'
-    + '<p style="font-family:var(--f-cyr);font-size:19px;margin:4px 0;color:var(--good)">Верных ответов: '+quizCorrect()+' из '+WAVES.length+'</p>'
-    + (nx ? '<button class="cta two" data-next="'+esc(nx)+'">Дальше<small>'+esc(BATTLES[nx].title)+'</small></button><br>' : '<p style="font-family:var(--f-cyr);font-size:18px">Это последняя битва кампании!</p>')
-    + '<button class="cta2" data-again>Ещё раз</button><br><button class="back" data-map>← К карте битв</button>'
-    + '<div class="best">'+(G.lives >= best ? 'Это твой лучший результат!' : '')+'</div>';
+    + T('<p style="font-family:var(--f-cyr);font-size:17px;margin:4px 0">Пройдено ')+WAVES.length+T(' волн, стены: ')+G.lives+T(', лучший результат: ')+best+'</p>'
+    + T('<p style="font-family:var(--f-cyr);font-size:19px;margin:4px 0;color:var(--good)">Верных ответов: ')+quizCorrect()+T(' из ')+WAVES.length+'</p>'
+    + (nx ? '<button class="cta two" data-next="'+esc(nx)+T('">Дальше<small>')+esc(BATTLES[nx].title)+'</small></button><br>' : T('<p style="font-family:var(--f-cyr);font-size:18px">Это последняя битва кампании!</p>'))
+    + T('<button class="cta2" data-again>Ещё раз</button><br><button class="back" data-map>← К карте битв</button>')
+    + '<div class="best">'+(G.lives >= best ? T('Это твой лучший результат!') : '')+'</div>';
 }
 function loseHint(){
   if (UI.loseHint) return UI.loseHint;
-  const names = {cav:'конницу', ele:'зверей', armor:'тех, кто в броне', inf:'пехоту'}, out = [];
+  const names = {cav:T('конницу'), ele:T('зверей'), armor:T('тех, кто в броне'), inf:T('пехоту')}, out = [];
   for (const tag of ['cav','ele','armor']) {
     if (!Object.values(ENEMIES).some(e => e.tagList.indexOf(tag) >= 0)) continue;
     let best = null, bv = 1.15; for (const k of TOWER_ORDER) { const v = (DEFS[k].bonusVs || {})[tag]; if (v > bv) { bv = v; best = k; } }
     if (best) out.push(names[tag]+' — '+DEFS[best].name.toLowerCase());
   }
-  return out.length ? 'Подсказка: встречай '+out.join(', ')+'.' : 'Ставь разных воинов и улучшай их.';
+  return out.length ? T('Подсказка: встречай ')+out.join(', ')+'.' : T('Ставь разных воинов и улучшай их.');
 }
 function renderLose(){
-  $('loseBox').innerHTML = '<div class="sub">Стены пробиты</div><img class="por" src="'+IC.pGate+'" alt="Разбитые ворота">'
-    + '<h2>'+esc(UI.loseTitle || 'Крепость пала')+'</h2>'
-    + '<p>'+esc(B.defeatText || '')+'</p><p>Ты продержался до волны <b>'+G.wave+'</b>. '+esc(loseHint())+'</p>'
-    + '<button class="cta" data-again>Ещё раз</button><br><button class="back" data-map>← К карте битв</button>';
+  $('loseBox').innerHTML = T('<div class="sub">Стены пробиты</div><img class="por" src="')+IC.pGate+T('" alt="Разбитые ворота">')
+    + '<h2>'+esc(UI.loseTitle || T('Крепость пала'))+'</h2>'
+    + '<p>'+esc(B.defeatText || '')+T('</p><p>Ты продержался до волны <b>')+G.wave+'</b>. '+esc(loseHint())+'</p>'
+    + T('<button class="cta" data-again>Ещё раз</button><br><button class="back" data-map>← К карте битв</button>');
 }
 $('startBox').addEventListener('click', ev => {
   const b = ev.target.closest('button'); if (!b) return;
@@ -1550,9 +2133,10 @@ $('startBox').addEventListener('click', ev => {
 });
 for (const id of ['winBox','loseBox']) $(id).addEventListener('click', ev => {
   const b = ev.target.closest('button'); if (!b) return;
-  if (b.hasAttribute('data-again')) startGame();
-  else if (b.hasAttribute('data-map')) showMap();
-  else if (b.dataset.next) openBattle(b.dataset.next);
+  // полноэкранная реклама (только на Яндекс Играх): по нажатию игрока после победы или поражения, не чаще раза в 5 минут
+  if (b.hasAttribute('data-again')) PF.interstitial(startGame);
+  else if (b.hasAttribute('data-map')) PF.interstitial(showMap);
+  else if (b.dataset.next) { const nx = b.dataset.next; PF.interstitial(() => openBattle(nx)); }
 });
 
 // ---- карта мира ----
@@ -1581,7 +2165,7 @@ function mapLand(g,w,h){
   g.beginPath(); g.moveTo(X(.78),Y(.3)); g.quadraticCurveTo(X(.82),Y(.42),X(.76),Y(.54)); g.stroke();
   // подписи морей
   g.fillStyle='rgba(40,70,90,.55)'; g.font='italic '+Math.round(w*.03)+'px '+FONT_C; g.textAlign='center'; g.textBaseline='middle';
-  g.fillText('Средиземное море', X(.22), Y(.76)); g.fillText('Чёрное море', X(.71), Y(.58)); g.fillText('Балтийское море', X(.55), Y(.12));
+  g.fillText(T('Средиземное море'), X(.22), Y(.76)); g.fillText(T('Чёрное море'), X(.71), Y(.58)); g.fillText(T('Балтийское море'), X(.55), Y(.12));
 }
 // картинки карты (art/web): сгенерированы владельцем в другой нейросети по art/ПРОМПТЫ.md, сжаты; если не загрузились — рисуем карту кодом
 const ART = {};
@@ -1633,23 +2217,23 @@ function renderMapList(){
     const b = BATTLES[c.id], ok = validBattle(b), done = !!prog.done[c.id], open = ok && isOpen(c.id);
     if (done) n++;
     const cls = 'bcard' + (done ? ' done' : '') + (!open ? ' lock' : '') + (!ok ? ' soon' : '');
-    const st = done ? '★ '+prog.done[c.id].best+'<br><small>стен</small>' : !ok ? 'скоро' : !open ? '🔒' : 'в бой';
+    const st = done ? '★ '+prog.done[c.id].best+T('<br><small>стен</small>') : !ok ? T('скоро') : !open ? '🔒' : T('в бой');
     const mk = markerOf(done, open), mkHtml = artOk(mk) ? '<span class="mk"><img src="'+mk.src+'" alt=""><b>'+(i+1)+'</b></span>' : '<span class="num">'+(i+1)+'</span>';
     h += '<button class="'+cls+'" data-b="'+c.id+'"'+(open ? '' : ' aria-disabled="true"')+'>'+mkHtml+'<span class="bt"><b>'+esc(ok ? b.title : c.title)+'</b><span>'+esc(ok ? b.year : c.year)+(ok ? ' · '+esc(b.side) : '')+'</span></span><span class="st">'+st+'</span></button>';
   });
   $('blist').innerHTML = h;
-  $('mapProg').textContent = 'Кампания · пройдено ' + n + ' из ' + CAMPAIGN.length;
+  $('mapProg').textContent = T('Кампания · пройдено ') + n + T(' из ') + CAMPAIGN.length;
 }
 function showMap(){
   saveNow();
   if (B && isPlaying()) { G.paused = false; }
   G.state = 'menu'; closeSheet(); hideCard(); closeModals(); hideScreens(); $('pausebox').hidden = true;
-  $('scrMap').hidden = false; renderMapList(); requestAnimationFrame(drawMap); fortUI();
+  $('scrMap').hidden = false; renderMapList(); requestAnimationFrame(drawMap); fortUI(); pmCard(700); document.title = T('Битвы истории: защити крепость');
 }
 function mapPick(id){
   const b = BATTLES[id];
   if (!validBattle(b)) { return; }
-  if (!isOpen(id)) { const i = CAMPAIGN.findIndex(c => c.id === id); $('mapProg').textContent = 'Сначала победи в битве «' + (BATTLES[CAMPAIGN[i-1].id] ? BATTLES[CAMPAIGN[i-1].id].title : CAMPAIGN[i-1].title) + '»'; return; }
+  if (!isOpen(id)) { const i = CAMPAIGN.findIndex(c => c.id === id); $('mapProg').textContent = T('Сначала победи в битве «') + (BATTLES[CAMPAIGN[i-1].id] ? BATTLES[CAMPAIGN[i-1].id].title : CAMPAIGN[i-1].title) + '»'; return; }
   openBattle(id);
 }
 $('blist').addEventListener('click', ev => { const b = ev.target.closest('.bcard'); if (b) mapPick(b.dataset.b); });
@@ -1683,15 +2267,16 @@ function openBattle(id){
 
 ui.roster.addEventListener('click', ev => {
   const b = ev.target.closest('button'); if (!b) return;
-  if (b.dataset.l !== undefined) { const d = LOCKED[+b.dataset.l]; closeSheet(); toast(img(IC['l_'+b.dataset.l])+'<b>'+esc(d.name)+':</b> '+esc(d.line)+' Построить нельзя.'); return; }
+  if (b.dataset.l !== undefined) { const d = LOCKED[+b.dataset.l]; closeSheet(); toast(img(IC['l_'+b.dataset.l])+'<b>'+esc(d.name)+':</b> '+esc(d.line)+T(' Построить нельзя.')); return; }
   const k = b.dataset.t, d = DEFS[k];
+  if (!towerOpen(k)) { closeSheet(); toast(icT(k)+'<b>'+esc(d.name)+': '+esc(gateText(k))+'.</b> '+esc(d.fact || ''), 5); return; }
   if (G.sel >= 0 && !G.towers[G.sel]) { const fresh = !G.enc[k]; if (build(G.sel, k)) { closeSheet(); builtToast(k, fresh); } return; }
-  toast(icT(k)+'<b>'+esc(d.name)+' · '+icCoin()+d.cost+'.</b> '+esc(d.note || '')+'. '+esc(d.fact || '')+' <br>Нажми на кружок у дороги, чтобы поставить.', 5);
+  toast(icT(k)+'<b>'+esc(d.name)+' · '+icCoin()+d.cost+'.</b> '+esc(d.note || '')+'. '+esc(d.fact || '')+T(' <br>Нажми на кружок у дороги, чтобы поставить.'), 5);
 });
 ui.ab.forEach(b => b.addEventListener('click', () => {
   const k = b.dataset.k; if (!k) return;
   const ok = useAbility(k), a = ABIL[k];
-  toast(img(IC['a_'+k])+'<b>'+esc(a.name)+(ok?'!':' — ещё '+Math.ceil(G.abil[k].cd)+' с')+'</b> '+esc(a.fact || ''), 3.5);
+  toast(img(IC['a_'+k])+'<b>'+esc(a.name)+(ok?'!':T(' — ещё ')+Math.ceil(G.abil[k].cd)+T(' с'))+'</b> '+esc(a.fact || ''), 3.5);
 }));
 ui.next.addEventListener('click', () => startWave());
 ui.speed.addEventListener('click', () => { G.speed = G.speed === 1 ? 2 : 1; refreshUI(); });
@@ -1813,7 +2398,8 @@ if (window.ResizeObserver) new ResizeObserver(resize).observe(field);
 let last = 0, uiAcc = 0, mmAcc = 1, MANUAL = false;
 function frame(ts){
   const raw = last ? Math.min(0.1, (ts - last)/1000) : 0; last = ts;
-  if (B && !G.paused && isPlaying() && !MANUAL && !modalOpen()) {
+  PF.setPlaying(!!B && isPlaying() && !G.paused && !modalOpen());
+  if (B && !G.paused && isPlaying() && !MANUAL && !modalOpen() && !PF.paused()) {
     let dt = raw * G.speed;
     while (dt > 0) { const s = Math.min(dt, 1/60); update(s); dt -= s; }
   }
@@ -1822,9 +2408,9 @@ function frame(ts){
   else if (Math.abs(CAM.vel) > 8 && !drag) { setCamera(CAM.y + CAM.vel*raw); CAM.vel *= Math.exp(-raw*4); if (CAM.y <= 0 || CAM.y >= CAM.max) CAM.vel = 0; }
   if (B) {
     uiAcc += raw; if (uiAcc > 0.15) {
-      uiAcc = 0; refreshUI(); fortTick();
+      uiAcc = 0; refreshUI(); fortTick(); pmSync();
       if (ENC_NEW.length && isPlaying() && ui.sheet.hidden && ui.card.hidden && !modalOpen()) {
-        toast('<b>📜 Свиток знаний:</b> '+(ENC_NEW.length > 1 ? 'новые статьи ' : 'новая статья ')+ENC_NEW.map(t => '«'+esc(t)+'»').join(', ')+'. Нажми на фигурку или на 📜, чтобы прочитать.', 4);
+        toast(T('<b>📜 Свиток знаний:</b> ')+(ENC_NEW.length > 1 ? T('новые статьи ') : T('новая статья '))+ENC_NEW.map(t => '«'+esc(t)+'»').join(', ')+T('. Нажми на фигурку или на 📜, чтобы прочитать.'), 4);
         ENC_NEW = [];
       }
     }
@@ -1836,12 +2422,31 @@ function frame(ts){
 
 // ---------- Старт страницы ----------
 function boot(){
+  applyBattlesEn(); trDom();
+  const lb = $('btnLang'); lb.textContent = LANG === 'en' ? 'RU' : 'EN'; lb.setAttribute('aria-label', LANG === 'en' ? 'Русский' : 'English');
+  lb.addEventListener('click', () => { if (G.state !== 'menu' && B) return; saveNow(); PF.put(LANG_KEY, LANG === 'en' ? 'ru' : 'en'); PF.save().then(() => location.reload(), () => location.reload()); setTimeout(() => location.reload(), 1500); });
   const first = CAMPAIGN.find(c => validBattle(BATTLES[c.id]));
   if (first) { prepareBattle(first.id); }
-  showMap(); fortAuto();
+  showMap();
   requestAnimationFrame(frame);
+  // платформа: SDK и облачное сохранение; если в облаке прогресс новее — перерисовать карту / экран битвы
+  PF.onCloud = () => { if (B && G.state === 'menu') { reset(); if (!$('scrStart').hidden) renderStart(); } if (!$('scrMap').hidden) renderMapList(); fortUI(); if (!scrFort.hidden && !FS.busy) renderFort(); };
+  PF.onPause = p => { if (p) saveNow(); };
+  PF.init().then(() => {
+    // язык площадки: если игрок язык не выбирал и в адресе нет ?lang= — один раз перезагрузить на языке площадки
+    if (!PF.get(LANG_KEY) && PF.lang() && !/[?&]lang=/.test(location.search) && langOf(PF.lang()) !== LANG) {
+      try { if (!sessionStorage.getItem('krepost-camp-lang-auto')) { sessionStorage.setItem('krepost-camp-lang-auto', langOf(PF.lang())); location.reload(); return; } } catch (e) {}
+    }
+    PF.ready(); fortAuto();
+    // Премиум (общий модуль, решение владельца 8.11): без SDK, без платежей или без товаров в консоли кнопки нет
+    if (window.Premium) try {
+      Premium.onChange(() => { if (G.state === 'intermission' && !ui.card.hidden) showWaveCard(); if (!scrFort.hidden && !FS.busy) renderFort(); });
+      Premium.init({ sdk: PF.sdk(), lang: LANG, texts: PM_TEXTS,
+        store: { get: () => PF.get(PM_KEY), set: raw => PF.put(PM_KEY, raw), save: () => PF.save() } }).then(() => { pmSync(); pmCard(0); });
+    } catch (e) {}
+  });
   if (document.fonts && document.fonts.load) {
-    Promise.all([document.fonts.load('700 10px Cinzel','SPQR 0123'), document.fonts.load('12px Forum','Крепость')]).then(() => { if (B) { buildBg(); buildIcons(); if (!$('scrStart').hidden) renderStart(); } drawMap(); }).catch(()=>{});
+    Promise.all([document.fonts.load('700 10px Cinzel','SPQR 0123'), document.fonts.load('12px Forum',T('Крепость'))]).then(() => { if (B) { buildBg(); buildIcons(); if (!$('scrStart').hidden) renderStart(); } drawMap(); }).catch(()=>{});
   }
 }
 
@@ -1850,33 +2455,32 @@ function boot(){
 // пропуск дня — снова с первого. Бонусных денариев (колесо + сундук) не больше FORT_CAP за партию, остаток — в «казне Фортуны».
 // Награды, полученные на карте битв, ждут партии и приходят с первым верным ответом на вопрос («Смелым помогает судьба»):
 // даже +50 денариев на старте давали победу стратегии «все ответы неверные». Между волнами награды идут сразу в текущую партию.
-// Рекламы и SDK в кампании нет, поэтому повтора колеса за ролик тоже нет.
-// Состояние — один ключ krepost-camp-fortuna в localStorage, общий для всех битв (рядом с прогрессом кампании).
+// Сразу после бесплатного поворота — ещё один за ролик (только на Яндекс Играх; с Премиумом — без ролика).
+// Состояние — один ключ krepost-camp-fortuna через PF (localStorage + облако Яндекса), общий для всех битв.
 const FKEY = 'krepost-camp-fortuna', FORT_GAP = 5*3600*1000, FORT_CAP = 300, FORT_BANK_MAX = 1000;
 const FORT_SECT = [
-  {id:'c50',     w:20, lbl:'+50',    ic:'coin',  coins:50,  title:'+50 монет'},
-  {id:'shield',  w:12, lbl:'Щит',    ic:'walls', walls:2,   title:'Крепкие стены', text:'+2 стены'},
-  {id:'c100',    w:14, lbl:'+100',   ic:'coin',  coins:100, title:'+100 монет'},
-  {id:'recharge',w:12, lbl:'Заряд',  ic:'abil',  recharge:1, title:'Милость богов', text:'способности снова готовы'},
-  {id:'empty',   w:10, lbl:'Увы',    ic:'coin',  coins:20,  title:'Фортуна отвернулась', text:'утешительные +20 монет'},
-  {id:'legion',  w:12, lbl:'Воин',   ic:'unit',  unit:1,    title:'Ветеран', text:'один воин на выбор — даром'},
-  {id:'c200',    w:5,  lbl:'+200',   ic:'coin',  coins:200, title:'+200 монет'},
-  {id:'slow',    w:12, lbl:'−20%',   ic:'abil2', slow:1,    title:'Фортуна благосклонна', text:'следующая волна идёт на 20% медленнее'},
-  {id:'chest',   w:3,  lbl:'Сундук', ic:'chest', coins:500, art:1, title:'Сундук!', text:'500 монет и статья в свиток знаний'}
+  {id:'c50',     w:20, lbl:'+50',    ic:'coin',  coins:50,  title:T('+50 монет')},
+  {id:'shield',  w:12, lbl:T('Щит'),    ic:'walls', walls:2,   title:T('Крепкие стены'), text:T('+2 стены')},
+  {id:'c100',    w:14, lbl:'+100',   ic:'coin',  coins:100, title:T('+100 монет')},
+  {id:'recharge',w:12, lbl:T('Заряд'),  ic:'abil',  recharge:1, title:T('Милость богов'), text:T('способности снова готовы')},
+  {id:'empty',   w:10, lbl:T('Увы'),    ic:'coin',  coins:20,  title:T('Фортуна отвернулась'), text:T('утешительные +20 монет')},
+  {id:'legion',  w:12, lbl:T('Воин'),   ic:'unit',  unit:1,    title:T('Ветеран'), text:T('один воин на выбор — даром')},
+  {id:'c200',    w:5,  lbl:'+200',   ic:'coin',  coins:200, title:T('+200 монет')},
+  {id:'slow',    w:12, lbl:'−20%',   ic:'abil2', slow:1,    title:T('Фортуна благосклонна'), text:T('следующая волна идёт на 20% медленнее')},
+  {id:'chest',   w:3,  lbl:T('Сундук'), ic:'chest', coins:500, art:1, title:T('Сундук!'), text:T('500 монет и статья в свиток знаний')}
 ];
 const FORT_W = FORT_SECT.reduce((x,y) => x + y.w, 0);
 const CHEST_DAYS = [{coins:30},{coins:40},{coins:50, walls:2},{coins:60},{coins:80, recharge:1},{coins:100},{coins:150, unit:1}];
 const scrFort = $('scrFort'), fortCv = $('fortCv'), chestCv = $('chestCv');
 const RMOTION = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-let FMEM = null;   // если localStorage недоступен — хотя бы до закрытия вкладки
 function fRead(){
-  let f = null; try { f = JSON.parse(localStorage.getItem(FKEY) || 'null'); } catch(e){ f = FMEM; }
+  let f = null; try { f = JSON.parse(PF.get(FKEY) || 'null'); } catch(e){}
   f = f && typeof f === 'object' ? f : {};
-  return {next:+f.next || 0, ad:0, bank:Math.max(0, Math.min(FORT_BANK_MAX, f.bank|0)),
+  return {next:+f.next || 0, ad:f.ad ? 1 : 0, bank:Math.max(0, Math.min(FORT_BANK_MAX, f.bank|0)),
     pend:Object.assign({walls:0, unit:0, slow:0, recharge:0, art:0}, f.pend && typeof f.pend === 'object' ? f.pend : {}),
     last:typeof f.last === 'string' ? f.last : '', n:Math.max(0, Math.min(7, f.n|0)), spins:f.spins|0};
 }
-function fWrite(f){ FMEM = f; try { localStorage.setItem(FKEY, JSON.stringify(f)); } catch(e){} }
+function fWrite(f){ PF.put(FKEY, JSON.stringify(f)); }
 const dayKey = d => d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
 function chestState(f){
   const now = new Date(), y = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
@@ -1886,7 +2490,7 @@ function chestState(f){
 }
 function fortReady(f){ return Date.now() >= f.next; }
 function hms(ms){ const x = Math.max(0, Math.ceil(ms/1000)), h = Math.floor(x/3600), m = Math.floor(x/60) % 60, sec = x % 60; return h + ':' + String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0'); }
-function fortTimeText(f){ return fortReady(f) ? 'можно крутить!' : 'через ' + hms(f.next - Date.now()); }
+function fortTimeText(f){ return fortReady(f) ? T('можно крутить!') : T('через ') + hms(f.next - Date.now()); }
 const fortInGame = () => !!B && G.state === 'intermission';
 const abilsReady = () => { for (const id of ABIL_IDS) G.abil[id].cd = 0; };
 // выдать награду: между волнами — в текущую партию, иначе — в ожидание до первого верного ответа в партии
@@ -1896,41 +2500,41 @@ function fortGrant(f, r){
     let add = 0;
     if (g) { add = Math.max(0, Math.min(r.coins, FORT_CAP - G.fBonus)); G.coins += add; G.fBonus += add; if (add) floatText(W/2, CAM.y + VIEW_H*.72, '+'+add+' 🪙', '#ffe07a'); }
     const rest = r.coins - add; if (rest > 0) f.bank = Math.min(FORT_BANK_MAX, f.bank + rest);
-    got.push(g ? (add ? '+' + add + ' монет' : '') + (rest > 0 ? (add ? ', ' : '') + rest + ' — в казну Фортуны (в этой партии бонус уже ' + FORT_CAP + ')' : '') : '+' + r.coins + ' монет');
+    got.push(g ? (add ? '+' + add + T(' монет') : '') + (rest > 0 ? (add ? ', ' : '') + rest + T(' — в казну Фортуны (в этой партии бонус уже ') + FORT_CAP + ')' : '') : '+' + r.coins + T(' монет'));
   }
-  if (r.walls) { if (g) G.lives += r.walls; else f.pend.walls = Math.min(2, f.pend.walls + r.walls); got.push('+' + r.walls + ' стены'); }
-  if (r.unit) { if (g) G.fTok.unit = Math.min(2, G.fTok.unit + 1); else f.pend.unit = 1; got.push('воин даром'); }
-  if (r.slow) { if (g) G.fTok.slow = 1; else f.pend.slow = 1; got.push('медленная волна'); }
+  if (r.walls) { if (g) G.lives += r.walls; else f.pend.walls = Math.min(2, f.pend.walls + r.walls); got.push('+' + r.walls + T(' стены')); }
+  if (r.unit) { if (g) G.fTok.unit = Math.min(2, G.fTok.unit + 1); else f.pend.unit = 1; got.push(T('воин даром')); }
+  if (r.slow) { if (g) G.fTok.slow = 1; else f.pend.slow = 1; got.push(T('медленная волна')); }
   if (r.recharge) {
     if (g) { if (ABIL_IDS.some(id => G.abil[id].cd > 0)) abilsReady(); else G.fTok.recharge = 1; }
     else f.pend.recharge = 1;
-    got.push('перезарядка способностей');
+    got.push(T('перезарядка способностей'));
   }
-  if (r.art) { if (g) { const a = unlockReward(); if (a) ENC_NEW.push(a.title); } else f.pend.art = 1; got.push('статья в свиток'); }
+  if (r.art) { if (g) { const a = unlockReward(); if (a) ENC_NEW.push(a.title); } else f.pend.art = 1; got.push(T('статья в свиток')); }
   return got;
 }
 function fortHint(){
   const pt = pendText(fRead());
-  if (pt) toast(img(IC.wheel) + '<b>Дары Фортуны ждут:</b> ' + esc(pt) + '. Ответь верно на вопрос — и Фортуна их отдаст.', 5);
+  if (pt) toast(img(IC.wheel) + T('<b>Дары Фортуны ждут:</b> ') + esc(pt) + T('. Ответь верно на вопрос — и Фортуна их отдаст.'), 5);
 }
 function fortApplyPending(){
   const f = fRead(), p = f.pend, got = [];
   const c = Math.min(f.bank, Math.max(0, FORT_CAP - G.fBonus));
-  if (c > 0) { G.coins += c; G.fBonus += c; f.bank -= c; got.push('+' + c + ' монет'); }
-  if (p.walls > 0) { const w = Math.min(2, p.walls|0); G.lives += w; got.push('+' + w + ' стены'); }
-  if (p.unit > 0) { G.fTok.unit = Math.min(2, G.fTok.unit + 1); got.push('один воин даром'); }
-  if (p.slow) { G.fTok.slow = 1; got.push('следующая волна на 20% медленнее'); }
-  if (p.recharge) { G.fTok.recharge = 1; got.push('перезарядка после первой способности'); }
+  if (c > 0) { G.coins += c; G.fBonus += c; f.bank -= c; got.push('+' + c + T(' монет')); }
+  if (p.walls > 0) { const w = Math.min(2, p.walls|0); G.lives += w; got.push('+' + w + T(' стены')); }
+  if (p.unit > 0) { G.fTok.unit = Math.min(2, G.fTok.unit + 1); got.push(T('один воин даром')); }
+  if (p.slow) { G.fTok.slow = 1; got.push(T('следующая волна на 20% медленнее')); }
+  if (p.recharge) { G.fTok.recharge = 1; got.push(T('перезарядка после первой способности')); }
   if (p.art) { const a = unlockReward(); if (a) ENC_NEW.push(a.title); }
   const had = got.length || p.art;
   f.pend = {walls:0, unit:0, slow:0, recharge:0, art:0};
   if (had) fWrite(f);
-  if (got.length) toast(img(IC.wheel) + '<b>Дары Фортуны:</b> ' + got.join(', ') + '.', 5);
+  if (got.length) toast(img(IC.wheel) + T('<b>Дары Фортуны:</b> ') + got.join(', ') + '.', 5);
 }
 function pendText(f){
   const p = f.pend, a = [];
-  if (f.bank) a.push(f.bank + ' монет' + (f.bank > FORT_CAP ? ' (в одну партию — до ' + FORT_CAP + ')' : ''));
-  if (p.walls) a.push('+' + p.walls + ' стены'); if (p.unit) a.push('воин даром'); if (p.slow) a.push('медленная волна'); if (p.recharge) a.push('перезарядка'); if (p.art) a.push('статья');
+  if (f.bank) a.push(f.bank + T(' монет') + (f.bank > FORT_CAP ? T(' (в одну партию — до ') + FORT_CAP + ')' : ''));
+  if (p.walls) a.push('+' + p.walls + T(' стены')); if (p.unit) a.push(T('воин даром')); if (p.slow) a.push(T('медленная волна')); if (p.recharge) a.push(T('перезарядка')); if (p.art) a.push(T('статья'));
   return a.join(', ');
 }
 
@@ -1958,11 +2562,12 @@ function fortLoop(ts){
 function fortKick(){ if (!fortRaf) fortRaf = requestAnimationFrame(fortLoop); }
 function pickSector(){ let r = Math.random() * FORT_W; for (let i=0;i<FORT_SECT.length;i++) { r -= FORT_SECT[i].w; if (r < 0) return i; } return 0; }
 function fortSpin(viaAd, force){
-  if (FS.busy || viaAd) return false;
+  if (FS.busy) return false;
   const f = fRead();
-  if (!fortReady(f)) return false;
+  if (viaAd ? !f.ad : !fortReady(f)) return false;
   const i = force != null && FORT_SECT[force] ? force : pickSector(), s = FORT_SECT[i];
-  f.next = Date.now() + FORT_GAP; f.spins++;
+  if (viaAd) f.ad = 0; else { f.next = Date.now() + FORT_GAP; f.ad = 1; }
+  f.spins++;
   // награда записывается сразу (закрытая вкладка посреди анимации её не съест), показывается в конце вращения
   FS.got = fortGrant(f, s);
   fWrite(f);
@@ -1979,6 +2584,10 @@ function fortSpinEnd(){
   FS.busy = false; FS.ang = FS.to % TAU; FS.from = FS.to = FS.ang;
   renderFort(); fortUI();
   if (fortInGame() && !ui.card.hidden) showWaveCard();
+}
+function fortAdSpin(){
+  const f = fRead(); if (FS.busy || !f.ad) return;
+  PF.rewarded(got => { if (got) fortSpin(true); else renderFort(); });
 }
 function chestOpen(){
   if (CH.busy || FS.busy) return false;
@@ -2071,38 +2680,41 @@ function drawChest(){
 }
 
 // окно и кнопки
-function chestText(r){ return '+' + r.coins + ' монет' + (r.walls ? ', +2 стены' : '') + (r.recharge ? ', перезарядка' : '') + (r.unit ? ', воин даром' : ''); }
+function chestText(r){ return '+' + r.coins + T(' монет') + (r.walls ? T(', +2 стены') : '') + (r.recharge ? T(', перезарядка') : '') + (r.unit ? T(', воин даром') : ''); }
 function renderFort(){
   const f = fRead(), ready = fortReady(f);
   let h = '';
-  if (FS.busy) h += '<button class="cta" disabled>Колесо крутится…</button>';
-  else if (ready) h += '<button class="cta" data-spin>Крутить колесо</button>';
-  else h += '<button class="cta two" disabled>Следующий поворот<small class="ftime">' + fortTimeText(f) + '</small></button>';
+  if (FS.busy) h += T('<button class="cta" disabled>Колесо крутится…</button>');
+  else if (ready) h += T('<button class="cta" data-spin>Крутить колесо</button>');
+  else h += T('<button class="cta two" disabled>Следующий поворот<small class="ftime">') + fortTimeText(f) + '</small></button>';
+  if (!FS.busy && f.ad && PF.canReward()) h += PF.premium()
+    ? T('<button class="adbtn" data-adspin>★ Ещё поворот (Премиум)<small>сразу, без ролика</small></button>')
+    : T('<button class="adbtn" data-adspin>▶ Ещё поворот за рекламу<small>сразу, по желанию</small></button>');
   if (!FS.busy && FS.res >= 0 && FS.got) {
     const s = FORT_SECT[FS.res];
-    h += '<p class="fres"><b>' + esc(s.title) + '</b>' + esc(s.coins ? FS.got.filter(Boolean).join(', ') : s.text) + '. ' + (fortInGame() ? 'Уже в этой партии.' : 'Получишь в партии за первый верный ответ.') + '</p>';
+    h += '<p class="fres"><b>' + esc(s.title) + '</b>' + esc(s.coins ? FS.got.filter(Boolean).join(', ') : s.text) + '. ' + (fortInGame() ? T('Уже в этой партии.') : T('Получишь в партии за первый верный ответ.')) + '</p>';
   }
   $('fortCtl').innerHTML = h;
   const c = chestState(f);
   let p = '';
   for (let i=1;i<=7;i++) {
     const on = c.ready ? i < c.day : i <= c.day, td = i === c.day, rr = CHEST_DAYS[i-1];
-    const extra = (rr.walls ? ', +2 стены' : '') + (rr.recharge ? ', перезарядка' : '') + (rr.unit ? ', воин даром' : '');
-    p += '<span class="pip' + (on ? ' on' : '') + (td ? ' today' : '') + '" title="День ' + i + ': +' + rr.coins + extra + '" aria-label="День ' + i + ': ' + rr.coins + ' монет' + extra + (td ? ', сегодня' : '') + '"><b>' + i + '</b><i>' + rr.coins + (extra ? '+' : '') + '</i></span>';
+    const extra = (rr.walls ? T(', +2 стены') : '') + (rr.recharge ? T(', перезарядка') : '') + (rr.unit ? T(', воин даром') : '');
+    p += '<span class="pip' + (on ? ' on' : '') + (td ? ' today' : '') + T('" title="День ') + i + ': +' + rr.coins + extra + T('" aria-label="День ') + i + ': ' + rr.coins + T(' монет') + extra + (td ? T(', сегодня') : '') + '"><b>' + i + '</b><i>' + rr.coins + (extra ? '+' : '') + '</i></span>';
   }
   $('streak').innerHTML = p;
   const broke = c.ready && c.day === 1 && f.n > 0;
-  $('streakT').innerHTML = (c.ready ? 'Сегодня ' + c.day + '-й день подряд' : c.day + '-й день подряд')
-    + '<small>' + (broke ? 'Серия прервалась — начинаем с первого дня. ' : '') + 'Заходи каждый день — сундук всё богаче, на 7-й день +150 и воин даром.</small>';
+  $('streakT').innerHTML = (c.ready ? T('Сегодня ') + c.day + T('-й день подряд') : c.day + T('-й день подряд'))
+    + '<small>' + (broke ? T('Серия прервалась — начинаем с первого дня. ') : '') + T('Заходи каждый день — сундук всё богаче, на 7-й день +150 и воин даром.</small>');
   $('chestBtn').disabled = !c.ready || CH.busy;
   const r = CHEST_DAYS[(c.ready ? c.day : c.day % 7 + 1) - 1];
   $('chestCtl').innerHTML = c.ready
-    ? '<button class="cta two" data-chest>Открыть<small>или нажми на сундук</small></button><p style="margin-top:4px">' + chestText(r) + '</p>'
-    : '<p><b>' + (CH.got ? 'В сундуке: ' + esc(CH.got.join(', ')) + '.' : 'Сундук уже открыт сегодня.') + '</b></p><p style="margin-top:4px">Завтра день ' + (c.day % 7 + 1) + ': ' + chestText(r) + '. Пропустишь день — серия заново.</p>';
+    ? T('<button class="cta two" data-chest>Открыть<small>или нажми на сундук</small></button><p style="margin-top:4px">') + chestText(r) + '</p>'
+    : '<p><b>' + (CH.got ? T('В сундуке: ') + esc(CH.got.join(', ')) + '.' : T('Сундук уже открыт сегодня.')) + T('</b></p><p style="margin-top:4px">Завтра день ') + (c.day % 7 + 1) + ': ' + chestText(r) + T('. Пропустишь день — серия заново.</p>');
   const pt = pendText(f);
-  $('fortGo').textContent = fortInGame() ? 'К битве' : 'К карте битв';
-  $('fortNote').textContent = (pt ? (fortInGame() ? 'В запасе на следующие партии: ' : 'Ждут первого верного ответа в партии: ') + pt + '. ' : '')
-    + 'Бонусных монет — не больше ' + FORT_CAP + ' за партию. Колесо — раз в 5 часов, сундук — раз в день. Дары общие для всех битв.';
+  $('fortGo').textContent = fortInGame() ? T('К битве') : T('К карте битв');
+  $('fortNote').textContent = (pt ? (fortInGame() ? T('В запасе на следующие партии: ') : T('Ждут первого верного ответа в партии: ')) + pt + '. ' : '')
+    + T('Бонусных монет — не больше ') + FORT_CAP + T(' за партию. Колесо — раз в 5 часов, сундук — раз в день. Дары общие для всех битв.');
   drawWheel(); drawChest();
 }
 function openFort(){ closeSheet(); ui.toast.hidden = true; scrFort.hidden = false; FS.got = FS.busy ? FS.got : null; FS.res = FS.busy ? FS.res : -1; CH.got = null; renderFort(); }
@@ -2111,11 +2723,12 @@ function closeFort(){
   if (CH.busy) { CH.busy = false; CH.coins = []; }
   scrFort.hidden = true; fortUI();
   if (fortInGame() && !ui.card.hidden) showWaveCard();
+  pmCard(400);
 }
 function fortCardHTML(){
   if (SIM || G.state !== 'intermission' || quizOpen()) return '';
   const f = fRead(), r = fortReady(f), c = chestState(f);
-  return '<button class="adbtn fc' + (r || c.ready ? ' ready' : '') + '" data-fort>' + img(IC.wheel) + '<span>Колесо Фортуны' + (c.ready ? ' · сундук дня' : '')
+  return '<button class="adbtn fc' + (r || c.ready ? ' ready' : '') + '" data-fort>' + img(IC.wheel) + T('<span>Колесо Фортуны') + (c.ready ? T(' · сундук дня') : '')
     + '<small class="ftime">' + fortTimeText(f) + '</small></span></button>';
 }
 // кнопка на карте битв и таймеры (каждые 0,15 с из основного цикла)
@@ -2123,7 +2736,7 @@ let fortWasReady = null;
 function fortUI(){
   const f = fRead(), r = fortReady(f), c = chestState(f);
   $('fbFort').classList.toggle('ready', r || c.ready);
-  $('fbChestT').textContent = c.ready ? 'Сундук: открыть! День ' + c.day : 'Сундук: серия ' + c.day + ' из 7';
+  $('fbChestT').textContent = c.ready ? T('Сундук: открыть! День ') + c.day : T('Сундук: серия ') + c.day + T(' из 7');
   for (const im of document.querySelectorAll('#fbFort img[data-ic]')) if (IC[im.dataset.ic] && im.src !== IC[im.dataset.ic]) im.src = IC[im.dataset.ic];
   fortTick(f);
 }
@@ -2147,41 +2760,33 @@ scrFort.addEventListener('click', ev => {
   if (ev.target === scrFort) { closeFort(); return; }
   const b = ev.target.closest('button'); if (!b) return;
   if (b.hasAttribute('data-spin')) fortSpin(false);
+  else if (b.hasAttribute('data-adspin')) fortAdSpin();
   else if (b.hasAttribute('data-chest') || b.id === 'chestBtn') chestOpen();
 });
 
-// ---------- Отладка и автобалансировка (в публикуемой сборке убрать) ----------
-const sim = {
-  get G(){ return G; }, get B(){ return B; }, get PADS(){ return PADS; }, get PATH(){ return PATH; }, get TOWERS(){ return DEFS; }, get ENEMIES(){ return ENEMIES; }, get WAVES(){ return WAVES; }, get BAL(){ return BAL; }, get CHAPTERS(){ return CHAPTERS; }, get CONTENT(){ return CONTENT; }, get ENC(){ return ENC; }, get BG(){ return BG; }, get WALL(){ return WALL; },
-  BATTLES, CAMPAIGN, manual:v=>{ MANUAL = !!v; }, setCamera:y=>{ CAM.tgt=null; CAM.vel=0; return setCamera(y); }, camera:()=>({y:CAM.y,max:CAM.max,viewH:VIEW_H}),
-  update, startGame, startWave, build, upgrade, sell, useAbility, upgradeCost, towerStats, quizFor, eventAfter, answerQuiz, skipQuiz, chooseEvent, closeEvent, quizOpen, eventOpen, quizCorrect,
-  openEnc, closeEnc, showArticle, closeArticle, unlock, encCount, snapshot, readSave, saveNow, clearSave, continueGame, draw, refreshUI, drawMini, refreshCamUI,
-  openBattle, showMap, readProg, writeProg, prepareBattle, finish,
-  FORT_SECT, CHEST_DAYS, FORT_CAP, fRead, fWrite, fortSpin, chestOpen, openFort, closeFort, fortApplyPending, chestState, fortAuto, encLoad,
-  fortunaReset:(day) => { const f = fRead(); f.next = 0; if (day) f.last = ''; fWrite(f); fortUI(); if (!scrFort.hidden) renderFort(); return f; }, dmgMul:(t,e)=>MUL[t]&&MUL[t][e], spawn,
-  // показать все виды врагов на дороге (для осмотра рисунков); from — сколько пути до ворот у первого
-  lineup(from, gap){ const ids = Object.keys(ENEMIES); G.enemies = []; ids.forEach((k,i) => { spawn(k); const e = G.enemies[G.enemies.length-1]; e.d = Math.max(1, PATH_LEN - (from || 60) - i*(gap || 38)); const p = posAt(e.d); e.x = p[0]; e.y = p[1]; }); G.queue = []; return ids; },
-  // headless: загрузить битву и сыграть автоигроком; ничего не пишет в localStorage
-  run(id, strat){
-    const prevB = B && B.id, wasMap = !$('scrMap').hidden;
-    SIM = true; const keepSpeed = G.speed;
-    try {
-      const b = BATTLES[id]; if (!validBattle(b)) throw new Error('нет битвы ' + id);
-      loadBattle(b); reset();
-      const r = window.KREPOST_AUTOPLAY(sim, strat);
-      r.id = id; return r;
-    } finally {
-      SIM = false; MANUAL = false; G.speed = keepSpeed || 1;
-      if (prevB) { B = null; prepareBattle(prevB); G.state = 'menu'; } if (wasMap) showMap();
-    }
-  },
-  sweep(ids, strats){
-    const out = [];
-    for (const id of (ids || CAMPAIGN.map(c => c.id).filter(id => validBattle(BATTLES[id])))) for (const s of (strats || [{mix:'strong'}])) { const r = sim.run(id, s); out.push({id, strat:s.mix + (s.quiz === 'wrong' ? '/wrong' : '') + (s.upgrades === false ? '/noup' : ''), win:r.win, lives:r.lives, wave:r.wave, ms:r.ms}); }
-    return out;
-  }
+// ---------- Премиум (общий модуль window.Premium; в школьной сборке его нет) ----------
+// Кнопка «Премиум» в углу только на спокойных экранах: карта битв, старт битвы, победа, поражение — без открытых окон. В бою скрыта.
+// Карточки («Надоела реклама?» после каждой 3-й полноэкранной, «скоро закончится», «закончился») — тоже только там.
+// Премиум не продаёт монеты и бонусы: убирает полноэкранную рекламу, а «+60» и повтор колеса даёт без ролика (лимиты те же).
+const PM_KEY = 'krepost-camp-premium';
+const PM_TEXTS = {
+  ru: { p30: 'Премиум на 30 дней', p365: 'Премиум на год',
+    perks: ['Полноэкранная реклама отключается.', 'Награды за ролики (+60 монет, ещё поворот колеса) выдаются сразу, без просмотра.', 'Монеты и бонусы не продаются: правила, лимиты и сложность остаются прежними.'],
+    note: 'Оплата один раз. Премиум действует 30 дней или год — в зависимости от выбранного товара. Автопродления и повторных списаний нет. Если Премиум уже идёт, новый срок добавится к концу.',
+    adTitle: 'Надоела реклама?', adText: 'Защищай крепости без рекламных пауз! С Премиумом полноэкранная реклама исчезнет, а награды за ролики можно получать сразу.', adMore: 'Узнать про Премиум', later: 'Не сейчас',
+    soonTitle: 'Премиум скоро закончится', soonText: 'Ещё {0} без рекламы. Затем Премиум закончится сам, без списаний. Если захочешь, сможешь купить его снова.', extend: 'Продлить',
+    endTitle: 'Премиум закончился', endText: 'Полноэкранная реклама вернулась, а награды снова требуют просмотра роликов. Крепости по-прежнему ждут защитника!', buy: 'Купить' },
+  en: { p30: '30-Day Premium', p365: '1-Year Premium',
+    perks: ['Full-screen ads are disabled.', 'Video rewards (+60 coins, an extra wheel spin) are given instantly, without watching.', 'Coins and bonuses are not for sale: the rules, limits and difficulty stay the same.'],
+    note: 'One-time payment. Premium lasts 30 days or 1 year, depending on your purchase. No automatic renewal or recurring charges. If Premium is already active, the new period is added to the end.',
+    adTitle: 'Tired of ads?', adText: 'Defend the fortresses without ad breaks! With Premium, full-screen ads disappear, and you can collect video rewards instantly.', adMore: 'Learn About Premium', later: 'Not Now',
+    soonTitle: 'Premium Is Ending Soon', soonText: '{0} more without ads. Then Premium ends automatically, with no further charges. If you like, you can buy it again.', extend: 'Renew',
+    endTitle: 'Premium Has Ended', endText: 'Full-screen ads are back, and video rewards require watching ads again. The fortresses are still waiting for their defender!', buy: 'Buy' }
 };
-window.__sim = sim; window.__game = sim;
+function pmCalm(){ return (G.state === 'menu' || G.state === 'won' || G.state === 'lost') && scrEvent.hidden && scrEnc.hidden && scrArt.hidden && scrFort.hidden; }
+function pmSync(){ try { document.documentElement.classList.toggle('pm-hide', !pmCalm()); } catch (e) {} }
+function pmCard(delay){ setTimeout(() => { pmSync(); if (pmCalm() && window.Premium) try { Premium.maybeCard(); } catch (e) {} }, delay || 0); }
+
 boot();
 })();
 </script>
