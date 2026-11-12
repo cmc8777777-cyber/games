@@ -454,12 +454,21 @@ var PF = (function () {
   var ys = null, ok = false, adBusy = false, tabHidden = false, apiPaused = false, lastAdAt = Date.now(), gpOn = false, wantGp = false, readyDone = false, wantReady = false;
   var AD_GAP_MS = 300000;   // полноэкранная реклама не чаще раза в 5 минут
   var self = { onPause: function () {}, onLang: function () {}, onSdk: function () {} };
-  var player = null, cloud = {};
+  var player = null, cloud = {}, cloudLoaded = false, pendingSave = null, saveTm = 0;
   function initPlayer() {
     try { if (!ys.getPlayer) return Promise.resolve(); } catch (e) { return Promise.resolve(); }
-    return ys.getPlayer({ scopes: false }).then(function (p) { player = p; return p.getData(['premium']); })
-      .then(function (d) { cloud = (d && typeof d === 'object') ? d : {}; }).catch(function () { player = null; });
+    return ys.getPlayer({ scopes: false }).then(function (p) { player = p; return p.getData(['premium', 'save']); })
+      .then(function (d) { cloud = (d && typeof d === 'object') ? d : {}; cloudLoaded = true; }).catch(function () { player = null; });
   }
+  /* прогресс в облако: пишем только после того, как облако прочитано и слито (иначе новое устройство затёрло бы чужой прогресс) */
+  function flushSave(now) {
+    clearTimeout(saveTm); saveTm = 0;
+    if (!player || !cloudLoaded || pendingSave == null) return;
+    cloud.save = pendingSave; pendingSave = null;
+    try { var pr = player.setData(cloud, !!now); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {}
+  }
+  self.pushSave = function (raw) { pendingSave = raw; if (player && cloudLoaded && !saveTm) saveTm = setTimeout(function () { flushSave(false); }, 2500); };
+  self.flushSave = flushSave;
   self.cloudGet = function (k) { return cloud[k] == null ? null : cloud[k]; };
   /* запись в облако: Promise<true> только когда облако подтвердило запись (flush) */
   self.cloudSave = function (k, v) {
@@ -511,7 +520,8 @@ var PF = (function () {
     adBusy = true; changed();
     try { ys.adv.showRewardedVideo({ callbacks: { onRewarded: function () { got = true; }, onClose: end, onError: end } }); } catch (e) { end(); }
   };
-  document.addEventListener('visibilitychange', function () { tabHidden = !!document.hidden; changed(); });
+  document.addEventListener('visibilitychange', function () { tabHidden = !!document.hidden; if (tabHidden) flushSave(true); changed(); });
+  window.addEventListener('pagehide', function () { flushSave(true); });
   self.init();
   return self;
 })();
@@ -709,7 +719,32 @@ var K = { vy: 45, vx: 30, ang: 12 * Math.PI / 180, vy2: 25, ang2: 6 * Math.PI / 
 var SAVE_KEY = 'posadka-v1';
 var save = { stars: {}, snd: 1, ship: 0 };
 try { var raw = PF.get(SAVE_KEY); if (raw) { var o = JSON.parse(raw); if (o && o.stars) save = o; } } catch (e) {}
-function persist() { PF.put(SAVE_KEY, JSON.stringify(save)); }
+function persist() { save._t = Date.now(); var raw = JSON.stringify(save); PF.put(SAVE_KEY, raw); PF.pushSave(raw); }
+/* слияние с облаком: звёзды по площадкам — максимум; корабль/звук/язык — от более поздней стороны; пустое облако ничего не стирает.
+   Открытые планеты и корабли считаются из звёзд, поэтому объединяются сами. */
+function mergeSave(a, b) {
+  if (!b || typeof b !== 'object') return a;
+  var st = {}, k;
+  [a.stars || {}, b.stars || {}].forEach(function (o) { for (k in o) st[k] = Math.max(st[k] || 0, o[k] || 0); });
+  var later = (b._t || 0) > (a._t || 0) ? b : a, other = later === a ? b : a, out = {};
+  for (k in other) out[k] = other[k];
+  for (k in later) out[k] = later[k];
+  out.stars = st;
+  var tot = 0; for (k in st) tot += st[k];
+  if (SHIPS[out.ship | 0] && SHIPS[out.ship | 0].need > tot) out.ship = 0;
+  out._t = Math.max(a._t || 0, b._t || 0);
+  return out;
+}
+function applyCloudSave() {
+  try {
+    var cs = PF.cloudGet('save'), cj = cs ? JSON.parse(cs) : null, m = mergeSave(save, cj);
+    if (m !== save) { Object.keys(save).forEach(function (k) { delete save[k]; }); Object.keys(m).forEach(function (k) { save[k] = m[k]; }); }
+    PF.put(SAVE_KEY, JSON.stringify(save)); PF.pushSave(JSON.stringify(save));
+    if (save.langSet && save.lang && save.lang !== LANG) setLang(save.lang, false);
+    drawMenuShip(); if (cur === 'map') buildMap(); else if (cur === 'lv') buildLv(); else if (cur === 'ships') buildShips();
+    console.info('[posadka-save] облако слито, звёзд:', totalStars());
+  } catch (e) {}
+}
 function stars(b, i) { return save.stars[b + '-' + i] || 0; }
 function bodySum(b) { var s = 0; for (var i = 0; i < 5; i++) s += stars(BODIES[b].id, i); return s; }
 function bodyLanded(b) { var n = 0; for (var i = 0; i < 5; i++) if (stars(BODIES[b].id, i) > 0) n++; return n; }
@@ -1173,6 +1208,7 @@ drawMenuShip();
   PF.onLang = function (l) { if (!save.langSet) setLang(l === 'ru' || l === 'be' || l === 'kk' || l === 'uk' || l === 'uz' ? 'ru' : 'en', false); };
 })();
 PF.onSdk = function (sdk) {
+  applyCloudSave();
   if (!window.Premium) return;
   var KEY = 'posadka-premium';
   try { var m = Premium.mergeState(PF.get(KEY), PF.cloudGet('premium')); if (m) PF.put(KEY, m); } catch (e) {}
