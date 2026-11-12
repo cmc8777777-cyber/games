@@ -319,6 +319,7 @@ table.rec small{display:block;color:var(--stamp);font-style:italic;font-size:13p
 .prices td{padding:9px 6px;border-bottom:1px dashed var(--line);vertical-align:top;font-size:15px}
 .prices td:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .prices svg{width:20px;height:20px;vertical-align:-4px;margin-right:6px}
+.prices.wrap td:last-child{white-space:normal}
 .rules li{margin:6px 0;line-height:1.5}
 
 /* ===== Сувениры ===== */
@@ -769,6 +770,13 @@ window.I18N_EN = {
   "Пропустить": "Skip",
   "Ещё раз": "Play again",
   "Паспорт": "Passport",
+  "Откроется после: {0}": "Unlocks after: {0}",
+  "Откроется после: безошибочный проход границы страны «{0}»": "Unlocks after: passing the border of {0} without a mistake",
+  "Откроется после секретного маршрута. Подсказка: иногда суша заканчивается раньше, чем страны.": "Unlocks after a secret route. Hint: sometimes the land runs out before the countries do.",
+  "Звания начинаются с уровня «Путешественник».": "Titles start at the “Traveler” level.",
+  "Подсказка на этой границе уже использована": "The hint for this border has already been used",
+  "Не хватает денег на подсказку": "Not enough money for a hint",
+  "Откроется после границы: сначала ответьте на вопросы": "Unlocks after the border: answer the questions first",
   "Рекорды": "Leaderboard",
   "На главную": "Home",
   "Назад": "Back",
@@ -3004,7 +3012,7 @@ function renderBorder(flash) {
   const pills = [];
   const D = diffOf(run), hc = hintCost(run);
   b.penalties.forEach(p => pills.push(p === "wrong" ? '<span class="pill">−' + fmtMoney(D.wrong) + " · " + T("+1 день") + "</span>" : p === "freeHint" ? '<span class="pill">' + T("бесплатная подсказка") + "</span>" : '<span class="pill">−' + fmtMoney(D.hint) + " · " + T("подсказка") + "</span>"));
-  html += '<div class="qfoot">' + (D.hints ? '<button class="btn" data-act="hint"' + (b.hinted || run.money < hc ? " disabled" : "") + ">" + (hc ? T("Подсказка −{0}", fmtMoney(hc)) : T("Подсказка бесплатно")) + "</button>" : '<span class="strikes">' + T("Без подсказок") + "</span>") +
+  html += '<div class="qfoot">' + (D.hints ? '<button class="btn" data-act="hint"' + (b.hinted || run.money < hc ? " disabled title=\"" + esc(b.hinted ? T("Подсказка на этой границе уже использована") : T("Не хватает денег на подсказку")) + "\"" : "") + ">" + (hc ? T("Подсказка −{0}", fmtMoney(hc)) : T("Подсказка бесплатно")) + "</button>" : '<span class="strikes">' + T("Без подсказок") + "</span>") +
     '<span class="strikes">' + T("Ошибок на этой границе: {0} из {1}", b.wrongs, D.maxWrong) + "</span></div>";
   // ролик за награду: бесплатная подсказка (только если платформа даёт рекламу и подсказка ещё не взята)
   if (D.hints && !b.hinted && hc > 0 && PF.canReward()) html += '<div class="qreward"><button class="btn ghost" data-act="rewardHint">' + (PF.premium() ? T("Подсказка бесплатно (Премиум)") : T("Подсказка бесплатно за ролик")) + "</button></div>";
@@ -3172,7 +3180,9 @@ function doMove(to, type) {
   if (res.border && run.border) run.border.lang = LANG;
   if (res.error) { toast(res.error === "money" ? T("Не хватает денег на этот билет") : res.error === "time" ? T("Не хватит дней на дорогу") : T("Сюда сейчас нельзя")); return; }
   closeSheet(); saveRun(); updateHUD();
+  const run0 = run;
   startTravel(res.leg, () => {
+    if (run !== run0) return;   // партию успели сменить во время поездки: старый ход к новой не относится
     if (res.home) finish("win");
     else renderBorder();
   });
@@ -3249,14 +3259,15 @@ function renderPassport() {
   const total = WB.list.filter(c => c.id !== WB.home).length;
   let html = '<div class="page-in">' + pageHead("Паспорт");
   html += '<p class="owner">' + esc(personName(playerName)) + (passport.active ? "<em>" + esc(achTitle(passport.active)) + "</em>" : "") + "</p>";
-  html += '<p style="margin-top:4px">' + T("Штампов: {0} из {1}.", '<b class="num">' + got.size + "</b>", total) + " " + T("Сувениров: {0} из {1}.", '<b class="num">' + shelf.length + "</b>", W.list.length) + "</p>";
+  html += '<p style="margin-top:4px">' + T("Штампов: {0} из {1}.", '<b class="num">' + got.size + "</b>", total) + " " + T("Сувениров: {0} из {1}.", '<b class="num">' + shelf.filter(id => id !== WB.home).length + "</b>", total) + "</p>";
   html += '<div class="tabs" role="tablist"><button class="tab" role="tab" data-act="passTab" data-tab="stamps" aria-selected="' + (passTab !== "shelf") + '">' + T("Штампы и звания") + '</button><button class="tab" role="tab" data-act="passTab" data-tab="shelf" aria-selected="' + (passTab === "shelf") + '">' + T("Витрина") + "</button></div>";
   if (passTab === "shelf") { $("scrPassport").innerHTML = html + renderShelf() + "</div>"; return; }
   html += "<h2>" + T("Звания") + "</h2>";
   html += ACHIEVEMENTS.map(a => {
     const has = passport.ach.includes(a.id);
     const title = has || !a.secret ? a.title : "???";
-    const desc = has || !a.secret ? a.desc : T("Секретное звание. Условие откроется, когда вы его получите.");
+    let desc = has ? a.desc : a.secret ? T("Откроется после секретного маршрута. Подсказка: иногда суша заканчивается раньше, чем страны.") : T("Откроется после: {0}", a.desc.charAt(0).toLowerCase() + a.desc.slice(1));
+    if (!has && !a.shelf && !DIFF[selDiff].ach) desc += " " + T("Звания начинаются с уровня «Путешественник».");
     return '<button class="ach' + (has ? "" : " locked") + '" data-act="setTitle" data-id="' + a.id + '"' + (has ? "" : " disabled") + ' aria-pressed="' + (passport.active === a.id) + '"><span class="seal">' + (has ? ICON.seal : ICON.sealLocked) + "</span><span><b>" + esc(title) + "</b>" +
       (passport.active === a.id ? '<span class="act">' + T("рядом с именем") + "</span>" : "") + "<small>" + esc(desc) + (has && passport.active !== a.id ? " " + T("Нажмите, чтобы показывать рядом с именем.") : "") + "</small></span></button>";
   }).join("");
@@ -3272,13 +3283,14 @@ function renderPassport() {
 }
 /* Витрина: все страны, по континентам, внутри — по имени страны */
 function renderShelf() {
-  const have = new Set(shelf);
-  let html = '<p class="shelf-n">' + have.size + " / " + W.list.length + '</p><p style="margin:2px 0 4px;color:var(--muted);font-style:italic;font-size:15px">' + T("Сувенир дают за границу, пройденную без единой ошибки.") + "</p>";
+  const have = new Set(shelf.filter(id => id !== WB.home));   // сувенир родной страны получить нельзя: границы дома нет, поэтому его ни на витрине, ни в счёте не ждём
+  const shelfTotal = WB.list.filter(c => c.id !== WB.home).length;
+  let html = '<p class="shelf-n">' + have.size + " / " + shelfTotal + '</p><p style="margin:2px 0 4px;color:var(--muted);font-style:italic;font-size:15px">' + T("Сувенир дают за границу, пройденную без единой ошибки.") + "</p>";
   for (const cont of CONTINENTS) {
-    const cs = W.list.filter(c => c.continent === cont).sort(sortName);
+    const cs = WB.list.filter(c => c.continent === cont && c.id !== WB.home).sort(sortName);
     if (!cs.length) continue;
     html += '<div class="cont-h">' + esc(T(cont)) + " · " + T("{0} из {1}", cs.filter(c => have.has(c.id)).length, cs.length) + '</div><div class="shelf">' +
-      cs.map(c => '<div class="svslot' + (have.has(c.id) ? "" : " empty") + '" title="' + esc(c.name) + '" aria-label="' + esc(c.name + ": " + svName(c.id) + (have.has(c.id) ? "" : " " + T("(нет)"))) + '">' + svIcon(c.id) + "<span>" + esc(svName(c.id)) + "</span></div>").join("") + "</div>";
+      cs.map(c => '<div class="svslot' + (have.has(c.id) ? "" : " empty") + '" title="' + esc(have.has(c.id) ? c.name : T("Откроется после: безошибочный проход границы страны «{0}»", c.name)) + '" aria-label="' + esc(c.name + ": " + svName(c.id) + (have.has(c.id) ? "" : " " + T("(нет)"))) + '">' + svIcon(c.id) + "<span>" + esc(svName(c.id)) + "</span></div>").join("") + "</div>";
   }
   return html;
 }
@@ -3390,7 +3402,7 @@ function renderRules() {
     "<tr><td>" + ICON.plane + T("Самолёт до столицы не дальше 5 000 км") + "</td><td>" + T("{0} + 25 ₽/км", fmtMoney(RULES.flightBase)) + " · " + dl(1) + "</td></tr>" +
     "<tr><td>" + T("Ошибка на границе") + "</td><td>−" + fmtMoney(D.wrong) + " · " + T("+1 день") + "</td></tr>" +
     "<tr><td>" + T("Подсказка") + "</td><td>" + (D.hints ? "−" + fmtMoney(D.hint) : T("нет")) + "</td></tr></tbody></table>" +
-    "<h2>" + T("Уровни") + '</h2><table class="prices"><tbody>' + DIFF_ORDER.map(k => { const x = DIFF[k]; return "<tr><td>" + esc(x.name) + "</td><td>" + T("{0} · {1} дн. · {2} вопр. · ошибка −{3}", fmtMoney(x.money), x.days, x.questions, fmtMoney(x.wrong)) + "</td></tr>"; }).join("") + "</tbody></table>" +
+    "<h2>" + T("Уровни") + '</h2><table class="prices wrap"><tbody>' + DIFF_ORDER.map(k => { const x = DIFF[k]; return "<tr><td>" + esc(x.name) + "</td><td>" + T("{0} · {1} дн. · {2} вопр. · ошибка −{3}", fmtMoney(x.money), x.days, x.questions, fmtMoney(x.wrong)) + "</td></tr>"; }).join("") + "</tbody></table>" +
     "<h2>" + T("Звания") + "</h2><p>" + T("Звание даётся при возвращении домой и навсегда остаётся в паспорте. Почти все требуют не меньше 20 стран; одно — секретное.") + " " + (D.ach ? "" : T("На уровне «Турист» звания не присуждаются — они начинаются с «Путешественника».")) + "</p>" +
     "<h2>" + T("О программе") + '</h2><p class="credits">' + T("Карта мира: jsvectormap 1.7.0, © Mustafa Omar, лицензия MIT. Шрифты Oswald, Playfair Display и Lora — Google Fonts, лицензия SIL Open Font License 1.1.") + "</p>" +
     '<div class="row-btns"><button class="btn" data-act="pageBack">' + T("Назад") + "</button></div></div>";
@@ -3420,7 +3432,7 @@ function openMenu(confirmGiveUp) {
       '<button class="btn" data-act="passport">' + T("Паспорт") + "</button>" +
       (run && run.souvenirs && run.souvenirs.length ? '<button class="btn" data-act="sell">' + T("Продать сувенир") + "</button>" : '<button class="btn" disabled>' + T("Нечего продавать") + "</button>") +
       '<button class="btn" data-act="toStart">' + T("На главную (поездка сохранится)") + "</button>" +
-      '<button class="btn" data-act="giveUp" ' + (run && run.status === "play" && !run.border ? "" : "disabled") + ">" + T("Сдаться") + "</button></div>";
+      '<button class="btn" data-act="giveUp" ' + (run && run.status === "play" && !run.border ? "" : 'disabled title="' + esc(T("Откроется после границы: сначала ответьте на вопросы")) + '"') + ">" + T("Сдаться") + "</button></div>";
   }
   openSheet(html, { pause: true });
 }
