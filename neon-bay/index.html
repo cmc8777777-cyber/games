@@ -207,7 +207,7 @@ kbd{font-family:var(--f-mono);font-size:12px;background:rgba(255,255,255,.1);bor
 .opt{display:flex;flex-wrap:wrap;gap:6px}
 .pill{font:800 12px var(--f-body);padding:8px 10px;border-radius:3px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);cursor:pointer}
 .pill.on{border-color:var(--cyan);box-shadow:inset 0 0 0 1px var(--cyan)}
-.pill:disabled{opacity:.4;cursor:not-allowed}
+.pill:disabled,.pill[aria-disabled="true"],.sw[aria-disabled="true"]{opacity:.4;cursor:not-allowed}
 .pill:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 .lv{display:grid;grid-template-columns:40px minmax(0,1fr);gap:6px 12px;padding:12px 6px;border-bottom:1px solid var(--line)}
 .lv .n{font-family:var(--f-display);font-weight:900;font-size:22px;line-height:1;color:var(--muted);grid-row:span 2;transform:skewX(-8deg)}
@@ -577,6 +577,12 @@ kbd{font-family:var(--f-mono);font-size:12px;background:rgba(255,255,255,.1);bor
     'дождь · ': 'rain · ', 'гонки за REP · полиция на улицах': 'races for REP · police on the streets',
     ' Голубая линия на мини-карте ведёт к гонке «': ' The blue line on the minimap leads to the race "',
     '»': '"', '».': '".',
+    /* замки с подсказкой (12.11.2026) */
+    'Откроется на уровне ': 'Unlocks at level ', ' · откроется, когда дойдёшь до него': ' · unlocks when you reach it',
+    ' откроется на уровне ': ' unlocks at level ', 'откроется на ур. ': 'unlocks at lvl ',
+    'Откроется в награду за задания: ': 'Unlocks as a task reward: ', '. Смотри вкладку «Задания».': '. See the "Tasks" tab.',
+    'Нужно': 'Needs', '. Уровень растёт от REP за ночные гонки.': '. Your level grows with REP from night races.',
+    'Сначала оторвись от патруля': 'Lose the patrol first',
     /* Премиум (v28) */
     '★ Удвоить награду · Премиум ': '★ Double the reward · Premium ', ' (×2, Премиум)': ' (×2, Premium)', ' REP за ночь (×2, Премиум)': ' REP tonight (×2, Premium)',
     '<br><button class="btn small primary" id="gRescue" style="margin-top:8px">★ Вернуть ': '<br><button class="btn small primary" id="gRescue" style="margin-top:8px">★ Get back ', ' REP · Премиум ': ' REP · Premium ',
@@ -6440,6 +6446,9 @@ function pmFreeNow(){return pmOn()&&pmLeft()>0;}
 function canGetReward(){return pmFreeNow()||PLAT.canReward();}
 /* награда: с Премиумом сразу (в пределах лимита), иначе ролик; done(got) */
 function getReward(done){if(pmFreeNow()){const d=pmDay();if(!save.pmFree||save.pmFree.d!==d)save.pmFree={d,n:0};save.pmFree.n++;persist();done(true);return;}PLAT.rewarded(done);}
+/* замок в гараже: не disabled, а aria-disabled + data-lock — нажатие показывает, как открыть (на телефоне title не виден) */
+const lockAt=L=>TR('Откроется на уровне ')+L;
+const lockAttr=h=>` aria-disabled="true" data-lock="${esc(h)}" title="${esc(h)}"`;
 function pmCard(){try{if(PM)PM.maybeCard();}catch(e){}}
 /* тексты из C:\Claude\ИГРЫ\publish\texts\neon-bay\premium.md (8.11.2026); баннера в игре нет — о нём не пишем, добавлен лимит 5 в сутки */
 const PM_TEXTS={
@@ -7152,7 +7161,7 @@ const shortN=n=>n>=1000?(Math.round(n/100)/10).toString().replace('.',TR.en?'.':
 const badgeCache={};
 function badgeURL(type,locked){const k=type+(locked?1:0);if(!badgeCache[k]){const c=document.createElement('canvas');c.width=c.height=56;drawBadge(c.getContext('2d'),28,28,24,type,locked);badgeCache[k]=c.toDataURL();}return badgeCache[k];}
 function labelTex(m){const ev=m.ev;const locked=ev&&levelOf(save.rep)<ev.lvl;
-  const l1=ev?ev.name:TR('Гараж');const l2=!ev?TR('машины · тюнинг · сохранить REP'):locked?TR('нужен уровень ')+ev.lvl:(save.won&&save.won[ev.id]?'✓ ':'')+(ev.time==='day'?'$'+fmt(ev.reward):fmt(ev.rep)+' REP');
+  const l1=ev?ev.name:TR('Гараж');const l2=!ev?TR('машины · тюнинг · сохранить REP'):locked?TR('откроется на ур. ')+ev.lvl:(save.won&&save.won[ev.id]?'✓ ':'')+(ev.time==='day'?'$'+fmt(ev.reward):fmt(ev.rep)+' REP');
   return canvasTex(640,150,(g,w)=>{g.textAlign='left';g.textBaseline='middle';
     let fs=44;g.font='900 '+fs+'px '+UF;const mw=g.measureText(l1).width;if(mw>w-170){fs=Math.floor(fs*(w-170)/mw);g.font='900 '+fs+'px '+UF;}
     g.font='800 36px '+MF;const w2=g.measureText(l2).width;g.font='900 '+fs+'px '+UF;const pw=Math.min(w-8,150+Math.max(Math.min(mw,w-170),w2)+24);
@@ -7867,9 +7876,9 @@ function renderGarage(){
   document.querySelectorAll('#garage .tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===state.gTab));
   let h='';
   if(state.gTab==='cars'){
-    let lastL=0;for(const c of CARS){if(c.lvl!==lastL){lastL=c.lvl;h+=`<div class="sub" style="margin-top:8px;color:${lvl>=c.lvl?'var(--cyan)':'var(--muted)'}">${TR('Уровень')} ${c.lvl}${lvl>=c.lvl?'':TR(' · закрыт')}</div>`;}const own=!!save.owned[c.id],cur=save.car===c.id,locked=lvl<c.lvl,st=carStats(c.id);
+    let lastL=0;for(const c of CARS){if(c.lvl!==lastL){lastL=c.lvl;h+=`<div class="sub" style="margin-top:8px;color:${lvl>=c.lvl?'var(--cyan)':'var(--muted)'}">${TR('Уровень')} ${c.lvl}${lvl>=c.lvl?'':TR(' · откроется, когда дойдёшь до него')}</div>`;}const own=!!save.owned[c.id],cur=save.car===c.id,locked=lvl<c.lvl,st=carStats(c.id);
       let act;if(cur)act=TR('<span class="sub" style="color:var(--cyan)">Твоя</span>');else if(own)act=`<button class="btn small primary" data-act="sel" data-id="${c.id}">${TR('Выбрать')}</button>`;
-      else if(locked)act=`<span class="sub">${TR('Уровень')} ${c.lvl}</span>`;else act=`<button class="btn small ${save.money>=c.price?'primary':''}" data-act="buy" data-id="${c.id}" ${save.money<c.price?'disabled':''}>${TR('Купить $')}${fmt(c.price)}</button>`;
+      else if(locked)act=`<span class="sub">🔒 ${lockAt(c.lvl)}</span>`;else act=`<button class="btn small ${save.money>=c.price?'primary':''}" data-act="buy" data-id="${c.id}" ${save.money<c.price?'disabled':''}>${TR('Купить $')}${fmt(c.price)}</button>`;
       const view=cur?'':`<button class="btn small" data-act="view" data-id="${c.id}">${state.preview===c.id?TR('Смотришь'):TR('Смотреть')}</button>`;
       const zero=(27.8/(st.accel*.82)).toFixed(1);
       h+=`<div class="gcar${cur?' cur':''}${locked?' locked':''}${state.preview===c.id?' prev':''}"><div class="nm">${c.name}</div><div class="acts">${view}${act}</div><div class="tagl">${c.tag} ${TR('· ур.')} ${c.lvl}${c.price&&!own?' · $'+fmt(c.price):''}</div><div class="stats">
@@ -7881,25 +7890,25 @@ function renderGarage(){
     h+=`<p>${TR('Тюнинг для:')} <b style="color:var(--text)">${c.name}</b></p>`;
     for(const g of UPG){const l=u[g.k],max=l>=UPG_MAX,price=upgPrice(c,l),need=max?0:UPG_LVL[l],gated=lvl<need;
       h+=`<div class="upg"><div class="nm">${g.name} <span class="sub">${l}/${UPG_MAX}</span></div><div class="pips p10">${Array.from({length:UPG_MAX},(_,i)=>`<i class="${i<l?'on':''}${UPG_LVL[i]>lvl?' lk':''}"></i>`).join('')}</div><div class="d">${g.d}</div>
-      <div>${max?TR('<span class="sub">Максимум</span>'):gated?`<span class="sub">${TR('Ступень')} ${l+1}${TR(': ур.')} ${need}</span>`:`<button class="btn small ${save.money>=price?'primary':''}" data-act="upg" data-k="${g.k}" ${save.money<price?'disabled':''}>$${fmt(price)}</button>`}</div></div>`;}
+      <div>${max?TR('<span class="sub">Максимум</span>'):gated?`<span class="sub">🔒 ${TR('Ступень')} ${l+1}${TR(' откроется на уровне ')}${need}</span>`:`<button class="btn small ${save.money>=price?'primary':''}" data-act="upg" data-k="${g.k}" ${save.money<price?'disabled':''}>$${fmt(price)}</button>`}</div></div>`;}
   }else if(state.gTab==='style'){
     const c=carById(save.car),st=styleOf(c.id);
-    h+=`<div class="sub">${TR('Цвет кузова')}</div><div class="sws">${PAINTS.map(p=>`<button class="sw${p===st.color?' on':''}" style="background:${p}" data-act="paint" data-c="${p}" aria-label="${TR('Цвет')} ${p}"></button>`).join('')}${PAINTS_X.map(q=>`<button class="sw${q.c===st.color?' on':''}" style="background:${q.c}" data-act="paint" data-c="${q.c}" ${lvl<q.lvl?'disabled':''} title="${lvl<q.lvl?TR('Уровень ')+q.lvl:TR('Эксклюзив')}" aria-label="${TR('Эксклюзивный цвет')} ${q.c}${lvl<q.lvl?TR(', уровень ')+q.lvl:''}"></button>`).join('')}${QPAINTS.map(q=>{const own=save.q&&save.q.paints&&save.q.paints.includes(q.c);return `<button class="sw${q.c===st.color?' on':''}" style="background:${q.c}" data-act="paint" data-c="${q.c}" ${own?'':'disabled'} title="${own?TR('Награда: ')+q.n:TR('За задания: ')+q.n}" aria-label="${TR('Краска')} ${q.n}${own?'':TR(', за задания')}"></button>`;}).join('')}</div>
-    <div class="sub" style="margin-top:8px">${TR('Покрытие')}</div><div class="opt">${FINISHES.map(f=>`<button class="pill${f.id===st.finish?' on':''}" data-act="finish" data-c="${f.id}" ${lvl<f.lvl?'disabled':''}>${f.name}${lvl<f.lvl?TR(' · ур. ')+f.lvl:''}</button>`).join('')}</div>
-    <div class="sub" style="margin-top:8px">${TR('Диски')}</div><div class="opt">${RIMS.map((r,i)=>`<button class="pill${i===st.rim?' on':''}" data-act="rim" data-c="${i}" ${lvl<r.lvl?'disabled':''}>${r.name}${lvl<r.lvl?TR(' · ур. ')+r.lvl:''}</button>`).join('')}</div>
+    h+=`<div class="sub">${TR('Цвет кузова')}</div><div class="sws">${PAINTS.map(p=>`<button class="sw${p===st.color?' on':''}" style="background:${p}" data-act="paint" data-c="${p}" aria-label="${TR('Цвет')} ${p}"></button>`).join('')}${PAINTS_X.map(q=>`<button class="sw${q.c===st.color?' on':''}" style="background:${q.c}" data-act="paint" data-c="${q.c}" ${lvl<q.lvl?lockAttr(lockAt(q.lvl)):` title="${TR('Эксклюзив')}"`} aria-label="${TR('Эксклюзивный цвет')} ${q.c}${lvl<q.lvl?TR(', уровень ')+q.lvl:''}"></button>`).join('')}${QPAINTS.map(q=>{const own=save.q&&save.q.paints&&save.q.paints.includes(q.c);return `<button class="sw${q.c===st.color?' on':''}" style="background:${q.c}" data-act="paint" data-c="${q.c}" ${own?` title="${esc(TR('Награда: ')+q.n)}"`:lockAttr(TR('Откроется в награду за задания: ')+q.n+TR('. Смотри вкладку «Задания».'))} aria-label="${TR('Краска')} ${q.n}${own?'':TR(', за задания')}"></button>`;}).join('')}</div>
+    <div class="sub" style="margin-top:8px">${TR('Покрытие')}</div><div class="opt">${FINISHES.map(f=>`<button class="pill${f.id===st.finish?' on':''}" data-act="finish" data-c="${f.id}" ${lvl<f.lvl?lockAttr(lockAt(f.lvl)):''}>${lvl<f.lvl?'🔒 ':''}${f.name}${lvl<f.lvl?TR(' · ур. ')+f.lvl:''}</button>`).join('')}</div>
+    <div class="sub" style="margin-top:8px">${TR('Диски')}</div><div class="opt">${RIMS.map((r,i)=>`<button class="pill${i===st.rim?' on':''}" data-act="rim" data-c="${i}" ${lvl<r.lvl?lockAttr(lockAt(r.lvl)):''}>${lvl<r.lvl?'🔒 ':''}${r.name}${lvl<r.lvl?TR(' · ур. ')+r.lvl:''}</button>`).join('')}</div>
     <div class="sws" style="margin-top:4px">${RIMCOL.map(p=>`<button class="sw${p===st.rimColor?' on':''}" style="background:${p};width:28px;height:28px" data-act="rimc" data-c="${p}" aria-label="${TR('Цвет дисков')} ${p}"></button>`).join('')}</div>
-    <div class="sub" style="margin-top:8px">${TR('Подсветка днища')}</div><div class="sws">${GLOWS.map(g=>`<button class="sw${g.c===save.glow?' on':''}${g.c==='off'?' off':''}" style="${g.c!=='off'?'background:'+g.c:''}" data-act="glow" data-c="${g.c}" ${lvl<g.lvl?'disabled':''} aria-label="${g.c==='off'?TR('Без подсветки'):TR('Подсветка ')+g.c}"></button>`).join('')}</div>`;
+    <div class="sub" style="margin-top:8px">${TR('Подсветка днища')}</div><div class="sws">${GLOWS.map(g=>`<button class="sw${g.c===save.glow?' on':''}${g.c==='off'?' off':''}" style="${g.c!=='off'?'background:'+g.c:''}" data-act="glow" data-c="${g.c}" ${lvl<g.lvl?lockAttr(lockAt(g.lvl)):''} aria-label="${g.c==='off'?TR('Без подсветки'):TR('Подсветка ')+g.c}"></button>`).join('')}</div>`;
   }else if(state.gTab==='tasks'){
     h+=renderTasks();
   }else if(state.gTab==='cities'){
     h+=`<p>${TR('Каждые 10 уровней открывается новый город. Гонки твоего уровня можно проезжать в любом открытом городе.')}</p>`;
     CITIES.forEach((c,i)=>{const ready=cityReady(c),open=lvl>=c.lvl&&ready,cur=c===CUR_CITY,to=CITIES[i+1]?CITIES[i+1].lvl-1:MAXLVL;
-      h+=`<div class="gcar${cur?' cur':''}${open?'':' locked'}"><div class="nm">${esc(c.name)}</div><div class="acts">${cur?TR('<span class="sub" style="color:var(--cyan)">Ты здесь</span>'):open?`<button class="btn small primary" data-act="city" data-id="${c.id}">${TR('Поехать')}</button>`:!ready?TR('<span class="sub">Скоро</span>'):`<span class="sub">${TR('Уровень')} ${c.lvl}</span>`}</div><div class="tagl">${TR('Уровни')} ${c.lvl}–${to}</div></div>`;});
+      h+=`<div class="gcar${cur?' cur':''}${open?'':' locked'}"><div class="nm">${esc(c.name)}</div><div class="acts">${cur?TR('<span class="sub" style="color:var(--cyan)">Ты здесь</span>'):open?`<button class="btn small primary" data-act="city" data-id="${c.id}">${TR('Поехать')}</button>`:!ready?TR('<span class="sub">Скоро</span>'):`<span class="sub">🔒 ${lockAt(c.lvl)}</span>`}</div><div class="tagl">${TR('Уровни')} ${c.lvl}–${to}</div></div>`;});
   }else{
     h+=`<p>${TR('Всего')} ${MAXLVL} ${TR('уровней и')} ${EVENTS.length} ${TR('гонок: на каждом уровне 10 своих (5 днём, 5 ночью). REP зарабатывается ночью и сохраняется в гараже. За каждый новый уровень — денежный бонус. Чем выше уровень, тем быстрее соперники и больше награды.')}</p>`;
     for(let L=1;L<=MAXLVL;L++){const rk=RANKS.find(r=>r.lvl===L);if(rk)h+=`<div class="lvr${lvl>=L?' on':''}">${esc(rk.n)}<span>${TR('ур.')} ${L}${L<MAXLVL?'+':''}</span></div>`;
       const un=unlocksAt(L),cls=L<lvl?'open':L===lvl?'open cur':'lock';
-      h+=`<div class="lv ${cls}"${L===lvl?' id="lvCur"':''}><div class="n">${L}</div><div class="h">${L<=lvl?TR('Открыт'):TR('Закрыт')}<span>${fmt(LEVELS[L-1])} REP</span></div><div class="tags">${un.map(u=>`<span class="tg" style="--c:${u.c}">${esc(u.s)}</span>`).join('')||TR('<span class="tg">Старт</span>')}</div></div>`;}
+      h+=`<div class="lv ${cls}"${L===lvl?' id="lvCur"':''}><div class="n">${L}</div><div class="h">${L<=lvl?TR('Открыт'):TR('Нужно')}<span>${fmt(LEVELS[L-1])} REP</span></div><div class="tags">${un.map(u=>`<span class="tg" style="--c:${u.c}">${esc(u.s)}</span>`).join('')||TR('<span class="tg">Старт</span>')}</div></div>`;}
   }
   $('#gBody').innerHTML=h;
   if(state.gTab==='levels'&&!state.lvScrolled){state.lvScrolled=true;const c=document.getElementById('lvCur');if(c&&c.scrollIntoView)try{c.scrollIntoView({block:'center'});}catch(e){}}
@@ -7908,6 +7917,7 @@ function renderGarage(){
 $('#garage').addEventListener('click',e=>{
   const t=e.target.closest('[data-tab]');if(t){state.gTab=t.dataset.tab;renderGarage();return;}
   const a=e.target.closest('[data-act]');if(!a||a.disabled)return;
+  if(a.dataset.lock){toast('🔒 '+a.dataset.lock);return;}
   const act=a.dataset.act,cur=save.car;
   if(act==='view'){showPreview(state.preview===a.dataset.id?null:a.dataset.id);}
   if(act==='buy'){const c=carById(a.dataset.id);if(save.money>=c.price&&levelOf(save.rep)>=c.lvl){save.money-=c.price;save.owned[c.id]={eng:0,sus:0,nos:0};save.car=c.id;persist();showPreview(null);buildPlayer();sfx('beep',880);}}
@@ -8059,7 +8069,7 @@ function renderMap(){
   {const es=lvlEvents(lvl),w=es.filter(e=>save.won[e.id]).length;h+=`<div class="sub" style="padding:6px 2px">${TR('Уровень')} ${lvl}${TR(': выиграно')} ${w} ${TR('из')} ${es.length} ${TR('гонок')}</div>`;}
   const curIds=new Set(lvlEvents(lvl).map(e=>e.id));let shownHdr=false;
   for(const ev of mapEvents(lvl).filter(e=>e.time===state.time)){const locked=lvl<ev.lvl;if(!curIds.has(ev.id)&&!shownHdr){shownHdr=true;h+=`<div class="sub" style="padding:8px 2px 4px">${TR('Классические гонки (награда по твоему уровню)')}</div>`;}
-    h+=`<button class="ev" data-gps="${ev.id}" style="--c:${locked?'#6f688c':ev.time==='day'?'var(--sun)':'var(--pink)'}" ${state.race?'disabled':''}><img src="${badgeURL(ev.time,locked)}" alt=""><span>${save.won[ev.id]?'✓ ':''}${ev.name}</span><small>${locked?TR('нужен уровень ')+ev.lvl:(ev.time==='day'?'$'+fmt(ev.reward):fmt(ev.rep)+' REP')+' · '+(ev.type==='circuit'?TR('круги'):TR('спринт'))}</small></button>`;}
+    h+=`<button class="ev" data-gps="${ev.id}" style="--c:${locked?'#6f688c':ev.time==='day'?'var(--sun)':'var(--pink)'}" ${state.race?'disabled':''}><img src="${badgeURL(ev.time,locked)}" alt=""><span>${save.won[ev.id]?'✓ ':''}${ev.name}</span><small>${locked?TR('откроется на ур. ')+ev.lvl:(ev.time==='day'?'$'+fmt(ev.reward):fmt(ev.rep)+' REP')+' · '+(ev.type==='circuit'?TR('круги'):TR('спринт'))}</small></button>`;}
   list.innerHTML=h;
 }
 function setGps(id){if(id==='garage')state.gps={node:GARAGE};else{const ev=EVENTS.find(e=>e.id===id);state.gps={node:ev.route[0]};}closeMap();}
@@ -8183,8 +8193,8 @@ function updatePrompt(){
     const g=nodePos(...GARAGE);
     if(dist2(P,g)<16)pr=pursuit.active?{text:TR('Гараж закрыт, пока за тобой погоня')}:{text:state.time==='night'&&state.nightRep>0?TR('Гараж: сохранить ')+fmt(state.nightRep*HEATM[state.heat])+' REP':TR('Гараж: машины и тюнинг'),btn:TR('Войти'),action:()=>openGarage(null)};
     for(const m of markers){const ev=m.ev;if(!ev||ev.time!==state.time)continue;const p=nodePos(...ev.route[0]);if(dist2(P,p)>16)continue;
-      if(levelOf(save.rep)<ev.lvl)pr={text:ev.name+TR(': нужен уровень ')+ev.lvl};
-      else if(pursuit.active)pr={text:TR('Сначала оторвись от полиции')};
+      if(levelOf(save.rep)<ev.lvl)pr={text:ev.name+': '+lockAt(ev.lvl).toLowerCase()+TR('. Уровень растёт от REP за ночные гонки.')};
+      else if(pursuit.active)pr={text:TR('Сначала оторвись от патруля')};
       else pr={text:ev.name+' · '+(ev.time==='day'?'$'+fmt(ev.reward):fmt(ev.rep)+' REP'),btn:TR('Старт'),action:()=>startRace(ev)};}
   }
   const key=pr?pr.text+'|'+(pr.btn||''):'';
