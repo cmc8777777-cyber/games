@@ -36,8 +36,16 @@
   var ART = {};
   function art(name) { return ART[name] || null; }
   function loadArt() {
-    try { return fetch("art/manifest.json", { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (m) { ART = m || {}; }, function () { ART = {}; }); }
+    try { return fetch("art/manifest.json", { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (m) { ART = m || {}; iconArt(); }, function () { ART = {}; }); }
     catch (e) { return Promise.resolve(); }
+  }
+  /* значки валют: есть картинка Художника — подменяем ею CSS-значок (монета, слиток, ключ) */
+  function iconArt() {
+    if (document.getElementById("iconArt")) return;
+    var css = "";
+    ["coin", "bar", "key"].forEach(function (k) { var a = art("icon-" + k); if (a) css += ".ic." + k + "{background:url(" + a + ") center/contain no-repeat;box-shadow:none;border-radius:0;transform:none;width:22px;height:22px}.ic." + k + " svg{display:none}"; });
+    if (!css) return;
+    var st = document.createElement("style"); st.id = "iconArt"; st.textContent = css; document.head.appendChild(st);
   }
   function boostIcon(k) { return art("boost-" + k) || E.iconURL(k); }
 
@@ -403,11 +411,12 @@
     } else if (S.daily["boss_" + wid] !== 1) { S.daily["boss_" + wid] = 1; addReward({ bars: D.BOSS.replayBars }); txt = rewardText({ bars: D.BOSS.replayBars }); save("daily"); }
     else txt = t("bossNoReplay");
     addStat("bossWins", 1); save("prog");
-    setTimeout(function () { modal(t("bossWin"), (art("thief-run") ? '<img class="boss-img" alt="" src="' + art("thief-run") + '">' : "") + '<p class="big">' + t("bossWinText") + "<br><b>" + txt + "</b></p>"); }, 300);
+    setTimeout(function () { var bi = art("thief-caught") || art("thief-run"); modal(t("bossWin"), (bi ? '<img class="boss-img" alt="" src="' + bi + '">' : "") + '<p class="big">' + t("bossWinText") + "<br><b>" + txt + "</b></p>"); }, 300);
   }
   function bossCard(body, w) {
     var stt = bossState(w.id), b = D.BOSS.list[w.id], c = el("div", "task bosscard " + stt);
-    c.innerHTML = '<div class="tt">' + t("bossTitle") + '</div><div class="muted">' + (stt === "locked" ? t("bossLocked", Math.min(D.BOSS.needBuilds, buildCount(w.id)), D.BOSS.needBuilds) : stt === "won" ? t("bossWon") : t("bossInfo", fmt(b.target))) + "</div>" +
+    var tp = art("thief-portrait");
+    c.innerHTML = (tp ? '<img class="boss-face" alt="" src="' + tp + '">' : "") + '<div class="tt">' + t("bossTitle") + '</div><div class="muted">' + (stt === "locked" ? t("bossLocked", Math.min(D.BOSS.needBuilds, buildCount(w.id)), D.BOSS.needBuilds) : stt === "won" ? t("bossWon") : t("bossInfo", fmt(b.target))) + "</div>" +
       (stt !== "won" ? '<div class="muted">' + t("reward", rewardText(b.reward) + (b.reward.pet ? ", " + nm(PETS.byId(b.reward.pet)) : "") + (b.reward.skin ? ", " + nm(skinById(b.reward.skin)) : "")) + "</div>" : "");
     if (stt !== "locked") c.appendChild(btn(stt === "won" ? t("bossAgain") : t("bossGo"), stt === "won" ? "ghost" : "buy", function () { startBoss(w.id); }));
     body.appendChild(c);
@@ -501,7 +510,8 @@
     var bl = builds(w.id), list = el("div", "blist");
     w.buildings.forEach(function (b, k) {
       var lv = bl[k], row = el("div", "brow"), cost = lv < 3 ? buildCost(k, lv, w.id) : 0;
-      row.innerHTML = '<div class="bname"><b>' + esc(nm(b)) + '</b><span class="pips">' + [0, 1, 2].map(function (q) { return '<i class="' + (q < lv ? "on" : "") + '"></i>'; }).join("") + "</span></div>";
+      var bp = art("bld-" + w.id + "-" + b.id + "-" + Math.max(1, lv));
+      row.innerHTML = (bp ? '<img class="bimg' + (lv ? "" : " ghost") + '" alt="" src="' + bp + '">' : "") + '<div class="bname"><b>' + esc(nm(b)) + '</b><span class="pips">' + [0, 1, 2].map(function (q) { return '<i class="' + (q < lv ? "on" : "") + '"></i>'; }).join("") + "</span></div>";
       row.appendChild(lv >= 3 ? btn(t("maxLvl"), "ghost", function () {}, true) : btn((lv ? t("upgrade") : t("build")) + " ▮" + cost, "gold", function () { doBuild(w, k); }, S.wallet.bars < cost));
       list.appendChild(row);
     });
@@ -931,7 +941,7 @@
     function frame() {
       var f = sc.frames[i], n = i + 1, bg = art("story-" + id + "-" + n) || art("world-" + sc.world + (innerWidth / innerHeight < 1 ? "-v" : "-h"));
       box.hidden = false; box.className = "story" + (art("story-" + id + "-" + n) ? " full" : "");
-      box.style.setProperty("--sky", hex(w.sky)); box.style.setProperty("--ground", hex(w.ground));
+      box.style.setProperty("--sky", hex(w.sky)); box.style.setProperty("--ground", hex(w.ground)); box.style.setProperty("--simg", bg ? "url(" + bg + ")" : "none");
       var pics = "";
       if (!art("story-" + id + "-" + n)) f.who.forEach(function (who, k) { var src = portrait(who); if (src) pics += '<img class="sp sp' + k + (who === "thief" ? " thief" : "") + (f.who.length === 1 ? " solo" : "") + '" alt="" src="' + src + '">'; else if (who === "crowd") pics += '<div class="crowd"></div>'; });
       box.innerHTML = '<div class="sbg"' + (bg ? ' style="background-image:url(' + bg + ')"' : "") + "></div>" + pics +
