@@ -169,7 +169,9 @@
   function audioInit() { KP.audio.init(SET); AC = KP.audio.ctx(); }
 
   /* ---------- ввод ---------- */
-  var IN = { keys: {}, fire: false, aim: false, mx: 0, mz: 0, yaw: 0, pitch: -0.12, jump: false };
+  var IN = { keys: {}, fire: false, aim: false, mx: 0, mz: 0, yaw: 0, pitch: -0.12, jump: false, edge: 0 };   // edge: доворот у края экрана (−1…1), крутит без предела
+  var noLock = false;   // захват указателя недоступен (фрейм артефакта, часть браузеров) — мышь смотрит без захвата + доворот у края окна
+  function edgeVal(x, w, z) { return x > w - z ? 0.4 + 0.6 * Math.min(1, (x - (w - z)) / z) : x < z ? -(0.4 + 0.6 * Math.min(1, (z - x) / z)) : 0; }
   var locked = false;
   function bindInput() {
     window.addEventListener("keydown", function (e) {
@@ -192,32 +194,37 @@
     cv.addEventListener("mousedown", function (e) {
       audioInit();
       if (!G.running || isTouch) return;
-      if (!locked) { lockPtr(); return; }
+      if (!locked) { var was = noLock; lockPtr(); if (!was) return; }   // без захвата клик всё равно стреляет; захват пробуем снова
       if (e.button === 0) IN.fire = true; if (e.button === 2) IN.aim = true;
     });
     window.addEventListener("mouseup", function (e) { if (e.button === 0) IN.fire = false; if (e.button === 2) IN.aim = false; });
     window.addEventListener("contextmenu", function (e) { e.preventDefault(); });
     document.addEventListener("pointerlockchange", function () {
-      locked = document.pointerLockElement === cv;
-      $("lockHint").style.display = (!locked && G.running && !isTouch && !G.ended && !G.paused) ? "block" : "none";
-      if (!locked && G.running && !G.ended && !isTouch && !G.paused) togglePause(true);
+      locked = document.pointerLockElement === cv; if (locked) { IN.edge = 0; noLock = false; }   // захват заработал — обычный режим (Esc = пауза)
+      $("lockHint").style.display = (!locked && !noLock && G.running && !isTouch && !G.ended && !G.paused) ? "block" : "none";
+      if (!locked && !noLock && G.running && !G.ended && !isTouch && !G.paused) togglePause(true);
     });
+    document.addEventListener("pointerlockerror", function () { setNoLock(); });
     window.addEventListener("mousemove", function (e) {
-      if (!locked) return;
+      var free = !locked && noLock && G.running && !G.paused && !G.ended && !isTouch;
+      if (!locked && !free) return;
       var s = 0.0024 * SET.sens * (IN.aim && zoomW() ? 0.4 : 1);
       IN.yaw -= e.movementX * s; IN.pitch = Math.max(-1.2, Math.min(0.95, IN.pitch - e.movementY * s));
+      if (free) IN.edge = edgeVal(e.clientX, window.innerWidth, Math.max(36, window.innerWidth * 0.06));   // курсор у края окна — крутимся дальше
     });
+    document.addEventListener("mouseleave", function () { if (!locked) IN.edge = 0; });
+    window.addEventListener("blur", function () { IN.edge = 0; });
     window.addEventListener("wheel", function (e) { if (!G.running || !G.player) return; var p = G.player, d = e.deltaY > 0 ? 1 : -1, s = p.cur; for (var i = 0; i < 5; i++) { s = (s + d + 5) % 5; if (s === 0 || p.slots[s]) break; } KP.equip(p, s); }, { passive: true });
 
     // сенсор
-    var stickId = null, sx = 0, sy = 0, lookId = null, lx = 0, ly = 0;
+    var stickId = null, sx = 0, sy = 0, lookId = null, lx = 0, ly = 0, l0 = 0;   // l0 — где палец взгляда начал (доворот у края только после сдвига)
     var tl = $("touch");
     tl.addEventListener("touchstart", function (e) {
       e.preventDefault(); audioInit(); document.body.classList.add("touch"); isTouch = true;
       for (var i = 0; i < e.changedTouches.length; i++) {
         var t = e.changedTouches[i];
         if (t.clientX < window.innerWidth * 0.45 && stickId === null) { stickId = t.identifier; sx = t.clientX; sy = t.clientY; showStick(sx, sy, 0, 0); }
-        else if (lookId === null) { lookId = t.identifier; lx = t.clientX; ly = t.clientY; }
+        else if (lookId === null) { lookId = t.identifier; lx = l0 = t.clientX; ly = t.clientY; }
       }
     }, { passive: false });
     function tmove(e) {
@@ -225,21 +232,23 @@
       for (var i = 0; i < e.changedTouches.length; i++) {
         var t = e.changedTouches[i];
         if (t.identifier === stickId) { var dx = t.clientX - sx, dy = t.clientY - sy, L = Math.hypot(dx, dy), R = 55; if (L > R) { dx *= R / L; dy *= R / L; } IN.mx = dx / R; IN.mz = -dy / R; showStick(sx, sy, dx, dy); }
-        else if (t.identifier === lookId) { var s = 0.0055 * SET.sens * (IN.aim && zoomW() ? 0.35 : 1); IN.yaw -= (t.clientX - lx) * s; IN.pitch = Math.max(-1.2, Math.min(0.95, IN.pitch - (t.clientY - ly) * s * 0.8)); lx = t.clientX; ly = t.clientY; }
+        else if (t.identifier === lookId) { var s = 0.0055 * SET.sens * (IN.aim && zoomW() ? 0.35 : 1); IN.yaw -= (t.clientX - lx) * s; IN.pitch = Math.max(-1.2, Math.min(0.95, IN.pitch - (t.clientY - ly) * s * 0.8)); lx = t.clientX; ly = t.clientY;
+          var W = window.innerWidth, z = Math.max(34, W * 0.07);   // палец дошёл до края экрана — поворот продолжается, пока держишь
+          IN.edge = Math.abs(t.clientX - l0) > 24 ? edgeVal(t.clientX, W, z) : 0; }
       }
     }
     function tend(e) {
       for (var i = 0; i < e.changedTouches.length; i++) {
         var t = e.changedTouches[i];
         if (t.identifier === stickId) { stickId = null; IN.mx = 0; IN.mz = 0; hideStick(); }
-        if (t.identifier === lookId) { lookId = null; if (fireTouch === t.identifier) { IN.fire = false; fireTouch = null; } }
+        if (t.identifier === lookId) { lookId = null; IN.edge = 0; if (fireTouch === t.identifier) { IN.fire = false; fireTouch = null; } }
       }
     }
     window.addEventListener("touchmove", tmove, { passive: false });
     window.addEventListener("touchend", tend); window.addEventListener("touchcancel", tend);
     var fireTouch = null;
     // кнопка «Огонь»: держать = стрелять, вести пальцем = поворот камеры
-    $("bFire").addEventListener("touchstart", function (e) { e.preventDefault(); e.stopPropagation(); var t = e.changedTouches[0]; IN.fire = true; fireTouch = t.identifier; if (lookId === null) { lookId = t.identifier; lx = t.clientX; ly = t.clientY; } }, { passive: false });
+    $("bFire").addEventListener("touchstart", function (e) { e.preventDefault(); e.stopPropagation(); var t = e.changedTouches[0]; IN.fire = true; fireTouch = t.identifier; if (lookId === null) { lookId = t.identifier; lx = l0 = t.clientX; ly = t.clientY; } }, { passive: false });
     var btn = { bCrouch: "crouch", bRoll: "roll", bEmote: "emote", bGren: "throw", bCyc: "cycle", bJump: "jump", bWall: "wall", bRamp: "ramp", bHeal: "heal", bReload: "reload", bTake: "take", bAim: "aim", bPauseT: "pause" };
     Object.keys(btn).forEach(function (id) {
       $(id).addEventListener("touchstart", function (e) { e.preventDefault(); e.stopPropagation(); audioInit(); act(btn[id]); }, { passive: false });
@@ -251,7 +260,13 @@
       el.addEventListener("click", function () { act("slot", s); });
     })(s);
   }
-  function lockPtr() { try { var pr = $("cv").requestPointerLock(); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {} }
+  function setNoLock() { if (noLock) return; noLock = true; $("lockHint").style.display = "none"; if (G.paused && G.running && !G.ended && !isTouch) togglePause(false); }
+  function lockPtr() {
+    var cv = $("cv");
+    if (!cv.requestPointerLock) { setNoLock(); return; }
+    try { var pr = cv.requestPointerLock(); if (pr && pr.catch) pr.catch(function () { setNoLock(); }); } catch (e) { setNoLock(); return; }
+    if (!noLock) setTimeout(function () { if (document.pointerLockElement !== cv) setNoLock(); }, 700);   // фрейм молча не дал захват
+  }
   function showStick(x, y, dx, dy) { var b = $("stickBase"), k = $("stickKnob"); b.style.display = "block"; b.style.left = (x - 60) + "px"; b.style.top = (y - 60) + "px"; k.style.transform = "translate(" + dx + "px," + dy + "px)"; }
   function hideStick() { $("stickBase").style.display = "none"; }
   function zoomW() { var p = G.player; return p && p.cur > 0 && p.slots[p.cur] && KP.WEAPONS[p.slots[p.cur].id].zoom; }
@@ -688,6 +703,7 @@
   function render(dt) {
     var p = G.player;
     if (G.running || G.ended) {
+      if (IN.edge && G.running && !G.paused && !G.ended) IN.yaw -= IN.edge * 2.6 * SET.sens * (IN.aim && zoomW() ? 0.4 : 1) * Math.min(dt, 0.05);
       if (G.auto && p && p.state !== "plane") { IN.yaw += Math.atan2(Math.sin(p.yaw - IN.yaw), Math.cos(p.yaw - IN.yaw)) * Math.min(1, dt * 4); IN.pitch = -0.15; }
       var cp = camPos(), d = camDir();
       if (G.debugFront && p) { cp = [p.x + Math.sin(p.yaw) * 3, p.y + 1.5, p.z + Math.cos(p.yaw) * 3]; d = [-Math.sin(p.yaw), -0.08, -Math.cos(p.yaw)]; }
