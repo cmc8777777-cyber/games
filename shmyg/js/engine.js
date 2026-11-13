@@ -307,6 +307,7 @@ window.ENGINE = (function () {
       lastBarAt: -150, barEvery: 480 / (1 + (perk.bars || 0) + (opts.eventBars || 0)), catchBonus: opts.catchBonus || 0, lastFree: 1, continues: 0, ended: false, fast: !!opts.fast,
       pet: opts.pet && window.PETS ? opts.pet : null, petSaveAt: 0, petBurnT: 0,
       season: opts.season || null, tokens: 0,
+      rec: [], recT: 0, ghost: opts.ghost || null, rival: opts.rival || null, ghostBeat: false, rivalBeat: false,
       boss: opts.boss ? { target: opts.boss.target, gap: opts.boss.throwGap, throwT: 3, won: false } : null, winT: 0,
       gravity: R.gravity * (WD.gravity || 1), cycle0: opts.cycle0 || 0, tut: !!opts.tutorial, tutK: 0, tutWait: null };
     thief.gap = 17; thief.flee = 0; thief.lane = 1; thief.x = 0; thief.laneT = 1;
@@ -317,6 +318,9 @@ window.ENGINE = (function () {
     if (opts.startX2) giveBoost("x2");
     mode = "run"; palKey = "";
     try { if (window.AUDIO) window.AUDIO.music(W.id); } catch (e) {}
+    clearGhosts();
+    if (st.ghost && st.ghost.data && st.ghost.data.length > 30 && !st.fast) ghosts.self = ghostModel(st.ghost.skin || skinCur, 0x3affe0, "");
+    if (st.rival && !st.fast) ghosts.rival = ghostModel(skinCur, 0xff4fa8, st.rival.name);
   }
   function petVal() { var pd = window.PETS && st && st.pet ? window.PETS.byId(st.pet.id) : null; return pd ? pd.v(st.pet.lvl || 1) : 0; }
   function dur(kind) {
@@ -359,7 +363,7 @@ window.ENGINE = (function () {
   }
   function stats() {
     return { dist: Math.floor(st.dist), coins: st.coins, bars: st.bars, boosts: st.boostsGot, jumps: st.jumps, slides: st.slides,
-      caught: st.caught, letter: st.letterGot, time: st.t, continues: st.continues, chase: st.chase, boost: st.boost, boss: st.boss ? { target: st.boss.target, won: st.boss.won } : null, tokens: st.tokens, why: st.why || "", ctx: st.ctx };
+      caught: st.caught, letter: st.letterGot, time: st.t, continues: st.continues, chase: st.chase, boost: st.boost, boss: st.boss ? { target: st.boss.target, won: st.boss.won } : null, tokens: st.tokens, rec: st.fast ? null : st.rec, ghostBeat: st.ghostBeat, rivalBeat: st.rivalBeat, rivalName: st.rival ? st.rival.name : "", why: st.why || "", ctx: st.ctx };
   }
   function continueRun() {
     if (mode !== "crash") return;
@@ -418,6 +422,9 @@ window.ENGINE = (function () {
     if (st.tut || st.tutWait || st.tutEnd) tutCheck();
     if (st.boss) { bossTick(dt); if (mode !== "run") return; }
     if (st.pet) petTick(dt);
+    if (!st.fast) { st.recT -= dt; if (st.recT <= 0 && st.rec.length < 30000) { st.recT = 0.1; st.rec.push(Math.round(st.x * 10), Math.round(st.y * 10), st.slide > 0 ? 1 : 0); } }
+    if (st.ghost && !st.ghostBeat && st.dist > st.ghost.dist) { st.ghostBeat = true; if (hooks.beat) hooks.beat("self"); }
+    if (st.rival && !st.rivalBeat && st.dist > st.rival.score) { st.rivalBeat = true; if (hooks.beat) hooks.beat("rival", st.rival.name); }
     D.BOOST_ORDER.forEach(function (k) { if (st.boost[k] > 0) st.boost[k] = Math.max(0, st.boost[k] - dt); });
     if (st.jet > 0) { st.jet -= dt; if (st.jet <= 0) { st.jet = 0; st.inv = Math.max(st.inv, 1.6); clearAhead(32); } }
     if (st.inv > 0) st.inv -= dt;
@@ -687,6 +694,8 @@ window.ENGINE = (function () {
       thief.head.rotation.y = mode === "run" && Math.sin(t * 0.7) > 0.85 ? 2.4 : 0;
     }
     thiefBlob.position.set(thief.root.position.x, thief.root.position.y + 0.03, thief.root.position.z);
+    if (st && !inMenu && (ghosts.self || ghosts.rival)) ghostTick(dt, t);
+    if (inMenu && (ghosts.self || ghosts.rival)) clearGhosts();
     if (petG) {
       if (inMenu) { petG.position.set(0.95, 0, 0.55); petG.rotation.y = 0.3 + Math.sin(t * 0.5) * 0.3; petG.visible = !turntable || true; }
       else { var side = st && st.lane === 2 ? 1 : -1, px = x + side * 0.95; petG.position.x += (px - petG.position.x) * Math.min(1, dt * 8); petG.position.y = y * 0.85; petG.position.z = hz - 0.5; petG.rotation.y = 0; }
@@ -797,6 +806,42 @@ window.ENGINE = (function () {
     setWorld("town");
     requestAnimationFrame(loop);
   }
+  /* ---------- призраки: рекорд (бирюзовый) и соперник (розовый, с именем) ---------- */
+  var ghosts = { self: null, rival: null };
+  function ghostModel(skin, color, name) {
+    if (typeof skin === "string") skin = D.SKINS.filter(function (x) { return x.id === skin; })[0] || skinCur;
+    var r = MD.hero(skin), m = new T.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.32, depthWrite: false, blending: T.AdditiveBlending });
+    r.root.traverse(function (o) { if (o.isMesh) { o.material = m; o.castShadow = false; } });
+    r.shield.visible = false; r.jet.visible = false; r.stars.visible = false;
+    G.mergeBones(r.root);
+    if (name) {
+      var c = document.createElement("canvas"); c.width = 256; c.height = 64; var g = c.getContext("2d");
+      g.fillStyle = "rgba(14,12,30,.7)"; g.beginPath(); g.moveTo(16, 8); g.arcTo(248, 8, 248, 56, 22); g.arcTo(248, 56, 8, 56, 22); g.arcTo(8, 56, 8, 8, 22); g.arcTo(8, 8, 248, 8, 22); g.fill();
+      g.fillStyle = "#fff"; g.font = "700 30px Segoe UI, Arial"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(name.slice(0, 14), 128, 33);
+      var tx = new T.CanvasTexture(c); tx.encoding = T.sRGBEncoding; var sp = new T.Sprite(new T.SpriteMaterial({ map: tx, depthWrite: false, transparent: true })); sp.scale.set(1.6, 0.4, 1); sp.position.y = 2.25; r.root.add(sp);
+    }
+    scene.add(r.root);
+    return r;
+  }
+  function clearGhosts() { ["self", "rival"].forEach(function (k) { if (ghosts[k]) { scene.remove(ghosts[k].root); ghosts[k] = null; } }); }
+  function ghostTick(dt, t) {
+    var hz = st.dist;
+    if (ghosts.self && st.ghost) {
+      var g = ghosts.self, d = st.ghost.data, i = Math.min(Math.floor(st.t / 0.1), d.length / 3 - 1) * 3, alive = hz < st.ghost.dist;
+      var gx = d[i] / 10, gy = d[i + 1] / 10, sl = d[i + 2];
+      g.root.visible = true;
+      if (alive) { g.root.position.set(gx, gy, hz + 0.6); MD.pose(g, { phase: st.phase + 0.4, anim: gy > 0.1 ? "jump" : sl ? "slide" : "run" }, t, dt); }
+      else { g.root.position.z = st.ghost.dist + 0.6; MD.pose(g, { phase: 0, anim: "fall" }, t, dt); g.root.visible = st.ghost.dist > hz - 8; }
+    }
+    if (ghosts.rival && st.rival) {
+      var r2 = ghosts.rival, ahead = hz < st.rival.score, lx = laneX(st.rivalLane == null ? 0 : st.rivalLane);
+      st.rivalLaneT = (st.rivalLaneT || 0) - dt; if (st.rivalLaneT <= 0) { st.rivalLaneT = rnd(2, 5); st.rivalLane = irnd(0, 2); }
+      r2.rx = r2.rx == null ? lx : r2.rx + (lx - r2.rx) * Math.min(1, dt * 4);
+      if (ahead) { r2.root.position.set(r2.rx, 0, hz + 3.2); MD.pose(r2, { phase: st.phase + 1.7, anim: "run" }, t, dt); r2.root.visible = true; }
+      else { r2.root.position.z = st.rival.score + 3.2; MD.pose(r2, { phase: 0, anim: "fall" }, t, dt); r2.root.visible = st.rival.score > hz - 8; }
+    }
+  }
+
   /* ---------- оформление сезонного события: арки над дорогой и снегопад ---------- */
   var seasonDeco = [], snowPts = null, seasonCur = null;
   function decoArch(sz) {
@@ -847,7 +892,7 @@ window.ENGINE = (function () {
 
   return {
     init: init, setWorld: setWorld, setSkin: setSkin, setPet: setPet, setSeason: setSeason, newRun: newRun, input: input, continueRun: continueRun, endRun: endRun,
-    toMenu: toMenu, sim: sim, showPlaza: showPlaza, hidePlaza: hidePlaza, plazaUpgrade: plazaUpgrade, iconURL: iconURL, unlockAudio: unlockAudio, DIMS: DIMS,
+    toMenu: toMenu, sim: sim, clearGhosts: clearGhosts, showPlaza: showPlaza, hidePlaza: hidePlaza, plazaUpgrade: plazaUpgrade, iconURL: iconURL, unlockAudio: unlockAudio, DIMS: DIMS,
     on: function (k, f) { hooks[k] = f; }, onHud: function (f) { hudCb = f; },
     setPaused: function (p) { paused = !!p; lastT = 0; }, isPaused: function () { return paused; },
     setSound: function (on) { try { if (window.AUDIO) window.AUDIO.setOn(on); } catch (e) {} },

@@ -54,7 +54,7 @@ window.PF = (function () {
     if (k === "sg.prog") return function (a, b) {   // прогресс: костюмы, миры, полученные награды — объединение; постройки, улучшения, счётчики — максимум
       var x = jp(a), y = jp(b); if (!x || !y || typeof x !== "object" || typeof y !== "object") return null;
       var m = Object.assign({}, y, x);
-      m.skins = union(x.skins, y.skins); m.worlds = union(x.worlds, y.worlds); m.claimed = union(x.claimed, y.claimed);
+      m.skins = union(x.skins, y.skins); m.heroes = union(x.heroes, y.heroes); m.worlds = union(x.worlds, y.worlds); m.claimed = union(x.claimed, y.claimed);
       function maxObj(p, q) { var r = {}; [p || {}, q || {}].forEach(function (o) { Object.keys(o).forEach(function (s) { r[s] = Math.max(r[s] || 0, Number(o[s]) || 0); }); }); return r; }
       m.st = maxObj(x.st, y.st); m.up = maxObj(x.up, y.up); m.pets = maxObj(x.pets, y.pets);
       m.builds = {}; [x.builds || {}, y.builds || {}].forEach(function (o) { Object.keys(o).forEach(function (w) {

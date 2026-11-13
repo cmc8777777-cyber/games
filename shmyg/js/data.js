@@ -78,6 +78,25 @@ window.DATA = (function () {
     S("champion", "Чемпионка", "Champion", { top: 0xf4f0e8, sleeve: 0xf4f0e8, pants: 0x1a1a22, shoe: 0xe8b830, glove: 0xe8b830, hat: "crown", acc: ["cape:e8b830", "belt:e8b830", "lines:ffd24a"], kinds: { shoe: "gold", glove: "gold" } }, 0xffe27a, { t: "boss", w: "moon" }, { coins: 0.05 }),
     S("samurai", "Кибер-самурай", "Cyber Samurai", { top: 0xf0f0f2, sleeve: 0x1a1a1e, pants: 0x1a1a1e, shoe: 0xf0f0f2, glove: 0x1a1a1e, hat: "kabuto", acc: ["armor:f0f0f2", "lines:ff2a3a"], kinds: { top: "paint", pants: "plastic" } }, 0xff2a3a, { t: "buy", p: "skin_samurai" })
   ];
+  /* ---- Арс — второй герой (напарник Мики): 8 образов. hero: "ars" ---- */
+  function AR(id, ru, en, look, trail, get, perk) { var x = S(id, ru, en, Object.assign({ male: true, skinTone: 0xd8a47a, hair: 0x2a1a12 }, look), trail, get, perk); x.hero = "ars"; return x; }
+  var ARS = [
+    AR("ars", "Арс-изобретатель", "Ars the Inventor", { top: 0x1f8a9a, pants: 0x22262e, shoe: 0xf2f2f2, sole: 0x2affd9, hat: "goggles", hatC: 0xc8862a, acc: ["backpack:6a4a2a", "belt:3a2a1a"] }, 0x2affd9, { t: "hero" }),
+    AR("ars_street", "Арс с района", "Street Ars", { top: 0xc8302a, pants: 0x6a6a5a, shoe: 0x111111, hat: "flatcap", hatC: 0x2a2a2a, acc: ["skate:2a6ad8"] }, 0xff5a3a, { t: "coins", n: 3000 }),
+    AR("ars_hacker", "Хакер", "Hacker", { top: 0x15151c, pants: 0x15151c, shoe: 0x2a2a2a, hat: "hood", hatC: 0x15151c, acc: ["lines:3aff6a"] }, 0x3aff6a, { t: "coins", n: 8000 }),
+    AR("ars_pilot", "Пилот", "Pilot", { top: 0x7a4a26, pants: 0x3a3a2a, shoe: 0x2a1a10, hat: "aviator", hatC: 0x5a3a1e, acc: ["scarf:f2f2f2", "belt:2a1a10"], kinds: { top: "leather" } }, 0xd9c28a, { t: "coins", n: 14000 }),
+    AR("ars_astro", "Арс-космонавт", "Astro Ars", { top: 0xeeeeee, pants: 0xe2e2e2, shoe: 0x9a9a9a, glove: 0xdadada, hat: "astro", acc: ["lifepack"], kinds: { top: "plastic", pants: "plastic" } }, 0x8fe3ff, { t: "coins", n: 22000 }),
+    AR("ars_knight", "Страж", "Guardian", { top: 0x8a1a1a, sleeve: 0xb8c0c8, pants: 0xa8b0b8, shoe: 0x707880, glove: 0x9aa2aa, hat: "knight", acc: ["armor:c0c8d0", "cape:8a1a1a"], kinds: { sleeve: "metal", pants: "metal", shoe: "metal" } }, 0xd9e6f2, { t: "task", stat: "bossWins", n: 2 }),
+    AR("ars_ninja", "Тень", "Shadow", { top: 0x22222a, pants: 0x22222a, shoe: 0x111111, glove: 0x22222a, hat: "ninja", hatC: 0x22222a, acc: ["sash:2a6ad8"], hideHair: true }, 0x6a8aff, { t: "days", n: 20 }),
+    AR("ars_cyber", "Кибер-рыцарь", "Cyber Knight", { top: 0xf0f0f2, sleeve: 0xe8b830, pants: 0x1a1a1e, shoe: 0xe8b830, glove: 0xe8b830, hat: "visor", hatC: 0x3affff, acc: ["armor:e8b830", "lines:3affff"], kinds: { sleeve: "gold", shoe: "gold" } }, 0x3affff, { t: "buy", p: "skin_ars_cyber" })
+  ];
+  SKINS.forEach(function (x) { if (!x.hero) x.hero = "mika"; });
+  SKINS = SKINS.concat(ARS);
+  /* герои: бонус постоянный, складывается с бонусом образа */
+  var HEROES = [
+    { id: "mika", name: { ru: "Мика", en: "Mika" }, base: "courier", perk: { chase: 0.1 }, get: { t: "start" } },
+    { id: "ars", name: { ru: "Арс", en: "Ars" }, base: "ars", perk: { bars: 0.1 }, get: { t: "unlock", coins: 20000, boss: 1 } }
+  ];
   /* Товары Яндекса (создаёт владелец в консоли; цены здесь — запасные, на экране — из getCatalog) */
   var PRODUCTS = {
     skin_golden: { skins: ["golden"], price: 99 },
@@ -85,6 +104,7 @@ window.DATA = (function () {
     skin_dragon: { skins: ["dragon"], price: 149 },
     skin_wizard: { skins: ["wizard"], price: 79 },
     skin_samurai: { skins: ["samurai"], price: 119 },
+    skin_ars_cyber: { skins: ["ars_cyber"], price: 99 },
     pack_all: { skins: ["golden", "neon", "dragon", "wizard", "samurai"], price: 349 }
   };
 
@@ -163,6 +183,12 @@ window.DATA = (function () {
     A("days1", "days", 7, { bars: 2 }, "Неделя в игре", "One week"), A("days2", "days", 30, { bars: 6 }, "Месяц в игре", "One month"),
     A("jump1", "jumpsAll", 1000, { coins: 1500 }, "Прыгунья", "Jumper"), A("token1", "tokensAll", 500, { bars: 3 }, "Праздник!", "Party time!")
   ];
+  /* ---- Мини-игры: раз в день бесплатно + раз за ролик. Среднее колеса ≈200 монет + 0,26 слитка + 0,12 ключа + сундук 10 %. ---- */
+  var WHEEL = [
+    { r: { coins: 100 }, w: 20, c: 0x3a6ad8 }, { r: { coins: 250 }, w: 18, c: 0x8a4ad8 }, { r: { bars: 1 }, w: 14, c: 0xe8a020 }, { r: { coins: 500 }, w: 14, c: 0x2aa86a },
+    { r: { keys: 1 }, w: 12, c: 0xc8402a }, { r: { coins: 1000 }, w: 6, c: 0xd8306a }, { r: { chest: "small" }, w: 10, c: 0x2a9ab8 }, { r: { bars: 2 }, w: 6, c: 0xf2c21a }
+  ];
+  var SHELL = { win: { bars: 1 }, lose: { coins: 100 }, swaps: 7 };
   var LEADERBOARD = "best";   // имя таблицы лидеров в консоли Яндекса (создаёт владелец), очки — метры за забег
 
   /* ---- Календарь входа (по кругу) и сундуки ---- */
@@ -184,5 +210,5 @@ window.DATA = (function () {
 
   return { WORLDS: WORLDS, BUILD_COST: BUILD_COST, BUILD_BONUS: BUILD_BONUS, BUILD_BONUS_MAX: BUILD_BONUS_MAX,
     SKINS: SKINS, PRODUCTS: PRODUCTS, BOOSTS: BOOSTS, BOOST_ORDER: BOOST_ORDER, UPGRADE_COST: UPGRADE_COST, START_BOOSTS: START_BOOSTS, KEY_PRICE: KEY_PRICE, KEYS_PER_DAY: KEYS_PER_DAY, BUILD_WORLD_MUL: BUILD_WORLD_MUL,
-    BOSS: BOSS, SEASONS: SEASONS, ACHIEVEMENTS: ACHIEVEMENTS, TASKS: TASKS, LETTERS: LETTERS, WEEKLY: WEEKLY, WEEKEND: WEEKEND, LEADERBOARD: LEADERBOARD, CALENDAR: CALENDAR, CHESTS: CHESTS, FREE_CHEST_MS: FREE_CHEST_MS, RUN: RUN };
+    WHEEL: WHEEL, SHELL: SHELL, HEROES: HEROES, BOSS: BOSS, SEASONS: SEASONS, ACHIEVEMENTS: ACHIEVEMENTS, TASKS: TASKS, LETTERS: LETTERS, WEEKLY: WEEKLY, WEEKEND: WEEKEND, LEADERBOARD: LEADERBOARD, CALENDAR: CALENDAR, CHESTS: CHESTS, FREE_CHEST_MS: FREE_CHEST_MS, RUN: RUN };
 })();

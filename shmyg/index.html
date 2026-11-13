@@ -167,6 +167,34 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
 .ach.done .medal{background:radial-gradient(circle at 35% 30%,#fff6c0,#ffd04a 40%,#b06a00);box-shadow:0 0 10px rgba(255,190,40,.5)}.ach.ready{border-color:var(--green)}.ach.done{opacity:.75}
 .ach .ai{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}.ach .bar{height:5px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}.ach .bar i{display:block;height:100%;background:linear-gradient(90deg,#2fd47a,#9aff5a)}
 #fpsMeter{position:fixed;left:50%;bottom:4px;transform:translateX(-50%);z-index:99;font:700 11px monospace;color:#7f7;background:rgba(0,0,0,.5);padding:2px 6px;border-radius:6px;pointer-events:none}
+.chiprow{display:flex;gap:8px;justify-content:center}
+#heroChip{position:relative;display:inline-flex;align-items:center;gap:6px;background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);font-weight:800;border-radius:999px;padding:7px 16px}
+#heroChip.dot::after{content:"";position:absolute;top:3px;right:6px;width:9px;height:9px;border-radius:50%;background:var(--pink)}
+.hthumb{height:110px;width:84px}.perk2{font-size:12px;font-weight:700;color:#5affb0}
+#ghostLine{white-space:nowrap;font-size:11.5px;font-weight:700;color:#bff;text-shadow:0 1px 4px rgba(0,0,0,.8);background:rgba(14,12,30,.5);border-radius:999px;padding:2px 10px;order:3}
+#story{position:fixed;inset:0;z-index:70;background:#0d0b1e;overflow:hidden;animation:sfade .35s}
+@keyframes sfade{from{opacity:0}}
+#story .sbg{position:absolute;inset:0;background:linear-gradient(var(--sky),var(--ground)) center/cover no-repeat;filter:saturate(1.1) brightness(.8)}
+#story.full .sbg{filter:none}
+#story .sp{position:absolute;bottom:22%;height:58%;max-width:62%;object-fit:contain;filter:drop-shadow(0 12px 20px rgba(0,0,0,.7));animation:spin .5s both}
+#story .sp0{left:-4%}#story .sp1{right:-4%}#story .sp.solo{left:50%;transform:translateX(-50%);animation:none}#story .sp.thief.sp1{transform:scaleX(-1)}
+@keyframes spin{from{opacity:0;transform:translateY(30px)}}
+#story .crowd{position:absolute;left:0;right:0;bottom:24%;height:30%;background:radial-gradient(circle at 20% 80%,#ffd04a 0 4%,transparent 5%),radial-gradient(circle at 50% 70%,#ff4f8b 0 5%,transparent 6%),radial-gradient(circle at 75% 85%,#47d4ff 0 4%,transparent 5%)}
+#story .sbub{position:absolute;left:4%;right:4%;bottom:calc(var(--gb) + 70px);background:rgba(250,246,236,.97);color:#1a1430;border-radius:18px;padding:14px 16px;font-size:16px;line-height:1.4;box-shadow:0 10px 30px rgba(0,0,0,.5);border:3px solid #1a1430;animation:pop .3s}
+#story .sbub.talk{border-radius:22px 22px 22px 6px}#story .sbub b{display:block;font:900 14px var(--f-display);text-transform:uppercase;color:#c85a00;margin-bottom:2px}#story .sbub p{margin:0}
+#story .sbtns{position:absolute;left:4%;right:4%;bottom:calc(var(--gb) + 10px);display:flex;align-items:center;gap:10px}#story .sbtns .nx{flex:1;max-width:220px;margin-left:auto}
+#story .sdots{display:flex;gap:5px}#story .sdots i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3)}#story .sdots i.on{background:var(--gold)}
+#mini{z-index:42}.minibox{gap:12px}.minibox .mres{min-height:20px;font-weight:700;color:#fff}
+.wheelwrap{position:relative;width:min(300px,78vw);aspect-ratio:1;margin:0 auto}.wheel{width:100%;height:100%;border-radius:50%;box-shadow:0 0 0 6px #ffd04a,0 0 30px rgba(255,190,40,.45)}
+.wptr{position:absolute;left:50%;top:-14px;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:30px solid #fff;filter:drop-shadow(0 3px 4px rgba(0,0,0,.5));z-index:2}
+.shells{position:relative;height:150px;display:flex;justify-content:center}
+.shell{position:absolute;width:30%;height:120px;bottom:0;transition:transform .32s ease-in-out;cursor:pointer}
+.shell .lid{position:absolute;inset:0 0 0 0;border-radius:12px 12px 8px 8px;background:linear-gradient(#9a5a2a 0 40%,#ffd04a 40% 50%,#7a4218 50%);box-shadow:inset 0 0 0 3px #4a2408,0 8px 16px rgba(0,0,0,.45);transition:transform .3s}
+.shell .sbar{position:absolute;left:22%;right:22%;bottom:10px;height:26px;border-radius:4px;background:linear-gradient(170deg,#fff0a0,#ffc21a 40%,#b87800);opacity:0}
+.shell.show .lid{transform:translateY(-62px)}.shell.show.has .sbar{opacity:1}
+.minicard{position:relative;padding-left:64px}.minicard .btn{min-width:130px}.minicard .mico{position:absolute;left:10px;top:12px;width:44px;height:44px;border-radius:50%}
+.minicard.wheel .mico{background:conic-gradient(#3a6ad8 0 12.5%,#8a4ad8 0 25%,#e8a020 0 37.5%,#2aa86a 0 50%,#c8402a 0 62.5%,#d8306a 0 75%,#2a9ab8 0 87.5%,#f2c21a 0);box-shadow:0 0 0 3px #ffd04a}
+.minicard.shell .mico{border-radius:8px;background:linear-gradient(#9a5a2a 0 40%,#ffd04a 40% 50%,#7a4218 50%);box-shadow:inset 0 0 0 2px #4a2408}
 .ok-text{color:var(--green);font-weight:800}
 .rec{display:flex;justify-content:space-between;gap:10px;padding:6px 2px;border-bottom:1px solid var(--line);font-size:14px;flex:1 1 100%}.rec b{font-family:var(--f-display);color:var(--gold)}.rec.mine{background:rgba(255,208,74,.16);border-radius:8px;padding:6px 7px}
 /* ---------- HUD ---------- */
@@ -201,7 +229,7 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
 .row2{display:flex;gap:8px}.row2 .btn{flex:1}
 #crashRing{height:5px;border-radius:3px;background:linear-gradient(90deg,var(--gold),var(--pink));transform-origin:left}
 #crashRing.go{animation:shrink 7s linear forwards}@keyframes shrink{to{transform:scaleX(0)}}
-#modal{z-index:40}
+#modal{z-index:50}
 #toast{position:fixed;left:50%;top:calc(var(--gt) + 112px);transform:translateX(-50%);background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,208,74,.45);color:#fff;font-weight:700;padding:10px 18px;border-radius:999px;z-index:60;pointer-events:none;max-width:90%;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.45)}
 #toast.show{animation:pop .25s}@keyframes pop{from{transform:translateX(-50%) scale(.7);opacity:0}}
 #loading{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,#2a2258,#0d0b1e 70%);z-index:100}
@@ -222,6 +250,7 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
   <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
   <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14"/></symbol>
   <symbol id="i-paw" viewBox="0 0 24 24"><circle cx="7" cy="9" r="2"/><circle cx="12" cy="6.5" r="2"/><circle cx="17" cy="9" r="2"/><path d="M8 17c0-3 2-5 4-5s4 2 4 5c0 2-2 3-4 2-2 1-4 0-4-2z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/><path d="M15 19l2 2 4-4"/></symbol>
   <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3M21 12v2"/></symbol>
 </svg>
 <canvas id="c"></canvas>
@@ -242,7 +271,7 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
   <div class="bottom">
     <div id="eventChip" hidden></div>
     <button id="seasonChip" data-panel="season"></button>
-    <button id="worldChip"><svg class="i"><use href="#i-map"/></svg><span id="worldName">Златоград</span></button>
+    <div class="chiprow"><button id="heroChip" data-panel="heroes"><svg class="i"><use href="#i-user"/></svg><span id="heroName">Мика</span></button><button id="worldChip"><svg class="i"><use href="#i-map"/></svg><span id="worldName">Златоград</span></button></div>
     <div id="startBoosts" hidden></div>
     <button class="btn" id="runBtn" data-t="run">Бежать!</button>
     <div class="mbtns">
@@ -270,6 +299,7 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
     </div>
     <div class="sp" style="display:flex;flex-direction:column;align-items:center;gap:6px">
       <div id="hDist">0 м</div>
+      <div id="ghostLine" hidden></div>
       <div class="chase"><i class="raccoon"></i><span data-t="chase">Шмыг</span><span class="cb"><i id="chaseFill"></i></span></div>
     </div>
     <button class="iconbtn" id="pauseBtn" aria-label="pause"><svg class="i"><use href="#i-pause"/></svg></button>
@@ -306,6 +336,8 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
 </div>
 
 <div id="modal" class="center" hidden><div class="box"><h2 class="mt"></h2><div class="mbody"></div><button class="btn ok mok">OK</button></div></div>
+<div id="story" hidden></div>
+<div id="mini" class="center" hidden></div>
 <div id="toast" hidden></div>
 
 <script src="/sdk.js"></script>
@@ -314,12 +346,14 @@ svg.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke
 <script src="js/premium.js"></script>
 <script src="js/data.js"></script>
 <script src="js/i18n.js"></script>
+<script src="js/i18n-extra.js"></script>
 <script src="js/shop.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/gfx.js"></script>
 <script src="js/models.js"></script>
 <script src="js/worlds.js"></script>
 <script src="js/plaza.js"></script>
+<script src="js/story.js"></script>
 <script src="js/pets.js"></script>
 <script src="js/thumbs.js"></script>
 <script src="js/engine.js"></script>

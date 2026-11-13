@@ -114,6 +114,8 @@ window.MODELS = (function () {
     horns: function (r, c) { mesh(sph(0.12, 14, 10), r.M(c, "metal"), 0, 0.15, -0.005, r.head).scale.set(1, 1, 1.08); [-1, 1].forEach(function (k) { var h = mesh(cone(0.025, 0.14, 8), r.M(0xffcf3a, "gold"), k * 0.08, 0.26, -0.04, r.head); h.rotation.z = -k * 0.4; h.rotation.x = -0.4; }); },
     sorchood: function (r, c) { var h = mesh(sph(0.135, 14, 10), r.M(c, "fabric"), 0, 0.13, -0.03, r.head); h.scale.set(1, 1.15, 1.08); mesh(cone(0.06, 0.12, 10), r.M(c, "fabric"), 0, 0.27, -0.09, r.head).rotation.x = -0.6; },
     kabuto: function (r, c) { mesh(sph(0.125, 14, 10), r.M(0xf2f2f2, "paint"), 0, 0.15, -0.005, r.head).scale.set(1, 0.9, 1.08); var cr = mesh(box(0.2, 0.012, 0.03), r.M(0xff2a3a, "paint", { emissive: 0xff2a3a, ei: 1.5 }), 0, 0.24, 0.07, r.head); cr.rotation.x = -0.3; mesh(box(0.16, 0.025, 0.02), r.M(0xff2a3a, "glass", { emissive: 0xff2a3a, ei: 2 }), 0, 0.12, 0.1, r.head, false); },
+    goggles: function (r, c) { var b = mesh(cyl(0.106, 0.106, 0.03, 16), r.M(0x3a2a1a, "leather"), 0, 0.17, 0, r.head); b.scale.set(0.97, 1, 1.07); [-1, 1].forEach(function (k) { var g = mesh(cyl(0.035, 0.035, 0.03, 12), r.M(c, "metal"), k * 0.045, 0.19, 0.1, r.head); g.rotation.x = Math.PI / 2 - 0.4; mesh(cyl(0.026, 0.026, 0.032, 12), r.M(0x6ad8ff, "glass", { emissive: 0x2a8aaa, ei: 0.6 }), k * 0.045, 0.19, 0.104, r.head, false).rotation.x = Math.PI / 2 - 0.4; }); },
+    aviator: function (r, c) { mesh(sph(0.117, 14, 10), r.M(c, "leather"), 0, 0.14, -0.005, r.head).scale.set(1, 0.95, 1.06); [-1, 1].forEach(function (k) { mesh(box(0.03, 0.09, 0.06), r.M(c, "leather"), k * 0.105, 0.07, 0.0, r.head); var g = mesh(cyl(0.032, 0.032, 0.025, 12), r.M(0xc8a060, "metal"), k * 0.045, 0.21, 0.08, r.head); g.rotation.x = 1.1; }); },
     // на спине и на теле
     bag: function (r, c) { var b = mesh(box(0.06, 0.22, 0.28), r.M(c || 0x7a4a26, "leather"), -0.19, 0.0, 0.02, r.hips); var s = mesh(box(0.025, 0.62, 0.012), r.M(0x4a2a14, "leather"), 0, 0.27, 0.0, r.spine); s.rotation.z = 0.72; s.position.z = 0.1; var s2 = s.clone(); s2.position.z = -0.1; r.spine.add(s2); },
     backpack: function (r, c) { mesh(box(0.26, 0.32, 0.13), r.M(c, "fabric"), 0, 0.28, -0.15, r.spine); },
@@ -146,8 +148,9 @@ window.MODELS = (function () {
   /* ---------- Героиня в костюме ---------- */
   function hero(skin) {
     var L = skin.look;
-    var r = rig({ s: 1, female: true, skin: L.skinTone || 0xf2c6a0, hair: L.hair || 0x4a2a18, top: L.top, sleeve: L.sleeve, pants: L.pants, shoe: L.shoe,
-      glove: L.glove, sole: L.sole, forearm: L.forearm, shin: L.shin, kinds: L.kinds, topEx: L.topEx, pantsEx: L.pantsEx, ponytail: L.ponytail, eyes: 0x3d5a2a });
+    var r = rig({ s: 1, female: !L.male, skin: L.skinTone || 0xf2c6a0, hair: L.hair || 0x4a2a18, top: L.top, sleeve: L.sleeve, pants: L.pants, shoe: L.shoe,
+      glove: L.glove, sole: L.sole, forearm: L.forearm, shin: L.shin, kinds: L.kinds, topEx: L.topEx, pantsEx: L.pantsEx, ponytail: L.male ? false : L.ponytail, eyes: L.male ? 0x4a2a14 : 0x3d5a2a });
+    if (L.male) { r.male = true; r.root.scale.setScalar(1.04); r.chest.scale.set(1.18, 0.7, 0.8); r.hair.children.forEach(function (h) { h.scale.y *= 0.82; }); }
     (L.acc || []).forEach(function (a) { var p = a.split(":"); if (ACC[p[0]]) ACC[p[0]](r, p[1] ? parseInt(p[1], 16) : L.accC || L.top); });
     if (L.hat && ACC[L.hat]) ACC[L.hat](r, L.hatC != null ? L.hatC : L.top);
     if (L.hideHair) r.hair.visible = false;
@@ -241,7 +244,10 @@ window.MODELS = (function () {
       r.spine.rotation.x = 0.02 + b * 0.012; r.spine.rotation.y = Math.sin(t * 0.5) * 0.1; r.hips.position.y = 0.93 + b * 0.004; r.hips.rotation.y = 0;
       r.head.rotation.y = Math.sin(t * 0.37) * 0.35; r.head.rotation.x = 0.03;
       r.body.rotation.x = 0; r.body.position.y = 0;
-    } else if (a === "wave") {
+    }
+    if (r.male && a === "idle") { set(AL.up, 0.18, 0, 0.14); set(AL.el, -0.35); AL.el.rotation.y = 0; set(AR.up, 0.18, 0, -0.14); set(AR.el, -0.35); AR.el.rotation.y = 0; r.head.rotation.x = -0.05; }   // руки в карманах
+    if (r.male) { if (a === "jump") { r._jt = (r._jt || 0) + dt; r.body.rotation.y = Math.min(1, r._jt / 0.55) * Math.PI * 2; } else { r._jt = 0; r.body.rotation.y = 0; } }
+    if (a === "wave") {
       set(AR.up, -2.7, 0, -0.3); set(AR.el, -0.4 + Math.sin(t * 9) * 0.35); r.head.rotation.y = 0.2;
     }
     if (r.hair.userData.tail) r.hair.userData.tail.rotation.x = -0.5 - (a === "run" ? 0.5 + Math.sin(p * 2) * 0.15 : 0) + (a === "jump" ? 0.6 : 0);
