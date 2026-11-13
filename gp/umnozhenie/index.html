@@ -655,7 +655,7 @@ window.PF = (function () {
 <script>
 'use strict';
 /* ===== Картинки: слоты под WebP. Имя из IMGN → показывается файл img/<имя>.webp, иначе рисунок кодом ===== */
-var IMGN = /*IMGN*/['bg_castle','bg_forest','bg_swamp','cover','hero_dragon','hero_fox','hero_knight','hero_robot','ic_bolt','ic_bulb','ic_clock','ic_crown','ic_cup','ic_gear','ic_heart','ic_lock','ic_star','mon_castle_1','mon_castle_2','mon_castle_3','mon_castle_boss','mon_forest_1','mon_forest_2','mon_forest_3','mon_forest_boss','mon_swamp_1','mon_swamp_2','mon_swamp_3','mon_swamp_boss']/*END*/;
+var IMGN = /*IMGN*/['bg_castle','bg_forest','bg_lava','bg_space','bg_swamp','cover','hero_dragon','hero_fox','hero_knight','hero_robot','ic_bolt','ic_bulb','ic_clock','ic_crown','ic_cup','ic_gear','ic_heart','ic_lock','ic_star','mon_castle_1','mon_castle_2','mon_castle_3','mon_castle_boss','mon_forest_1','mon_forest_2','mon_forest_3','mon_forest_boss','mon_lava_1','mon_lava_2','mon_lava_3','mon_lava_boss','mon_space_1','mon_space_2','mon_space_3','mon_space_boss','mon_swamp_1','mon_swamp_2','mon_swamp_3','mon_swamp_boss']/*END*/;
 
 var ICONS = {
   star: '<polygon points="12,1.5 15.2,8.4 22.5,9.2 17,14.2 18.7,21.5 12,17.7 5.3,21.5 7,14.2 1.5,9.2 8.8,8.4" fill="#ffd23f" stroke="#2b1b3d" stroke-width="2" stroke-linejoin="round"/>',
@@ -770,18 +770,33 @@ function worldSvg(id) {
     s += '<rect y="250" width="375" height="150" fill="#3f9a8e"/>';
     for (var j = 0; j < 4; j++) s += '<ellipse cx="' + (50 + j * 95) + '" cy="' + (290 + (j % 2) * 24) + '" rx="30" ry="9" fill="#6fd36a" stroke="' + o + '" stroke-width="3"/>';
     for (var r = 0; r < 6; r++) s += '<g transform="translate(' + (20 + r * 66) + ',255)"><path d="M0 40 V0" stroke="' + o + '" stroke-width="5"/><ellipse cx="0" cy="-4" rx="5" ry="11" fill="#7b4b2a" stroke="' + o + '" stroke-width="2.5"/></g>';
-  } else {
+  } else if (id === 'castle') {
     s += '<defs><linearGradient id="gc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b2a8f"/><stop offset="1" stop-color="#d98ad9"/></linearGradient></defs><rect width="375" height="400" fill="url(#gc)"/>';
     for (var k = 0; k < 14; k++) s += '<circle cx="' + ((k * 97) % 375) + '" cy="' + (10 + (k * 41) % 120) + '" r="' + (1 + k % 3 * .8) + '" fill="#fff" opacity=".85"/>';
     s += '<circle cx="310" cy="60" r="26" fill="#fff6c9" stroke="' + o + '" stroke-width="3"/>';
     s += '<g stroke="' + o + '" stroke-width="3.5" stroke-linejoin="round"><rect x="120" y="120" width="140" height="130" fill="#8c78c8"/><rect x="100" y="90" width="44" height="160" fill="#a08ee0"/><rect x="236" y="90" width="44" height="160" fill="#a08ee0"/><path d="M96 90 L122 44 L148 90z M232 90 L258 44 L284 90z" fill="#ff4d5e"/><path d="M120 120 h14 v-14 h14 v14 h14 v-14 h14 v14 h14 v-14 h14 v14 h14 v-14 h14 v14 h14 v-14 h14 v14" fill="#8c78c8"/><path d="M170 250 v-46 a20 20 0 0 1 40 0 v46z" fill="#3b2a5e"/></g>';
     s += '<rect y="250" width="375" height="150" fill="#6b5a9a"/><path d="M0 250 Q190 232 375 250" fill="none" stroke="' + o + '" stroke-width="3"/>';
     for (var m = 0; m < 6; m++) s += '<rect x="' + (10 + m * 66) + '" y="' + (275 + (m % 2) * 30) + '" width="46" height="16" rx="5" fill="#8a78bd" stroke="' + o + '" stroke-width="2.5"/>';
+  } else if (id === 'space') {
+    s += '<defs><linearGradient id="gx" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f0a3d"/><stop offset="1" stop-color="#5a3fb0"/></linearGradient></defs><rect width="375" height="400" fill="url(#gx)"/>';
+    for (var q = 0; q < 26; q++) s += '<circle cx="' + ((q * 83) % 375) + '" cy="' + (8 + (q * 37) % 210) + '" r="' + (1 + q % 3 * .7) + '" fill="#fff" opacity="' + (q % 2 ? .95 : .6) + '"/>';
+    s += '<circle cx="290" cy="85" r="44" fill="#ff8a5c" stroke="' + o + '" stroke-width="3.5"/><ellipse cx="290" cy="85" rx="74" ry="14" fill="none" stroke="#ffd23f" stroke-width="7" transform="rotate(-18 290 85)"/><circle cx="276" cy="70" r="8" fill="#ffb08a"/><circle cx="302" cy="100" r="5" fill="#ffb08a"/>';
+    s += '<circle cx="70" cy="60" r="22" fill="#cfd8ff" stroke="' + o + '" stroke-width="3"/><circle cx="62" cy="54" r="5" fill="#a9b6f0"/><circle cx="78" cy="68" r="4" fill="#a9b6f0"/>';
+    s += '<path d="M0 255 Q100 225 200 255 T375 250 V400 H0z" fill="#7a6ad0" stroke="' + o + '" stroke-width="3"/><rect y="270" width="375" height="130" fill="#5b4bb0"/>';
+    for (var w = 0; w < 5; w++) s += '<ellipse cx="' + (45 + w * 80) + '" cy="' + (300 + (w % 2) * 26) + '" rx="26" ry="8" fill="#4a3b98" stroke="' + o + '" stroke-width="2.5"/>';
+  } else if (id === 'lava') {
+    s += '<defs><linearGradient id="gv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a1d3a"/><stop offset="1" stop-color="#ff9a4a"/></linearGradient></defs><rect width="375" height="400" fill="url(#gv)"/>';
+    s += cloud(90, 60, 1.1).replace('fill="#fff"', 'fill="#5a4a5a"') + cloud(300, 90, .9).replace('fill="#fff"', 'fill="#6a5a6a"');
+    s += '<path d="M70 260 L160 90 L190 70 L220 90 L330 260z" fill="#6b4a3a" stroke="' + o + '" stroke-width="3.5" stroke-linejoin="round"/><path d="M160 90 L190 118 L220 90 L190 70z" fill="#ffb23f" stroke="' + o + '" stroke-width="3"/>';
+    s += '<path d="M178 118 Q168 170 150 215 Q190 200 200 258 Q215 190 206 118z" fill="#ff5a2a" stroke="' + o + '" stroke-width="2.5" stroke-linejoin="round"/>';
+    s += '<circle cx="190" cy="40" r="8" fill="#ffd23f"/><circle cx="170" cy="22" r="5" fill="#ff8a3d"/><circle cx="214" cy="26" r="6" fill="#ff8a3d"/>';
+    s += '<rect y="255" width="375" height="145" fill="#4a2d2a"/><path d="M0 255 Q90 240 190 255 T375 250" fill="none" stroke="' + o + '" stroke-width="3"/>';
+    for (var z = 0; z < 4; z++) s += '<path d="M' + (20 + z * 95) + ' ' + (290 + (z % 2) * 25) + ' q22 -14 44 0 q-22 12 -44 0z" fill="#ff7a2a" stroke="' + o + '" stroke-width="2.5"/>';
   }
   return '<svg viewBox="0 0 375 340" preserveAspectRatio="xMidYMax slice">' + s + '</svg>';
 }
 
-var EN_DICT = {"Рыцарь Рома": "Knight Roma", "Лиса Лика": "Fox Lika", "Робот Бо": "Robo Bo", "Дракончик Дрюня": "Drake Drew", "Щит: первая ошибка в бою не отнимает сердце": "Shield: your first mistake in battle won't cost you a heart", "Подсказка: 2 раза за бой убирает неверные ответы": "Hint: removes wrong answers twice per battle", "+3 секунды на каждый пример": "+3 seconds on every question", "6 сердец вместо 5": "6 hearts instead of 5", "Волшебный лес": "Magic Forest", "Болото": "Swamp", "Замок": "Castle", "Пенёк-Грибок": "Stump Shroom", "Колобок-злюка": "Grumpy Dumpling", "Шишкарь": "Pine Cone Guy", "Лягушонок-Забияка": "Bully Froglet", "Тинник": "Sludge", "Кувшинкин": "Lily Pad Imp", "Шестак — Шестилапый Жаб": "Sixer the Six-Legged Toad", "Скелетик": "Little Skeleton", "Призрак-Простыня": "Sheet Ghost", "Горгулья": "Gargoyle", "Король Семерик": "King Sevener", "Столбец ×2": "×2 Table", "Столбец ×3": "×3 Table", "Столбец ×4": "×4 Table", "Столбец ×5": "×5 Table", "Столбец ×6": "×6 Table", "Столбец ×7": "×7 Table", "Смесь 2–5": "Mix 2–5", "Деление на 2–5": "Division by 2–5", "Смесь 2–6": "Mix 2–6", "Смесь 2–7": "Mix 2–7", "БОСС ×6": "BOSS ×6", "БОСС ×7": "BOSS ×7", "×7 скоростной": "×7 Speed Round", "Уровень": "Level", "БОСС!": "BOSS!", "Поехали!": "Let's go!", "Босс злится!": "The boss is angry!", "меньше времени": "less time", "КОМБО ×": "COMBO ×", "×4 = крит": "×4 = crit", "×8 = суперудар": "×8 = super hit", "СУПЕР!": "SUPER!", "КРИТ −2!": "CRIT −2!", "СУПЕР −3!": "SUPER −3!", "ЩИТ!": "SHIELD!", "Время!": "Time!", "БИТВА ОТРЯДОВ": "SQUAD BATTLE", "ТАБЛИЦА<br>УМНОЖЕНИЯ": "MULTIPLICATION<br>TABLE", "бей монстров знаниями!": "defeat monsters with math!", "ИГРАТЬ": "PLAY", "Герои": "Heroes", "Звук": "Sound", "Для родителей": "For parents", "Назад": "Back", "Пауза": "Pause", "Подсказка": "Hint", "Для родителей — удерживайте шестерёнку": "For parents: hold the gear button", "Космос и Вулкан — скоро!": "Space and Volcano: coming soon!", "Столбцы ×8 и ×9, боссы и новые герои": "×8 and ×9 tables, bosses, and new heroes", "БОСС": "BOSS", "Сначала пройди предыдущий уровень": "Beat the previous level first", "Босс побеждён!": "Boss defeated!", "Победа!": "Victory!", "Не вышло…": "Not this time…", "Не страшно! Эти примеры теперь будут попадаться чаще.": "No worries! These questions will come up more often now.", "Верно: ": "Correct: ", " · Ошибок: ": " · Mistakes: ", " · Лучшее комбо: ×": " · Best combo: ×", "Повторим:": "Let's review:", "Новый герой открыт: ": "New hero unlocked: ", "Удвоить звёзды (ролик)": "Double your stars (watch ad)", "Дальше": "Next", "Ещё раз": "Again", "Ещё раз с +1 сердцем (ролик)": "Try again with +1 heart (watch ad)", "Карта": "Map", " ★ в копилку!": " ★ added to your collection!", " Новый герой: ": " New hero: ", "Выбран": "Selected", "Выбрать": "Select", " нужно ": " required ", "Итого": "Total", "Ответов: ": "Answers: ", " · Верных: ": " · Correct: ", " · Звёзд: ": " · Stars: ", "Умножение": "Multiplication", "Деление": "Division", "Таблица умножения": "Multiplication table", "Деление (строка ÷ столбец)": "Division (row ÷ column)", "не было": "not seen", "западает": "struggling", "учится": "learning", "почти": "almost learned", "выучено": "learned", "Цифра в клетке — сколько раз встретился пример. Нажмите на клетку.": "The number in each cell shows how many times you've seen that problem. Tap a cell.", "Что западает": "Weak spots", "Пока нет ошибок. Играйте — здесь появятся примеры, которые вызывают трудности.": "No mistakes yet. Keep playing: tough questions will show up here.", "ошибок ": "mistakes ", " из ": " of ", "Сбросить прогресс": "Reset progress", "Сбросить все звёзды и статистику?": "Reset all stars and statistics?", ": встретился ": ": seen ", " р., ошибок ": " times, mistakes ", ", ср. время ": ", avg time ", "Пока не встречался": "Not seen yet", "Продолжить": "Resume", "Заново": "Restart", "На карту": "To map", " с": " sec", "Таблица умножения: Битва отрядов": "Multiplication Table: Squad Battle", "Премиум для родителей": "Premium for Parents", "Премиум активен до ": "Premium is active until ", "Узнать про Премиум": "Learn About Premium", "Премиум": "Premium", "Премиум на 30 дней или год: без полноэкранной рекламы и с подарком каждый день. Покупку оплачивает взрослый, автопродления нет.": "Premium for 30 days or one year: no full-screen ads and a gift every day. An adult makes the purchase, and it does not renew automatically.", "Подарок дня Премиума": "Premium daily gift", "Подарок получен: +1 сердце в трёх боях": "Gift received: +1 heart in three battles", "Подарок Премиума: сердец в запасе": "Premium gift: boosted battles left"};
+var EN_DICT = {"Рыцарь Рома": "Knight Roma", "Лиса Лика": "Fox Lika", "Робот Бо": "Robo Bo", "Дракончик Дрюня": "Drake Drew", "Щит: первая ошибка в бою не отнимает сердце": "Shield: your first mistake in battle won't cost you a heart", "Подсказка: 2 раза за бой убирает неверные ответы": "Hint: removes wrong answers twice per battle", "+3 секунды на каждый пример": "+3 seconds on every question", "6 сердец вместо 5": "6 hearts instead of 5", "Волшебный лес": "Magic Forest", "Болото": "Swamp", "Замок": "Castle", "Пенёк-Грибок": "Stump Shroom", "Колобок-злюка": "Grumpy Dumpling", "Шишкарь": "Pine Cone Guy", "Лягушонок-Забияка": "Bully Froglet", "Тинник": "Sludge", "Кувшинкин": "Lily Pad Imp", "Шестак — Шестилапый Жаб": "Sixer the Six-Legged Toad", "Скелетик": "Little Skeleton", "Призрак-Простыня": "Sheet Ghost", "Горгулья": "Gargoyle", "Король Семерик": "King Sevener", "Столбец ×2": "×2 Table", "Столбец ×3": "×3 Table", "Столбец ×4": "×4 Table", "Столбец ×5": "×5 Table", "Столбец ×6": "×6 Table", "Столбец ×7": "×7 Table", "Смесь 2–5": "Mix 2–5", "Деление на 2–5": "Division by 2–5", "Смесь 2–6": "Mix 2–6", "Смесь 2–7": "Mix 2–7", "БОСС ×6": "BOSS ×6", "БОСС ×7": "BOSS ×7", "×7 скоростной": "×7 Speed Round", "Уровень": "Level", "БОСС!": "BOSS!", "Поехали!": "Let's go!", "Босс злится!": "The boss is angry!", "меньше времени": "less time", "КОМБО ×": "COMBO ×", "×4 = крит": "×4 = crit", "×8 = суперудар": "×8 = super hit", "СУПЕР!": "SUPER!", "КРИТ −2!": "CRIT −2!", "СУПЕР −3!": "SUPER −3!", "ЩИТ!": "SHIELD!", "Время!": "Time!", "БИТВА ОТРЯДОВ": "SQUAD BATTLE", "ТАБЛИЦА<br>УМНОЖЕНИЯ": "MULTIPLICATION<br>TABLE", "бей монстров знаниями!": "defeat monsters with math!", "ИГРАТЬ": "PLAY", "Герои": "Heroes", "Звук": "Sound", "Для родителей": "For parents", "Назад": "Back", "Пауза": "Pause", "Подсказка": "Hint", "Для родителей — удерживайте шестерёнку": "For parents: hold the gear button", "Космос и Вулкан — скоро!": "Space and Volcano: coming soon!", "Столбцы ×8 и ×9, боссы и новые герои": "×8 and ×9 tables, bosses, and new heroes", "БОСС": "BOSS", "Сначала пройди предыдущий уровень": "Beat the previous level first", "Босс побеждён!": "Boss defeated!", "Победа!": "Victory!", "Не вышло…": "Not this time…", "Не страшно! Эти примеры теперь будут попадаться чаще.": "No worries! These questions will come up more often now.", "Верно: ": "Correct: ", " · Ошибок: ": " · Mistakes: ", " · Лучшее комбо: ×": " · Best combo: ×", "Повторим:": "Let's review:", "Новый герой открыт: ": "New hero unlocked: ", "Удвоить звёзды (ролик)": "Double your stars (watch ad)", "Дальше": "Next", "Ещё раз": "Again", "Ещё раз с +1 сердцем (ролик)": "Try again with +1 heart (watch ad)", "Карта": "Map", " ★ в копилку!": " ★ added to your collection!", " Новый герой: ": " New hero: ", "Выбран": "Selected", "Выбрать": "Select", " нужно ": " required ", "Итого": "Total", "Ответов: ": "Answers: ", " · Верных: ": " · Correct: ", " · Звёзд: ": " · Stars: ", "Умножение": "Multiplication", "Деление": "Division", "Таблица умножения": "Multiplication table", "Деление (строка ÷ столбец)": "Division (row ÷ column)", "не было": "not seen", "западает": "struggling", "учится": "learning", "почти": "almost learned", "выучено": "learned", "Цифра в клетке — сколько раз встретился пример. Нажмите на клетку.": "The number in each cell shows how many times you've seen that problem. Tap a cell.", "Что западает": "Weak spots", "Пока нет ошибок. Играйте — здесь появятся примеры, которые вызывают трудности.": "No mistakes yet. Keep playing: tough questions will show up here.", "ошибок ": "mistakes ", " из ": " of ", "Сбросить прогресс": "Reset progress", "Сбросить все звёзды и статистику?": "Reset all stars and statistics?", ": встретился ": ": seen ", " р., ошибок ": " times, mistakes ", ", ср. время ": ", avg time ", "Пока не встречался": "Not seen yet", "Продолжить": "Resume", "Заново": "Restart", "На карту": "To map", " с": " sec", "Таблица умножения: Битва отрядов": "Multiplication Table: Squad Battle", "Премиум для родителей": "Premium for Parents", "Премиум активен до ": "Premium is active until ", "Узнать про Премиум": "Learn About Premium", "Премиум": "Premium", "Премиум на 30 дней или год: без полноэкранной рекламы и с подарком каждый день. Покупку оплачивает взрослый, автопродления нет.": "Premium for 30 days or one year: no full-screen ads and a gift every day. An adult makes the purchase, and it does not renew automatically.", "Подарок дня Премиума": "Premium daily gift", "Подарок получен: +1 сердце в трёх боях": "Gift received: +1 heart in three battles", "Подарок Премиума: сердец в запасе": "Premium gift: boosted battles left", "Космос": "Space", "Вулкан": "Volcano", "Метеоритик": "Meteor Pup", "Осьминог-Восьморук": "Octo the Eight-Armed", "Столбец ×8": "×8 Table", "Столбец ×9": "×9 Table", "×8 и ÷8": "×8 and ÷8", "×9 и ÷9": "×9 and ÷9", "×10 и ×100": "×10 and ×100", "Смесь 2–8": "Mix 2–8", "Смесь 2–9": "Mix 2–9", "БОСС ×8": "BOSS ×8", "ФИНАЛ: БОСС ×9": "FINAL BOSS ×9", "Двузначное × однозначное": "Two-digit × one-digit", "Циклоп-Пришелец": "Cyclops Alien", "Ржавый Робот": "Rusty Robot", "Лавовый Слизень": "Lava Slug", "Огонёк": "Flame Spirit", "Каменный Тролль": "Stone Troll", "Девятихвост — Огненный Дракон": "Nine-Tails the Fire Dragon"};
 var LANG = 'ru';
 function T(k) { return LANG === 'en' && EN_DICT[k] !== undefined ? EN_DICT[k] : k; }
 function detectLang() { try { var l = (PF.lang && PF.lang()) || navigator.language || 'ru'; l = String(l).toLowerCase().slice(0, 2); return ['ru', 'kk', 'be', 'uk', 'uz'].indexOf(l) >= 0 ? 'ru' : 'en'; } catch (e) { return 'ru'; } }
@@ -812,7 +827,17 @@ var WORLDS = [
     { nm: 'Скелетик', c: '#eee8dc', c2: '#fff', eyes: 2, teeth: 1, noBelly: 1 },
     { nm: 'Призрак-Простыня', c: '#d8e6ff', c2: '#fff', eyes: 2, mouth: 'o', friendly: 0, spots: 1, c3: '#b8cdf5' },
     { nm: 'Горгулья', c: '#7f8aa3', c2: '#b4bdd0', eyes: 2, horns: 1, wings: 1, teeth: 1, c3: '#5a6580' }
-  ], boss: { nm: 'Король Семерик', c: '#c24a8a', c2: '#ffb3dd', eyes: 3, horns: 1, teeth: 1, crown: 1, mark: 7, c3: "#fff2c9", hp: 14 } }
+  ], boss: { nm: 'Король Семерик', c: '#c24a8a', c2: '#ffb3dd', eyes: 3, horns: 1, teeth: 1, crown: 1, mark: 7, c3: "#fff2c9", hp: 14 } },
+  { id: 'space', nm: 'Космос', col: '#4a5fd0', mons: [
+    { nm: 'Циклоп-Пришелец', c: '#7be0a5', c2: '#d9ffe9', eyes: 1, antenna: 1, c3: '#ff4d5e', mouth: 'o' },
+    { nm: 'Метеоритик', c: '#8a7a6a', c2: '#bfb0a0', eyes: 1, spots: 1, c3: '#5a4a3a', mouth: 'o' },
+    { nm: 'Ржавый Робот', c: '#b87a45', c2: '#e3b98a', eyes: 2, antenna: 1, c3: '#8a8f99', teeth: 1, noBelly: 1 }
+  ], boss: { nm: 'Осьминог-Восьморук', c: '#9a5fd8', c2: '#e0c3ff', eyes: 3, horns: 1, antenna: 1, teeth: 1, c3: '#ffd23f', mark: 8, hp: 16 } },
+  { id: 'lava', nm: 'Вулкан', col: '#d9633a', mons: [
+    { nm: 'Лавовый Слизень', c: '#ff7a3a', c2: '#ffd08a', eyes: 2, spots: 1, c3: '#ffd23f', mouth: 'o' },
+    { nm: 'Огонёк', c: '#ffb62e', c2: '#fff0a8', eyes: 2, spikes: 1, c3: '#ff4d2a', friendly: 0 },
+    { nm: 'Каменный Тролль', c: '#7d7d86', c2: '#b8b8c2', eyes: 2, teeth: 1, spots: 1, c3: '#5fb04a' }
+  ], boss: { nm: 'Девятихвост — Огненный Дракон', c: '#b8231f', c2: '#ff9f5a', eyes: 3, horns: 1, crown: 1, teeth: 1, spikes: 1, c3: '#ffd23f', mark: 9, hp: 18 } }
 ];
 
 /* столбец, деление (доля вопросов), время (с), число вариантов, hp врагов */
@@ -831,7 +856,17 @@ var LV = [
   { w: 2, nm: '×7 и ÷7', cols: [7], div: 0.4, t: 9, opt: 4, hp: 4 },
   { w: 2, nm: 'Смесь 2–7', cols: [2, 3, 4, 5, 6, 7], div: 0.3, t: 9, opt: 4, hp: 4 },
   { w: 2, nm: '×7 скоростной', cols: [7], div: 0.2, t: 7, opt: 4, hp: 4 },
-  { w: 2, nm: 'БОСС ×7', cols: [7], div: 0.3, t: 7, opt: 4, hp: 4, boss: 1 }
+  { w: 2, nm: 'БОСС ×7', cols: [7], div: 0.3, t: 7, opt: 4, hp: 4, boss: 1 },
+  { w: 3, nm: 'Столбец ×8', cols: [8], div: 0, t: 9, opt: 4, hp: 4 },
+  { w: 3, nm: '×8 и ÷8', cols: [8], div: 0.4, t: 9, opt: 4, hp: 4 },
+  { w: 3, nm: '×10 и ×100', cols: [], pool: 't', div: 0, t: 10, opt: 4, hp: 4 },
+  { w: 3, nm: 'Смесь 2–8', cols: [2, 3, 4, 5, 6, 7, 8], div: 0.3, t: 8, opt: 4, hp: 4 },
+  { w: 3, nm: 'БОСС ×8', cols: [8], div: 0.3, t: 7, opt: 4, hp: 4, boss: 1 },
+  { w: 4, nm: 'Столбец ×9', cols: [9], div: 0, t: 9, opt: 4, hp: 4 },
+  { w: 4, nm: '×9 и ÷9', cols: [9], div: 0.4, t: 9, opt: 4, hp: 4 },
+  { w: 4, nm: 'Двузначное × однозначное', cols: [], pool: 'y', div: 0, t: 13, opt: 4, hp: 4 },
+  { w: 4, nm: 'Смесь 2–9', cols: [2, 3, 4, 5, 6, 7, 8, 9], div: 0.3, t: 7, opt: 4, hp: 4 },
+  { w: 4, nm: 'ФИНАЛ: БОСС ×9', cols: [9], div: 0.3, t: 7, opt: 4, hp: 4, boss: 1 }
 ];
 LV.forEach(function (l, i) { l.n = i + 1; });
 var PERLEVEL_IDX = []; (function () { var cnt = {}; LV.forEach(function (l) { cnt[l.w] = (cnt[l.w] || 0); l.j = cnt[l.w]++; }); })();
@@ -885,12 +920,18 @@ function show(id) {
 function fmtT(ms) { return (ms / 1000).toFixed(1).replace('.', LANG === 'en' ? '.' : ',') + T(' с'); }
 
 /* ===== Примеры и адаптивная выдача ===== */
-function factKey(f) { return f.o === 'm' ? 'm' + Math.min(f.a, f.b) + 'x' + Math.max(f.a, f.b) : 'd' + (f.a * f.b) + '/' + f.a; }
-function factText(f) { return f.o === 'm' ? f.a + ' × ' + f.b : (f.a * f.b) + ' ÷ ' + f.a; }
-function factAns(f) { return f.o === 'm' ? f.a * f.b : f.b; }
+function factKey(f) { return f.o === 'm' ? 'm' + Math.min(f.a, f.b) + 'x' + Math.max(f.a, f.b) : f.o === 'd' ? 'd' + (f.a * f.b) + '/' + f.a : f.o + f.a + 'x' + f.b; }
+function factText(f) { return f.o === 'd' ? (f.a * f.b) + ' ÷ ' + f.a : f.a + ' × ' + f.b; }
+function factAns(f) { return f.o === 'd' ? f.b : f.a * f.b; }
 function factFull(f) { return factText(f) + ' = ' + factAns(f); }
 function buildPools(lv) {
   var m = {}, d = {};
+  if (lv.pool === 't') {   /* умножение на 10 и 100 */
+    for (var a = 2; a <= 9; a++) [10, 100].forEach(function (b) { var f = { o: 't', a: a, b: b }; m[factKey(f)] = f; });
+    [11, 12, 15, 20, 25, 30, 40, 50].forEach(function (a) { var f = { o: 't', a: a, b: 10 }; m[factKey(f)] = f; });
+  } else if (lv.pool === 'y') {   /* двузначное на однозначное, ответ до 100 */
+    for (var a2 = 11; a2 <= 20; a2++) for (var b2 = 2; b2 <= 5; b2++) { var f2 = { o: 'y', a: a2, b: b2 }; m[factKey(f2)] = f2; }
+  }
   lv.cols.forEach(function (c) {
     for (var k = 2; k <= 10; k++) {
       var fm = { o: 'm', a: c, b: k }; m[factKey(fm)] = fm;
@@ -925,10 +966,14 @@ function makeOptions(f, n) {
   if (f.o === 'm') {
     c = [(f.a + 1) * f.b, (f.a - 1) * f.b, f.a * (f.b + 1), f.a * (f.b - 1), ans + 10, ans - 10, ans + 2, ans - 2, ans + f.a, ans - f.b];
     var s = String(ans); if (s.length === 2) c.push(Number(s[1] + s[0]));
+  } else if (f.o === 't') {
+    c = [ans * 10, ans / 10, ans + 10, ans - 10, (f.a + 1) * f.b, (f.a - 1) * f.b, ans + f.b, ans - f.b, ans + 100, ans - 100];
+  } else if (f.o === 'y') {
+    c = [ans + 10, ans - 10, ans + f.b, ans - f.b, (f.a + 1) * f.b, (f.a - 1) * f.b, f.a * (f.b + 1), f.a * (f.b - 1), ans + 1, ans - 1, ans + 20];
   } else {
     c = [ans + 1, ans - 1, ans + 2, ans - 2, f.a, f.a + 1, ans + 3, ans * 2];
   }
-  c = shuffle(c.filter(function (v, i, a) { return v > 0 && v !== ans && a.indexOf(v) === i; }));
+  c = shuffle(c.filter(function (v, i, a) { return v > 0 && v === Math.floor(v) && v !== ans && a.indexOf(v) === i; }));
   var out = [ans], g = 0;
   while (out.length < n && c.length) out.push(c.shift());
   while (out.length < n) { var v = ans + 1 + rnd(12) * (rnd(2) ? 1 : -1); if (v > 0 && out.indexOf(v) < 0) out.push(v); if (++g > 80) { out.push(ans + out.length * 13); } }
@@ -1160,7 +1205,7 @@ function renderMap() {
     });
     h += '</div>';
   });
-  h += '<div class="world soon" style="background:#8a7fb0"><h2>' + T('Космос и Вулкан — скоро!') + '</h2><p class="note" style="text-align:center;color:#fff;margin:0">' + T('Столбцы ×8 и ×9, боссы и новые герои') + '</p></div><div style="height:14px"></div></div>';
+  h += '<div style="height:14px"></div></div>';
   var s = $('s-map'); s.innerHTML = h;
   $('mp-back').onclick = renderStart; $('mp-heroes').onclick = renderHeroes;
   s.querySelectorAll('.lnode').forEach(function (b) { b.onclick = function () { var n = Number(b.getAttribute('data-n')); if (!unlocked(LV[n - 1])) { toast(T('Сначала пройди предыдущий уровень')); return; } SFX.tap(); startLevel(n); }; });

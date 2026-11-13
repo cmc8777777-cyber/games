@@ -1,7 +1,7 @@
 // Сервис-воркер Кругосветки (пакет Google Play): вся игра внутри index.html, кэшируем всё для работы офлайн.
 // Меняя файлы пакета, поднимайте номер в CACHE, чтобы устройства подтянули новую версию.
 var CACHE = 'kugosvetka-gp-v1';
-var FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
+var FILES = ['./index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); }).then(function () { return self.skipWaiting(); }));
