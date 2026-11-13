@@ -34,6 +34,7 @@ button:disabled{opacity:.45}
 .msec{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.msec button{min-width:0}
 .pm-on .menuR{top:60px}
 @media (max-height:520px){.ttl{font-size:30px}.ttl::after{margin-top:6px;height:3px}.menuL{gap:5px}.menuL button{padding:8px 16px;font-size:14px}.menuL button.pri{font-size:17px;padding:10px 18px}.sub{margin-bottom:6px!important;font-size:11px}#pcHelp{display:none!important}.lvlbox{padding:6px 10px;min-width:200px}}
+@media (max-height:520px) and (orientation:landscape){.menuL{max-width:min(560px,calc(94vw - 270px))}.menuR{width:210px}.menuR .lvlbox{min-width:0;width:100%}.menuL{overflow-y:auto;overflow-x:hidden;touch-action:pan-y;scrollbar-width:none}.menuL .mgrid button{font-size:12px;padding:7px 10px}}
 .menuR{position:absolute;right:clamp(16px,4vw,48px);top:clamp(16px,4vh,40px);display:flex;flex-direction:column;align-items:flex-end;gap:8px}
 #scrMenu{background:linear-gradient(90deg,rgba(8,11,16,.85) 0%,rgba(8,11,16,.35) 50%,rgba(8,11,16,0) 100%);isolation:isolate}
 #scrMenu.artbg{background:#0d1217}

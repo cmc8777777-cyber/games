@@ -1006,12 +1006,15 @@ const XART = [[/тюфяк|early cannon/, 'tyufyak'], [/пищал|hand cannon/,
   [/пулем|machine gun/, 'machinegun'], [/стрельц|strelts/, 'strelets'], [/штык|bayonet/, 'bayonet'], [/арбалет|самостр|crossbow/, 'crossbowman'],
   [/рыцар|латни|knight/, 'knight_plate'], [/гуляй|fortress/, 'gulyay_gorod'], [/требуш|катапул|trebuchet|catapult/, 'trebuchet']];
 const XIMG = {};
+// несколько рисунков загрузились подряд — одна перерисовка, а не по одной на каждый
+let xRebT = 0;
+function xRebuild(){ clearTimeout(xRebT); xRebT = setTimeout(() => { if (B && !SIM) { buildSprites(); buildIcons(); buildBattleUI(); refreshUI(); } }, 120); }
 function xImg(name){
   const n = String(name || '').toLowerCase(), hit = XART.find(([re]) => re.test(n)); if (!hit) return null;
   const f = hit[1];
   if (!XIMG[f]) { const im = new Image(); XIMG[f] = im;
     // загрузилась — перерисовать бойцов открытой битвы (до этого он нарисован кодом)
-    im.onload = () => { if (B && !SIM && TOWER_ORDER.some(k => DEFS[k].xImg === f)) { buildSprites(); buildIcons(); buildBattleUI(); refreshUI(); } };
+    im.onload = () => { if (B && !SIM && TOWER_ORDER.some(k => DEFS[k].xImg === f)) xRebuild(); };
     im.src = 'art/web/fighters/' + f + '.webp'; }
   return f;
 }
@@ -1416,7 +1419,8 @@ function resize(){
   if (B && r.width > 1 && (!BG || BG.width !== Math.round(W*DPR*VS))) buildBg();
   setCamera(atRome ? CAM.max : CAM.y);
 }
-const SS = 3;
+// множитель чёткости спрайтов: 2 хватает при DPR≤2 (было 3 — ~150 МБ холстов на битву, слабые устройства замирали)
+const SS = 2;
 function cnv(w,h,s){ const c = document.createElement('canvas'); c.width = Math.max(1,Math.ceil(w*(s||1))); c.height = Math.max(1,Math.ceil(h*(s||1))); return c; }
 function renderSprite(w,h,ay,fn,f,flip,scale){
   const c = cnv(w,h,SS), g = c.getContext('2d');
@@ -1438,16 +1442,20 @@ function spriteFor(id, unit, isDef){
   return {draw:(g,f) => TH.figure(g, s, f, {era, role:isDef ? 'def' : 'foe'}), w:bx.w*sc, h:bx.h*sc, ay:bx.ay*sc, top:bx.top*sc, foot:bx.foot*Math.min(sc,1.25), scale:sc, special:false};
 }
 const TS = {}, ES = {}, FXS = {};
+const TINTS = [null, 'rgba(80,140,235,.28)', 'rgba(255,250,235,.75)'];
+function sv(S, variant, f, d){ const r = S.v[variant][f]; return r[d] || (r[d] = tinted(S.v[0][f][d], TINTS[variant])); }
 function buildSprites(){
-  for (const k in TS) delete TS[k]; for (const k in ES) delete ES[k];
+  // старые холсты освобождаем сразу (Safari/телефоны иначе держат память до сборки мусора)
+  const free = c => { if (c && c.width) { c.width = 0; c.height = 0; } };
+  for (const k in TS) { TS[k].img.forEach(free); delete TS[k]; }
+  for (const k in ES) { ES[k].v.forEach(a => a.forEach(r => r && r.forEach(free))); delete ES[k]; }
   for (const k of TOWER_ORDER) { const sp = spriteFor(k, DEFS[k], true); TS[k] = {w:sp.w, h:sp.h, ay:sp.ay, img:[renderSprite(sp.w,sp.h,sp.ay,sp.draw,-1,false,sp.scale), renderSprite(sp.w,sp.h,sp.ay,sp.draw,-1,true,sp.scale)]}; }
   for (const k in ENEMIES) {
     const sp = spriteFor(k, ENEMIES[k], false), v = [[],[],[]];
     for (let f=0; f<2; f++) for (let d=0; d<2; d++) {
       const base = renderSprite(sp.w,sp.h,sp.ay,sp.draw,f,d===1,sp.scale);
       (v[0][f] = v[0][f] || [])[d] = base;
-      (v[1][f] = v[1][f] || [])[d] = tinted(base,'rgba(80,140,235,.28)');
-      (v[2][f] = v[2][f] || [])[d] = tinted(base,'rgba(255,250,235,.75)');
+      (v[1][f] = v[1][f] || [])[d] = null; (v[2][f] = v[2][f] || [])[d] = null; // оттенки — по первому требованию (sv)
     }
     ES[k] = {w:sp.w, h:sp.h, ay:sp.ay, top:sp.top, foot:sp.foot, v, special:sp.special, sling:sp.special && ENEMIES[k].sprite && ENEMIES[k].sprite.weapon === 'sling'};
   }
@@ -1712,7 +1720,7 @@ function draw(){
     if (k >= 1) { PARTS.splice(i,1); continue; }
     if (q.k === 'dust') { q.x += q.vx*dtR; q.y += q.vy*dtR; const r = q.r*(.6+k*.9); ctx.globalAlpha = (1-k)*.85; ctx.drawImage(FXS.dust,q.x-r,q.y-r,r*2,r*2); ctx.globalAlpha = 1; }
     else if (q.k === 'spark') { q.y += q.vy*dtR; ctx.globalAlpha = 1-k; ctx.drawImage(FXS.fire,q.x-4,q.y-4,8,8); ctx.globalAlpha = 1; }
-    else if (q.k === 'ghost') { const S = ES[q.e.type]; if (!S) { PARTS.splice(i,1); continue; } ctx.globalAlpha = 1-k; const img = S.v[2][0][q.face>0?0:1]; const fy = enemyFoot(q.e) + k*4; ctx.drawImage(img,q.e.x-S.w/2,fy-S.ay+k*S.ay*.3,S.w,S.h*(1-k*.3)); ctx.globalAlpha = 1; }
+    else if (q.k === 'ghost') { const S = ES[q.e.type]; if (!S) { PARTS.splice(i,1); continue; } ctx.globalAlpha = 1-k; const img = sv(S,2,0,q.face>0?0:1); const fy = enemyFoot(q.e) + k*4; ctx.drawImage(img,q.e.x-S.w/2,fy-S.ay+k*S.ay*.3,S.w,S.h*(1-k*.3)); ctx.globalAlpha = 1; }
   }
   if (PARTS.length > 160) PARTS.splice(0, PARTS.length-160);
   if (WALL && cy + VIEW_H > WALL_TOP) {
@@ -1762,7 +1770,7 @@ function drawEnemy(e, slowed){
   const variant = fl > 0 ? 2 : slowed || e.slowT > 0 ? 1 : 0;
   if (e.inv) { ctx.globalAlpha = .28; ctx.drawImage(FXS.dust, x-S.w*.45, fy-S.top*.8, S.w*.9, S.top*.8); }
   if (e.inv && e.def.burrow) { ctx.globalAlpha = 1; E(ctx,x,fy-2,S.w*.22,4,'#8a6a46',INK,.8); E(ctx,x-2,fy-3,S.w*.1,1.6,'#a8875e'); ctx.globalAlpha = 1; }
-  else ctx.drawImage(S.v[variant][frame][face>0?0:1], x - S.w/2, fy - S.ay + bob, S.w, S.h);
+  else ctx.drawImage(sv(S,variant,frame,face>0?0:1), x - S.w/2, fy - S.ay + bob, S.w, S.h);
   ctx.globalAlpha = 1;
   if (S.sling) {
     const hx = x + face*5, hy = fy - 31 + bob, a = RT*(slowed?9:16) + e.wob, sx = hx + Math.cos(a)*6.5, sy = hy - 4 + Math.sin(a)*2.6;
