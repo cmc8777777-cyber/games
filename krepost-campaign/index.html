@@ -1020,9 +1020,11 @@ function xSprite(look, own){
   const m = all.find(d => d.sprite && d.sprite.kind === kind && d.sprite.weapon === weapon) || all.find(d => d.sprite && d.sprite.kind === kind && d.proj === proj) || all.find(d => d.sprite && d.sprite.kind === kind) || own[0];
   return m && m.sprite ? JSON.parse(JSON.stringify(m.sprite)) : {kind:'human'};
 }
+const XDMG = 1.3;
 function xDef(l, i, own){
   const p = (XPROF.find(([re]) => re.test(String(l.name || '').toLowerCase())) || XPROF[XPROF.length - 1])[1];
-  return Object.assign({id:'x' + i, name:l.name, cost:p.cost, range:p.range, dmg:p.dmg, cd:p.cd, splash:p.splash || 0, proj:p.proj, bonusVs:p.bonusVs || {}, special:null,
+  // XDMG: оружие другой эпохи открывается поздно и стоит дорого — бьёт на 30 % сильнее профиля (13.11: иначе замена им прокачанных воинов не окупалась)
+  return Object.assign({id:'x' + i, name:l.name, cost:p.cost, range:p.range, dmg:Math.round(p.dmg * XDMG), cd:p.cd, splash:p.splash || 0, proj:p.proj, bonusVs:p.bonusVs || {}, special:null,
     note:T(p.note), fact:T('Оружие другой эпохи: ') + (l.line || ''), sprite:xSprite(p.look, own), xImg:xImg(l.name), xtra:true});
 }
 function dmgMul(t, d){
