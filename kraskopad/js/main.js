@@ -796,6 +796,13 @@
 
   /* ---------- HUD ---------- */
   var hudCache = {};
+  /* картинки Художника (KP.ART из art.js); нет картинки — прежний цветной кружок */
+  function hasArt(n) { return !!(KP.ART && KP.ART.icons && KP.ART.icons.indexOf(n) >= 0); }
+  function icA(n, col) { return hasArt(n) ? "<img class=ici src='img/" + n + ".webp' alt=''>" : "<i class=ic style='background:" + col + "'></i>"; }
+  var GREN_ART = { gren: "g_paint", smoke: "g_smoke", pop: "g_wall" };
+  var WRAP_ART = { 1: "wrap_neon", 2: "wrap_camo", 6: "wrap_gold", 7: "wrap_splash" };   // образцы Художника для «Неон», «Камуфляж», «Золото», «Призма»
+  /* значки на сенсорных кнопках и кнопке пропуска: класс на body, сами картинки — в CSS (body.art_ui_fire и т. п.) */
+  function artBodyClasses() { ["ui_fire", "ui_jump", "ui_reload", "ui_heal", "ui_wall", "ui_ramp", "ui_pass", "g_paint", "g_smoke", "g_wall", "i_chest", "v_quad"].forEach(function (n) { document.body.classList.toggle("art_" + n, hasArt(n)); }); }
   function setTxt(id, s) { if (hudCache[id] !== s) { hudCache[id] = s; $(id).textContent = s; } }
   function setHTML(id, s) { if (hudCache[id] !== s) { hudCache[id] = s; $(id).innerHTML = s; } }
   function fmt(sec) { sec = Math.ceil(sec); return Math.floor(sec / 60) + ":" + ("0" + sec % 60).slice(-2); }
@@ -803,7 +810,7 @@
     var p = G.player; if (!p || !G.running) return;
     $("hpFill").style.width = Math.max(0, p.hp) + "%"; $("shFill").style.width = p.sh + "%";
     setTxt("hpTxt", Math.ceil(Math.max(0, p.hp)) + (p.sh > 0 ? " + " + Math.ceil(p.sh) : ""));
-    setHTML("wood", "<i class=ic style='background:#c49a66'></i>" + p.wood);
+    setHTML("wood", icA("ui_wood", "#c49a66") + p.wood);
     var alive = 0; G.chars.forEach(function (c) { if (c.alive) alive++; });
     setTxt("alive", KP.t("alive", alive)); setTxt("kos", KP.t("kos", p.kos));
     var mh = KP.modeHud && KP.modeHud();
@@ -816,18 +823,21 @@
       var x = p.slots[i], cls = "slot" + (i === p.cur ? " cur" : "") + (x ? "" : " empty"), col = x && i ? KP.RAR[x.r].c : "#ffffff";
       sl += i + ":" + (x ? x.id + "." + (x.r || 0) : "-") + (i === p.cur ? "*" : "") + ";";
       var el = $("slot" + i); el.className = cls; el.style.borderColor = x ? col : "rgba(255,255,255,0.25)";
-      var lab = x ? KP.t("w" + x.id) : "", key = "sl" + i + lab; if (hudCache["slt" + i] !== key) { hudCache["slt" + i] = key; el.innerHTML = "<b>" + (i + 1) + "</b><span>" + lab + "</span>"; }
+      var lab = x ? KP.t("w" + x.id) : "", key = "sl" + i + lab; if (hudCache["slt" + i] !== key) { hudCache["slt" + i] = key; el.innerHTML = "<b>" + (i + 1) + "</b>" + (x && hasArt("w_" + x.id) ? "<img class=wimg src='img/w_" + x.id + ".webp' alt='' onerror=\"this.remove()\">" : "") + "<span>" + lab + "</span>"; }
     }
     if (G.teamSize > 1 && G.teamSize <= 3) {
       var th = ""; G.chars.forEach(function (c) { if (c !== p && c.team === p.team) th += "<div class=tm" + (c.alive ? "" : " dead") + "><span>" + esc(c.name) + "</span><i style='width:" + Math.max(0, c.hp) * 0.6 + "px'></i><u style='width:" + c.sh * 0.6 + "px'></u></div>"; });
       setHTML("team", th);
     } else setHTML("team", "");
-    setHTML("items", "<i class=ic style='background:#57e08a'></i>" + p.items.tube + " <i class=ic style='background:#e8efe9'></i>" + p.items.pal + " <i class=ic style='background:#3fb6ff'></i>" + p.items.lac + " <i class=ic style='background:#2a7bff'></i>" + p.items.big);
+    setHTML("items", icA("i_tube", "#57e08a") + p.items.tube + " " + icA("i_pal", "#e8efe9") + p.items.pal + " " + icA("i_lac", "#3fb6ff") + p.items.lac + " " + icA("i_bigshield", "#2a7bff") + p.items.big);
     var nv = p.state === "ground" && p.alive && !nearestLoot(p, 2.2) && !KP.nearChest(p, 2.2) ? KP.nearVehicle(p, 2.6) : null;
     var showTake = p.alive && (p.state === "drive" || (p.state === "ground" && (KP.nearChest(p, 2.2) || nearestLoot(p, 2.2) || nv)));
     setTxt("bTake", p.state === "drive" ? KP.t("exitV") : nv ? KP.t("enter_" + nv.kind) : KP.t("take"));
     var gk = p.items[p.thr] > 0 ? p.thr : (["gren", "smoke", "pop"].filter(function (q) { return p.items[q] > 0; })[0] || p.thr);
-    setHTML("grenChip", "<i class=ic style='background:" + KP.ITEMS[gk].col + "'></i>" + KP.t("i_" + gk) + " " + p.items[gk] + (isTouch ? "" : " <small>[G] [B]</small>"));
+    var tk = p.state === "drive" ? "" : nv ? (nv.kind === "quad" ? "quad" : "") : KP.nearChest(p, 2.2) ? "chest" : "";
+    if ($("bTake").getAttribute("data-ic") !== tk) $("bTake").setAttribute("data-ic", tk);
+    $("bGren").setAttribute("data-ic", gk);
+    setHTML("grenChip", icA(GREN_ART[gk], KP.ITEMS[gk].col) + KP.t("i_" + gk) + " " + p.items[gk] + (isTouch ? "" : " <small>[G] [B]</small>"));
     $("bTake").style.display = showTake ? "flex" : "none";
     if (showTake && !isTouch && (p.state === "drive" || nv)) { setHTML("takeHint", "<kbd>E</kbd>" + (p.state === "drive" ? KP.t("exitV") : KP.t("enter_" + nv.kind))); $("takeHint").style.display = "block"; }
     else if (showTake && !isTouch) { var it = nearestLoot(p, 2.2), ch = KP.nearChest(p, 2.2); setHTML("takeHint", "<kbd>E</kbd>" + (ch ? KP.t("chest") : it.t === "w" ? "<span style='color:" + KP.RAR[it.r].c + "'>" + KP.t("w" + it.id) + " · " + KP.t("r" + it.r) + "</span>" : KP.t("i_" + it.id))); $("takeHint").style.display = "block"; }
@@ -865,7 +875,7 @@
     G.running = false; G.ended = false; document.body.classList.remove("inmatch"); $("hud").style.display = "none";
     if (planeMesh) planeMesh.visible = false;
     clearMatch(); G.zone = null; if (SET.map && W3.map !== SET.map && world) switchMap(SET.map); if (sky) applyAtmos(W3.MAP.winter ? "polar" : W3.MAP.desert ? "dustset" : "sunset");
-    $("bMap").innerHTML = KP.t("mapLbl") + ": <b>" + KP.t("map_" + W3.map) + "</b>";
+    $("bMap").innerHTML = (W3.map === "isle" && KP.ART && KP.ART.bg && KP.ART.bg.indexOf("map_island") >= 0 ? "<img class=mapth src='img/map_island.webp' alt='' onerror=\"this.remove()\">" : "") + KP.t("mapLbl") + ": <b>" + KP.t("map_" + W3.map) + "</b>";
     KP.audio.music("menu"); KP.audio.ambience("menu"); $("bTutor").className = PROG.tut ? "" : "gold"; toggleMap(false);
     var I = lvlInfo(PROG.xp);
     $("mLvl").textContent = KP.t("lvl", I.L); $("mXpFill").style.width = (100 * I.cur / I.need) + "%"; $("mXp").textContent = KP.t("xp", I.cur, I.need);
@@ -875,7 +885,8 @@
     $("bGift").style.display = window.Premium && window.Premium.giftAvailable && window.Premium.giftAvailable() ? "" : "none";
     var ev = KP.todayEvent(); $("bEvent").innerHTML = KP.t("event") + ": " + KP.t(ev.key) + "<small>" + KP.t(ev.key + "d") + " · ×" + ev.xp + " " + KP.t("resXp") + "</small>";
     $("pcHelp").style.display = isTouch ? "none" : "block";
-    $("scrMenu").classList.toggle("artbg", !!(KP.ART && KP.ART.bg && KP.ART.bg.indexOf("bg_menu") >= 0 && W3.map === "isle"));   // фон Художника на тропической карте
+    artBodyClasses();
+    $("scrMenu").classList.toggle("artbg",!!(KP.ART && KP.ART.bg && KP.ART.bg.indexOf("bg_menu") >= 0 && W3.map === "isle"));   // фон Художника на тропической карте
     $("scrMenu").classList.toggle("artbg2", !!(KP.ART && KP.ART.bg && KP.ART.bg.indexOf("bg_season2") >= 0 && W3.map === "frost"));   // зимний фон сезона 2 на «Ледяном перевале"
 
     show("scrMenu");
@@ -891,8 +902,8 @@
     list.forEach(function (s, i) {
       var open = isOpen(wardTab, i), name, pic;
       if (wardTab === "skin") { name = KP.t("sk" + i); pic = (KP.ART && KP.ART.skin && KP.ART.skin.indexOf(i) >= 0 ? "<img class=port src='img/skin_" + i + ".webp' alt='' onerror=\"this.style.display='none';this.nextSibling.style.display='block'\"><div class=fig style='display:none'>" : "<div class=fig>") + "<s style='background:" + s.vest + "'></s><em style='background:" + s.pants + "'></em><i style='background:" + s.skin + "'></i><u style='background:" + (s.helmCol || "transparent") + "'></u></div>"; }
-      else if (wardTab === "wrap") { name = KP.t(s.key); pic = "<div class=dot style='border-radius:4px;background:" + (s.tint === "prism" ? "linear-gradient(135deg,#ff3d8b,#ffc531,#2fd6ff)" : s.tint) + "'></div>"; }
-      else if (wardTab === "emote") { name = KP.t(s.key); pic = "<div class=dot style='background:#2b3036;line-height:36px;font-size:18px'>" + (i + 1) + "</div>"; }
+      else if (wardTab === "wrap") { name = KP.t(s.key); var wa = WRAP_ART[i]; pic = wa && hasArt(wa) ? "<div class='dot wrapimg' style=\"background:url(img/" + wa + ".webp) center/cover " + (s.tint === "prism" ? "#ff3d8b" : s.tint) + "\"></div>" : "<div class=dot style='border-radius:4px;background:" + (s.tint === "prism" ? "linear-gradient(135deg,#ff3d8b,#ffc531,#2fd6ff)" : s.tint) + "'></div>"; }
+      else if (wardTab === "emote") { name = KP.t(s.key); var ea = "emote_" + s.anim; pic = hasArt(ea) ? "<img class='port" + (open ? "" : " lk") + "' src='img/" + ea + ".webp' alt='' onerror=\"this.outerHTML='<div class=dot></div>'\">" : "<div class=dot style='background:#2b3036;line-height:36px;font-size:18px'>" + (i + 1) + "</div>"; }
       else { name = KP.t("pc" + i); pic = "<div class=dot style='background:" + (s.c === "rainbow" ? "conic-gradient(#ff3d8b,#ffc61a,#7be03a,#2f9bff,#9b5cff,#ff3d8b)" : s.c) + "'></div>"; }
       if (wardTab === "skin" && !open) pic = pic.replace("class=port", "class='port lk'");
       h += "<div class='card" + (cur === i ? " sel" : "") + (open ? "" : " locked") + "' data-i=" + i + ">" + pic + "<b>" + name + "</b><small>" + (open ? (cur === i ? KP.t("selected") : KP.t("choose")) : KP.META.lockText(wardTab, i)) + "</small></div>";
@@ -995,7 +1006,8 @@
     var h = "<div class=passHead><b>" + KP.t("chals") + "</b><small>" + KP.t("chalStars", KP.chalTotal(PROG), KP.CHAL.length * 3) + "</small></div><div class=chals>";
     KP.CHAL.forEach(function (C, i) {
       var open = KP.chalOpen(PROG, i), s = (PROG.chal || {})[i] || 0;
-      h += "<div class='chal" + (open ? "" : " locked") + "' data-c=" + i + "><b>" + (i + 1) + ". " + KP.t("chal_" + C.t) + "</b><small>" + KP.t("map_" + C.map) + " · " + KP.t(W3.MAPS[C.map].pois[Math.min(C.poi, W3.MAPS[C.map].pois.length - 1)].key) + "</small><span class=st>" + "★★★".slice(0, s) + "<i>" + "☆☆☆".slice(0, 3 - s) + "</i></span>" + (open ? "" : "<small>" + KP.t("chalLocked") + "</small>") + "</div>";
+      var lk = C.map === "isle" ? "loc_" + W3.MAPS.isle.pois[Math.min(C.poi, W3.MAPS.isle.pois.length - 1)].kind : "", lb = lk && KP.ART && KP.ART.bg && KP.ART.bg.indexOf(lk) >= 0;   // фото локации Художника
+      h += "<div class='chal" + (open ? "" : " locked") + "' data-c=" + i + (lb ? " style=\"background:linear-gradient(90deg,rgba(8,11,16,.9),rgba(8,11,16,.45)),url(img/" + lk + ".webp) center/cover\"" : "") + "><b>" + (i + 1) + ". " + KP.t("chal_" + C.t) + "</b><small>" + KP.t("map_" + C.map) + " · " + KP.t(W3.MAPS[C.map].pois[Math.min(C.poi, W3.MAPS[C.map].pois.length - 1)].key) + "</small><span class=st>" + "★★★".slice(0, s) + "<i>" + "☆☆☆".slice(0, 3 - s) + "</i></span>" + (open ? "" : "<small>" + KP.t("chalLocked") + "</small>") + "</div>";
     });
     $("chalList").innerHTML = h + "</div>";
     Array.prototype.forEach.call($("chalList").querySelectorAll("[data-c]"), function (el) { el.onclick = function () { var i = +el.getAttribute("data-c"); if (!KP.chalOpen(PROG, i)) return; audioInit(); G.chalId = i; startMatch("chal"); }; });
