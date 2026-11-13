@@ -1,0 +1,40 @@
+{
+  "id": "./",
+  "name": "Краскопад",
+  "short_name": "Краскопад",
+  "lang": "ru",
+  "description": "Тактический пейнтбол «королевская битва»: высадка, лут, стройка укрытий, три карты, PvE и испытания.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
+  "orientation": "landscape",
+  "theme_color": "#0d1217",
+  "background_color": "#0d1217",
+  "categories": [
+    "games"
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

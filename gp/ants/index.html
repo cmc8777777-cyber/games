@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<link rel="icon" href="data:,">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#6b4423">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Муравейник</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#2b1d12;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#3b2a1a;overflow:hidden}
+#app{position:relative;width:100%;max-width:375px;height:100%;max-height:812px;margin:0 auto;display:flex;flex-direction:column;background:#fff4d6;overflow:hidden}
+#top{display:flex;gap:4px;padding:6px 8px;background:#6b4423;color:#fff;font-size:13px;font-weight:700;align-items:center;justify-content:space-between;flex:0 0 auto}
+#top span{background:rgba(0,0,0,.25);padding:4px 7px;border-radius:10px;white-space:nowrap}
+#cv{display:block;width:100%;flex:0 0 auto;aspect-ratio:375/250;background:#8bd3ff}
+#pmCorner.pm-corner{top:calc(env(safe-area-inset-top,0px) + 46px);opacity:.88}
+#banner{flex:0 0 auto;font-size:12px;padding:4px 8px;background:#ffe9a8;border-bottom:2px solid #e0c26a;min-height:26px;line-height:1.25}
+#tabs{display:flex;flex:0 0 auto;background:#e8c98f}
+#tabs button{flex:1;border:0;padding:10px 0;font-size:14px;font-weight:700;background:transparent;color:#5a3a1a}
+#tabs button.on{background:#fff4d6;color:#b3410a;box-shadow:inset 0 -3px #ff8a1f}
+#panel{flex:1 1 auto;overflow-y:auto;padding:8px 10px;font-size:14px}
+#nextwrap{flex:0 0 auto;padding:8px;background:#6b4423}
+#next{width:100%;border:0;border-radius:14px;padding:14px;font-size:18px;font-weight:800;color:#fff;background:linear-gradient(#ff9a2f,#f06a00);box-shadow:0 3px #a64400}
+#next:active{transform:translateY(2px);box-shadow:0 1px #a64400}
+.row{display:flex;align-items:center;gap:6px;margin:6px 0}
+.row .nm{flex:1;font-weight:600}
+.row .v{width:84px;text-align:center;font-weight:700;font-size:13px}
+.sb{width:38px;height:34px;border:0;border-radius:10px;background:#ff9a2f;color:#fff;font-size:20px;font-weight:800}
+.sb:disabled{background:#d8c9a8}
+h3{margin:10px 0 4px;font-size:15px;color:#b3410a}
+.card{background:#fff;border:2px solid #e0c26a;border-radius:12px;padding:8px;margin:6px 0}
+.small{font-size:12px;color:#7a5a38}
+.bar{height:10px;background:#e8d8b0;border-radius:6px;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:#4caf50}
+.bad{color:#c62828;font-weight:700}.good{color:#2e7d32;font-weight:700}
+.btn{border:0;border-radius:10px;padding:9px 12px;background:#ff9a2f;color:#fff;font-weight:800;font-size:14px}
+.btn:disabled{background:#d8c9a8}
+.btn.alt{background:#7a5a38}
+#modal{position:absolute;inset:0;background:rgba(30,15,0,.72);display:none;align-items:center;justify-content:center;padding:14px;z-index:5}
+#mcard{background:#fff4d6;border:4px solid #6b4423;border-radius:18px;padding:14px;width:100%;max-height:96%;overflow-y:auto}
+#mcard h2{margin:0 0 8px;font-size:19px;color:#b3410a}
+#mcard p{margin:6px 0;font-size:15px;line-height:1.35}
+#mcard .opt{display:block;width:100%;margin:6px 0;text-align:left}
+#mcard input{width:100%;font-size:20px;padding:8px;border:2px solid #6b4423;border-radius:10px;margin:6px 0}
+.opt.ok{background:#2e9e44!important}.opt.no{background:#d33!important}
+#cover{width:100%;aspect-ratio:2/3;max-height:260px;object-fit:cover;border-radius:12px;display:none;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="top"></div>
+  <canvas id="cv" width="375" height="250"></canvas>
+  <div id="banner"></div>
+  <div id="tabs"><button data-t="tasks" class="on">Задачи</button><button data-t="build">Стройка</button><button data-t="info">Сводка</button></div>
+  <div id="panel"></div>
+  <div id="nextwrap"><button id="next">Следующий день ▶</button></div>
+  <div id="modal"><div id="mcard"></div></div>
+</div>
+<script>/* Адаптер рекламы и покупок Google Play. Сейчас заглушка: реклама выключена, покупок нет, кнопка ролика скрыта.
+   Здесь же подключать AdMob (interstitial/rewarded) и Play Billing (premium): done() вызывать один раз. */
+window.GPAdapter={interstitial:function(done){done()},rewarded:function(done){done(false)},canReward:function(){return false},premium:function(){return false}};
+</script>
+<script>
+(function(){
+'use strict';
+var $=function(i){return document.getElementById(i)};
+var LANG='ru',EN=/*EN*/{"s001": "Spring", "s002": "Summer", "s003": "Fall", "s004": "Winter", "s005": "Storage Chamber", "s006": "+300 crumbs of storage space", "s007": "Nursery", "s008": "+40 spaces for brood", "s009": "Living Chamber", "s010": "+50 spaces for adults", "s011": "Barracks", "s012": "Soldier strength 2 → 3", "s013": "Aphid Farm", "s014": "8 aphid farmers, 6 crumbs/day each", "s015": "How many legs does an ant have?", "s016": "An ant is an insect. All insects have 6 legs. Spiders have 8 legs, so they are not insects.", "s017": "What are the three main parts of an ant's body?", "s018": "head, thorax, abdomen", "s019": "head and body", "s020": "only head and tail", "s021": "shell and legs", "s022": "An insect's body has three main parts: head, thorax, and abdomen.", "s023": "What do ants get from aphids?", "s024": "blood", "s025": "sweet honeydew", "s026": "fur", "s027": "eggs", "s028": "Aphids drink plant sap and release a sweet liquid called honeydew. Ants collect it from aphids and protect them.", "s029": "Who lays eggs in an ant colony?", "s030": "soldier", "s031": "worker", "s032": "queen", "s033": "nurse", "s034": "The queen lays eggs. The other ants gather food, guard the nest, and care for the young.", "s035": "What are the stages of an ant's life cycle?", "s036": "egg → adult", "s037": "egg → larva → pupa → adult", "s038": "larva → egg → adult", "s039": "pupa → egg → larva", "s040": "Ants go through complete metamorphosis: egg, larva, pupa, and adult.", "s041": "What do ants use their antennae for?", "s042": "smelling and touching", "s043": "flying", "s044": "breathing", "s045": "chewing", "s046": "Antennae help ants smell and feel things. Ants use them to detect scents and explore their surroundings.", "s047": "How do ants communicate with each other?", "s048": "by singing", "s049": "using scents (pheromones)", "s050": "using light", "s051": "by tapping the ground", "s052": "Ants leave scent trails called pheromones and share chemical signals when they meet.", "s053": "How do ants in temperate climates survive winter?", "s054": "fly south", "s055": "become inactive deep inside their nest", "s056": "build new nests on the snow", "s057": "all die except the queen", "s058": "In winter, ants barely move deep inside their nest. They use very little energy and save their food.", "s059": "How do forest ants help the forest?", "s060": "eat tree leaves", "s061": "eat harmful insects", "s062": "pollinate pine trees", "s063": "build roads", "s064": "Forest ants help keep forests healthy by eating many caterpillars and other pests.", "s065": "Which of these is NOT an insect?", "s066": "bee", "s067": "beetle", "s068": "spider", "s069": "fly", "s070": "A spider is an arachnid. It has 8 legs and two main body parts.", "s071": "What was a butterfly before it became an adult butterfly?", "s072": "a pupa, and before that, a caterpillar", "s073": "a tadpole", "s074": "a roundworm", "s075": "an ant", "s076": "A caterpillar is a butterfly larva. It then becomes a pupa and finally an adult butterfly.", "s077": "What protects an ant's body on the outside?", "s078": "fur", "s079": "scales", "s080": "a chitin covering (exoskeleton)", "s081": "skin like a human's", "s082": "The tough chitin covering is an outer skeleton called an exoskeleton. Muscles attach to it from the inside.", "s083": "Why do soldier ants have large heads and jaws?", "s084": "to defend the nest", "s085": "to fly", "s086": "to swim", "s087": "to sing", "s088": "Soldier ants guard the nest and fight enemies.", "s089": "When do ants have wings?", "s090": "all ants have wings all the time", "s091": "males and young queens have wings for mating flights", "s092": "never", "s093": "only workers have wings", "s094": "Winged males and young queens fly out to mate. The young queens can then start new colonies.", "s095": "How do insects breathe?", "s096": "with lungs", "s097": "with gills", "s098": "through spiracles and tracheal tubes", "s099": "through the skin on their heads", "s100": "Air enters through tiny openings called spiracles on the sides of the body and travels through tubes called tracheae.", "s101": "What natural chemical do many ants use for defense?", "s102": "formic acid", "s103": "honey", "s104": "milk", "s105": "only pine resin", "s106": "Many ants can spray formic acid to scare away enemies.", "s107": "Next", "s108": "<h2>🔬 Nature Lesson<\/h2><p><b>", "s109": "<span class=\"good\">Correct!<\/span> ", "s110": "<span class=\"bad\">Not quite.<\/span> ", "s111": "Next", "s112": "In winter (hibernation), each adult ant eats 0.5 crumbs per day, and the queen eats 1. The colony has ", "s113": " adults. How many crumbs are needed for winter (10 days)?", "s114": "(adults × 0.5 + queen 1) × 10 = (", "s115": "Builders: ", "s116": ", each digs 0.5 cm per day. The tunnel to the chamber is ", "s117": " cm long. How many days will digging take (round up)?", "s118": "speed = ", "s119": " cm/day; ", "s120": " days.", "s121": "Of ", "s122": " workers, ", "s123": "% were sent to gather food. How many ants is that?", "s124": "Each adult eats 2 crumbs per day, and the queen eats 4. Adults: ", "s125": ". How many crumbs does the colony need per day?", "s126": "Enemy strength: ", "s127": ". One soldier's strength: ", "s128": ". How many soldiers are needed to hold off the enemy?", "s129": " (round up)", "s130": "<h2>🧮 Season Math Task<\/h2><p>", "s131": "<\/p><input id=\"ai\" type=\"number\" inputmode=\"numeric\" placeholder=\"answer\"><div id=\"mb\"><\/div>", "s132": "Check", "s133": "Correct answer: +30 crumbs", "s134": "<span class=\"good\">Correct! +30 crumbs.<\/span>", "s135": "<span class=\"bad\">Answer: ", "s136": "Next", "s137": "🌧 Rain: food gathering ×0.3", "s138": "<h2>🔍 Kids with a Magnifying Glass!<\/h2><p>Kids are watching insects on the surface. What should you do?<\/p>", "s139": "Hide (no food gathering today)", "s140": "Take a risk (−4 gatherers, gather food as usual)", "s141": "The kids caught 4 gatherers", "s142": "<h2>🦔 Hedgehog!<\/h2><p>A hedgehog is wandering near the entrance and crushing ants. You cannot fight it.<\/p>", "s143": "Hide (no food gathering today)", "s144": "Ignore it (−15% of workers)", "s145": "The hedgehog took ", "s146": " workers", "s147": "<h2>🐛 Caterpillar!<\/h2><p>A big caterpillar is near the entrance. You need at least 4 soldiers to catch it (you have ", "s148": "). Reward: 60 crumbs.<\/p>", "s149": "Send 4 soldiers (+60 crumbs)", "s150": "Caterpillar caught: +60 crumbs", "s151": "Skip", "s152": "The ants stayed in the nest. No food gathered", "s153": "Storage is full! Lost ", "s154": " crumbs", "s155": " (strength ", "s156": ") was defeated. Soldiers lost: ", "s157": " (strength ", "s158": ") won! Your team's strength was ", "s159": ". Lost ", "s160": " crumbs, soldiers ", "s161": ", workers ", "s162": "✅ Chamber ready: ", "s163": "Built: ", "s164": "😢 Hunger! Short by ", "s165": " crumbs. Lost ", "s166": " ants", "s167": "Not enough nurses! Lost ", "s168": " young ants from the brood", "s169": "Not enough space in living chambers! Lost ", "s170": "Beetle", "s171": "Spider", "s172": "Rival ants", "s173": "Lesson Results", "s174": "Correct answers: ", "s175": " out of 2 (+20 crumbs each).", "s176": " Knowledge is power! Food gathering +10% next season.", "s177": "❄️ Winter Is Over!", "s178": "Your colony survived winter! Food left: ", "s179": " crumbs. Winters survived: ", "s180": "🎯 Year ", "s181": "Goal: ", "s182": " ants. You have ", "s183": " — goal reached! +100 crumbs!", "s184": " — goal not reached. Keep playing!", "s185": "🏆 Three Years Complete!", "s186": "💀 The Colony Did Not Survive", "s187": "<\/h2><p>Ants: <b>", "s188": "<\/b> · Winters survived: <b>", "s189": "<\/p><p>High score: ", "s190": "<p>Fewer than 5 ants remain. Try again! Store more food for winter and train more soldiers.<\/p>", "s191": "Play Again", "s192": "<h3>Workers (", "s193": ") — jobs<\/h3>", "s194": "🌾 Gathering Food", "s195": "⛏️ Building", "s196": "🐛 Collecting Honeydew", "s197": " (farm required)", "s198": "<div class=\"small bad\">More aphid farmers than farm spaces (", "s199": "). Extra workers are idle<\/div>", "s200": "<h3>Choose Jobs for New Ants<\/h3>", "s201": "🐜 Workers", "s202": "🛡️ Soldiers", "s203": "🍼 Nurses", "s204": "<div class=\"card\"><b>Daily Forecast<\/b><br>Food gathered ≈ ", "s205": " · food eaten ≈ ", "s206": " · balance <span class=\"", "s207": "<br><span class=\"small\">Winter: hibernation (adults eat 0.5 crumbs each). No food gathering.<\/span>", "s208": "<div class=\"card\"><b>⛏️ Digging: ", "s209": "<\/b><br>Remaining: ", "s210": " cm out of ", "s211": ". Digging: ", "s212": " builders × 0.5 cm = ", "s213": " cm/day → about ", "s214": " more days.<div class=\"bar\"><i style=\"width:", "s215": "<p class=\"small\">Choose a chamber. Only one team can dig at a time. Assign builders in the \"Tasks\" tab.<\/p>", "s216": " · tunnel ", "s217": " cm · with ", "s218": " builders ≈ ", "s219": " days.<\/span><br><button class=\"btn\" style=\"margin-top:6px\" data-b=\"", "s220": "Built", "s221": "No digging in winter", "s222": "Dig", "s223": "<div class=\"card\"><b>Colony<\/b>: 👑 1 · 🐜 workers ", "s224": " · 🛡️ soldiers ", "s225": " · 🍼 nurses ", "s226": "<br>Brood: eggs ", "s227": ", larvae ", "s228": ", pupae ", "s229": " (capacity ", "s230": ")<br>Living space: ", "s231": " · cared for: ", "s232": " (nurses × 4 + queen's 8) out of ", "s233": "<div class=\"card\"><b>🍞 Food Storage<\/b>: ", "s234": "%\"><\/i><\/div><span class=\"small\">Food needed for winter ≈ (adults × 0.5 + queen 1) × 10 = <b>", "s235": " <span class=\"good\">— enough<\/span>", "s236": " <span class=\"bad\">— short by ", "s237": "; storage capacity ", "s238": "<div class=\"card\"><b>🎯 Year ", "s239": " goal: ants (current: ", "s240": "<div class=\"card\"><b>Yesterday (day ", "s241": ")<\/b><br>Gathered ", "s242": " + aphids ", "s243": " · eaten ", "s244": " · eggs ", "s245": " · hatched ", "s246": " · dug ", "s247": " cm", "s248": ">🎬 Watch Ad: +100 crumbs for winter (left: ", "s249": " · yr.", "s250": " · day.", "s251": "🔭 Scout Report: Tomorrow: <b>", "s252": "<\/b>, strength ", "s253": ". Soldiers needed ≥ ", "s254": " (you have ", "s255": ", strength ", "s256": " each)", "s257": "❄️ Winter: No food gathering. The colony eats stored food", "s258": "All quiet. Scouts see no enemies.", "s259": "Watch Ad: +100 crumbs for winter", "s260": "🐜 Ant Hill", "s261": "You are the founding queen! Lead your colony for three years (120 days). Gather food, dig chambers, raise soldiers and nurses, fight enemies, and survive three winters. Between seasons, enjoy a nature lesson and a math task.", "s262": "Start", "s263": "<img id=\"cover\" alt=\"\"><h2>🐜 Ant Hill<\/h2><p>A strategy game about an ant colony: food, chambers, enemies, and three winters.<\/p><div id=\"mb\"><\/div>", "s264": "Continue (day ", "s265": "New Game", "ui_title": "Ant Hill", "ui_tasks": "Tasks", "ui_build": "Build", "ui_info": "Summary", "ui_next": "Next Day ▶"}/*EN-END*/,RU=/*RU*/{"s001": "Весна", "s002": "Лето", "s003": "Осень", "s004": "Зима", "s005": "Склад", "s006": "+300 крошек вместимости", "s007": "Детская", "s008": "+40 мест для расплода", "s009": "Жилая камера", "s010": "+50 мест для взрослых", "s011": "Казарма", "s012": "сила солдата 2 → 3", "s013": "Тлевая ферма", "s014": "8 дояров по 6 крошек/день", "s015": "Сколько ног у муравья?", "s016": "Муравей — насекомое, у всех насекомых 6 ног. У паука их 8, он не насекомое.", "s017": "Из каких частей состоит тело муравья?", "s018": "голова, грудь, брюшко", "s019": "голова и туловище", "s020": "только голова и хвост", "s021": "панцирь и лапы", "s022": "Тело насекомого делится на голову, грудь и брюшко.", "s023": "Что получают муравьи от тли?", "s024": "кровь", "s025": "сладкую падь", "s026": "шерсть", "s027": "яйца", "s028": "Тля пьёт сок растений и выделяет сладкую жидкость — падь. Муравьи её «доят» и охраняют тлю.", "s029": "Кто в муравейнике откладывает яйца?", "s030": "солдат", "s031": "рабочий", "s032": "королева (матка)", "s033": "нянька", "s034": "Яйца откладывает королева. Остальные заняты добычей, охраной и уходом.", "s035": "Какие стадии развития у муравья?", "s036": "яйцо → взрослый", "s037": "яйцо → личинка → куколка → взрослый", "s038": "личинка → яйцо → взрослый", "s039": "куколка → яйцо → личинка", "s040": "Развитие с полным превращением: яйцо, личинка, куколка, взрослое насекомое.", "s041": "Для чего муравью усики?", "s042": "для запаха и осязания", "s043": "для полёта", "s044": "для дыхания", "s045": "для жевания", "s046": "Усики — орган обоняния и осязания: муравей «читает» запахи и ощупывает мир.", "s047": "Как муравьи «разговаривают» друг с другом?", "s048": "песнями", "s049": "с помощью запахов (феромонов)", "s050": "светом", "s051": "стуком по земле", "s052": "Муравьи оставляют пахучие следы-феромоны и обмениваются ими при встрече.", "s053": "Как зимуют муравьи умеренного пояса?", "s054": "улетают на юг", "s055": "впадают в оцепенение глубоко в гнезде", "s056": "строят новые гнёзда на снегу", "s057": "погибают все, кроме королевы", "s058": "Зимой они почти не двигаются в глубине гнезда и расходуют запасы очень экономно.", "s059": "Какая польза от лесных муравьёв?", "s060": "едят листья деревьев", "s061": "уничтожают вредных насекомых", "s062": "опыляют ёлки", "s063": "строят дороги", "s064": "Лесные муравьи — «санитары леса»: съедают множество гусениц и других вредителей.", "s065": "Кто из них НЕ насекомое?", "s066": "пчела", "s067": "жук", "s068": "паук", "s069": "муха", "s070": "Паук — паукообразное: у него 8 ног и два отдела тела.", "s071": "Кем была бабочка до того, как стать бабочкой?", "s072": "куколкой, а до неё — гусеницей", "s073": "головастиком", "s074": "червём-нематодой", "s075": "муравьём", "s076": "Гусеница — личинка бабочки. Потом она окукливается и становится взрослой бабочкой.", "s077": "Что защищает тело муравья снаружи?", "s078": "шерсть", "s079": "чешуя", "s080": "хитиновый покров (наружный скелет)", "s081": "кожа как у человека", "s082": "Хитиновый покров — прочный наружный скелет, к нему изнутри прикреплены мышцы.", "s083": "Зачем солдатам нужны крупная голова и челюсти?", "s084": "для защиты гнезда", "s085": "для полёта", "s086": "для плавания", "s087": "для пения", "s088": "Солдаты охраняют гнездо и сражаются с врагами.", "s089": "Когда у муравьёв бывают крылья?", "s090": "у всех всегда", "s091": "у самцов и молодых цариц для брачного полёта", "s092": "никогда", "s093": "только у рабочих", "s094": "Крылатые самцы и молодые самки вылетают, чтобы основать новые колонии.", "s095": "Чем дышат насекомые?", "s096": "лёгкими", "s097": "жабрами", "s098": "дыхальцами и трахеями", "s099": "кожей головы", "s100": "Воздух проходит через дыхальца на боках тела по трубочкам-трахеям.", "s101": "Какой органический продукт муравьи используют для защиты?", "s102": "муравьиную кислоту", "s103": "мёд", "s104": "молоко", "s105": "смолу сосны только", "s106": "Многие муравьи могут брызгать муравьиной кислотой — она отпугивает врагов.", "s107": "Дальше", "s108": "<h2>🔬 Урок природоведа</h2><p><b>", "s109": "<span class=\"good\">Верно!</span> ", "s110": "<span class=\"bad\">Не совсем.</span> ", "s111": "Дальше", "s112": "Зимой (спячка) взрослые муравьи едят по полкрошки в день, королева — 1. В колонии ", "s113": " взрослых. Сколько крошек нужно на зиму (10 дней)?", "s114": "(взрослые × 0,5 + королева 1) × 10 = (", "s115": "Строителей: ", "s116": ", каждый копает 0,5 см в день. Туннель к камере — ", "s117": " см. За сколько дней его выкопают (с округлением вверх)?", "s118": "скорость = ", "s119": " см/день; ", "s120": " дн.", "s121": "Из ", "s122": " рабочих ", "s123": " % отправили на добычу. Сколько это муравьёв?", "s124": "Каждый взрослый ест 2 крошки в день, королева — 4. Взрослых: ", "s125": ". Сколько крошек нужно колонии в день?", "s126": "Сила врага — ", "s127": ". Сила одного солдата — ", "s128": ". Сколько солдат нужно, чтобы выстоять?", "s129": " (округляем вверх)", "s130": "<h2>🧮 Расчёт сезона</h2><p>", "s131": "</p><input id=\"ai\" type=\"number\" inputmode=\"numeric\" placeholder=\"ответ\"><div id=\"mb\"></div>", "s132": "Проверить", "s133": "Расчёт верный: +30 крошек", "s134": "<span class=\"good\">Верно! +30 крошек.</span>", "s135": "<span class=\"bad\">Ответ: ", "s136": "Дальше", "s137": "🌧 Дождь: добыча ×0,3", "s138": "<h2>🔍 Дети с лупой!</h2><p>На поверхности дети разглядывают насекомых. Что делать?</p>", "s139": "Затаиться (день без добычи)", "s140": "Рискнуть (−4 добытчика, добыча как обычно)", "s141": "Дети поймали 4 добытчиков", "s142": "<h2>🦔 Ёж!</h2><p>Ёж бродит у входа и давит муравьёв. Бороться с ним нельзя.</p>", "s143": "Спрятаться (день без добычи)", "s144": "Не обращать внимания (−15 % рабочих)", "s145": "Ёж унёс ", "s146": " рабочих", "s147": "<h2>🐛 Гусеница!</h2><p>Большая гусеница у входа. Чтобы справиться, нужно ≥ 4 солдат (у тебя ", "s148": "). Награда — 60 крошек.</p>", "s149": "Отправить 4 солдат (+60 крошек)", "s150": "Гусеница поймана: +60 крошек", "s151": "Пропустить", "s152": "Муравьи сидели в гнезде — добычи нет", "s153": "Склад полон: пропало ", "s154": " крошек", "s155": " (сила ", "s156": ") отбит. Погибло солдат: ", "s157": " (сила ", "s158": ") победил: сила отряда ", "s159": ". Потеряно ", "s160": " крошек, солдат ", "s161": ", рабочих ", "s162": "✅ Готова камера: ", "s163": "Построено: ", "s164": "😢 Голод: не хватило ", "s165": " крошек, погибло ", "s166": " муравьёв", "s167": "Нянек мало: погибло ", "s168": " из расплода", "s169": "Нет места в жилых камерах: не выжило ", "s170": "Жук", "s171": "Паук", "s172": "Чужие муравьи", "s173": "Итог урока", "s174": "Верных ответов: ", "s175": " из 2 (+20 крошек за каждый).", "s176": " Знание — сила: в следующем сезоне добыча +10 %.", "s177": "❄️ Зима позади", "s178": "Колония пережила зиму! Запасов осталось: ", "s179": " крошек. Зим пережито: ", "s180": "🎯 Итоги года ", "s181": "Цель: ", "s182": " муравьёв. У тебя ", "s183": " — цель выполнена, +100 крошек!", "s184": " — цель не выполнена. Играем дальше!", "s185": "🏆 Три года позади!", "s186": "💀 Колония погибла", "s187": "</h2><p>Муравьёв: <b>", "s188": "</b> · Зим пережито: <b>", "s189": "</p><p>Рекорд: ", "s190": "<p>Осталось меньше 5 муравьёв. Попробуй ещё раз: больше запасов на зиму и больше солдат!</p>", "s191": "Играть заново", "s192": "<h3>Рабочие (", "s193": ") — чем заняты</h3>", "s194": "🌾 Добыча", "s195": "⛏️ Стройка", "s196": "🐛 Дойка тли", "s197": " (нужна ферма)", "s198": "<div class=\"small bad\">Дояров больше мест на фермах (", "s199": ") — лишние простаивают</div>", "s200": "<h3>Кем станут новые муравьи</h3>", "s201": "🐜 Рабочие", "s202": "🛡️ Солдаты", "s203": "🍼 Няньки", "s204": "<div class=\"card\"><b>Прогноз на день</b><br>Добыча ≈ ", "s205": " · расход ≈ ", "s206": " · баланс <span class=\"", "s207": "<br><span class=\"small\">Зима: спячка (взрослые едят по 0,5), добычи нет.</span>", "s208": "<div class=\"card\"><b>⛏️ Копаем: ", "s209": "</b><br>Осталось ", "s210": " см из ", "s211": ". Копают ", "s212": " строителей × 0,5 см = ", "s213": " см/день → ещё ≈ ", "s214": " дн.<div class=\"bar\"><i style=\"width:", "s215": "<p class=\"small\">Выбери камеру: копать может одна бригада. Строителей задай во вкладке «Задачи».</p>", "s216": " · туннель ", "s217": " см · при ", "s218": " строителях ≈ ", "s219": " дн.</span><br><button class=\"btn\" style=\"margin-top:6px\" data-b=\"", "s220": "Построено", "s221": "Зимой не копаем", "s222": "Копать", "s223": "<div class=\"card\"><b>Колония</b>: 👑 1 · 🐜 рабочие ", "s224": " · 🛡️ солдаты ", "s225": " · 🍼 няньки ", "s226": "<br>Расплод: яйца ", "s227": ", личинки ", "s228": ", куколки ", "s229": " (вместимость ", "s230": ")<br>Жильё: ", "s231": " · ухаживают: ", "s232": " (нянек × 4 + 8 сама королева) из ", "s233": "<div class=\"card\"><b>🍞 Запасы</b>: ", "s234": "%\"></i></div><span class=\"small\">На зиму нужно ≈ (взрослые × 0,5 + королева 1) × 10 = <b>", "s235": " <span class=\"good\">— хватает</span>", "s236": " <span class=\"bad\">— не хватает ", "s237": "; вместимость склада ", "s238": "<div class=\"card\"><b>🎯 Цель года ", "s239": " муравьёв (сейчас ", "s240": "<div class=\"card\"><b>Вчера (день ", "s241": ")</b><br>Добыто ", "s242": " + тля ", "s243": " · съедено ", "s244": " · яиц ", "s245": " · вылупилось ", "s246": " · прокопано ", "s247": " см", "s248": ">🎬 Ролик: +100 крошек на зиму (осталось ", "s249": " · г.", "s250": " · д.", "s251": "🔭 Разведка: завтра <b>", "s252": "</b>, сила ", "s253": ". Нужно солдат ≥ ", "s254": " (у тебя ", "s255": ", сила ", "s256": " каждый)", "s257": "❄️ Зима: добычи нет, колония ест запас", "s258": "Тихо. Разведчики врагов не видят.", "s259": "Ролик: +100 крошек на зиму", "s260": "🐜 Муравейник", "s261": "Ты — королева-основательница. Три года (120 дней) веди колонию: добывай еду, копай камеры, расти солдат и нянек, отбивайся от врагов и переживи три зимы. Между сезонами — урок природоведа и расчёт.", "s262": "Начать", "s263": "<img id=\"cover\" alt=\"\"><h2>🐜 Муравейник</h2><p>Стратегия про муравьиную колонию: еда, камеры, враги и три зимы.</p><div id=\"mb\"></div>", "s264": "Продолжить (день ", "s265": "Новая игра", "ui_title": "Муравейник", "ui_tasks": "Задачи", "ui_build": "Стройка", "ui_info": "Сводка", "ui_next": "Следующий день ▶"}/*RU-END*/;
+function TX(k){var d=LANG=='en'?EN:RU;var v=d[k];return v!=null?v:RU[k]}
+/* ---------- Слой платформы: Яндекс Игры SDK (без SDK — заглушки) ---------- */
+var YANDEX=false,IMGDATA=null;/*BUILD-FLAGS: сборка подставляет значения*/
+var PF=(function(){var y=null,pl=null,cdirty=null,ctm=0,ok=false,ready=false,wantReady=false,adBusy=false,hid=false,apiP=false,gp=false,wantGp=false,lastAd=0,lastMv=null,born=Date.now(),AD1=120000,GAP=300000,self={onPause:function(){}};
+ function paused(){return adBusy||hid||apiP}
+ function applyGp(){if(!ok||!ready)return;var sh=wantGp&&!paused();if(sh===gp)return;gp=sh;try{var g=y.features&&y.features.GameplayAPI;if(g){if(sh)g.start();else g.stop()}}catch(e){}}
+ function ch(){applyGp();try{self.onPause(paused())}catch(e){}}
+ function tryReady(){if(ready||!wantReady||!ok)return;ready=true;try{var l=y.features&&y.features.LoadingAPI;if(l)l.ready()}catch(e){}applyGp()}
+ self.paused=paused;self.hasSdk=function(){return ok};
+ self.setPlaying=function(on){wantGp=!!on;applyGp()};
+ self.ready=function(){wantReady=true;tryReady()};
+ self.init=function(){try{window.addEventListener('pagehide',function(){cflush()});document.addEventListener('visibilitychange',function(){hid=!!document.hidden;if(hid)cflush();ch()})}catch(e){}
+  if(!window.YaGames||!window.YaGames.init)return Promise.resolve();
+  return new Promise(function(res){var tm=setTimeout(res,4000);
+   try{window.YaGames.init().then(function(sdk){y=sdk;ok=true;try{sdk.on('game_api_pause',function(){apiP=true;ch()});sdk.on('game_api_resume',function(){apiP=false;ch()})}catch(e){}tryReady();try{sdk.getPlayer({scopes:false}).then(function(p){pl=p},function(){})}catch(e){}clearTimeout(tm);res()},function(){clearTimeout(tm);res()})}catch(e){clearTimeout(tm);res()}})};
+ /* облачное сохранение: player.setData (через 1,5 с после последнего изменения и при сворачивании); без SDK/входа — только localStorage */
+ self.lastMv=function(){return lastMv};
+ self.cloudGet=function(){if(!ok)return Promise.resolve(null);return new Promise(function(res){var tm=setTimeout(function(){res(null)},3000);
+  function go(){if(!pl){clearTimeout(tm);res(null);return}try{pl.getData(['mv','pm']).then(function(d){clearTimeout(tm);if(d&&d.mv)lastMv=d.mv;res(d&&(d.mv||d.pm)?{mv:d.mv||null,pm:d.pm||null}:null)},function(){clearTimeout(tm);res(null)})}catch(e){clearTimeout(tm);res(null)}}
+  if(pl)go();else setTimeout(go,300)})};
+ function pmRaw(){try{return localStorage.getItem('muraveynik-premium')}catch(e){return null}}
+ function payload(){var o={},r=pmRaw();if(lastMv)o.mv=lastMv;if(r)o.pm=r;return o}
+ function cflush(){clearTimeout(ctm);ctm=0;if(!pl||!cdirty)return;lastMv=cdirty;cdirty=null;try{pl.setData(payload(),false).then(function(){},function(){})}catch(e){}}
+ /* Премиум: запись целого снимка с подтверждением (flush=true); true только если облако приняло */
+ self.pmSave=function(){if(!pl)return Promise.resolve(false);if(cdirty){lastMv=cdirty;cdirty=null;clearTimeout(ctm);ctm=0}try{return pl.setData(payload(),true).then(function(){return true},function(){return false})}catch(e){return Promise.resolve(false)}};
+ self.sdk=function(){return ok?y:null};
+ self.cloudSet=function(d){if(!ok)return;cdirty=d;if(!ctm)ctm=setTimeout(cflush,1500)};
+ self.cloudFlush=cflush;
+ /* язык: выбор игрока (RU/EN) > язык платформы ysdk.environment.i18n.lang > язык браузера; EN только если перевод подключён */
+ self.pickLang=function(EN){var has=false;for(var k in EN){has=true;break}if(!has)return'ru';var m=null;try{m=localStorage.getItem('muraveynik-lang')}catch(e){}
+  if(m=='ru'||m=='en')return m;var l='';try{l=(y&&y.environment&&y.environment.i18n&&y.environment.i18n.lang)||''}catch(e){}if(!l)l=(navigator.language||'ru');l=String(l).toLowerCase().slice(0,2);
+  return['ru','be','kk','uk','uz','hy','az','ky','tg','tk'].indexOf(l)>=0?'ru':'en'};
+ self.setLang=function(l){try{localStorage.setItem('muraveynik-lang',l)}catch(e){}cflush();location.reload()};
+ function adEnd(){adBusy=false;ch()}
+ /* полноэкранная реклама: первая не раньше 2 мин после загрузки, дальше не чаще раза в 5 мин; done — ровно один раз */
+ self.interstitial=function(done){if(window.GPAdapter){window.GPAdapter.interstitial(done);return}var now=Date.now(),at=lastAd?lastAd+GAP:born+AD1;if(adBusy)return;if(window.Premium&&Premium.active()){done();return}if(!ok||!y.adv||!y.adv.showFullscreenAdv||now<at){done();return}
+  var fin=false;function end(sh){if(fin)return;fin=true;if(sh){lastAd=Date.now();try{window.Premium&&Premium.noteFullscreen()}catch(e){}}adEnd();done()}
+  adBusy=true;ch();try{y.adv.showFullscreenAdv({callbacks:{onClose:function(w){end(w)},onError:function(){end(false)},onOffline:function(){end(false)}}})}catch(e){end(false)}};
+ self.canReward=function(){if(window.GPAdapter)return window.GPAdapter.canReward();return ok?!!(!adBusy&&y.adv&&y.adv.showRewardedVideo):!YANDEX};
+ /* ролик за награду: done(true) только если награда засчитана; вне Яндекса (сайт, артефакт) — заглушка с мгновенной наградой */
+ self.rewarded=function(done){if(window.GPAdapter){window.GPAdapter.rewarded(done);return}if(!ok){done(!YANDEX);return}if(!self.canReward()){done(false);return}
+  var fin=false,got=false;function end(){if(fin)return;fin=true;if(got)lastAd=Date.now();adEnd();done(got)}
+  adBusy=true;ch();try{y.adv.showRewardedVideo({callbacks:{onRewarded:function(){got=true},onClose:end,onError:end}})}catch(e){end()}};
+ return self})();
+function boot(){
+LANG=PF.pickLang(EN);
+document.documentElement.lang=LANG;document.title=TX('ui_title');
+try{var tb=document.querySelectorAll('#tabs button'),k=['ui_tasks','ui_build','ui_info'];for(var i=0;i<tb.length;i++)tb[i].textContent=TX(k[i]);document.getElementById('next').textContent=TX('ui_next')}catch(e){}
+var SAVE='muraveynik-save-v1',BEST='muraveynik-best';
+var SEAS=[TX('s001'),TX('s002'),TX('s003'),TX('s004')],SICO=['🌱','☀️','🍂','❄️'];
+var YIELD=[6,8,7,0],LAY=[6,8,3,0];
+var CH={
+ store:{n:TX('s005'),ico:'🌾',cm:12,e:TX('s006'),max:9},
+ nursery:{n:TX('s007'),ico:'🥚',cm:10,e:TX('s008'),max:9},
+ dorm:{n:TX('s009'),ico:'🛏️',cm:12,e:TX('s010'),max:9},
+ barracks:{n:TX('s011'),ico:'⚔️',cm:15,e:TX('s012'),max:1},
+ farm:{n:TX('s013'),ico:'🐛',cm:18,e:TX('s014'),max:2}
+};
+var GOALS=[50,100,160];
+var QUIZ=[
+ [TX('s015'),['4','6','8','10'],1,TX('s016')],
+ [TX('s017'),[TX('s018'),TX('s019'),TX('s020'),TX('s021')],0,TX('s022')],
+ [TX('s023'),[TX('s024'),TX('s025'),TX('s026'),TX('s027')],1,TX('s028')],
+ [TX('s029'),[TX('s030'),TX('s031'),TX('s032'),TX('s033')],2,TX('s034')],
+ [TX('s035'),[TX('s036'),TX('s037'),TX('s038'),TX('s039')],1,TX('s040')],
+ [TX('s041'),[TX('s042'),TX('s043'),TX('s044'),TX('s045')],0,TX('s046')],
+ [TX('s047'),[TX('s048'),TX('s049'),TX('s050'),TX('s051')],1,TX('s052')],
+ [TX('s053'),[TX('s054'),TX('s055'),TX('s056'),TX('s057')],1,TX('s058')],
+ [TX('s059'),[TX('s060'),TX('s061'),TX('s062'),TX('s063')],1,TX('s064')],
+ [TX('s065'),[TX('s066'),TX('s067'),TX('s068'),TX('s069')],2,TX('s070')],
+ [TX('s071'),[TX('s072'),TX('s073'),TX('s074'),TX('s075')],0,TX('s076')],
+ [TX('s077'),[TX('s078'),TX('s079'),TX('s080'),TX('s081')],2,TX('s082')],
+ [TX('s083'),[TX('s084'),TX('s085'),TX('s086'),TX('s087')],0,TX('s088')],
+ [TX('s089'),[TX('s090'),TX('s091'),TX('s092'),TX('s093')],1,TX('s094')],
+ [TX('s095'),[TX('s096'),TX('s097'),TX('s098'),TX('s099')],2,TX('s100')],
+ [TX('s101'),[TX('s102'),TX('s103'),TX('s104'),TX('s105')],0,TX('s106')]
+];
+/* ---------- картинки-слоты (запасной вариант — код) ---------- */
+var IMG={},USE_ART=true;/* false — всё рисуется кодом; картинки: game/img/*.webp (tools/make_art.py) */
+function imgSrc(n){return IMGDATA?IMGDATA[n]:'img/'+n+'.webp'}
+function art(n){if(!USE_ART)return null;var o=IMG[n];if(!o){o=IMG[n]={i:new Image(),ok:false};o.i.onload=function(){o.ok=true};o.i.onerror=function(){o.ok=false};o.i.src=imgSrc(n);}return o.ok?o.i:null}
+/* ---------- состояние ---------- */
+var s,tab='tasks',Q=[],busy=false,over=false,rnd=Math.random;
+function fresh(){return{day:1,food:150,ants:{work:18,sold:5,nurse:7},brood:[0,0,0,0],
+ alloc:{forage:70,build:30,milk:0},hatch:{work:50,sold:20,nurse:30},
+ ch:{store:1,nursery:1,dorm:1,barracks:0,farm:0},project:null,forecast:null,knowl:1,hedge:{},winters:0,
+ last:null,log:[],ads:0,goalsOk:[]}}
+var BESTV=0;
+/* подарок Премиума: номер серверных суток последнего получения (локально + в облаке) */
+var GIFTD=0,GIFT=250;try{GIFTD=+localStorage.getItem('muraveynik-gift')||0}catch(e){}
+function sday(){try{var y=PF.sdk();if(y&&y.serverTime)return Math.floor(y.serverTime()/864e5)}catch(e){}return Math.floor(Date.now()/864e5)}
+function giftOn(){return !!(window.Premium&&Premium.active())}
+function cloudPush(sv){var lm=PF.lastMv&&PF.lastMv();if(sv&&sv.day<=3&&lm&&lm.save&&lm.save.day>sv.day)return;/* не затирать облачный прогресс почти пустой новой партией (облако ответило поздно / новое устройство) */var d={t:Date.now(),save:sv,best:BESTV,gift:GIFTD};try{localStorage.setItem(SAVE+'-t',String(d.t))}catch(e){}PF.cloudSet(d)}
+function save(){try{localStorage.setItem(SAVE,JSON.stringify(s))}catch(e){}cloudPush(s)}
+function load(){try{var t=localStorage.getItem(SAVE);if(!t)return null;var o=JSON.parse(t);if(o&&o.ants&&o.day)return o}catch(e){}return null}
+function sOf(d){return Math.floor(((d-1)%40)/10)}
+function yOf(d){return Math.floor((d-1)/40)+1}
+function adults(){return s.ants.work+s.ants.sold+s.ants.nurse}
+function broodN(){return s.brood[0]+s.brood[1]+s.brood[2]+s.brood[3]}
+function capStore(){return 250+300*(s.ch.store-1)}
+function capNurs(){return 40*s.ch.nursery}
+function capDorm(){return 10+50*s.ch.dorm}
+function sp(){return s.ch.barracks?3:2}
+function split(){var W=s.ants.work,a=s.alloc,se=sOf(s.day);if(se==3)return{f:0,b:0,m:0,idle:W};
+ var m=Math.min(Math.floor(W*a.milk/100),s.ch.farm*8),b=Math.floor(W*a.build/100),f=W-m-b;if(s.alloc.milk>0&&m<Math.floor(W*a.milk/100)){}
+ return{f:f,b:b,m:m,idle:0}}
+function needDay(){var w=sOf(s.day)==3;return Math.ceil(adults()*(w?.5:2)+(w?1:4)+broodN()*(w?.5:1))}
+function nextCm(){return s.project?s.project.left:0}
+function toast(t){s.log.unshift(t);if(s.log.length>12)s.log.pop()}
+/* ---------- модальные окна и очередь ---------- */
+function enq(f){Q.push(f);if(!busy)pump()}
+function pump(){if(over)return;if(!Q.length){busy=false;$('modal').style.display='none';PF.setPlaying(true);render();return}busy=true;PF.setPlaying(false);var f=Q.shift();f(pump)}
+function show(html,btns,done){$('mcard').innerHTML=html+'<div id="mb"></div>';$('modal').style.display='flex';var c=$('mb');
+ btns.forEach(function(b){var e=document.createElement('button');e.className='btn opt'+(b.alt?' alt':'');e.textContent=b.t;if(b.off)e.disabled=true;e.onclick=function(){if(b.f)b.f();done()};c.appendChild(e)})}
+function pimg(n){return USE_ART?'<img src="'+imgSrc(n)+'" alt="" style="display:block;margin:0 auto 6px;height:96px" onerror="this.style.display=\'none\'">':''}
+function info(h,t,done,label){show('<h2>'+h+'</h2><p>'+t+'</p>',[{t:label||TX('s107')}],done)}
+function quiz(i,onres){return function(done){var q=QUIZ[i],idx=[0,1,2,3].sort(function(){return rnd()-.5});
+ $('mcard').innerHTML=TX('s108')+q[0]+'</b></p><div id="mb"></div>';$('modal').style.display='flex';var c=$('mb'),answered=false;
+ idx.forEach(function(k){var e=document.createElement('button');e.className='btn opt';e.textContent=q[1][k];e.onclick=function(){if(answered)return;answered=true;var ok=k==q[2];e.classList.add(ok?'ok':'no');
+  if(!ok)[].forEach.call(c.children,function(x){if(x.textContent==q[1][q[2]])x.classList.add('ok')});
+  var p=document.createElement('p');p.innerHTML=(ok?TX('s109'):TX('s110'))+q[3];c.appendChild(p);
+  var n=document.createElement('button');n.className='btn opt alt';n.textContent=TX('s111');n.onclick=function(){onres(ok);done()};c.appendChild(n)};c.appendChild(e)})}}
+/* ---------- расчётные задачи из данных колонии ---------- */
+function mathQ(){var t=Math.floor(rnd()*5),W=s.ants.work,A=adults(),q,ans,sol;
+ if(t==0){q=TX('s112')+A+TX('s113');ans=(A*0.5+1)*10;sol=TX('s114')+A+' × 0,5 + 1) × 10 = '+ans}
+ else if(t==1){var b=Math.max(2,Math.floor(W*s.alloc.build/100));var cm=[10,12,15,18][Math.floor(rnd()*4)];ans=Math.ceil(cm/(b*0.5));q=TX('s115')+b+TX('s116')+cm+TX('s117');sol=TX('s118')+b+' × 0,5 = '+(b*0.5)+TX('s119')+cm+' ÷ '+(b*0.5)+' ≈ '+(cm/(b*0.5)).toFixed(1)+' → '+ans+TX('s120')}
+ else if(t==2){var p=[10,20,25,40,50,60][Math.floor(rnd()*6)],W2=Math.max(20,Math.round(W/10)*10||20);ans=W2*p/100;q=TX('s121')+W2+TX('s122')+p+TX('s123');sol=W2+' × '+p+' ÷ 100 = '+ans}
+ else if(t==3){ans=A*2+4;q=TX('s124')+A+TX('s125');sol=A+' × 2 + 4 = '+ans}
+ else{var pw=[8,16,20,32][Math.floor(rnd()*4)];ans=Math.ceil(pw/sp());q=TX('s126')+pw+TX('s127')+sp()+TX('s128');sol=pw+' ÷ '+sp()+' = '+(pw/sp()).toFixed(1)+' → '+ans+TX('s129')}
+ return function(done){$('mcard').innerHTML=TX('s130')+q+TX('s131');$('modal').style.display='flex';
+  var b=document.createElement('button');b.className='btn opt';b.textContent=TX('s132');b.onclick=function(){var v=parseFloat($('ai').value);if(isNaN(v))return;b.remove();var ok=Math.abs(v-ans)<0.01;
+   if(ok){s.food+=30;toast(TX('s133'))}
+   var p=document.createElement('p');p.innerHTML=(ok?TX('s134'):TX('s135')+ans+'.</span>')+'<br>'+(LANG=='en'?String(sol).replace(/(\d),(\d)/g,'$1.$2'):sol);$('mb').appendChild(p);
+   var n=document.createElement('button');n.className='btn opt alt';n.textContent=TX('s136');n.onclick=done;$('mb').appendChild(n)};$('mb').appendChild(b)}}
+/* ---------- ход ---------- */
+function nextDay(){if(busy||over||PF.paused())return;var d=s.day,se=sOf(d),yr=yOf(d),mods={forage:1,hide:false};
+ if(d%10==1)enq(mathQ());
+ if(se<3&&rnd()<.12){mods.forage=.3;toast(TX('s137'))}
+ if(se==1&&rnd()<.08)enq(function(done){show(pimg('en_lens')+TX('s138'),[{t:TX('s139'),f:function(){mods.hide=true}},{t:TX('s140'),f:function(){s.ants.work=Math.max(0,s.ants.work-4);toast(TX('s141'))}}],done)});
+ if(se==2&&!s.hedge[yr]&&rnd()<.15){s.hedge[yr]=1;enq(function(done){show(pimg('en_hedgehog')+TX('s142'),[{t:TX('s143'),f:function(){mods.hide=true}},{t:TX('s144'),f:function(){var l=Math.ceil(s.ants.work*.15);s.ants.work-=l;toast(TX('s145')+l+TX('s146'))}}],done)})}
+ if(se<3&&rnd()<.12)enq(function(done){var ok=s.ants.sold>=4;show(pimg('f_caterpillar')+TX('s147')+s.ants.sold+TX('s148'),[{t:TX('s149'),off:!ok,f:function(){s.food+=60;toast(TX('s150'))}},{t:TX('s151'),alt:true}],done)});
+ enq(function(done){simDay(mods);done()})}
+function simDay(mods){var d=s.day,se=sOf(d),yr=yOf(d),r={d:d,lines:[]},c=split(),W=s.ants.work;
+ if(mods.hide){c.f=0;r.lines.push(TX('s152'))}
+ var forage=Math.floor(c.f*YIELD[se]*mods.forage*s.knowl),milk=c.m*6;if(se==3)milk=0;
+ s.food+=forage+milk;r.forage=forage;r.milk=milk;
+ var cap=capStore();if(s.food>cap){r.spoil=Math.floor(s.food-cap);s.food=cap;r.lines.push(TX('s153')+r.spoil+TX('s154'))}
+ /* враг */
+ var en=s.forecast;s.forecast=null;
+ if(en){var spw=sp(),pow=s.ants.sold*spw,loss;r.enemy=en;
+  if(pow>=en.p){loss=Math.min(s.ants.sold,Math.ceil(en.p/10));s.ants.sold-=loss;r.lines.push('⚔️ '+en.n+TX('s155')+en.p+TX('s156')+loss)}
+  else{var fl=Math.floor(s.food*.25);s.food-=fl;var sl=Math.floor(s.ants.sold/2);s.ants.sold-=sl;var wl=en.k=='beetle'?0:Math.min(5,s.ants.work);s.ants.work-=wl;r.lines.push('💥 '+en.n+TX('s157')+en.p+TX('s158')+pow+TX('s159')+fl+TX('s160')+sl+(wl?TX('s161')+wl:''))}}
+ /* стройка */
+ if(s.project&&se<3){var dig=c.b*0.5;s.project.left=Math.round((s.project.left-dig)*100)/100;r.dug=dig;
+  if(s.project.left<=0){s.ch[s.project.id]++;r.lines.push(TX('s162')+CH[s.project.id].n);toast(TX('s163')+CH[s.project.id].n);s.project=null}}
+ /* еда */
+ var A=adults(),bn=broodN(),need=needDay();r.need=need;s.food-=need;
+ if(s.food<0){var def=-s.food,die=Math.ceil(def/2);s.food=0;r.lines.push(TX('s164')+def+TX('s165')+die+TX('s166'));
+  for(var i=0;i<die;i++){if(broodN()>0){for(var a=0;a<4;a++)if(s.brood[a]>0){s.brood[a]--;break}}else{var k=['work','nurse','sold'].filter(function(x){return s.ants[x]>0});if(!k.length)break;s.ants[k[Math.floor(rnd()*k.length)]]--}}}
+ /* уход за расплодом */
+ var ncap=s.ants.nurse*4+8,B=broodN();if(B>ncap){var ratio=ncap/B,dead=0;for(var a2=0;a2<4;a2++){var nv=Math.floor(s.brood[a2]*ratio);dead+=s.brood[a2]-nv;s.brood[a2]=nv}if(dead)r.lines.push(TX('s167')+dead+TX('s168'))}
+ /* вылупление */
+ var h=s.brood[3];s.brood=[0,s.brood[0],s.brood[1],s.brood[2]];
+ if(h>0){var space=Math.max(0,capDorm()-adults()),hh=Math.min(h,space);if(hh<h)r.lines.push(TX('s169')+(h-hh));
+  var hs=Math.round(hh*s.hatch.sold/100),hn=Math.round(hh*s.hatch.nurse/100),hw=Math.max(0,hh-hs-hn);s.ants.sold+=hs;s.ants.nurse+=hn;s.ants.work+=hw;r.hatched=hh}
+ /* яйца */
+ var lay=LAY[se];if(lay>0&&s.food>0){var room=Math.max(0,capNurs()-broodN());lay=Math.min(lay,room);s.brood[0]=lay;r.eggs=lay}
+ /* старение */
+ ['work','sold','nurse'].forEach(function(k){var dd=Math.floor(s.ants[k]*.01+rnd());s.ants[k]=Math.max(0,s.ants[k]-dd)});
+ /* прогноз врага */
+ if(se<3){var p=se==0?.10:se==1?.18:.2,nd=null;if(rnd()<p){var kinds=['beetle'];if(yr>=2)kinds.push('spider');if(se>=1)kinds.push('ants');var kk=kinds[Math.floor(rnd()*kinds.length)];
+  nd=kk=='beetle'?{k:kk,n:TX('s170'),p:8,e:'🪲'}:kk=='spider'?{k:kk,n:TX('s171'),p:16,e:'🕷️'}:{k:kk,n:TX('s172'),p:[20,32,44][yr-1],e:'🐜'}}s.forecast=nd}
+ r.food=s.food;s.last=r;r.lines.forEach(toast);
+ /* конец дня */
+ s.day++;var nd2=s.day,fin=false;
+ if(adults()<5){endGame(false);return}
+ if(sOf(nd2-1)!=sOf(nd2)||nd2>120){var c2=0,sn=sOf(nd2-1);
+  enq(quiz(Math.floor(rnd()*QUIZ.length),function(o){if(o){c2++;s.food+=20}}));
+  enq(quiz(Math.floor(rnd()*QUIZ.length),function(o){if(o){c2++;s.food+=20}}));
+  enq(function(done){s.knowl=c2==2?1.1:1;info(TX('s173'),TX('s174')+c2+TX('s175')+(c2==2?TX('s176'):''),done)});
+  if(nd2<=120)enq(function(done){PF.interstitial(function(){done();try{window.Premium&&Premium.maybeCard()}catch(e){}})});
+  if(sn==3){s.winters++;enq(function(done){info(TX('s177'),TX('s178')+Math.floor(s.food)+TX('s179')+s.winters+'.',done)})}
+  if((nd2-1)%40==0){var yy=(nd2-1)/40,tg=GOALS[yy-1];enq(function(done){var ok=adults()>=tg;if(ok)s.food+=100;info(TX('s180')+yy,TX('s181')+tg+TX('s182')+adults()+(ok?TX('s183'):TX('s184')),done)})}}
+ if(nd2>120){enq(function(done){endGame(true);done()})}
+ save()}
+function endGame(win){over=true;try{localStorage.removeItem(SAVE)}catch(e){}
+ var n=adults()+broodN(),stars=(win&&n>=80?1:0)+(win&&n>=160?1:0)+(win&&n>=250&&s.winters>=3?1:0),best=0;
+ try{best=+localStorage.getItem(BEST)||0;if(win&&n>best){best=n;localStorage.setItem(BEST,String(n))}}catch(e){}
+ BESTV=best;cloudPush(null);
+ Q=[];busy=true;
+ show('<h2>'+(win?TX('s185'):TX('s186'))+TX('s187')+n+TX('s188')+s.winters+'</b></p>'+(win?'<p style="font-size:34px;margin:6px 0">'+'★'.repeat(stars)+'☆'.repeat(3-stars)+TX('s189')+best+'</p>':TX('s190')),[{t:TX('s191'),f:function(){newGame()}}],function(){})}
+/* ---------- действия ---------- */
+function bump(g,k,dl){var o=s[g],pool=g=='alloc'?'forage':'work';if(k==pool)return;
+ if(dl>0){var t=Math.min(10,o[pool]);o[k]+=t;o[pool]-=t}else{var t2=Math.min(10,o[k]);o[k]-=t2;o[pool]+=t2}save();render()}
+function startBuild(id){if(s.project||s.ch[id]>=CH[id].max)return;s.project={id:id,left:CH[id].cm};save();render()}
+/* ---------- панели ---------- */
+function row(g,k,name){var o=s[g],W=s.ants.work,n=Math.floor(W*o[k]/100),pool=g=='alloc'?'forage':'work',lock=(g=='alloc'&&k=='milk'&&!s.ch.farm);
+ return '<div class="row"><div class="nm">'+name+'</div><button class="sb" data-g="'+g+'" data-k="'+k+'" data-d="-1"'+(k==pool||o[k]<=0?' disabled':'')+'>−</button><div class="v">'+o[k]+'% '+(g=='alloc'?'= '+n:'')+'</div><button class="sb" data-g="'+g+'" data-k="'+k+'" data-d="1"'+(k==pool||o[pool]<=0||lock?' disabled':'')+'>+</button></div>'}
+function panelTasks(){var c=split(),se=sOf(s.day),prod=Math.floor(c.f*YIELD[se]*s.knowl)+(se==3?0:c.m*6),A=adults(),need=needDay();
+ return TX('s192')+s.ants.work+TX('s193')+row('alloc','forage',TX('s194'))+row('alloc','build',TX('s195'))+row('alloc','milk',TX('s196')+(s.ch.farm?'':TX('s197')))+
+ (s.alloc.milk>0&&s.ch.farm&&Math.floor(s.ants.work*s.alloc.milk/100)>s.ch.farm*8?TX('s198')+s.ch.farm*8+TX('s199'):'')+
+ TX('s200')+row('hatch','work',TX('s201'))+row('hatch','sold',TX('s202'))+row('hatch','nurse',TX('s203'))+
+ TX('s204')+prod+TX('s205')+need+TX('s206')+(prod-need>=0?'good':'bad')+'">'+(prod-need>0?'+':'')+(prod-need)+'</span>'+(se==3?TX('s207'):'')+'</div>'}
+function panelBuild(){var h='';if(s.project){var p=s.project,c=CH[p.id],b=split().b,dd=b>0?Math.ceil(p.left/(b*0.5)):'∞';h+=TX('s208')+c.n+TX('s209')+p.left+TX('s210')+c.cm+TX('s211')+b+TX('s212')+(b*0.5)+TX('s213')+dd+TX('s214')+Math.round(100*(c.cm-p.left)/c.cm)+'%"></i></div></div>'}
+ else h+=TX('s215');
+ Object.keys(CH).forEach(function(id){var c=CH[id],have=s.ch[id],b=split().b,d=b>0?Math.ceil(c.cm/(b*0.5)):'∞';
+  h+='<div class="card"><b>'+c.ico+' '+c.n+'</b> ×'+have+'<br><span class="small">'+c.e+TX('s216')+c.cm+TX('s217')+b+TX('s218')+d+TX('s219')+id+'"'+(s.project||have>=c.max||sOf(s.day)==3?' disabled':'')+'>'+(have>=c.max?TX('s220'):sOf(s.day)==3?TX('s221'):TX('s222'))+'</button></div>'});return h}
+function panelInfo(){var se=sOf(s.day),A=adults(),wNeed=Math.ceil((A*0.5+1)*10),h='';
+ h+=TX('s223')+s.ants.work+TX('s224')+s.ants.sold+TX('s225')+s.ants.nurse+TX('s226')+s.brood[0]+TX('s227')+(s.brood[1]+s.brood[2])+TX('s228')+s.brood[3]+TX('s229')+capNurs()+TX('s230')+A+' / '+capDorm()+TX('s231')+(s.ants.nurse*4+8)+TX('s232')+broodN()+'</div>';
+ h+=TX('s233')+Math.floor(s.food)+' / '+capStore()+'<div class="bar"><i style="width:'+Math.min(100,100*s.food/capStore())+TX('s234')+wNeed+'</b>'+(s.food>=wNeed?TX('s235'):TX('s236')+Math.ceil(wNeed-s.food)+'</span>')+TX('s237')+capStore()+'</span></div>';
+ var g=GOALS[Math.min(2,yOf(s.day)-1)];h+=TX('s238')+yOf(s.day)+'</b>: '+g+TX('s239')+A+')<div class="bar"><i style="width:'+Math.min(100,100*A/g)+'%"></i></div></div>';
+ if(s.last){var r=s.last;h+=TX('s240')+r.d+TX('s241')+r.forage+(r.milk?TX('s242')+r.milk:'')+TX('s243')+r.need+(r.eggs?TX('s244')+r.eggs:'')+(r.hatched?TX('s245')+r.hatched:'')+(r.dug?TX('s246')+r.dug+TX('s247'):'')+(r.lines.length?'<br><span class="small">'+r.lines.join('<br>')+'</span>':'')+'</div>'}
+ if(!(window.GPAdapter&&!window.GPAdapter.canReward()))h+='<button class="btn" id="adbtn"'+(s.ads>=3||!PF.canReward()?' disabled':'')+TX('s248')+(3-s.ads)+')</button>';
+ if(giftOn()){var got=GIFTD>=sday();h+='<button class="btn alt" id="gift"'+(got?' disabled':'')+'>'+(got?(LANG=='en'?'🎁 Premium gift taken — a new one tomorrow':'🎁 Подарок Премиума получен — завтра будет новый'):(LANG=='en'?'🎁 Premium daily gift: +'+GIFT+' crumbs':'🎁 Подарок Премиума: +'+GIFT+' крошек'))+'</button>'}
+ return h}
+function render(){var se=sOf(s.day),yr=Math.min(3,yOf(s.day));
+ $('top').innerHTML='<span>'+SICO[se]+' '+SEAS[se]+TX('s249')+yr+TX('s250')+((s.day-1)%10+1)+'/10</span><span>🍞 '+Math.floor(s.food)+'/'+capStore()+'</span><span>🐜 '+adults()+'</span>';
+ $('banner').innerHTML=s.forecast?TX('s251')+s.forecast.e+' '+s.forecast.n+TX('s252')+s.forecast.p+TX('s253')+Math.ceil(s.forecast.p/sp())+TX('s254')+s.ants.sold+TX('s255')+sp()+TX('s256'):(se==3?TX('s257'):TX('s258'));
+ var p=$('panel'),top=p.scrollTop;p.innerHTML=tab=='tasks'?panelTasks():tab=='build'?panelBuild():panelInfo();p.scrollTop=top;
+ [].forEach.call(document.querySelectorAll('#tabs button'),function(b){b.className=b.dataset.t==tab?'on':''})}
+$('panel').addEventListener('click',function(e){var t=e.target;if(t.dataset.g)bump(t.dataset.g,t.dataset.k,+t.dataset.d);else if(t.dataset.b)startBuild(t.dataset.b);
+ else if(t.id=='gift'&&giftOn()&&GIFTD<sday()){GIFTD=sday();try{localStorage.setItem('muraveynik-gift',String(GIFTD))}catch(e){}s.food+=GIFT;toast(LANG=='en'?'Premium gift: +'+GIFT+' crumbs':'Подарок Премиума: +'+GIFT+' крошек');save();render()}
+ else if(t.id=='adbtn'&&s.ads<3&&!PF.paused())PF.rewarded(function(ok){if(ok){s.ads++;s.food=Math.min(capStore(),s.food+100);toast(TX('s259'));save();render()}})});
+$('tabs').addEventListener('click',function(e){if(e.target.dataset.t){tab=e.target.dataset.t;render()}});
+$('next').onclick=nextDay;
+/* ---------- рисунок разреза ---------- */
+var cv=$('cv'),cx=cv.getContext('2d'),T=0;
+var RICON={nursery:'ant_larva',store:'f_grain',dorm:'ant_pupa',barracks:'ic_sword',farm:'f_aphids'};
+function pic(n,x,y,h){var im=art(n);if(!im)return false;var w=h*im.width/im.height;cx.drawImage(im,x-w/2,y-h/2,w,h);return true}
+var ROOM={nursery:[80,112],store:[295,112],dorm:[80,176],barracks:[295,176],farm:[187,200]},QUEEN=[187,140];
+var SKY=['#a8e6ff','#6fd0ff','#ffd9a0','#cfe3f2'],GRASS=['#6ad04a','#3fb83a','#d9962e','#e8f2f8'];
+function frame(){T+=1/60;var w=375,se=s?sOf(s.day):0;
+ if(s){var bg=art('bg_cut');
+ if(bg)cx.drawImage(bg,0,0,w,250);else{
+  cx.fillStyle=SKY[se];cx.fillRect(0,0,w,56);
+  cx.fillStyle=GRASS[se];cx.fillRect(0,50,w,10);
+  var g=cx.createLinearGradient(0,60,0,250);g.addColorStop(0,'#9b6a3a');g.addColorStop(1,'#5a3a1e');cx.fillStyle=g;cx.fillRect(0,60,w,190);
+  cx.font='22px serif';cx.fillText(se==0?'🌷':se==1?'🌻':se==2?'🍄':'⛄',20,48);cx.fillText(se==1?'☀️':se==3?'☁️':'⛅',300,26)}
+ /* туннели */
+ cx.strokeStyle='#3a2410';cx.lineWidth=10;cx.lineCap='round';cx.beginPath();cx.moveTo(187,52);cx.lineTo(187,200);
+ Object.keys(ROOM).forEach(function(k){var p=ROOM[k];if(s.ch[k]>0){cx.moveTo(187,p[1]);cx.lineTo(p[0],p[1])}});cx.stroke();
+ if(s.project){var p2=ROOM[s.project.id],pr=1-s.project.left/CH[s.project.id].cm;cx.setLineDash([6,6]);cx.strokeStyle='#e0b878';cx.lineWidth=5;cx.beginPath();cx.moveTo(187,p2[1]);cx.lineTo(187+(p2[0]-187)*pr,p2[1]);cx.stroke();cx.setLineDash([])}
+ /* камеры */
+ cx.textAlign='center';cx.textBaseline='middle';
+ Object.keys(ROOM).forEach(function(k){var p=ROOM[k],n=s.ch[k];cx.globalAlpha=n?1:.3;
+  cx.fillStyle=n?'#ffcf80':'#c9a06a';cx.strokeStyle='#3a2410';cx.lineWidth=3;rr(p[0]-34,p[1]-18,68,36,12);cx.fill();cx.stroke();
+  if(!pic(RICON[k],p[0]-10,p[1],28)){cx.font='20px serif';cx.fillStyle='#000';cx.fillText(CH[k].ico,p[0]-8,p[1])}
+  cx.globalAlpha=1;if(n>0){cx.font='bold 12px sans-serif';cx.fillStyle='#3b2a1a';cx.fillText('×'+n,p[0]+18,p[1]+5)}});
+ cx.fillStyle='#ffe08a';cx.strokeStyle='#3a2410';rr(QUEEN[0]-30,QUEEN[1]-17,60,34,12);cx.fill();cx.stroke();if(!pic('ant_queen',QUEEN[0],QUEEN[1]+2,40)){cx.font='22px serif';cx.fillStyle='#000';cx.fillText('👑',QUEEN[0],QUEEN[1]+1)}
+ /* расплод и еда внутри */
+ cx.font='10px serif';var bshow=Math.min(10,broodN());for(var i=0;i<bshow;i++){var ex=ROOM.nursery[0]-24+(i%5)*12,ey=ROOM.nursery[1]+(i<5?8:-6);if(!pic('ant_egg',ex,ey,11))cx.fillText('🥚',ex,ey)}
+ var fshow=Math.min(10,Math.floor(10*s.food/capStore()));for(var j=0;j<fshow;j++){var fx=ROOM.store[0]-24+(j%5)*12,fy=ROOM.store[1]+(j<5?8:-6);if(!pic('f_seed',fx,fy,11))cx.fillText('🌾',fx,fy)}
+ /* муравьи */
+ cx.font='15px serif';var fr=split().f,nS=Math.min(9,Math.ceil(fr/4));
+ for(var k2=0;k2<nS;k2++){var x=((T*22+k2*41)%330)+22,y=42+Math.sin(T*6+k2)*2;if(!pic('ant_worker',x,y,18))cx.fillText('🐜',x,y)}
+ var nT=Math.min(8,Math.ceil(adults()/12));for(var m=0;m<nT;m++){var yy=60+((T*30+m*37)%140),xx=187+(m%2?5:-5);if(!pic('ant_worker',xx,yy,10))cx.fillText('🐜',xx,yy)}
+ if(s.forecast){var fy2=34+Math.sin(T*4)*3;if(!pic('en_'+s.forecast.k,335,fy2,34)){cx.font='26px serif';cx.fillText(s.forecast.e,340,40+Math.sin(T*4)*3)}}
+ }
+ requestAnimationFrame(frame)}
+function rr(x,y,w,h,r){cx.beginPath();cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath()}
+/* ---------- старт ---------- */
+function newGame(){s=fresh();over=false;busy=false;Q=[];tab='tasks';save();$('modal').style.display='none';render();
+ enq(function(done){info(TX('s260'),TX('s261'),done,TX('s262'))})}
+function start(){PF.cloudGet().then(function(c){try{var pmc=c&&c.pm;c=c?c.mv:null;if(pmc&&window.Premium){var lp=localStorage.getItem('muraveynik-premium');localStorage.setItem('muraveynik-premium',Premium.mergeState(lp,pmc))}}catch(e){}try{var lt=+localStorage.getItem(SAVE+'-t')||0,lb=+localStorage.getItem(BEST)||0;
+ if(c){if(c.best>lb){localStorage.setItem(BEST,String(c.best))}
+  var lsv=null;try{lsv=load()}catch(e){}var freshLocal=!!(lsv&&lsv.day<=3&&c.save&&c.save.day>lsv.day);if(c.t>lt||freshLocal){if(c.save)localStorage.setItem(SAVE,JSON.stringify(c.save));else localStorage.removeItem(SAVE);localStorage.setItem(SAVE+'-t',String(c.t))}}
+ BESTV=Math.max(lb,c&&c.best||0);GIFTD=Math.max(GIFTD,c&&+c.gift||0);localStorage.setItem('muraveynik-gift',String(GIFTD))}catch(e){}start2()},start2)}
+var PMT={ru:{perks:["Полноэкранная реклама отключается.","Подарок Премиума каждый день: +250 крошек.","Подсказки и игровые лимиты остаются прежними."],
+ note:"Оплата один раз. Премиум действует 30 дней или год — в зависимости от выбранного товара. Автопродления и повторных списаний нет.",
+ adText:"Строй туннели, развивай колонию и готовь муравьёв к смене сезонов без рекламных пауз! Премиум убирает полноэкранную рекламу и дарит подарок каждый день.",
+ soonText:"Ещё {0} без рекламных пауз в муравейнике. Премиум закончится сам, без списаний. Если захочешь, его можно купить снова.",
+ endText:"Полноэкранная реклама вернулась, ежедневный подарок закончился. Муравьи продолжают строить свой дом!"},
+ en:{perks:["Full-screen ads are disabled.","A Premium gift every day: +250 crumbs.","Hints and game limits stay the same."],
+ note:"One-time payment. Premium lasts 30 days or 1 year, depending on your purchase. No automatic renewal or recurring charges.",
+ adText:"Dig tunnels, grow your colony and prepare your ants for changing seasons without ad breaks! Premium removes full-screen ads and gives you a gift every day.",
+ soonText:"Enjoy {0} more without ad breaks in your ant colony. Premium ends automatically with no further charges. You can buy it again if you like.",
+ endText:"Full-screen ads are back and the daily gift has ended. Your ants keep building their home!"}};
+function initPremium(){if(!window.Premium)return;try{Premium.onChange(function(){render()});
+ Premium.init({sdk:PF.sdk(),lang:LANG,texts:PMT,store:{get:function(){try{return localStorage.getItem('muraveynik-premium')}catch(e){return null}},set:function(r){try{localStorage.setItem('muraveynik-premium',r)}catch(e){}},save:PF.pmSave}})
+ .then(function(){Premium.maybeCard();render()},function(){})}catch(e){}}
+function start2(){var o=load();var img=art('cover');
+ $('mcard').innerHTML=TX('s263');$('modal').style.display='flex';busy=true;
+ var im=$('cover');im.onload=function(){im.style.display='block'};if(USE_ART)im.src=imgSrc('cover');
+ var mb=$('mb');function add(t,f,alt){var b=document.createElement('button');b.className='btn opt'+(alt?' alt':'');b.textContent=t;b.onclick=f;mb.appendChild(b)}
+ if(o)add(TX('s264')+o.day+')',function(){s=o;busy=false;$('modal').style.display='none';render()});
+ add(TX('s265'),function(){busy=false;newGame()},!!o);
+ var hasEN=false;for(var kk in EN){hasEN=true;break}
+ if(hasEN)add(LANG=='ru'?'🌐 English':'🌐 Русский',function(){PF.setLang(LANG=='ru'?'en':'ru')},true);
+ s=o||fresh();render();frame();PF.ready();initPremium()}
+PF.onPause=function(p){var n=$('next');if(n)n.style.opacity=p?.5:1};
+
+start()}
+PF.init().then(boot,boot);
+})();
+</script>
+<script>if('serviceWorker' in navigator&&location.protocol!='file:')addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})</script>
+</body>
+</html>

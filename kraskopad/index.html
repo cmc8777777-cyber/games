@@ -34,8 +34,11 @@ button:disabled{opacity:.45}
 .menuR{position:absolute;right:clamp(16px,4vw,48px);top:clamp(16px,4vh,40px);display:flex;flex-direction:column;align-items:flex-end;gap:8px}
 #scrMenu{background:linear-gradient(90deg,rgba(8,11,16,.85) 0%,rgba(8,11,16,.35) 50%,rgba(8,11,16,0) 100%);isolation:isolate}
 #scrMenu.artbg{background:#0d1217}
+#scrMenu.artbg2{background:linear-gradient(90deg,rgba(8,11,16,.88) 0%,rgba(8,11,16,.45) 45%,rgba(8,11,16,.1) 75%),url(img/bg_season2.webp) center/cover no-repeat #0d1217}
+#scrPass.s2bg{background:linear-gradient(rgba(8,11,16,.7),rgba(8,11,16,.82)),url(img/bg_season2.webp) center/cover no-repeat #0d1217}
+.passIc{height:30px;vertical-align:middle;margin:0 8px}
 #scrMenu.artbg::before{content:"";position:absolute;inset:0;z-index:-1;transform:scaleX(-1);background:linear-gradient(270deg,rgba(8,11,16,.88) 0%,rgba(8,11,16,.4) 45%,rgba(8,11,16,0) 70%),url(img/bg_menu.webp) center/cover no-repeat}
-@media (orientation:portrait){#scrLoad{background-image:url(img/bg_loading.webp)!important}.menuR{display:none}.menuL{left:12px;right:12px;max-width:none;top:50%}.menuL button{font-size:13px;padding:10px 12px;white-space:normal}.menuL button.pri{font-size:16px}.mgrid.g3{grid-template-columns:1fr 1fr}}
+@media (orientation:portrait){#scrLoad{background-image:url(img/bg_loading.webp)!important}.menuR{display:none}#scrWard{justify-content:flex-end!important;padding-left:12px!important}#wardList{max-width:94vw!important;max-height:52vh!important}.wardHint{top:10px;bottom:auto;left:12px;right:12px;text-align:center}.menuL{left:12px;right:12px;max-width:none;top:50%}.menuL button{font-size:13px;padding:10px 12px;white-space:normal}.menuL button.pri{font-size:16px}.mgrid.g3{grid-template-columns:1fr 1fr}}
 .lvlbox{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--acc2);padding:10px 14px;min-width:240px}
 .lvlbox b{font-size:20px;letter-spacing:.06em}
 .bar{height:6px;background:rgba(255,255,255,.12);overflow:hidden;margin:7px 0}
@@ -177,6 +180,11 @@ body.touch.portrait #rot{display:block}
 .tierC .rw{min-height:44px;padding:4px;background:rgba(0,0,0,.25);margin-bottom:4px;line-height:1.3}
 .tierC .rw.pr{border-left:2px solid var(--gold)}
 .dim{color:var(--dim)}
+.chals{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+.chal{background:rgba(255,255,255,.05);border:1px solid var(--line);padding:8px 10px;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.chal:hover{background:rgba(255,255,255,.1)}.chal.locked{opacity:.45;cursor:default}.chal b{font-size:13px;text-transform:uppercase;letter-spacing:.05em}.chal small{color:var(--dim);font-size:11px}
+.chal .st{color:var(--gold);font-size:18px;letter-spacing:2px}.chal .st i{color:rgba(255,255,255,.25);font-style:normal}
+.wardHint{position:absolute;right:16px;bottom:14px;font-size:12px;color:var(--dim);letter-spacing:.06em;pointer-events:none}
 .prof{display:grid;grid-template-columns:1fr 1.2fr;gap:20px}@media (max-width:700px){.prof{grid-template-columns:1fr}}
 .achs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
 .ach{background:rgba(255,255,255,.05);border:1px solid var(--line);padding:6px 8px;font-size:12px;opacity:.75}.ach.done{opacity:1;border-color:var(--gold)}.ach .bar{margin:4px 0}.ach small{color:var(--dim)}
@@ -188,6 +196,32 @@ body.touch.portrait #rot{display:block}
 #bEmote{left:50%;margin-left:28px;width:40px;height:40px;font-size:16px;border-radius:4px}
 body.touch #bEmote{top:46px}
 body:not(.touch) #bEmote{display:none}
+/* вырезы экрана и жестовая панель телефона */
+#hud,#touch{top:env(safe-area-inset-top,0px);right:env(safe-area-inset-right,0px);bottom:env(safe-area-inset-bottom,0px);left:env(safe-area-inset-left,0px)}
+/* телефон вертикально (375×812 и уже): верхняя полоса и кнопки переставлены, чтобы ничего не налезало */
+body.touch.portrait #zoneTxt{left:14px;top:50px;transform:none;font-size:11px;padding:4px 8px;white-space:normal;max-width:240px}
+body.touch.portrait #team{top:94px}
+body.touch.portrait #bPauseT{left:auto;right:56px;margin-left:0;top:112px}
+body.touch.portrait #bEmote{left:auto;right:10px;margin-left:0;top:112px}
+body.touch.portrait #feed{top:160px;right:10px}
+body.touch.portrait #slots{bottom:6px}
+body.touch.portrait #ammo{left:auto;right:14px;transform:none;bottom:52px}
+body.touch.portrait .bl{bottom:58px;width:150px}
+body.touch.portrait #bFire{bottom:156px}
+body.touch.portrait #bJump{bottom:90px;right:100px}
+body.touch.portrait #bReload{bottom:166px}
+body.touch.portrait #bAim{bottom:226px}
+body.touch.portrait #bRamp{bottom:258px}
+body.touch.portrait #bWall{bottom:260px}
+body.touch.portrait #bCrouch{bottom:300px}
+body.touch.portrait #bCyc{bottom:246px}
+body.touch.portrait #bGren{bottom:190px}
+body.touch.portrait #bRoll{left:64px;bottom:170px}
+body.touch.portrait #bHeal{bottom:230px}
+body.touch.portrait #bTake{right:auto;left:12px;bottom:290px}
+body.touch.portrait #rot{top:424px;bottom:auto}
+body.touch.portrait #bJumpPlane{top:300px;bottom:auto}
+body.touch.portrait #kcam{bottom:auto;top:240px;white-space:normal;max-width:86vw}
 #loadTxt{font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
 </style>
 </head>
@@ -245,9 +279,10 @@ body:not(.touch) #bEmote{display:none}
     <button id="bSolo" class="pri" data-t="solo"></button>
     <div class="mgrid"><button id="bTrio" data-t="trio"></button><button id="bQuick" data-t="quick"></button></div>
     <div class="mgrid g3"><button id="bCap" class="small" data-t="cap"></button><button id="bTdm" class="small" data-t="tdm"></button><button id="bLr" class="small" data-t="lr"></button></div>
+    <div class="mgrid"><button id="bPve" class="small ev" data-t="pve"></button><button id="bChal" class="small ev" data-t="chals"></button></div>
     <button id="bEvent" class="ev"></button>
     <div class="mgrid"><button id="bTutor" data-t="tutor"></button><button id="bTrain" data-t="train"></button></div>
-    <div class="msec"><button id="bPass" class="small" data-t="pass"></button><button id="bQuest" class="small" data-t="quests"></button><button id="bWard" class="small" data-t="wardrobe"></button><button id="bStats" class="small" data-t="stats"></button><button id="bSet" class="small" data-t="settings"></button></div>
+    <div class="msec"><button id="bGift" class="small gold" data-t="gift" style="display:none"></button><button id="bPass" class="small" data-t="pass"></button><button id="bQuest" class="small" data-t="quests"></button><button id="bWard" class="small" data-t="wardrobe"></button><button id="bStats" class="small" data-t="stats"></button><button id="bSet" class="small" data-t="settings"></button></div>
     <div id="pcHelp" data-t="pcHelp"></div>
   </div>
   <div class="menuR">
@@ -257,8 +292,9 @@ body:not(.touch) #bEmote{display:none}
   </div>
 </div>
 
-<div class="scr" id="scrWard" style="align-items:flex-start;padding-left:clamp(16px,4vw,48px)"><div class="panel" id="wardList" style="max-width:min(560px,58vw);max-height:78vh;overflow:auto"></div><button class="bBack small" data-t="back"></button></div>
+<div class="scr" id="scrWard" style="align-items:flex-start;padding-left:clamp(16px,4vw,48px)"><div class="wardHint" data-t="wardHint"></div><div class="panel" id="wardList" style="max-width:min(560px,58vw);max-height:78vh;overflow:auto"></div><button class="bBack small" data-t="back"></button></div>
 <div class="scr" id="scrPass"><div class="panel" id="passList" style="max-width:96vw"></div><button class="bBack small" data-t="back"></button></div>
+<div class="scr" id="scrChal"><div class="panel" id="chalList" style="max-width:900px;max-height:80vh;overflow:auto"></div><button class="bBack small" data-t="back"></button></div>
 <div class="scr" id="scrQuest"><div class="panel" id="questList" style="max-width:520px"></div><button class="bBack small" data-t="back"></button></div>
 <div class="scr" id="scrStats"><div class="panel" id="statList" style="max-width:900px;max-height:80vh;overflow:auto"></div><button class="bBack small" data-t="back"></button></div>
 <div class="scr" id="scrSet">
@@ -281,13 +317,17 @@ body:not(.touch) #bEmote{display:none}
 <script src="vendor/three.min.js"></script>
 <script src="js/premium.js"></script>
 <script src="js/platform.js"></script>
+<script src="js/lang.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/tex.js"></script>
 <script src="js/world.js"></script>
 <script src="js/core.js"></script>
 <script src="js/vehicles.js"></script>
+<script src="js/train.js"></script>
 <script src="js/modes.js"></script>
+<script src="js/pve.js"></script>
+<script src="js/challenges.js"></script>
 <script src="js/events.js"></script>
 <script src="js/models.js"></script>
 <script src="js/art.js"></script>

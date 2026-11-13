@@ -1,0 +1,40 @@
+{
+ "id": "./",
+ "name": "Держи Шмыга!",
+ "short_name": "Шмыг",
+ "lang": "ru",
+ "description": "Погоня за енотом-воришкой по восьми мирам: монеты, ускорители, образы и стройка своего города.",
+ "start_url": "./index.html",
+ "scope": "./",
+ "display": "fullscreen",
+ "display_override": [
+  "fullscreen",
+  "standalone"
+ ],
+ "orientation": "portrait",
+ "theme_color": "#0d0b1e",
+ "background_color": "#0d0b1e",
+ "categories": [
+  "games"
+ ],
+ "icons": [
+  {
+   "src": "icons/icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icons/icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icons/icon-maskable-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}

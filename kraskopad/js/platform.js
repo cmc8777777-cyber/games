@@ -58,6 +58,7 @@ window.PF = (function () {
       m.own = Object.assign({}, y.own || {}, x.own || {});
       m.tut = (x.tut || y.tut) ? 1 : 0;
       m.ach = Object.assign({}, y.ach || {}, x.ach || {});
+      m.chal = {}; [y.chal || {}, x.chal || {}].forEach(function (o) { Object.keys(o).forEach(function (k) { m.chal[k] = Math.max(m.chal[k] || 0, o[k] || 0); }); });
       m.ws = {}; [y.ws || {}, x.ws || {}].forEach(function (o) { Object.keys(o).forEach(function (w) { var a = m.ws[w] || { k: 0, d: 0 }; m.ws[w] = { k: Math.max(a.k, o[w].k || 0), d: Math.max(a.d, o[w].d || 0) }; }); });
       ["dq", "wq", "sq"].forEach(function (k) {   // задания: берём более новый набор; если тот же — прогресс по максимуму
         var a = x[k], b = y[k]; if (!a || !b) { m[k] = a || b; return; }
@@ -200,10 +201,9 @@ window.PF = (function () {
     } catch (e) { end(false); }
   };
   self.premium = premiumOn;
-  self.canReward = function () { return !!(premiumOn() || (sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo)); };
-  /* Ролик за награду. done(got): got === true, только если игрок досмотрел и награда засчитана. У активного Премиума награда выдаётся сразу, без ролика. */
+  self.canReward = function () { return !!(sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo); };
+  /* Ролик за награду. done(got): got === true, только если игрок досмотрел и награда засчитана. Премиум ролик не отменяет (п. 4.5 правил Яндекса, 13.11): награда — только после показанного ролика; у Премиума вместо этого подарок дня. */
   self.rewarded = function (done) {
-    if (premiumOn()) { done(true); return; }
     if (!self.canReward()) { done(false); return; }
     var fin = false, got = false;
     function end() { if (fin) return; fin = true; if (got) lastAdAt = Date.now(); adEnd(); done(got); }

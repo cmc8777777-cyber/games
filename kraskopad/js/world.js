@@ -72,6 +72,34 @@ window.KP = window.KP || {};
       }
     }
   };
+  /* «Каньон» (Э16): пустынный остров со столовыми горами, сухим руслом и железной дорогой по кругу */
+  var MESAS = [[-70, 30, 22, 13], [60, 70, 18, 15], [95, -60, 20, 12], [-30, -95, 16, 11]];
+  MAPS.canyon = {
+    seed: 20261116, desert: true, atmos: ["desert", "desert", "dustset", "sandstorm", "desert", "sandstorm"],
+    pois: [
+      { key: "cpoi0", kind: "station", x: 10, z: -2, r: 26, bias: { 1: 1.3, 2: 1.4 }, rail: 1 },
+      { key: "cpoi1", kind: "mesa", x: -70, z: 30, r: 16, bias: { 5: 3 } },
+      { key: "cpoi2", kind: "oasis", x: -112, z: -40, r: 24, flat: 1.4, bias: { 3: 1.5 }, items: 1.5 },
+      { key: "cpoi3", kind: "mine", x: 120, z: 24, r: 22, bias: { 3: 1.6, 6: 1.6 } },
+      { key: "cpoi4", kind: "ghost", x: -46, z: 112, r: 28, bias: { 1: 1.4, 3: 1.3 } },
+      { key: "cpoi5", kind: "depot", x: 72, z: 118, r: 24, bias: { 4: 1.6, 6: 1.3 } },
+      { key: "cpoi6", kind: "solar", x: 30, z: -128, r: 26, bias: { 4: 1.4, 2: 1.3 } },
+      { key: "cpoi7", kind: "ruins", x: -122, z: 70, r: 20, bias: { 5: 1.5, 1: 1.3 } }
+    ],
+    lake: { x: -112, z: -40, r: 9, h: -1.4 },
+    noflat: { mesa: 1, oasis: 1 },
+    rail: (function () { var pts = []; for (var k = 0; k < 72; k++) { var a = k / 72 * Math.PI * 2; pts.push([Math.cos(a) * 118 + Math.sin(a * 2) * 14, Math.sin(a) * 96 + Math.cos(a * 3) * 10]); } return pts; })(),
+    raw: function (x, z) {
+      var d = Math.sqrt(x * x * 0.9 + z * z) / IR + (vnoise(x * 0.022 + 51, z * 0.022 + 3) - 0.5) * 0.24;
+      var land = smoothstep(1.03, 0.84, d);
+      var h = -3.4 + land * 5.0 + land * land * (fbm(x * 0.012 + 9, z * 0.012 + 4) * 6 - 2.2);
+      for (var m = 0; m < MESAS.length; m++) { var M = MESAS[m], md = Math.hypot(x - M[0], z - M[1]) + (vnoise(x * 0.08, z * 0.08) - 0.5) * 6; h += M[3] * smoothstep(M[2] + 9, M[2], md) * land; }
+      var cz = Math.sin(x * 0.03) * 22 - 40, cd = Math.abs(z - cz);   // сухое русло
+      if (x > -150 && x < 150) h -= 3.2 * smoothstep(12, 2, cd) * land;
+      return h;
+    }
+  };
+  var RAIL = null;
   var MAP = MAPS.isle, POIS = [], LAKE = null, H = new Float32Array(N * N), mapId = "isle";
   function rawH(x, z) {
     var h = MAP.raw(x, z);
@@ -92,8 +120,22 @@ window.KP = window.KP || {};
       }
       H[i * N + j] = h;
     }
+    RAIL = null;
+    if (MAP.rail) {   // насыпь: высота пути сглажена, полоса 7 м вокруг выровнена
+      var P = MAP.rail, rh = P.map(function (q) { return Math.max(1.4, rawH(q[0], q[1])); }), sm2 = rh.map(function (v, k) { var a = 0; for (var w = -4; w <= 4; w++) a += rh[(k + w + P.length) % P.length]; return a / 9; });
+      RAIL = { pts: P, h: sm2 };
+      for (var i2 = 0; i2 < N; i2++) for (var j2 = 0; j2 < N; j2++) {
+        var x2 = -HALF + j2 * STEP, z2 = -HALF + i2 * STEP, bd = 99, bh = 0;
+        for (var k = 0; k < P.length; k++) {
+          var a0 = P[k], a1 = P[(k + 1) % P.length], ux = a1[0] - a0[0], uz = a1[1] - a0[1], L2 = ux * ux + uz * uz;
+          var t = Math.max(0, Math.min(1, ((x2 - a0[0]) * ux + (z2 - a0[1]) * uz) / L2)), dx = a0[0] + ux * t - x2, dz = a0[1] + uz * t - z2, dd2 = Math.sqrt(dx * dx + dz * dz);
+          if (dd2 < bd) { bd = dd2; bh = sm2[k] + (sm2[(k + 1) % P.length] - sm2[k]) * t; }
+        }
+        if (bd < 9) H[i2 * N + j2] = H[i2 * N + j2] + (bh - 0.1 - H[i2 * N + j2]) * smoothstep(9, 3.5, bd);
+      }
+    }
     for (var g2 = 0; g2 < grid.length; g2++) grid[g2].length = 0;
-    if (KP.world) { KP.world.POIS = POIS; KP.world.LAKE = LAKE; KP.world.map = mapId; KP.world.MAP = MAP; }
+    if (KP.world) { KP.world.POIS = POIS; KP.world.LAKE = LAKE; KP.world.map = mapId; KP.world.MAP = MAP; KP.world.RAIL = RAIL; }
   }
   function height(x, z) {
     var fx = (x + HALF) / STEP, fz = (z + HALF) / STEP;
@@ -383,6 +425,57 @@ window.KP = window.KP || {};
         house(cx - 6, cz - 7, 7, 5, 2, pi, true);
         for (k = 0; k < 3; k++) sandbags(cx + 8 + k * 3, cz - 8, 2.5, false);
         chests.push({ x: cx + 6, z: cz - 3, poi: pi }); spots(cx, cz - 5, 8, 6, pi);
+      } else if (p.kind === "station" && MAP.desert) {   // ж/д станция: вокзал, платформа, водокачка, дома из самана
+        var sy0 = baseY(cx, cz + 8, 18, 7);
+        M.add(B, cx, sy0 + 3, cz + 9, 0, 0, 0, 18, 6, 7, "#d6b98e"); M.add(B, cx, sy0 + 6.3, cz + 9, 0, 0, 0, 19, 0.6, 8, "#8a4a32");
+        windows(cx, cz + 9, 18, 7, sy0, 2); solid(cx - 9, cx + 9, cz + 5.5, cz + 12.5, sy0 - 0.5, sy0 + 6.6); spots(cx, cz + 9, 8, 6, pi);
+        M.add(B, cx, sy0 + 0.5, cz + 3.4, 0, 0, 0, 24, 1, 3, "#b9a07a");
+        M.add(CYL, cx + 16, sy0 + 5, cz + 12, 0, 0, 0, 2.2, 3.4, 2.2, "#7a5a3e"); for (k = 0; k < 4; k++) M.add(B, cx + 16 + (k % 2 ? 1.4 : -1.4), sy0 + 1.8, cz + 12 + (k < 2 ? 1.4 : -1.4), 0, 0, 0, 0.25, 3.6, 0.25, "#5a432f"); pillar(cx + 16, cz + 12, 1.6, sy0 + 6.8);
+        for (k = 0; k < 6; k++) { a = rnd() * 6.28; x = cx + Math.cos(a) * (14 + rnd() * 12); z = cz + Math.sin(a) * (14 + rnd() * 12); if (free(x, z, 5)) house(x, z, 6 + rnd() * 2, 6, rnd() < 0.3 ? 2 : 1, pi, true); }
+        chests.push({ x: cx - 11, z: cz + 6, poi: pi }); chests.push({ x: cx + 12, z: cz + 2, poi: pi });
+      } else if (p.kind === "mesa") {   // столовая гора: хижина и вышка наверху
+        var mt = height(cx, cz);
+        M.add(B, cx + 3, mt + 1.6, cz, 0, 0, 0, 5, 3.2, 4, "#b98a5e"); M.add(B, cx + 3, mt + 3.4, cz, 0, 0, 0, 5.6, 0.3, 4.6, "#6e4a32"); solid(cx + 0.5, cx + 5.5, cz - 2, cz + 2, mt - 0.5, mt + 3.6);
+        M.add(CYL6, cx - 4, mt + 7, cz - 2, 0, 0, 0, 0.25, 14, 0.25, "#c9cdd2"); pillar(cx - 4, cz - 2, 0.35, mt + 14);
+        spots(cx, cz, 6, 6, pi); chests.push({ x: cx - 2, z: cz + 4, poi: pi }); chests.push({ x: cx + 7, z: cz - 4, poi: pi });
+        for (k = 0; k < 3; k++) { a = rnd() * 6.28; sandbags(cx + Math.cos(a) * 8, cz + Math.sin(a) * 8, 3, rnd() < 0.5); }
+      } else if (p.kind === "oasis") {   // оазис: шатры у пруда
+        for (k = 0; k < 6; k++) { a = k / 6 * 6.28 + 0.3; x = cx + Math.cos(a) * 15; z = cz + Math.sin(a) * 15; var oy = height(x, z); if (oy < 0.6) continue; var tt = new THREE.CylinderGeometry(0, 1, 1, 6, 1); M.add(tt, x, oy + 1.4, z, 0, a, 0, 3.2, 2.8, 3.2, pick(["#c9763a", "#a8473a", "#e0c28a", "#4a6a8a"])); pillar(x, z, 2.2, oy + 2.8); spots(x, z, 2.6, 2, pi); }
+        chests.push({ x: cx + 15, z: cz - 5, poi: pi }); chests.push({ x: cx - 13, z: cz + 9, poi: pi });
+      } else if (p.kind === "ghost") {   // город-призрак: деревянные дома с фальшфасадами, водонапорная башня
+        for (k = -3; k <= 3; k++) {
+          if (k === 0) continue;
+          x = cx + k * 9; z = cz + (k % 2 ? 9 : -9); if (!free(x, z, 4.5)) continue;
+          var gy4 = baseY(x, z, 7, 7), hh4 = rnd() < 0.4 ? 6.4 : 3.6, wc = pick(["#7a5a3e", "#8c6a4c", "#6e4a32", "#9a7a5a"]);
+          M.add(B, x, gy4 + hh4 / 2 - 0.3, z, 0, 0, 0, 7, hh4 + 0.6, 7, wc); M.add(B, x, gy4 + hh4 + 0.9, z + (z > cz ? -3.4 : 3.4), 0, 0, 0, 7.2, 2.2, 0.3, wc);
+          M.add(B, x, gy4 + 2.6, z + (z > cz ? -3.9 : 3.9), 0, 0, 0, 7, 0.15, 1.6, "#5a432f");
+          windows(x, z, 7, 7, gy4, hh4 > 4 ? 2 : 1); solid(x - 3.5, x + 3.5, z - 3.5, z + 3.5, gy4 - 0.5, gy4 + hh4 + 2); spots(x, z, 3.5, 3, pi);
+          if (rnd() < 0.45) chests.push({ x: x + 4.6, z: z, poi: pi });
+        }
+        var wy3 = height(cx, cz + 22); M.add(CYL, cx, wy3 + 9, cz + 22, 0, 0, 0, 2.6, 3.6, 2.6, "#7a5a3e"); for (k = 0; k < 4; k++) M.add(B, cx + (k % 2 ? 1.8 : -1.8), wy3 + 3.6, cz + 22 + (k < 2 ? 1.8 : -1.8), 0, 0, 0, 0.3, 7.2, 0.3, "#5a432f"); pillar(cx, cz + 22, 2, wy3 + 11);
+      } else if (p.kind === "depot") {   // депо: ангар, контейнеры
+        var dy2 = baseY(cx, cz, 14, 24); M.add(B, cx, dy2 + 4.5, cz, 0, 0, 0, 14, 9, 24, "#8a6a52"); M.add(B, cx, dy2 + 9.2, cz, 0, 0, 0, 14.6, 0.5, 24.6, "#4e555c");
+        M.add(B, cx, dy2 + 3.4, cz + 12.05, 0, 0, 0, 6, 6.8, 0.1, "#3a3f46"); solid(cx - 7, cx + 7, cz - 12, cz + 12, dy2 - 0.5, dy2 + 9.5); spots(cx, cz, 10, 7, pi);
+        for (k = 0; k < 6; k++) { x = cx - 16 + (k % 2) * 3.2; z = cz - 12 + Math.floor(k / 2) * 8; if (free(x, z, 1)) container(x, z, true, undefined, pick(["#a5452f", "#2f6a8a", "#c98a2f", "#6a6f75"])); }
+        chests.push({ x: cx + 9, z: cz - 6, poi: pi }); chests.push({ x: cx - 10, z: cz + 14, poi: pi });
+      } else if (p.kind === "solar") {   // солнечная ферма: ряды панелей, щитовая
+        for (var rr2 = -2; rr2 <= 2; rr2++) for (var cc2 = -2; cc2 <= 2; cc2++) {
+          x = cx + cc2 * 8; z = cz + rr2 * 7; if (!free(x, z, 2)) continue;
+          var py3 = height(x, z); M.add(B, x, py3 + 1.6, z, -0.5, 0, 0, 6.5, 0.12, 3.2, "#24324a"); M.add(B, x, py3 + 0.8, z, 0, 0, 0, 0.2, 1.6, 0.2, "#9aa0a6");
+          solid(x - 3.2, x + 3.2, z - 1.5, z + 1.5, py3 + 0.9, py3 + 2.4);
+        }
+        house(cx + 22, cz - 6, 7, 5, 1, pi, true); spots(cx, cz, 14, 8, pi);
+        chests.push({ x: cx - 22, z: cz + 4, poi: pi }); chests.push({ x: cx + 4, z: cz + 18, poi: pi });
+      } else if (p.kind === "ruins") {   // древние руины: обломки стен из самана и арка
+        for (k = 0; k < 10; k++) {
+          a = rnd() * 6.28; x = cx + Math.cos(a) * (4 + rnd() * 14); z = cz + Math.sin(a) * (4 + rnd() * 14); if (!free(x, z, 3)) continue;
+          var ry2 = height(x, z), wl = 3 + rnd() * 4, wh = 1.4 + rnd() * 2.6, rotX = rnd() < 0.5;
+          M.add(B, x, ry2 + wh / 2 - 0.2, z, 0, 0, 0, rotX ? 0.8 : wl, wh, rotX ? wl : 0.8, pick(["#c9a27a", "#b98f66", "#d2b08a"]));
+          solid(x - (rotX ? 0.4 : wl / 2), x + (rotX ? 0.4 : wl / 2), z - (rotX ? wl / 2 : 0.4), z + (rotX ? wl / 2 : 0.4), ry2 - 0.5, ry2 + wh);
+        }
+        var ay2 = height(cx, cz); M.add(B, cx - 2.2, ay2 + 3, cz, 0, 0, 0, 1.2, 6, 1.2, "#c9a27a"); M.add(B, cx + 2.2, ay2 + 3, cz, 0, 0, 0, 1.2, 6, 1.2, "#c9a27a"); M.add(B, cx, ay2 + 6.3, cz, 0, 0, 0, 5.6, 1, 1.4, "#b98f66");
+        pillar(cx - 2.2, cz, 0.8, ay2 + 6); pillar(cx + 2.2, cz, 0.8, ay2 + 6); spots(cx, cz, 8, 7, pi);
+        chests.push({ x: cx + 5, z: cz + 3, poi: pi }); chests.push({ x: cx - 8, z: cz - 6, poi: pi });
       } else if (p.kind === "station") {   // полярная станция: купола, модули, антенны
         for (k = 0; k < 4; k++) {
           a = k * 1.57 + 0.4; x = cx + Math.cos(a) * 12; z = cz + Math.sin(a) * 12; var sy = height(x, z);
@@ -469,10 +562,20 @@ window.KP = window.KP || {};
       if (rnd() < 0.5) house(hx, hz, 6, 5.5, 1, -1, rnd() < 0.3); else { sandbags(hx, hz, 4, rnd() < 0.5); spots(hx, hz, 2, 2, -1); }
     }
 
+    if (RAIL) {
+      var RP = RAIL.pts;
+      for (var rk2 = 0; rk2 < RP.length; rk2++) {
+        var r0 = RP[rk2], r1 = RP[(rk2 + 1) % RP.length], rlen = Math.hypot(r1[0] - r0[0], r1[1] - r0[1]), ry0 = Math.atan2(r1[0] - r0[0], r1[1] - r0[1]), nsl = Math.ceil(rlen / 1.6);
+        for (var q2 = 0; q2 < nsl; q2++) { var tq = (q2 + 0.5) / nsl, sx2 = r0[0] + (r1[0] - r0[0]) * tq, sz2 = r0[1] + (r1[1] - r0[1]) * tq; M.add(B, sx2, height(sx2, sz2) + 0.08, sz2, 0, ry0, 0, 2.6, 0.14, 0.3, "#5a432f"); }
+        var mx2 = (r0[0] + r1[0]) / 2, mz2 = (r0[1] + r1[1]) / 2, myh = (RAIL.h[rk2] + RAIL.h[(rk2 + 1) % RP.length]) / 2;
+        [-0.72, 0.72].forEach(function (o) { M.add(B, mx2 + Math.cos(ry0) * o, myh + 0.24, mz2 - Math.sin(ry0) * o, 0, ry0, 0, 0.1, 0.12, rlen + 0.05, "#7a7f86"); });
+      }
+    }
     // Рельеф
     var tg = new THREE.PlaneGeometry(HALF * 2, HALF * 2, N - 1, N - 1); tg.rotateX(-Math.PI / 2);
     var pos = tg.attributes.position, cols = new Float32Array(pos.count * 3), col = new THREE.Color(), c2 = new THREE.Color();
-    var PAL = WIN ? ["#b9c4cc", "#7f8d96", "#eef3f6", "#e2e9ee", "#cdd8de", "#6f747a", "#8d949a", "#9aa2a8", "#d7e0e6"] : ["#cdb68a", "#9f8a63", "#4f7f34", "#6d9440", "#8f8f4c", "#7d7a73", "#9a958b", "#7a6449", "#3f6a2c"];
+    var DES = MAP.desert;
+    var PAL = DES ? ["#d9b77e", "#b89660", "#c9a46a", "#d8b57a", "#c79a62", "#a8573a", "#c46f45", "#9c7a52", "#6f8a3a"] : WIN ? ["#b9c4cc", "#7f8d96", "#eef3f6", "#e2e9ee", "#cdd8de", "#6f747a", "#8d949a", "#9aa2a8", "#d7e0e6"] : ["#cdb68a", "#9f8a63", "#4f7f34", "#6d9440", "#8f8f4c", "#7d7a73", "#9a958b", "#7a6449", "#3f6a2c"];
     var SAND = new THREE.Color(PAL[0]), WETS = new THREE.Color(PAL[1]), G1 = new THREE.Color(PAL[2]), G2 = new THREE.Color(PAL[3]), DRY = new THREE.Color(PAL[4]),
       ROCK = new THREE.Color(PAL[5]), ROCK2 = new THREE.Color(PAL[6]), DIRT = new THREE.Color(PAL[7]), FOR = new THREE.Color(PAL[8]), ICE = new THREE.Color("#a9d6e6");
     for (var v = 0; v < pos.count; v++) {
@@ -485,7 +588,7 @@ window.KP = window.KP || {};
         col.copy(G1).lerp(G2, n1); col.lerp(DRY, smoothstep(0.55, 0.85, n2) * 0.7);
         POIS.forEach(function (fp) { if (fp.kind === "forest" && Math.hypot(x - fp.x, z - fp.z) < fp.r + 10) col.lerp(FOR, 0.6); if (fp.kind === "icelake" && Math.hypot(x - fp.x, z - fp.z) < fp.r + 6) col.copy(ICE).lerp(new THREE.Color("#ffffff"), n1 * 0.3); });
         POIS.forEach(function (p) { if (p.level !== undefined && p.kind !== "beach" && p.kind !== "icelake" && Math.hypot(x - p.x, z - p.z) < p.r * 0.8) col.lerp(p.kind === "city" || p.kind === "factory" || p.kind === "port" || p.kind === "dam" ? new THREE.Color("#8a8679") : DIRT, 0.55); });
-        if (sl > 0.45 || h > 14) { c2.copy(ROCK).lerp(ROCK2, n1); col.lerp(c2, Math.min(1, Math.max(smoothstep(0.45, 0.8, sl), smoothstep(14, 18, h)))); }
+        if (sl > 0.45 || h > 14) { c2.copy(ROCK).lerp(ROCK2, DES ? (Math.floor(h / 2.2) % 2) * 0.8 + n1 * 0.2 : n1); col.lerp(c2, Math.min(1, Math.max(smoothstep(0.45, 0.8, sl), DES ? 0 : smoothstep(14, 18, h)))); }
       }
       cols[v * 3] = col.r; cols[v * 3 + 1] = col.g; cols[v * 3 + 2] = col.b;
     }
@@ -494,7 +597,7 @@ window.KP = window.KP || {};
     var terrain = new THREE.Mesh(tg, new THREE.MeshLambertMaterial({ vertexColors: true, map: gt }));
     terrain.receiveShadow = true; scene.add(terrain);
 
-    var water = new THREE.Mesh(new THREE.PlaneGeometry(1600, 1600, 1, 1), new THREE.MeshPhongMaterial({ color: WIN ? "#2a5f78" : "#1d7f96", specular: "#bfefff", shininess: 90, transparent: true, opacity: 0.86, map: TX.rock }));
+    var water = new THREE.Mesh(new THREE.PlaneGeometry(1600, 1600, 1, 1), new THREE.MeshPhongMaterial({ color: WIN ? "#2a5f78" : DES ? "#2a8a9a" : "#1d7f96", specular: "#bfefff", shininess: 90, transparent: true, opacity: 0.86, map: TX.rock }));
     water.material.map.repeat.set(160, 160);
     water.rotation.x = -Math.PI / 2; water.position.y = -0.25; scene.add(water);
 
@@ -513,7 +616,8 @@ window.KP = window.KP || {};
       if (POIS.some(function (p) { return p.kind !== "forest" && p.kind !== "beach" && Math.hypot(p.x - x2, p.z - z2) < p.r * 0.75; })) continue;
       if (WIN && h2 < 0.5) continue;
       if (!free(x2, z2, 2.2)) continue;
-      var type = WIN ? "snowpine" : h2 < 2.4 && Math.hypot(x2, z2) > 118 ? "palm" : (h2 > 10 ? "pine" : (inForest && rnd() < 0.45 ? "pine" : "broad"));
+      if (DES && !POIS.some(function (p) { return p.kind === "oasis" && Math.hypot(p.x - x2, p.z - z2) < p.r + 14; }) && rnd() < 0.55) continue;
+      var type = DES ? (POIS.some(function (p) { return p.kind === "oasis" && Math.hypot(p.x - x2, p.z - z2) < p.r + 14; }) ? "palm" : "cactus") : WIN ? "snowpine" : h2 < 2.4 && Math.hypot(x2, z2) > 118 ? "palm" : (h2 > 10 ? "pine" : (inForest && rnd() < 0.45 ? "pine" : "broad"));
       var tr = { x: x2, z: z2, r: 0.5, top: h2 + 7, y: h2, hp: 60, wood: 15, kind: "tree", type: type, s: 0.85 + rnd() * 0.45, rot: rnd() * 6.28 };
       addCol(tr); trees.push(tr); circles.push(tr);
     }
@@ -549,6 +653,10 @@ window.KP = window.KP || {};
         m.add(new THREE.CylinderGeometry(0.18, 0.32, 3.2, 6), 0, 1.6, 0, 0, 0, 0, 1, 1, 1, "#5e4632");
         m.add(new THREE.CylinderGeometry(0.08, 0.12, 1.6, 5), 0.5, 2.9, 0, 0, 0, -0.7, 1, 1, 1, "#5e4632");
         [[0, 4.3, 0, 1.9], [1.1, 3.8, 0.4, 1.4], [-0.9, 3.9, -0.5, 1.5], [0.2, 5.2, -0.3, 1.3]].forEach(function (b, i) { m.add(new THREE.IcosahedronGeometry(1, 0), b[0], b[1], b[2], i, i * 2, 0, b[3], b[3] * 0.85, b[3], ["#3f6e2e", "#4d7d34", "#466f2c", "#55853a"][i]); });
+      } else if (type === "cactus") {   // кактус: ствол и два «рукава»
+        m.add(new THREE.CylinderGeometry(0.28, 0.32, 3.4, 8), 0, 1.7, 0, 0, 0, 0, 1, 1, 1, "#4f7a3a");
+        m.add(new THREE.CylinderGeometry(0.18, 0.2, 1.2, 7), 0.55, 1.6, 0, 0, 0, Math.PI / 2, 1, 1, 1, "#4f7a3a"); m.add(new THREE.CylinderGeometry(0.18, 0.18, 1.3, 7), 1.1, 2.2, 0, 0, 0, 0, 1, 1, 1, "#557f3e");
+        m.add(new THREE.CylinderGeometry(0.16, 0.18, 0.9, 7), -0.45, 2.2, 0, 0, 0, Math.PI / 2, 1, 1, 1, "#4f7a3a"); m.add(new THREE.CylinderGeometry(0.16, 0.16, 1, 7), -0.85, 2.7, 0, 0, 0, 0, 1, 1, 1, "#557f3e");
       } else if (type === "pine" || type === "snowpine") {
         m.add(new THREE.CylinderGeometry(0.15, 0.28, 2.2, 6), 0, 1.1, 0, 0, 0, 0, 1, 1, 1, "#5a4330");
         [[2.1, 2.4, 2.6], [3.6, 1.9, 2.2], [4.9, 1.4, 1.9], [6.0, 0.9, 1.6]].forEach(function (c, i) {
@@ -563,7 +671,7 @@ window.KP = window.KP || {};
       return m.build();
     }
     var dummy = new THREE.Object3D(), treeMeshes = {}, barkMat = new THREE.MeshLambertMaterial({ vertexColors: true, map: TX.bark });
-    ["broad", "pine", "palm", "snowpine"].forEach(function (type) {
+    ["broad", "pine", "palm", "snowpine", "cactus"].forEach(function (type) {
       var list = trees.filter(function (tr) { return tr.type === type; });
       if (!list.length) return;   // пустой InstancedMesh без цветов ломает общий шейдер
       var im = new THREE.InstancedMesh(treeGeo(type), barkMat, Math.max(1, list.length));
@@ -603,11 +711,11 @@ window.KP = window.KP || {};
     // кусты (без коллизий) и трава
     var bushG = (function () { var m = new Merger(1); [[0, 0.5, 0, 0.8], [0.6, 0.4, 0.2, 0.6], [-0.5, 0.45, -0.2, 0.65]].forEach(function (b, i) { m.add(new THREE.IcosahedronGeometry(1, 0), b[0], b[1], b[2], i, i, 0, b[3], b[3] * 0.8, b[3], ["#3e6a2c", "#4a7832", "#567f38"][i]); }); return m.build(); })();
     var bushes = [], grass = [];
-    for (var bb = 0; bb < 3000 && bushes.length < (WIN ? 120 : hi ? 420 : 220); bb++) { var bx = (rnd() * 2 - 1) * 170, bz = (rnd() * 2 - 1) * 170; if (height(bx, bz) > 1.2 && slope(bx, bz) < 0.45 && free(bx, bz, 1.2)) bushes.push([bx, height(bx, bz), bz, 0.45 + rnd() * 0.6]); }
+    for (var bb = 0; bb < 3000 && bushes.length < (WIN ? 120 : DES ? 160 : hi ? 420 : 220); bb++) { var bx = (rnd() * 2 - 1) * 170, bz = (rnd() * 2 - 1) * 170; if (height(bx, bz) > 1.2 && slope(bx, bz) < 0.45 && free(bx, bz, 1.2)) bushes.push([bx, height(bx, bz), bz, 0.45 + rnd() * 0.6]); }
     var bushM = new THREE.InstancedMesh(bushG, new THREE.MeshLambertMaterial({ vertexColors: true, map: TX.bark }), Math.max(1, bushes.length));
     bushes.forEach(function (b, k) { dummy.position.set(b[0], b[1] - 0.1, b[2]); dummy.rotation.set(0, k, 0); dummy.scale.set(b[3], b[3], b[3]); dummy.updateMatrix(); bushM.setMatrixAt(k, dummy.matrix); });
     scene.add(bushM);
-    if (hi && !WIN) {
+    if (hi && !WIN && !DES) {
       var gg = new Merger(1);
       for (var bl = 0; bl < 5; bl++) { var ga = bl / 5 * 3.14; gg.add(new THREE.PlaneGeometry(0.07, 0.45), Math.cos(ga) * 0.12, 0.3, Math.sin(ga) * 0.12, 0.25 * (bl % 2 ? 1 : -1), ga, 0, 1, 1, 1, bl % 2 ? "#5d8a3a" : "#6f9a44"); }
       for (var gr = 0; gr < 9000 && grass.length < 3200; gr++) { var gx2 = (rnd() * 2 - 1) * 165, gz2 = (rnd() * 2 - 1) * 165, gh = height(gx2, gz2); if (gh > 1.4 && gh < 12 && slope(gx2, gz2) < 0.35 && vnoise(gx2 * 0.05, gz2 * 0.05) > 0.35) grass.push([gx2, gh, gz2]); }

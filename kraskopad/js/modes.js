@@ -36,6 +36,8 @@ window.KP = window.KP || {};
 
   /* подготовка после создания бойцов */
   KP.modeSetup = function (M) {
+    if (M.rules === "pve") { G.modeState = { rules: "pve", t: 0 }; KP.pveSetup(M); return; }
+    if (M.rules === "chal") { G.modeState = { rules: "chal", t: 0 }; KP.chalSetup(M); return; }
     var S = G.modeState = { rules: M.rules, t: 0, score: [0, 0], teamA: 0, teamB: 1 };
     G.plane.t = 1;
     if (M.rules === "lr") { S.round = 1; S.pts = {}; G.chars.forEach(function (c) { S.pts[c.id] = 0; }); newRound(true); return; }
@@ -74,13 +76,15 @@ window.KP = window.KP || {};
     var flag = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.8, 0.04), new THREE.MeshLambertMaterial({ color: "#ffffff", emissive: "#333333" })); flag.position.set(0.72, 4.5, 0); g.add(flag);
     g.position.set(pt.x, y, pt.z); g.userData = { ring: ring, flag: flag }; return g;
   }
-  KP.modeClear = function () { var S = G.modeState; if (S && S.points) S.points.forEach(function (pt) { if (pt.mesh) G.scene.remove(pt.mesh); }); G.modeState = null; };
+  KP.modeClear = function () { if (KP.chalClear) KP.chalClear(); if (G.pve) { (G.pve.extra || []).forEach(function (c) { var i = KP.chests.indexOf(c); if (i >= 0) KP.chests.splice(i, 1); if (c.mesh && c.mesh.parent) c.mesh.parent.remove(c.mesh); }); KP.pveClear(); } var S = G.modeState; if (S && S.points) S.points.forEach(function (pt) { if (pt.mesh) G.scene.remove(pt.mesh); }); G.modeState = null; };
   function teamCol(t) { return t < 0 ? "#ffffff" : t === G.player.team ? "#2fd6ff" : "#ff4f6a"; }
 
   /* шаг режима; возвращает true, когда матч закончен (и выставляет G.win, место игрока) */
   KP.modeStep = function (dt) {
     var S = G.modeState; if (!S) return false;
     S.t += dt;
+    if (S.rules === "pve") return KP.pveStep(dt);
+    if (S.rules === "chal") return KP.chalStep(dt);
     var p = G.player;
     if (S.rules === "lr") return stepLR(dt);
     // возрождение
@@ -131,6 +135,8 @@ window.KP = window.KP || {};
   /* куда идти боту без цели: точки захвата / к центру арены */
   KP.objGoal = function (ch) {
     var S = G.modeState; if (!S || S.rules === "lr") return null;
+    if (S.rules === "chal") return ch.home ? { x: ch.home.x + (rnd() - 0.5) * 10, z: ch.home.z + (rnd() - 0.5) * 10 } : null;   // мишени держатся у своего места
+    if (S.rules === "pve") { var b = G.pve.base, a = ch.id * 1.7 + G.time * 0.05; return { x: b.x + Math.cos(a) * (6 + (ch.id % 3) * 4), z: b.z + Math.sin(a) * (6 + (ch.id % 3) * 4) }; }
     if (S.rules === "cap") {
       var best = null, bd = 1e9;
       S.points.forEach(function (pt) { var want = pt.own !== ch.team || Math.abs(pt.prog) < 1; var d = Math.hypot(pt.x - ch.x, pt.z - ch.z) + (want ? 0 : 60) + (ch.id % 3) * 8; if (d < bd) { bd = d; best = pt; } });
@@ -143,6 +149,8 @@ window.KP = window.KP || {};
   };
   KP.modeHud = function () {
     var S = G.modeState; if (!S) return null;
+    if (S.rules === "pve") return KP.pveHud();
+    if (S.rules === "chal") return KP.chalHud();
     var p = G.player, left = Math.max(0, TIME - S.t), mm = Math.floor(left / 60) + ":" + ("0" + Math.floor(left % 60)).slice(-2);
     if (S.rules === "lr") return KP.t("lrHud", S.round, LR_ROUNDS, S.pts[p.id]);
     var s = KP.t("teamUs") + " " + S.score[p.team] + " : " + S.score[1 - p.team] + " " + KP.t("teamThem") + " · " + mm;
@@ -150,7 +158,8 @@ window.KP = window.KP || {};
     if (!p.alive) s += " · " + KP.t("respawnIn", Math.max(0, Math.ceil(RESPAWN - p.outT)));
     return s;
   };
-  KP.modeRender = function () {
+  KP.modeRender = function (dt) {
+    if (G.pve) KP.pveRender(dt); if (G.chalState) KP.chalRender();
     var S = G.modeState; if (!S || !S.points) return;
     S.points.forEach(function (pt) {
       if (!pt.mesh) return; var u = pt.mesh.userData, c = teamCol(pt.own);
@@ -160,6 +169,7 @@ window.KP = window.KP || {};
   };
   KP.modeMini = function (ctx, X, k) {
     var S = G.modeState; if (!S) return;
+    if (G.pve) KP.pveMini(ctx, X); if (G.chalState) KP.chalMini(ctx, X);
     if (S.points) S.points.forEach(function (pt) { ctx.fillStyle = teamCol(pt.own); ctx.beginPath(); ctx.arc(X(pt.x), X(pt.z), 4, 0, 6.3); ctx.fill(); ctx.fillStyle = "#000"; ctx.font = "bold 7px sans-serif"; ctx.textAlign = "center"; ctx.fillText(pt.name, X(pt.x), X(pt.z) + 2.5); });
   };
 })(window.KP);

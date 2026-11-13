@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#0b0830">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<script src="gp-adapter.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Посадка на планету</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:none}
+html,body{margin:0;height:100%;background:#05031a;overflow:hidden;font-family:"Trebuchet MS","Segoe UI",Arial,sans-serif;color:#fff}
+#app{position:absolute;left:0;top:0;width:375px;height:812px;transform-origin:0 0;overflow:hidden;background:#0b0830}
+canvas{position:absolute;left:0;top:0;width:375px;height:812px}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;padding:22px 16px;background:radial-gradient(ellipse at 50% 0,#3b2a8c 0,#150f4d 55%,#07041f 100%);overflow:hidden}
+.screen.on{display:flex}
+.stars{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(2px 2px at 20px 30px,#fff,transparent),radial-gradient(1.5px 1.5px at 90px 80px,#ffe9a8,transparent),radial-gradient(2px 2px at 160px 20px,#fff,transparent),radial-gradient(1.5px 1.5px at 250px 60px,#bfe6ff,transparent),radial-gradient(2px 2px at 330px 40px,#fff,transparent),radial-gradient(1.5px 1.5px at 60px 140px,#fff,transparent),radial-gradient(2px 2px at 300px 120px,#ffd1f2,transparent);background-size:360px 160px;opacity:.8}
+h1{font-size:34px;margin:6px 0 0;text-align:center;line-height:1.05;color:#ffd84a;text-shadow:0 4px 0 #b34a00,0 8px 14px rgba(0,0,0,.5)}
+h2{font-size:26px;margin:4px 0 10px;text-align:center;color:#ffd84a;text-shadow:0 3px 0 #b34a00}
+.btn{display:block;border:0;border-radius:22px;padding:15px 18px;font:700 20px "Trebuchet MS",Arial,sans-serif;color:#fff;background:linear-gradient(#41d36b,#1fa04a);box-shadow:0 5px 0 #11662f,0 8px 14px rgba(0,0,0,.45);margin:8px 0;min-width:220px;text-align:center;cursor:pointer;position:relative;z-index:2}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #11662f}
+.btn.blue{background:linear-gradient(#4fb6ff,#2276d6);box-shadow:0 5px 0 #124b8f,0 8px 14px rgba(0,0,0,.45)}
+.btn.org{background:linear-gradient(#ffb43a,#f07a12);box-shadow:0 5px 0 #a24a05,0 8px 14px rgba(0,0,0,.45)}
+.btn.small{font-size:16px;padding:10px 14px;min-width:0}
+.sub{font-size:15px;color:#cfd6ff;text-align:center;margin:2px 0 8px;line-height:1.25;z-index:2}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;z-index:2}
+.card{border-radius:20px;padding:10px 8px;text-align:center;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.25);position:relative;cursor:pointer}
+.card.lock{opacity:.5;cursor:default}
+.card .pl{width:70px;height:70px;border-radius:50%;margin:2px auto 6px;box-shadow:inset -10px -10px 18px rgba(0,0,0,.35),0 0 14px rgba(255,255,255,.2)}
+.card b{display:block;font-size:18px}.card i{font-style:normal;font-size:12px;color:#cfd6ff;display:block}
+#mapgrid{gap:8px}#mapgrid .card{padding:6px 6px}#mapgrid .pl{width:44px;height:44px;margin:0 auto 3px}#mapgrid .card b{font-size:15px}#mapgrid .card i{font-size:11px;min-height:28px;line-height:14px}
+.lvgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:100%;margin-top:10px;z-index:2}
+.lv{border-radius:50%;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font:700 28px Arial;background:linear-gradient(#5b8cff,#2c47b8);box-shadow:0 5px 0 #1a2a78;cursor:pointer}
+.lv small{font-size:14px;color:#ffd84a;letter-spacing:1px}
+.lv.lock{background:#3a3a63;box-shadow:0 5px 0 #25254a;opacity:.55;cursor:default}
+.panel{background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.3);border-radius:20px;padding:14px;width:100%;z-index:2;margin:6px 0}
+.q{font-size:20px;font-weight:700;line-height:1.25;margin-bottom:6px}
+.ans{display:block;width:100%;text-align:left;margin:8px 0;padding:13px 14px;font-size:17px;border-radius:16px;background:#fff;color:#1c1c4a;font-weight:700;border:0;box-shadow:0 4px 0 #9aa;cursor:pointer;font-family:inherit}
+.ans.ok{background:#7be08f;box-shadow:0 4px 0 #2b8a41}.ans.bad{background:#ff9a9a;box-shadow:0 4px 0 #b34}
+.hint{font-size:16px;line-height:1.35;color:#fff}
+#hud-pause{position:absolute;right:8px;top:8px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.2);color:#fff;font-size:20px;z-index:5;display:none}
+#ctl{position:absolute;left:0;right:0;bottom:0;height:150px;display:none;z-index:4;background:linear-gradient(transparent,rgba(5,3,26,.85) 40%)}
+#thrust{position:absolute;left:14px;bottom:16px;width:128px;height:128px;border-radius:50%;background:radial-gradient(circle at 40% 30%,#ffb347,#ff5a1f 70%);border:4px solid #fff3;box-shadow:0 6px 0 #9c2a05,0 0 18px #ff7a2a88;font:700 20px Arial;display:flex;align-items:center;justify-content:center;flex-direction:column;color:#fff}
+#thrust.d{transform:translateY(4px) scale(.97);box-shadow:0 2px 0 #9c2a05,0 0 28px #ffcc44}
+#tilt{position:absolute;right:14px;bottom:16px;width:196px;height:104px;border-radius:52px;background:linear-gradient(#5aa7ff,#2a55c9);border:4px solid #fff3;box-shadow:0 6px 0 #17307f;display:flex}
+#tilt .h{flex:1;display:flex;align-items:center;justify-content:center;font-size:44px;border-radius:52px;transition:background .05s}
+#tilt .h.d{background:rgba(255,255,255,.35)}
+#chute{position:absolute;left:14px;bottom:160px;margin:0;z-index:6;display:none}
+#toast{position:absolute;left:16px;right:16px;top:150px;text-align:center;z-index:7;font-size:20px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);border-radius:16px;padding:10px;display:none}
+#pause{background:rgba(5,3,26,.85);z-index:9}
+.cov{background-color:#150f4d;background-repeat:no-repeat}.cov h1{margin-top:2px}.cov .sub{display:none}.cov #m-total{display:block;margin-top:0;font-size:13px}.cov #b-play{margin-top:auto;margin-bottom:4px;font-size:24px;min-width:260px}.big{font-size:56px;letter-spacing:6px;color:#ffd84a;text-shadow:0 3px 0 #b34a00;margin:6px 0}
+.ship{width:72px;height:72px;flex:none}
+.row{display:flex;gap:10px;align-items:center;width:100%;z-index:2}
+:root{--pm-paper:#1c1850;--pm-ink:#fff;--pm-red:#ff8a1f;--pm-redink:#1a1030;--pm-gold:#ffd84a;--pm-muted:#c6c2f0;--pm-line:#5b55b0;--pm-focus:#7fd0ff;--pm-scrim:rgba(5,3,26,.78);--pm-z:60}
+body.playing .pm-corner{display:none!important}
+.pm-corner{border-radius:18px!important;font-weight:800}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="cv" width="750" height="1624"></canvas>
+  <div id="toast"></div>
+  <button id="hud-pause" data-ia="ui.pause" aria-label="Пауза">❚❚</button>
+  <button id="chute" class="btn org small"><span class="ic">🪂</span> <span data-i="ui.chute">Парашют</span></button>
+  <div id="ctl">
+    <div id="thrust"><span style="font-size:34px">🔥</span><span data-i="ui.thrust">ТЯГА</span></div>
+    <div id="tilt"><div class="h" id="tl">◀</div><div class="h" id="tr">▶</div></div>
+  </div>
+
+  <div class="screen on" id="s-menu"><div class="stars"></div>
+    <div style="height:30px"></div>
+    <svg width="150" height="150" viewBox="-40 -50 80 100" id="menuShip"></svg>
+    <h1 data-h="menu.title">ПОСАДКА<br>НА ПЛАНЕТУ</h1>
+    <div class="sub" style="margin-top:12px" data-h="menu.sub">Посади модуль мягко на площадку.<br>У каждой планеты свой вес и свой воздух!</div>
+    <button class="btn" id="b-play" data-i="menu.play">▶ Играть</button>
+    <div class="row" style="justify-content:center;gap:12px"><button class="btn blue small" id="b-ships" data-i="menu.ships">🚀 Корабли</button><button class="btn blue small" id="b-snd">🔊 Звук: вкл</button><button class="btn blue small" id="b-lang" style="display:none">EN</button></div>
+    <div class="sub" id="m-total"></div>
+  </div>
+
+  <div class="screen" id="s-map"><div class="stars"></div>
+    <h2 data-i="map.title">Куда летим?</h2>
+    <div class="grid" id="mapgrid"></div>
+    <button class="btn blue small" style="margin-top:auto" data-go="menu" data-i="nav.menu">← В меню</button>
+  </div>
+
+  <div class="screen" id="s-lv"><div class="stars"></div>
+    <h2 id="lv-title"></h2>
+    <div class="sub" id="lv-sub"></div>
+    <div class="lvgrid" id="lvgrid"></div>
+    <button class="btn blue small" style="margin-top:auto" data-go="map" data-i="nav.planets">← К планетам</button>
+  </div>
+
+  <div class="screen" id="s-brief"><div class="stars"></div>
+    <h2 data-i="brief.title">Брифинг</h2>
+    <div class="sub" id="br-sub"></div>
+    <div class="panel"><div class="q" id="br-q"></div><div id="br-ans"></div></div>
+    <div class="panel hint" id="br-hint" style="display:none"></div>
+    <button class="btn" id="b-go" style="display:none" data-i="brief.go">🚀 К посадке!</button>
+    <button class="btn org small" id="b-reward" style="display:none" data-i="brief.reward">📺 Ролик: +25 % топлива</button>
+    <button class="btn blue small" id="b-skip" style="margin-top:auto" data-i="brief.skip">Пропустить вопрос</button>
+  </div>
+
+  <div class="screen" id="s-res"><div class="stars"></div>
+    <h2 id="r-title"></h2>
+    <div class="big" id="r-stars"></div>
+    <div class="panel hint" id="r-text"></div>
+    <button class="btn" id="r-next">Дальше ▶</button>
+    <button class="btn org" id="r-retry" data-i="res.retry">↻ Ещё раз</button>
+    <button class="btn" id="r-reward" style="display:none" data-i="res.rewardRetry">📺 Ещё раз с +25 % топлива</button>
+    <button class="btn blue small" data-go="lv" data-i="res.toLv">☰ К площадкам</button>
+  </div>
+
+  <div class="screen" id="s-ships"><div class="stars"></div>
+    <h2 data-i="ships.title">Корабли</h2>
+    <div class="sub" id="sh-sub"></div>
+    <div class="grid" id="shgrid"></div>
+    <button class="btn blue small" style="margin-top:auto" data-go="menu" data-i="nav.menu">← В меню</button>
+  </div>
+
+  <div class="screen" id="pause"><h2 data-i="ui.pause">Пауза</h2>
+    <button class="btn" id="p-res" data-i="pause.resume">▶ Продолжить</button>
+    <button class="btn blue small" id="p-quit" data-i="res.toLv">☰ К площадкам</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ===== Платформа: заглушка Яндекс Игр (без SDK всё работает как есть) ===== */
+var PF = (function () {
+  var ys = null, ok = false, adBusy = false, tabHidden = false, apiPaused = false, lastAdAt = Date.now(), gpOn = false, wantGp = false, readyDone = false, wantReady = false;
+  var AD_GAP_MS = 300000;   // полноэкранная реклама не чаще раза в 5 минут
+  var self = { onPause: function () {}, onLang: function () {}, onSdk: function () {} };
+  var player = null, cloud = {}, cloudLoaded = false, pendingSave = null, saveTm = 0;
+  function initPlayer() {
+    try { if (!ys.getPlayer) return Promise.resolve(); } catch (e) { return Promise.resolve(); }
+    return ys.getPlayer({ scopes: false }).then(function (p) { player = p; return p.getData(['premium', 'save']); })
+      .then(function (d) { cloud = (d && typeof d === 'object') ? d : {}; cloudLoaded = true; }).catch(function () { player = null; });
+  }
+  /* прогресс в облако: пишем только после того, как облако прочитано и слито (иначе новое устройство затёрло бы чужой прогресс) */
+  function flushSave(now) {
+    clearTimeout(saveTm); saveTm = 0;
+    if (!player || !cloudLoaded || pendingSave == null) return;
+    cloud.save = pendingSave; pendingSave = null;
+    try { var pr = player.setData(cloud, !!now); if (pr && pr.catch) pr.catch(function () {}); } catch (e) {}
+  }
+  self.pushSave = function (raw) { pendingSave = raw; if (player && cloudLoaded && !saveTm) saveTm = setTimeout(function () { flushSave(false); }, 2500); };
+  self.flushSave = flushSave;
+  self.cloudGet = function (k) { return cloud[k] == null ? null : cloud[k]; };
+  /* запись в облако: Promise<true> только когда облако подтвердило запись (flush) */
+  self.cloudSave = function (k, v) {
+    if (!player) return Promise.resolve(false);
+    cloud[k] = v;
+    return Promise.resolve(player.setData(cloud, true)).then(function () { return true; }, function () { return false; });
+  };
+  self.lang = function () { try { return ys && ys.environment && ys.environment.i18n && ys.environment.i18n.lang || ''; } catch (e) { return ''; } };
+  self.get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  self.put = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
+  self.paused = function () { return adBusy || tabHidden || apiPaused; };
+  function applyGp() {
+    if (!ok || !readyDone) return;
+    var should = wantGp && !self.paused(); if (should === gpOn) return; gpOn = should;
+    try { var g = ys.features && ys.features.GameplayAPI; if (g) { if (should) g.start(); else g.stop(); } } catch (e) {}
+  }
+  function changed() { applyGp(); try { self.onPause(self.paused()); } catch (e) {} }
+  function tryReady() { if (readyDone || !wantReady || !ok) return; readyDone = true; try { var l = ys.features && ys.features.LoadingAPI; if (l) l.ready(); } catch (e) {} applyGp(); }
+  self.init = function () {
+    try {
+      if (!window.YaGames || !window.YaGames.init) return;
+      window.YaGames.init().then(function (s) {
+        ys = s; ok = true;
+        try { if (ys.on) { ys.on('game_api_pause', function () { apiPaused = true; changed(); }); ys.on('game_api_resume', function () { apiPaused = false; changed(); }); } } catch (e) {}
+        tryReady(); changed();
+        try { var L = self.lang(); if (L) self.onLang(L); } catch (e) {}
+        initPlayer().then(function () { try { self.onSdk(ys); } catch (e) {} });
+      }).catch(function () {});
+    } catch (e) {}
+  };
+  self.ready = function () { wantReady = true; tryReady(); };
+  self.gameplay = function (on) { wantGp = !!on; applyGp(); };
+  /* межстраничная: вызывать в естественной паузе (после итога уровня); по окончании вызывается done */
+  self.fullscreen = function (done) {
+    var fin = false;
+    if (window.Premium && Premium.active()) { done(); return; }
+    function end(shown) { if (fin) return; fin = true; adBusy = false; lastAdAt = Date.now(); changed(); if (shown === true && window.Premium) { try { Premium.noteFullscreen(); } catch (e) {} } done(); }
+    if (!ok || adBusy || Date.now() - lastAdAt < (window.Premium ? Premium.config.adGapMs : AD_GAP_MS) || !ys.adv || !ys.adv.showFullscreenAdv) { done(); return; }
+    adBusy = true; changed();
+    try { ys.adv.showFullscreenAdv({ callbacks: { onClose: function (w) { end(w !== false); }, onError: function () { end(false); }, onOffline: function () { end(false); } } }); } catch (e) { end(false); }
+  };
+  self.canReward = function () { return !!(ok && !adBusy && ys.adv && ys.adv.showRewardedVideo); };
+  /* ролик за награду: cb(true) только если игрок досмотрел */
+  self.reward = function (cb) {
+    if (!self.canReward()) { cb(false); return; }
+    var got = false, fin = false;
+    function end() { if (fin) return; fin = true; adBusy = false; lastAdAt = Date.now(); changed(); cb(got); }
+    adBusy = true; changed();
+    try { ys.adv.showRewardedVideo({ callbacks: { onRewarded: function () { got = true; }, onClose: end, onError: end } }); } catch (e) { end(); }
+  };
+  document.addEventListener('visibilitychange', function () { tabHidden = !!document.hidden; if (tabHidden) flushSave(true); changed(); });
+  window.addEventListener('pagehide', function () { flushSave(true); });
+  self.init();
+  return self;
+})();
+
+/* ===== Язык: RU — словарь RU ниже, EN — словарь EN (из en.json, вшивает tools\build.py) ===== */
+var RU = /*RU*/{
+ "b.moon": "Луна",
+ "b.moon.loc": "Луне",
+ "b.moon.chute": "Воздуха нет — парашют не работает!",
+ "b.moon.info": "g = 1,62 м/с² (в 6 раз слабее земной)",
+ "moon.q1": "Во сколько раз притяжение на Луне слабее земного?",
+ "moon.q1a1": "В 2 раза",
+ "moon.q1a2": "В 6 раз",
+ "moon.q1a3": "В 20 раз",
+ "moon.q1h": "На Луне g = 1,62 м/с² — примерно 1/6 земного. Модуль падает медленно, но воздуха нет: парашют не поможет, тормозить придётся только двигателем.",
+ "moon.q2": "Есть ли на Луне воздух?",
+ "moon.q2a1": "Есть, как на Земле",
+ "moon.q2a2": "Почти нет — там вакуум",
+ "moon.q2a3": "Только на тёмной стороне",
+ "moon.q2h": "Воздуха на Луне нет, поэтому парашют бесполезен, а небо всегда чёрное. Тормозим только двигателем!",
+ "b.mars": "Марс",
+ "b.mars.loc": "Марсе",
+ "b.mars.chute": "Воздух тонкий — парашют тормозит слабо.",
+ "b.mars.info": "g = 3,71 м/с² (38 % земной), воздух очень разрежен",
+ "mars.q1": "Почему на Марсе парашют помогает хуже, чем на Земле?",
+ "mars.q1a1": "Воздух очень разрежен",
+ "mars.q1a2": "Там нет притяжения",
+ "mars.q1a3": "Парашют сгорает",
+ "mars.q1h": "Давление на Марсе всего 0,6 % от земного. Парашют чуть помогает, но основную работу делает двигатель. g = 3,71 м/с².",
+ "mars.q2": "Какого цвета небо над Марсом днём?",
+ "mars.q2a1": "Ярко-синее",
+ "mars.q2a2": "Розово-оранжевое от пыли",
+ "mars.q2a3": "Зелёное",
+ "mars.q2h": "Небо розово-оранжевое от мелкой пыли. Лёгкий ветер сносит модуль — следи за стрелкой ветра.",
+ "b.venus": "Венера",
+ "b.venus.loc": "Венере",
+ "b.venus.chute": "Воздух густой — парашют сильно тормозит!",
+ "b.venus.info": "g = 8,87 м/с² (почти как на Земле), воздух в 92 раза плотнее",
+ "venus.q1": "Какое давление воздуха у поверхности Венеры?",
+ "venus.q1a1": "Такое же, как на Земле",
+ "venus.q1a2": "В 92 раза больше земного",
+ "venus.q1a3": "В 10 раз меньше земного",
+ "venus.q1h": "Воздух на Венере в 92 раза давит сильнее, чем на Земле — парашют тормозит отлично. Но g = 8,87 м/с², падать тяжело и ветер сильный.",
+ "venus.q2": "Почему на Венере жарче всего (около 460 °C)?",
+ "venus.q2a1": "Она ближе всех к Солнцу",
+ "venus.q2a2": "Парниковый эффект: много углекислого газа",
+ "venus.q2a3": "Там много вулканов-печей",
+ "venus.q2h": "Углекислый газ держит тепло, как стекло теплицы. Густой воздух плотно давит на парашют — раскрой его пораньше!",
+ "b.titan": "Титан",
+ "b.jupiter": "Юпитер",
+ "b.mercury": "Меркурий",
+ "b.earth": "Земля",
+ "b.europa": "Европа",
+ "b.ceres": "Церера",
+ "b.pluto": "Плутон",
+ "s.0": "Искра",
+ "s.1": "Крошка",
+ "s.2": "Вездеход-Х",
+ "s.3": "Звездолёт",
+ "lv.0": "Широкая площадка",
+ "lv.1": "Площадка поуже, есть кратер",
+ "lv.2": "Кратеры и ветер",
+ "lv.3": "Узкая площадка, порывы ветра",
+ "lv.4": "Ночь! Светит только прожектор",
+ "ui.title": "Посадка на планету",
+ "ui.pause": "Пауза",
+ "ui.chute": "Парашют",
+ "ui.thrust": "ТЯГА",
+ "menu.title": "ПОСАДКА<br>НА ПЛАНЕТУ",
+ "menu.sub": "Посади модуль мягко на площадку.<br>У каждой планеты свой вес и свой воздух!",
+ "menu.play": "▶ Играть",
+ "menu.ships": "🚀 Корабли",
+ "menu.sndOn": "🔊 Звук: вкл",
+ "menu.sndOff": "🔇 Звук: выкл",
+ "menu.total": "Звёзд собрано: {n}",
+ "map.title": "Куда летим?",
+ "nav.menu": "← В меню",
+ "nav.planets": "← К планетам",
+ "brief.title": "Брифинг",
+ "brief.go": "🚀 К посадке!",
+ "brief.reward": "📺 Ролик: +25 % топлива",
+ "brief.skip": "Пропустить вопрос",
+ "res.retry": "↻ Ещё раз",
+ "res.rewardRetry": "📺 Ещё раз с +25 % топлива",
+ "res.toLv": "☰ К площадкам",
+ "ships.title": "Корабли",
+ "pause.resume": "▶ Продолжить",
+ "map.lock": "🔒 пройди {n} площадки на {where}",
+ "map.soon": "скоро",
+ "map.soonToast": "Скоро! Эта планета появится в обновлении.",
+ "lv.lockToast": "🔒 Сначала посади модуль на площадку {n}.",
+ "ships.sub": "Звёзд: {n}. Больше звёзд — больше топлива в баке.",
+ "ships.tank": "бак {n} %",
+ "ships.sel": " · выбран",
+ "ships.need": "🔒 нужно {n} ★",
+ "brief.sub": "{body}, площадка {n} — {lv}. Ответь верно: подсказка и +10 % топлива!",
+ "brief.right": "✅ Верно! {hint}<br><b>⛽ +10 % топлива!</b>",
+ "brief.wrong": "❌ Не совсем. Правильный ответ: <b>{ans}</b>.<br>{hint}",
+ "toast.reward": "+25 % топлива!",
+ "toast.night": "Ночь! Ищи площадку по огонькам",
+ "crash.body": "Модуль задел землю корпусом.",
+ "crash.miss": "Посадка мимо площадки — ноги должны стоять на ней обе.",
+ "crash.vy": "Слишком быстро вниз: {v} при допустимых {max}. Включай тягу раньше{chute}",
+ "crash.chute1": " и раскрой парашют.",
+ "crash.chute0": ".",
+ "crash.vx": "Слишком быстро вбок: {v} при допустимых {max}. Погаси боковую скорость наклоном.",
+ "crash.ang": "Модуль наклонён на {a}° — допустимо не больше 12°.",
+ "res.win": "Мягкая посадка!",
+ "res.text": "Скорость при касании: <b>{vy}</b> (можно до {max}), наклон <b>{an}°</b>. Топлива осталось <b>{left} %</b>.<br>",
+ "res.s3": "🌟 Идеально!",
+ "res.s2": "Ещё ★: сохрани хотя бы 30 % топлива.",
+ "res.s1": "Ещё ★: сядь тише (до {v}) и ровнее (до 6°).",
+ "res.next": "Дальше ▶",
+ "res.toPlanets": "К планетам ▶",
+ "res.lose": "Авария!",
+ "hud.fuel": "ТОПЛИВО",
+ "hud.alt": "Высота {n}",
+ "hud.tilt": "наклон {n}°",
+ "hud.wind": "Ветер",
+ "mercury.q1": "Какая планета ближе всех к Солнцу?",
+ "mercury.q1a1": "Меркурий",
+ "mercury.q1a2": "Венера",
+ "mercury.q1a3": "Марс",
+ "mercury.q1h": "Меркурий — самая близкая к Солнцу планета. Год на нём длится всего 88 земных суток.",
+ "mercury.q2": "Почему на Меркурии парашют не сработает?",
+ "mercury.q2a1": "Воздуха почти нет",
+ "mercury.q2a2": "Слишком холодно",
+ "mercury.q2a3": "Парашют сгорит",
+ "mercury.q2h": "У Меркурия почти нет атмосферы, как у Луны. Нет воздуха — нет торможения. Всё делает двигатель.",
+ "mercury.q3": "Днём на Меркурии +430 °C, ночью −180 °C. Какой перепад температур?",
+ "mercury.q3a1": "250 °C",
+ "mercury.q3a2": "610 °C",
+ "mercury.q3a3": "430 °C",
+ "mercury.q3h": "430 − (−180) = 610 °C. Воздух не держит тепло, поэтому днём страшная жара, а ночью лютый холод. Двигатель тоже греется — следи за шкалой «Нагрев»!",
+ "lv.mercury.0": "Утро: широкая площадка",
+ "lv.mercury.1": "Кратеры у площадки, жарче",
+ "lv.mercury.2": "Полдень: двигатель греется",
+ "lv.mercury.3": "Узкая площадка и глубокие кратеры",
+ "lv.mercury.4": "Ночь на тёмной стороне",
+ "b.mercury.loc": "Меркурии",
+ "b.mercury.chute": "Воздуха нет — парашют не работает!",
+ "b.mercury.info": "g = 3,70 м/с² (38 % земной), воздуха нет, днём до +430 °C",
+ "titan.q1": "Из чего состоят озёра на Титане?",
+ "titan.q1a1": "Из воды",
+ "titan.q1a2": "Из жидкого метана и этана",
+ "titan.q1a3": "Из лавы",
+ "titan.q1h": "На Титане так холодно (−180 °C), что метан и этан жидкие, как вода у нас. Упадёшь в озеро — модуль не вернуть!",
+ "titan.q2": "Чем Титан особенный среди спутников?",
+ "titan.q2a1": "У него густая атмосфера",
+ "titan.q2a2": "Он горячий",
+ "titan.q2a3": "Он больше Солнца",
+ "titan.q2h": "Титан — спутник Сатурна и единственный спутник с плотной атмосферой: давление в 1,5 раза выше земного. Парашют работает отлично, а g всего 1,35 м/с².",
+ "titan.q3": "На Земле ты весишь 35 кг. Сколько «весил» бы на Титане (притяжение в 7 раз слабее)?",
+ "titan.q3a1": "5 кг",
+ "titan.q3a2": "35 кг",
+ "titan.q3a3": "245 кг",
+ "titan.q3h": "35 ÷ 7 = 5 кг. Слабая гравитация плюс густой воздух: на Титане человек мог бы летать, махая крыльями!",
+ "lv.titan.0": "Оранжевый туман, широкая площадка",
+ "lv.titan.1": "Метановое озеро рядом",
+ "lv.titan.2": "Ветер и два озера",
+ "lv.titan.3": "Узкий остров среди озёр",
+ "lv.titan.4": "Тёмная ночь, сильный ветер",
+ "b.titan.loc": "Титане",
+ "b.titan.chute": "Воздух густой — парашют отлично тормозит!",
+ "b.titan.info": "g = 1,35 м/с² (в 7 раз слабее земной), воздух гуще земного в 1,5 раза",
+ "earth.q1": "Какую часть поверхности Земли занимает вода?",
+ "earth.q1a1": "Около 70 %",
+ "earth.q1a2": "Около 10 %",
+ "earth.q1a3": "Почти всю, 99 %",
+ "earth.q1h": "Около 70 % — поэтому из космоса Земля голубая. Для спускаемых капсул вода — мягкая «площадка».",
+ "earth.q2": "Что помогает парашюту на Земле?",
+ "earth.q2a1": "Плотный воздух",
+ "earth.q2a2": "Слабая гравитация",
+ "earth.q2a3": "Отсутствие ветра",
+ "earth.q2h": "Земная атмосфера достаточно плотная, и парашют тормозит падение. Но ветер сносит модуль в сторону, а потоки воздуха подбрасывают его вверх и вниз.",
+ "earth.q3": "Скорость падения без воздуха ≈ g · t. Какая скорость через 4 секунды на Земле (g ≈ 10 м/с²)?",
+ "earth.q3a1": "40 м/с",
+ "earth.q3a2": "4 м/с",
+ "earth.q3a3": "14 м/с",
+ "earth.q3h": "10 · 4 = 40 м/с. На Луне (g ≈ 1,6) за те же 4 с было бы около 6,5 м/с. Поэтому на Земле тормозить нужно раньше!",
+ "lv.earth.0": "Ясный день, широкая площадка",
+ "lv.earth.1": "Боковой ветер",
+ "lv.earth.2": "Восходящие потоки",
+ "lv.earth.3": "Гроза: порывы со всех сторон",
+ "lv.earth.4": "Ночная посадка в бурю",
+ "b.earth.loc": "Земле",
+ "b.earth.chute": "Парашют хорошо тормозит, но ветер его сносит.",
+ "b.earth.info": "g = 9,81 м/с², воздух хорошо тормозит, но он порывистый",
+ "europa.q1": "Что, по мнению учёных, скрыто под льдом Европы?",
+ "europa.q1a1": "Океан жидкой воды",
+ "europa.q1a2": "Раскалённая лава",
+ "europa.q1a3": "Пустота",
+ "europa.q1h": "Под ледяной коркой Европы, вероятно, есть океан воды — больше, чем во всех океанах Земли. Гейзеры выбрасывают пар сквозь трещины.",
+ "europa.q2": "Вокруг какой планеты летает Европа?",
+ "europa.q2a1": "Вокруг Юпитера",
+ "europa.q2a2": "Вокруг Сатурна",
+ "europa.q2a3": "Вокруг Марса",
+ "europa.q2h": "Европа — спутник Юпитера. Огромный Юпитер «разминает» лёд своим притяжением, и под коркой тепло.",
+ "europa.q3": "Ты весишь на Земле 28 кг. Сколько весил бы на Европе, где притяжение в 7 раз слабее?",
+ "europa.q3a1": "4 кг",
+ "europa.q3a2": "28 кг",
+ "europa.q3a3": "196 кг",
+ "europa.q3h": "28 ÷ 7 = 4 кг. Слабое притяжение: прыжок получился бы в 7 раз выше. Но гейзеры подбрасывают модуль ещё выше!",
+ "lv.europa.0": "Ледяная равнина, широкая площадка",
+ "lv.europa.1": "Первый гейзер рядом",
+ "lv.europa.2": "Два гейзера и трещины",
+ "lv.europa.3": "Узкая площадка между гейзерами",
+ "lv.europa.4": "Ночь в свете Юпитера",
+ "b.europa.loc": "Европе",
+ "b.europa.chute": "Воздуха нет — парашют не работает!",
+ "b.europa.info": "g = 1,31 м/с² (в 7 раз слабее земной), воздуха нет, поверхность — лёд",
+ "ceres.q1": "Что такое Церера?",
+ "ceres.q1a1": "Карликовая планета в поясе астероидов",
+ "ceres.q1a2": "Спутник Юпитера",
+ "ceres.q1a3": "Комета",
+ "ceres.q1h": "Церера — самый большой объект пояса астероидов между Марсом и Юпитером, около 940 км в поперечнике.",
+ "ceres.q2": "Почему на Церере легко подпрыгнуть?",
+ "ceres.q2a1": "Слабое притяжение",
+ "ceres.q2a2": "Густой воздух",
+ "ceres.q2a3": "Сильный ветер",
+ "ceres.q2h": "Притяжение в 35 раз слабее земного. Модуль падает медленно, зато боковая скорость почти не гасится — гаси её наклоном заранее!",
+ "ceres.q3": "Ты весишь на Земле 35 кг. Сколько весил бы на Церере (притяжение в 35 раз слабее)?",
+ "ceres.q3a1": "1 кг",
+ "ceres.q3a2": "35 кг",
+ "ceres.q3a3": "70 кг",
+ "ceres.q3h": "35 ÷ 35 = 1 кг. Как пушинка! Но двигатель тут слабый: торопись разгонять модуль и гасить дрейф.",
+ "lv.ceres.0": "Лёгкий дрейф, широкая площадка",
+ "lv.ceres.1": "Скорость вбок побольше",
+ "lv.ceres.2": "Ямы и дрейф",
+ "lv.ceres.3": "Узкая площадка, сильный дрейф",
+ "lv.ceres.4": "Ночь на карлике",
+ "b.ceres.loc": "Церере",
+ "b.ceres.chute": "Воздуха нет — парашют не работает!",
+ "b.ceres.info": "g = 0,28 м/с² (в 35 раз слабее земной), воздуха нет",
+ "pluto.q1": "Почему на Плутоне так темно?",
+ "pluto.q1a1": "Он очень далеко от Солнца",
+ "pluto.q1a2": "У него чёрная атмосфера",
+ "pluto.q1a3": "Там всегда ночь",
+ "pluto.q1h": "Плутон в 40 раз дальше от Солнца, чем Земля: полдень там как земные сумерки. Прожектор — твой главный помощник.",
+ "pluto.q2": "Какая температура на Плутоне?",
+ "pluto.q2a1": "Около −230 °C",
+ "pluto.q2a2": "Около 0 °C",
+ "pluto.q2a3": "Около +100 °C",
+ "pluto.q2h": "Около −230 °C! На таком морозе двигатель просыпается не сразу — тяга нарастает постепенно. Включай его заранее.",
+ "pluto.q3": "Год на Плутоне — 248 земных лет. Сколько плутонских лет прошло за 496 земных?",
+ "pluto.q3a1": "2",
+ "pluto.q3a2": "4",
+ "pluto.q3a3": "248",
+ "pluto.q3h": "496 ÷ 248 = 2. Плутон так далеко, что его год длиннее всей истории многих стран!",
+ "lv.pluto.0": "Тьма: широкая площадка",
+ "lv.pluto.1": "Холодный двигатель просыпается дольше",
+ "lv.pluto.2": "Горы азотного льда",
+ "lv.pluto.3": "Узкая площадка в темноте",
+ "lv.pluto.4": "Самая тёмная посадка",
+ "b.pluto.loc": "Плутоне",
+ "b.pluto.chute": "Воздуха почти нет — парашют не поможет.",
+ "b.pluto.info": "g = 0,62 м/с² (в 16 раз слабее земной), воздух почти нет, мороз −230 °C",
+ "jupiter.q1": "Есть ли у Юпитера твёрдая поверхность?",
+ "jupiter.q1a1": "Нет, это газовый гигант",
+ "jupiter.q1a2": "Да, каменная",
+ "jupiter.q1a3": "Да, ледяная",
+ "jupiter.q1h": "Юпитер — газовый гигант: водород и гелий, давление растёт всё глубже. Сесть некуда, поэтому твоя задача — вылететь вверх, пока модуль не раздавило.",
+ "jupiter.q2": "Что такое Большое Красное Пятно?",
+ "jupiter.q2a1": "Гигантский ураган",
+ "jupiter.q2a2": "Вулкан",
+ "jupiter.q2a3": "Море лавы",
+ "jupiter.q2h": "Это ураган шире Земли, он бушует сотни лет. Ветер на Юпитере сносит модуль в стороны и швыряет вверх и вниз.",
+ "jupiter.q3": "g на Юпитере 24,8 м/с², на Земле 9,8 м/с². Во сколько раз больше (округли)?",
+ "jupiter.q3a1": "В 2,5 раза",
+ "jupiter.q3a2": "В 10 раз",
+ "jupiter.q3a3": "В 25 раз",
+ "jupiter.q3h": "24,8 ÷ 9,8 ≈ 2,5. Груз тяжелее в 2,5 раза: двигатель работает почти на пределе — тяга лишь немного больше притяжения.",
+ "lv.jupiter.0": "Вырвись из облаков: мягкий старт",
+ "lv.jupiter.1": "Падение быстрее",
+ "lv.jupiter.2": "Нисходящие потоки",
+ "lv.jupiter.3": "Глубже, и ветер сильнее",
+ "lv.jupiter.4": "Шторм у границы давления",
+ "b.jupiter.loc": "Юпитере",
+ "b.jupiter.chute": "Парашют здесь не нужен.",
+ "b.jupiter.info": "g = 24,8 м/с² (в 2,5 раза больше земной), твёрдой поверхности нет — только газ",
+ "toast.overheat": "Перегрев! Двигатель остывает…",
+ "toast.geyser": "Гейзер подбрасывает модуль вверх!",
+ "crash.lake": "Модуль упал в метановое озеро. Садись на площадку, а не на жидкость!",
+ "crash.crush": "Давление раздавило модуль: он провалился слишком глубоко. Включай тягу раньше и сразу лети вверх.",
+ "hud.heat": "Нагрев",
+ "hud.pwr": "Тяга",
+ "hud.press": "Давление {n} атм",
+ "hud.exit": "▲ ВЫХОД ВВЕРХ ▲",
+ "hud.crush": "ДАВЛЕНИЕ РАЗДАВИТ",
+ "brief.subEsc": "{body}, заход {n} — {lv}. Ответь верно: подсказка и +10 % топлива!",
+ "res.winEscT": "Ты вырвался!",
+ "res.winEsc": "Ты вылетел из атмосферы Юпитера! Топлива осталось <b>{left} %</b>.<br>",
+ "res.e2": "Ещё ★: вылети, сохранив больше половины топлива.",
+ "res.e1": "Ещё ★: вылети, сохранив хотя бы 30 % топлива.",
+ "toast.giftGot": "Подарок Премиума: +25 % топлива на три посадки!",
+ "toast.giftUse": "Подарок Премиума: +25 % топлива (ещё посадок: {n})"
+}/*END*/;
+var EN = /*EN*/{"b.moon": "Moon", "b.moon.loc": "the Moon", "b.moon.chute": "No air — the parachute won't work!", "b.moon.info": "g = 1.62 m/s² (6 times weaker than Earth)", "moon.q1": "How much weaker is gravity on the Moon?", "moon.q1a1": "2 times", "moon.q1a2": "6 times", "moon.q1a3": "20 times", "moon.q1h": "On the Moon, g = 1.62 m/s² — about 1/6 of Earth's gravity. Your lander falls slowly, but there's no air. A parachute won't help, so use your engine to slow down!", "moon.q2": "Is there air on the Moon?", "moon.q2a1": "Yes, like on Earth", "moon.q2a2": "Almost none — a vacuum", "moon.q2a3": "Only on the dark side", "moon.q2h": "There's no air on the Moon, so a parachute won't work, and the sky is always black. Use your engine to slow down!", "b.mars": "Mars", "b.mars.loc": "Mars", "b.mars.chute": "Thin air — the parachute barely slows you down.", "b.mars.info": "g = 3.71 m/s² (38% of Earth's), very thin air", "mars.q1": "Why does a parachute work poorly on Mars?", "mars.q1a1": "The air is very thin", "mars.q1a2": "There's no gravity", "mars.q1a3": "The parachute burns up", "mars.q1h": "Air pressure on Mars is only 0.6% of Earth's. A parachute helps a little, but your engine does most of the work. g = 3.71 m/s².", "mars.q2": "What color is the sky on Mars during the day?", "mars.q2a1": "Bright blue", "mars.q2a2": "Pink-orange from dust", "mars.q2a3": "Green", "mars.q2h": "Fine dust makes the sky look pink-orange. Even a light wind can push your lander sideways. Watch the wind arrow!", "b.venus": "Venus", "b.venus.loc": "Venus", "b.venus.chute": "Thick air — the parachute slows you down a lot!", "b.venus.info": "g = 8.87 m/s² (almost like Earth), air 92 times denser", "venus.q1": "How high is the air pressure on Venus?", "venus.q1a1": "Same as Earth", "venus.q1a2": "92 times Earth's", "venus.q1a3": "10 times lower", "venus.q1h": "Air pressure on Venus is 92 times higher than on Earth, so parachutes work great! But gravity is strong (g = 8.87 m/s²), and so is the wind.", "venus.q2": "Why is Venus so hot (about 460 °C)?", "venus.q2a1": "It's closest to the Sun", "venus.q2a2": "Greenhouse effect: lots of CO₂", "venus.q2a3": "Lots of hot volcanoes", "venus.q2h": "Carbon dioxide traps heat like glass in a greenhouse. The thick air pushes hard against your parachute. Open it early!", "b.titan": "Titan", "b.jupiter": "Jupiter", "b.mercury": "Mercury", "b.earth": "Earth", "b.europa": "Europa", "b.ceres": "Ceres", "b.pluto": "Pluto", "s.0": "Spark", "s.1": "Tiny", "s.2": "Rover-X", "s.3": "Starship", "lv.0": "Wide landing pad", "lv.1": "Narrower pad with a crater", "lv.2": "Craters and wind", "lv.3": "Narrow pad, wind gusts", "lv.4": "Night! Only the spotlight is on", "ui.title": "Planet Landing", "ui.pause": "Pause", "ui.chute": "Parachute", "ui.thrust": "THRUST", "menu.title": "PLANET<br>LANDING", "menu.sub": "Land your spacecraft gently on the landing pad.<br>Every planet has different gravity and air!", "menu.play": "▶ Play", "menu.ships": "🚀 Ships", "menu.sndOn": "🔊 Sound: On", "menu.sndOff": "🔇 Sound: Off", "menu.total": "Stars collected: {n}", "map.title": "Where to next?", "nav.menu": "← Menu", "nav.planets": "← Planets", "brief.title": "Briefing", "brief.go": "🚀 Let's Land!", "brief.reward": "📺 Watch ad: +25% fuel", "brief.skip": "Skip Question", "res.retry": "↻ Try Again", "res.rewardRetry": "📺 Retry with +25% fuel", "res.toLv": "☰ Landing Pads", "ships.title": "Ships", "pause.resume": "▶ Resume", "map.lock": "🔒 land on {n} pads on {where}", "map.soon": "coming soon", "ships.sub": "Stars: {n}. More stars mean more fuel in your tank.", "ships.tank": "tank {n}%", "ships.sel": " · selected", "ships.need": "🔒 need {n} ★", "brief.sub": "{body}, landing pad {n} — {lv}. Answer correctly for a hint and +10% fuel!", "brief.right": "✅ Correct! {hint}<br><b>⛽ +10% fuel!</b>", "brief.wrong": "❌ Not quite. The correct answer is <b>{ans}</b>.<br>{hint}", "toast.reward": "+25% fuel!", "toast.night": "It's night! Look for the landing pad lights", "crash.body": "The lander's body hit the ground.", "crash.miss": "You missed the landing pad! Both legs must land on it.", "crash.vy": "Too fast going down: {v}, but the limit is {max}. Use thrust sooner{chute}", "crash.chute1": " and open your parachute.", "crash.chute0": ".", "crash.vx": "Too fast sideways: {v}, but the limit is {max}. Tilt your lander to slow down sideways.", "crash.ang": "Your lander is tilted {a}°. The limit is 12°.", "res.win": "Soft Landing!", "res.text": "Landing speed: <b>{vy}</b> (limit {max}), tilt <b>{an}°</b>. Fuel left: <b>{left}%</b>.<br>", "res.s3": "🌟 Perfect!", "res.s2": "One more ★: save at least 30% fuel.", "res.s1": "One more ★: land slower (up to {v}) and straighter (up to 6°).", "res.next": "Next ▶", "res.toPlanets": "Planets ▶", "res.lose": "Crash!", "hud.fuel": "FUEL", "hud.alt": "Altitude {n}", "hud.tilt": "tilt {n}°", "hud.wind": "Wind", "map.soonToast": "Coming soon! This planet will arrive in an update.", "lv.lockToast": "🔒 Land on pad {n} first.", "toast.giftGot": "Premium gift: +25% fuel for three landings!", "toast.giftUse": "Premium gift: +25% fuel ({n} landings left)", "mercury.q1": "Which planet is closest to the Sun?", "mercury.q1a1": "Mercury", "mercury.q1a2": "Venus", "mercury.q1a3": "Mars", "mercury.q1h": "Mercury is the planet closest to the Sun. A year there lasts only 88 Earth days.", "mercury.q2": "Why won't a parachute work on Mercury?", "mercury.q2a1": "There's almost no air", "mercury.q2a2": "It's too cold", "mercury.q2a3": "The parachute would burn up", "mercury.q2h": "Mercury has almost no atmosphere, just like the Moon. No air means no braking. Your engine does all the work.", "mercury.q3": "On Mercury it's +430 °C by day and −180 °C at night. What is the temperature difference?", "mercury.q3a1": "250 °C", "mercury.q3a2": "610 °C", "mercury.q3a3": "430 °C", "mercury.q3h": "430 − (−180) = 610 °C. There's no air to hold the heat, so it's scorching by day and freezing at night. Your engine gets hot too, so watch the Heat bar!", "lv.mercury.0": "Morning: wide landing pad", "lv.mercury.1": "Craters near the pad, hotter", "lv.mercury.2": "Noon: the engine heats up", "lv.mercury.3": "Narrow pad and deep craters", "lv.mercury.4": "Night on the dark side", "b.mercury.loc": "Mercury", "b.mercury.chute": "No air — the parachute won't work!", "b.mercury.info": "g = 3.70 m/s² (38% of Earth's), no air, up to +430 °C by day", "titan.q1": "What are the lakes on Titan made of?", "titan.q1a1": "Water", "titan.q1a2": "Liquid methane and ethane", "titan.q1a3": "Lava", "titan.q1h": "Titan is so cold (−180 °C) that methane and ethane are liquid there, like water on Earth. Fall into a lake and you can't get your lander back!", "titan.q2": "What makes Titan special among moons?", "titan.q2a1": "It has a thick atmosphere", "titan.q2a2": "It's hot", "titan.q2a3": "It's bigger than the Sun", "titan.q2h": "Titan is a moon of Saturn, and the only moon with a thick atmosphere: its air pressure is 1.5 times Earth's. The parachute works great, and g is only 1.35 m/s².", "titan.q3": "On Earth you weigh 35 kg. How much would you \"weigh\" on Titan, where gravity is 7 times weaker?", "titan.q3a1": "5 kg", "titan.q3a2": "35 kg", "titan.q3a3": "245 kg", "titan.q3h": "35 ÷ 7 = 5 kg. Weak gravity plus thick air: on Titan a person could fly just by flapping wings!", "lv.titan.0": "Orange haze, wide landing pad", "lv.titan.1": "A methane lake nearby", "lv.titan.2": "Wind and two lakes", "lv.titan.3": "A narrow island among the lakes", "lv.titan.4": "Dark night, strong wind", "b.titan.loc": "Titan", "b.titan.chute": "Thick air — the parachute brakes great!", "b.titan.info": "g = 1.35 m/s² (7 times weaker than Earth), air 1.5 times thicker than Earth's", "earth.q1": "How much of Earth's surface is covered by water?", "earth.q1a1": "About 70%", "earth.q1a2": "About 10%", "earth.q1a3": "Almost all of it, 99%", "earth.q1h": "About 70%, which is why Earth looks blue from space. For landing capsules, water is a soft \"landing pad.\"", "earth.q2": "What helps a parachute work on Earth?", "earth.q2a1": "Thick air", "earth.q2a2": "Weak gravity", "earth.q2a3": "No wind", "earth.q2h": "Earth's atmosphere is thick enough for a parachute to slow your fall. But wind blows your lander sideways, and air currents push it up and down.", "earth.q3": "Falling speed without air ≈ g · t. What is the speed after 4 seconds on Earth (g ≈ 10 m/s²)?", "earth.q3a1": "40 m/s", "earth.q3a2": "4 m/s", "earth.q3a3": "14 m/s", "earth.q3h": "10 · 4 = 40 m/s. On the Moon (g ≈ 1.6), the same 4 s would give only about 6.5 m/s. So on Earth you have to brake sooner!", "lv.earth.0": "Clear day, wide landing pad", "lv.earth.1": "Crosswind", "lv.earth.2": "Rising air currents", "lv.earth.3": "Thunderstorm: gusts from all sides", "lv.earth.4": "Night landing in a storm", "b.earth.loc": "Earth", "b.earth.chute": "The parachute brakes well, but the wind blows you off course.", "b.earth.info": "g = 9.81 m/s², the air brakes well, but it's gusty", "europa.q1": "What do scientists think is hidden under Europa's ice?", "europa.q1a1": "An ocean of liquid water", "europa.q1a2": "Red-hot lava", "europa.q1a3": "Nothing, just empty space", "europa.q1h": "Under Europa's icy crust there is probably an ocean of water, bigger than all of Earth's oceans together. Geysers shoot steam out through cracks.", "europa.q2": "Which planet does Europa orbit?", "europa.q2a1": "Jupiter", "europa.q2a2": "Saturn", "europa.q2a3": "Mars", "europa.q2h": "Europa is a moon of Jupiter. Giant Jupiter's gravity squeezes and warms the ice, so it's warm under the crust.", "europa.q3": "You weigh 28 kg on Earth. How much would you weigh on Europa, where gravity is 7 times weaker?", "europa.q3a1": "4 kg", "europa.q3a2": "28 kg", "europa.q3a3": "196 kg", "europa.q3h": "28 ÷ 7 = 4 kg. With weak gravity, your jump would be 7 times higher. But geysers toss your lander even higher!", "lv.europa.0": "Icy plain, wide landing pad", "lv.europa.1": "The first geyser nearby", "lv.europa.2": "Two geysers and cracks", "lv.europa.3": "A narrow pad between geysers", "lv.europa.4": "Night in Jupiter's glow", "b.europa.loc": "Europa", "b.europa.chute": "No air — the parachute won't work!", "b.europa.info": "g = 1.31 m/s² (7 times weaker than Earth), no air, the surface is ice", "ceres.q1": "What is Ceres?", "ceres.q1a1": "A dwarf planet in the asteroid belt", "ceres.q1a2": "A moon of Jupiter", "ceres.q1a3": "A comet", "ceres.q1h": "Ceres is the largest object in the asteroid belt between Mars and Jupiter, about 940 km across.", "ceres.q2": "Why is it easy to jump high on Ceres?", "ceres.q2a1": "Weak gravity", "ceres.q2a2": "Thick air", "ceres.q2a3": "Strong wind", "ceres.q2h": "Gravity is 35 times weaker than on Earth. Your lander falls slowly, but sideways speed barely slows down, so tilt early to cancel it!", "ceres.q3": "You weigh 35 kg on Earth. How much would you weigh on Ceres, where gravity is 35 times weaker?", "ceres.q3a1": "1 kg", "ceres.q3a2": "35 kg", "ceres.q3a3": "70 kg", "ceres.q3h": "35 ÷ 35 = 1 kg. Light as a feather! But the engine is weak here, so hurry to speed up the lander and stop the drift.", "lv.ceres.0": "Light drift, wide landing pad", "lv.ceres.1": "More sideways speed", "lv.ceres.2": "Pits and drift", "lv.ceres.3": "Narrow pad, strong drift", "lv.ceres.4": "Night on the dwarf planet", "b.ceres.loc": "Ceres", "b.ceres.chute": "No air — the parachute won't work!", "b.ceres.info": "g = 0.28 m/s² (35 times weaker than Earth), no air", "pluto.q1": "Why is it so dark on Pluto?", "pluto.q1a1": "It's very far from the Sun", "pluto.q1a2": "It has a black atmosphere", "pluto.q1a3": "It's always night there", "pluto.q1h": "Pluto is 40 times farther from the Sun than Earth, so noon there looks like Earth's twilight. Your spotlight is your best helper.", "pluto.q2": "What is the temperature on Pluto?", "pluto.q2a1": "About −230 °C", "pluto.q2a2": "About 0 °C", "pluto.q2a3": "About +100 °C", "pluto.q2h": "About −230 °C! In such freezing cold the engine doesn't wake up right away, and thrust builds up slowly. Turn it on early.", "pluto.q3": "A year on Pluto is 248 Earth years. How many Pluto years pass in 496 Earth years?", "pluto.q3a1": "2", "pluto.q3a2": "4", "pluto.q3a3": "248", "pluto.q3h": "496 ÷ 248 = 2. Pluto is so far away that its year is longer than the whole history of many countries!", "lv.pluto.0": "Darkness: wide landing pad", "lv.pluto.1": "A cold engine takes longer to wake up", "lv.pluto.2": "Mountains of nitrogen ice", "lv.pluto.3": "Narrow pad in the dark", "lv.pluto.4": "The darkest landing", "b.pluto.loc": "Pluto", "b.pluto.chute": "Almost no air — the parachute won't help.", "b.pluto.info": "g = 0.62 m/s² (16 times weaker than Earth), almost no air, freezing −230 °C", "jupiter.q1": "Does Jupiter have a solid surface?", "jupiter.q1a1": "No, it's a gas giant", "jupiter.q1a2": "Yes, a rocky one", "jupiter.q1a3": "Yes, an icy one", "jupiter.q1h": "Jupiter is a gas giant made of hydrogen and helium, and the deeper you go, the higher the pressure. There's nowhere to land, so your job is to fly up before the lander gets crushed.", "jupiter.q2": "What is the Great Red Spot?", "jupiter.q2a1": "A giant hurricane", "jupiter.q2a2": "A volcano", "jupiter.q2a3": "A sea of lava", "jupiter.q2h": "It's a hurricane wider than Earth, and it has raged for hundreds of years. Wind on Jupiter pushes your lander sideways and tosses it up and down.", "jupiter.q3": "g on Jupiter is 24.8 m/s², on Earth it's 9.8 m/s². How many times bigger is it (round it)?", "jupiter.q3a1": "2.5 times", "jupiter.q3a2": "10 times", "jupiter.q3a3": "25 times", "jupiter.q3h": "24.8 ÷ 9.8 ≈ 2.5. Your cargo is 2.5 times heavier, so the engine works almost at its limit: its thrust is only a little bigger than gravity.", "lv.jupiter.0": "Escape the clouds: gentle start", "lv.jupiter.1": "Faster fall", "lv.jupiter.2": "Downdrafts", "lv.jupiter.3": "Deeper, and the wind is stronger", "lv.jupiter.4": "Storm at the pressure limit", "b.jupiter.loc": "Jupiter", "b.jupiter.chute": "You don't need a parachute here.", "b.jupiter.info": "g = 24.8 m/s² (2.5 times Earth's), no solid surface, only gas", "toast.overheat": "Overheated! The engine is cooling down…", "toast.geyser": "A geyser tosses the lander up!", "crash.lake": "The lander fell into a methane lake. Land on a pad, not on liquid!", "crash.crush": "The pressure crushed the lander: it sank too deep. Use thrust earlier and fly straight up.", "hud.heat": "Heat", "hud.pwr": "Thrust", "hud.press": "Pressure {n} atm", "hud.exit": "▲ EXIT UP ▲", "hud.crush": "PRESSURE WILL CRUSH", "brief.subEsc": "{body}, attempt {n} — {lv}. Answer correctly: get a hint and +10% fuel!", "res.winEscT": "You broke free!", "res.winEsc": "You flew out of Jupiter's atmosphere! Fuel left: <b>{left}%</b>.<br>", "res.e2": "One more ★: escape with more than half the fuel left.", "res.e1": "One more ★: escape with at least 30% fuel left."}/*END*/;
+var LANG = 'ru';
+function TR(key, p) {
+  var d = (LANG === 'en' && EN[key] != null) ? EN : RU, v = d[key] != null ? d[key] : (RU[key] != null ? RU[key] : key);
+  if (p) v = v.replace(/\{(\w+)\}/g, function (m, n) { return p[n] != null ? p[n] : m; });
+  return v;
+}
+function hasEN() { for (var k in EN) return true; return false; }
+function applyStatic() {
+  document.documentElement.lang = LANG;
+  document.title = TR('ui.title');
+  Array.prototype.forEach.call(document.querySelectorAll('[data-i]'), function (e) { e.textContent = TR(e.getAttribute('data-i')); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-h]'), function (e) { e.innerHTML = TR(e.getAttribute('data-h')); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-ia]'), function (e) { e.setAttribute('aria-label', TR(e.getAttribute('data-ia'))); });
+  var bl = document.getElementById('b-lang'); if (bl) { bl.style.display = hasEN() ? '' : 'none'; bl.textContent = LANG === 'en' ? 'RU' : 'EN'; }
+}
+function setLang(l, remember) {
+  LANG = (l === 'en' && hasEN()) ? 'en' : 'ru';
+  if (remember) { save.lang = LANG; save.langSet = 1; persist(); }
+  applyStatic();
+  if (window.Premium) { try { Premium.setLang(LANG); } catch (e) {} }
+  if (typeof cur !== 'undefined') { if (cur === 'menu') drawMenuShip(); else if (cur === 'map') buildMap(); else if (cur === 'lv') buildLv(); else if (cur === 'ships') buildShips(); else if (cur === 'res' || cur === 'brief') { /* открытый итог/брифинг не перерисовываем */ } }
+}
+
+/* ===== Картинки (WebP из art\ → game\img\). Нет файла или не загрузился — рисуем кодом ===== */
+var IMG_LIST = /*IMGN*/['ship_0','ship_1','ship_2','ship_3','pad','chute','flame','boom','beacon','flag','ic_fuel','ic_star','ic_lock','ic_wind','ic_quiz','ic_chute','cover','bg_moon','bg_mars','bg_venus','bg_jupiter']/*END*/;
+var IMGDATA = window.IMGDATA || {};
+function U(n) { return IMGDATA[n] || 'img/' + n + '.webp'; }
+var IM = {};
+IMG_LIST.forEach(function (n) { var i = new Image(); i.onload = function () { IM[n] = i; if (n === 'cover') coverReady(); if (n === 'ic_chute') document.querySelector('#chute .ic').innerHTML = '<img src=\"' + U('ic_chute') + '\" style=\"height:22px;vertical-align:middle;margin-right:2px\">'; }; i.src = U(n); });
+function img(n) { return IM[n] && IM[n].naturalWidth ? IM[n] : null; }
+function starsHTML(n) { var a = img('ic_star'), h = ''; for (var i = 0; i < 3; i++) h += a ? '<img src=\"' + U('ic_star') + '\" style=\"height:30px;margin:0 2px;' + (i < n ? '' : 'filter:grayscale(1) brightness(.5);') + '\">' : (i < n ? '★' : '☆'); return h; }
+function lockHTML() { return img('ic_lock') ? '<img src=\"' + U('ic_lock') + '\" style=\"height:40px\">' : '🔒'; }
+
+/* ===== Данные (тексты — ключи словаря RU/EN) ===== */
+var BODIES = [
+  { id: 'moon', name: 'b.moon', loc: 'b.moon.loc', g: 1.62, c: 0, T: 95, wind: 0, color: 'radial-gradient(circle at 35% 30%,#f2f2f2,#9a9a9a)', sky: ['#04030f', '#12103a'], ground: ['#b9b6c9', '#7d7a92', '#4b4960'], stars: true, chuteMsg: 'b.moon.chute', unlock: null,
+    info: 'b.moon.info',
+    qs: [
+      { q: 'moon.q1', a: ['moon.q1a1','moon.q1a2','moon.q1a3'], c: 1, hint: 'moon.q1h' },
+      { q: 'moon.q2', a: ['moon.q2a1','moon.q2a2','moon.q2a3'], c: 1, hint: 'moon.q2h' }
+    ] },
+  { id: 'mars', name: 'b.mars', loc: 'b.mars.loc', g: 3.71, c: 0.06, T: 150, wind: 70, color: 'radial-gradient(circle at 35% 30%,#ff9a5a,#b33c14)', sky: ['#7a3b2a', '#e8a070'], ground: ['#d4743c', '#a24a25', '#6b2e18'], stars: false, chuteMsg: 'b.mars.chute', unlock: { from: 'moon', need: 3 },
+    info: 'b.mars.info',
+    qs: [
+      { q: 'mars.q1', a: ['mars.q1a1','mars.q1a2','mars.q1a3'], c: 0, hint: 'mars.q1h' },
+      { q: 'mars.q2', a: ['mars.q2a1','mars.q2a2','mars.q2a3'], c: 1, hint: 'mars.q2h' }
+    ] },
+  { id: 'venus', name: 'b.venus', loc: 'b.venus.loc', g: 8.87, c: 0.35, T: 285, wind: 20, color: 'radial-gradient(circle at 35% 30%,#fff0a0,#d09a1a)', sky: ['#7d6a10', '#d9c24a'], ground: ['#a8741f', '#7a4d12', '#4a2d0a'], stars: false, chuteMsg: 'b.venus.chute', unlock: { from: 'mars', need: 3 },
+    info: 'b.venus.info',
+    qs: [
+      { q: 'venus.q1', a: ['venus.q1a1','venus.q1a2','venus.q1a3'], c: 1, hint: 'venus.q1h' },
+      { q: 'venus.q2', a: ['venus.q2a1','venus.q2a2','venus.q2a3'], c: 1, hint: 'venus.q2h' }
+    ] },
+  { id: 'mercury', name: 'b.mercury', loc: 'b.mercury.loc', g: 3.7, c: 0, T: 150, wind: 0, color: 'radial-gradient(circle at 35% 30%,#d9d2c8,#7a7068)', sky: ['#000', '#241a30'], ground: ['#a89c90', '#74695f', '#463f38'], stars: true, deco: 'sun', rough: 1.5, heat: { up: 0.38, down: 0.2, lock: 0.5 }, chuteMsg: 'b.mercury.chute', unlock: { from: 'mars', need: 3 },
+    info: 'b.mercury.info',
+    qs: [
+      { q: 'mercury.q1', a: ['mercury.q1a1','mercury.q1a2','mercury.q1a3'], c: 0, hint: 'mercury.q1h' },
+      { q: 'mercury.q2', a: ['mercury.q2a1','mercury.q2a2','mercury.q2a3'], c: 0, hint: 'mercury.q2h' },
+      { q: 'mercury.q3', a: ['mercury.q3a1','mercury.q3a2','mercury.q3a3'], c: 1, hint: 'mercury.q3h' }
+    ],
+    lvs: [
+      { padW: 96, fuel: 1.0, wind: 0, cr: 1, night: false, sun: 0.6, txt: 'lv.mercury.0' },
+      { padW: 78, fuel: 1.0, wind: 0, cr: 3, night: false, sun: 0.8, txt: 'lv.mercury.1' },
+      { padW: 66, fuel: 1.0, wind: 0, cr: 3, night: false, sun: 1.0, txt: 'lv.mercury.2' },
+      { padW: 54, fuel: 0.95, wind: 0, cr: 4, night: false, sun: 1.1, txt: 'lv.mercury.3' },
+      { padW: 52, fuel: 0.95, wind: 0, cr: 4, night: true, sun: 0.4, txt: 'lv.mercury.4' }
+    ] },
+  { id: 'titan', name: 'b.titan', loc: 'b.titan.loc', g: 1.35, c: 0.35, T: 70, wind: 30, color: 'radial-gradient(circle at 35% 30%,#ffc060,#a85a10)', sky: ['#7a4a10', '#e0a040'], ground: ['#c08a40', '#8a5a22', '#4e3010'], stars: false, deco: 'haze', lakeCol: '#24425f', chuteMsg: 'b.titan.chute', unlock: { from: 'venus', need: 3 },
+    info: 'b.titan.info',
+    qs: [
+      { q: 'titan.q1', a: ['titan.q1a1','titan.q1a2','titan.q1a3'], c: 1, hint: 'titan.q1h' },
+      { q: 'titan.q2', a: ['titan.q2a1','titan.q2a2','titan.q2a3'], c: 0, hint: 'titan.q2h' },
+      { q: 'titan.q3', a: ['titan.q3a1','titan.q3a2','titan.q3a3'], c: 0, hint: 'titan.q3h' }
+    ],
+    lvs: [
+      { padW: 96, fuel: 1.0, wind: 0.3, cr: 0, night: false, lk: 0, txt: 'lv.titan.0' },
+      { padW: 80, fuel: 1.0, wind: 0.5, cr: 0, night: false, lk: 1, txt: 'lv.titan.1' },
+      { padW: 66, fuel: 1.0, wind: 0.7, cr: 1, night: false, lk: 2, txt: 'lv.titan.2' },
+      { padW: 54, fuel: 0.95, wind: 0.9, cr: 1, night: false, lk: 3, txt: 'lv.titan.3' },
+      { padW: 52, fuel: 0.9, wind: 1.0, cr: 1, night: true, lk: 2, txt: 'lv.titan.4' }
+    ] },
+  { id: 'earth', name: 'b.earth', loc: 'b.earth.loc', g: 9.81, c: 0.12, T: 310, wind: 60, color: 'radial-gradient(circle at 35% 30%,#7fd0ff,#1d6fb8)', sky: ['#2a78d0', '#bfe6ff'], ground: ['#6fb04a', '#4c8a34', '#2f5a20'], stars: false, deco: 'earth', vwind: 55, chuteMsg: 'b.earth.chute', unlock: { from: 'venus', need: 3 },
+    info: 'b.earth.info',
+    qs: [
+      { q: 'earth.q1', a: ['earth.q1a1','earth.q1a2','earth.q1a3'], c: 0, hint: 'earth.q1h' },
+      { q: 'earth.q2', a: ['earth.q2a1','earth.q2a2','earth.q2a3'], c: 0, hint: 'earth.q2h' },
+      { q: 'earth.q3', a: ['earth.q3a1','earth.q3a2','earth.q3a3'], c: 0, hint: 'earth.q3h' }
+    ],
+    lvs: [
+      { padW: 96, fuel: 1.0, wind: 0.2, cr: 0, night: false, vw: 0, txt: 'lv.earth.0' },
+      { padW: 80, fuel: 1.0, wind: 0.6, cr: 1, night: false, vw: 0.15, txt: 'lv.earth.1' },
+      { padW: 66, fuel: 1.0, wind: 0.6, cr: 1, night: false, vw: 0.6, txt: 'lv.earth.2' },
+      { padW: 58, fuel: 1.0, wind: 1.0, cr: 2, night: false, vw: 1.0, txt: 'lv.earth.3' },
+      { padW: 54, fuel: 0.95, wind: 0.9, cr: 2, night: true, vw: 0.8, txt: 'lv.earth.4' }
+    ] },
+  { id: 'europa', name: 'b.europa', loc: 'b.europa.loc', g: 1.31, c: 0, T: 70, wind: 0, color: 'radial-gradient(circle at 35% 30%,#f4f0e8,#9ab0c8)', sky: ['#02030c', '#10183a'], ground: ['#dfeaf2', '#a8c0d4', '#5f7a96'], stars: true, deco: 'jup', rough: 0.8, chuteMsg: 'b.europa.chute', unlock: { from: 'titan', need: 3 },
+    info: 'b.europa.info',
+    qs: [
+      { q: 'europa.q1', a: ['europa.q1a1','europa.q1a2','europa.q1a3'], c: 0, hint: 'europa.q1h' },
+      { q: 'europa.q2', a: ['europa.q2a1','europa.q2a2','europa.q2a3'], c: 0, hint: 'europa.q2h' },
+      { q: 'europa.q3', a: ['europa.q3a1','europa.q3a2','europa.q3a3'], c: 0, hint: 'europa.q3h' }
+    ],
+    lvs: [
+      { padW: 96, fuel: 1.0, wind: 0, cr: 0, night: false, gey: 0, txt: 'lv.europa.0' },
+      { padW: 80, fuel: 1.0, wind: 0, cr: 1, night: false, gey: 1, txt: 'lv.europa.1' },
+      { padW: 66, fuel: 1.0, wind: 0, cr: 2, night: false, gey: 2, txt: 'lv.europa.2' },
+      { padW: 54, fuel: 0.95, wind: 0, cr: 2, night: false, gey: 3, txt: 'lv.europa.3' },
+      { padW: 52, fuel: 0.95, wind: 0, cr: 2, night: true, gey: 3, txt: 'lv.europa.4' }
+    ] },
+  { id: 'ceres', name: 'b.ceres', loc: 'b.ceres.loc', g: 0.28, c: 0, T: 22, wind: 0, color: 'radial-gradient(circle at 35% 30%,#bdb5ad,#5e5852)', sky: ['#000', '#15101e'], ground: ['#8a827a', '#615a53', '#3a3530'], stars: true, deco: 'ceres', rough: 1.1, chuteMsg: 'b.ceres.chute', unlock: { from: 'mercury', need: 3 },
+    info: 'b.ceres.info',
+    qs: [
+      { q: 'ceres.q1', a: ['ceres.q1a1','ceres.q1a2','ceres.q1a3'], c: 0, hint: 'ceres.q1h' },
+      { q: 'ceres.q2', a: ['ceres.q2a1','ceres.q2a2','ceres.q2a3'], c: 0, hint: 'ceres.q2h' },
+      { q: 'ceres.q3', a: ['ceres.q3a1','ceres.q3a2','ceres.q3a3'], c: 0, hint: 'ceres.q3h' }
+    ],
+    lvs: [
+      { padW: 96, fuel: 1.0, wind: 0, cr: 1, night: false, vx0: 30, txt: 'lv.ceres.0' },
+      { padW: 80, fuel: 1.0, wind: 0, cr: 2, night: false, vx0: 45, txt: 'lv.ceres.1' },
+      { padW: 66, fuel: 1.0, wind: 0, cr: 3, night: false, vx0: 55, txt: 'lv.ceres.2' },
+      { padW: 54, fuel: 0.95, wind: 0, cr: 3, night: false, vx0: 65, txt: 'lv.ceres.3' },
+      { padW: 52, fuel: 0.95, wind: 0, cr: 3, night: true, vx0: 65, txt: 'lv.ceres.4' }
+    ] },
+  { id: 'pluto', name: 'b.pluto', loc: 'b.pluto.loc', g: 0.62, c: 0.01, T: 35, wind: 0, color: 'radial-gradient(circle at 35% 30%,#e8d8c8,#8a6a58)', sky: ['#000', '#0a0f26'], ground: ['#d8d0cc', '#9a8c8a', '#5c4f50'], stars: true, deco: 'pluto', rough: 1.6, spool: 1.0, chuteMsg: 'b.pluto.chute', unlock: { from: 'europa', need: 3 },
+    info: 'b.pluto.info',
+    qs: [
+      { q: 'pluto.q1', a: ['pluto.q1a1','pluto.q1a2','pluto.q1a3'], c: 0, hint: 'pluto.q1h' },
+      { q: 'pluto.q2', a: ['pluto.q2a1','pluto.q2a2','pluto.q2a3'], c: 0, hint: 'pluto.q2h' },
+      { q: 'pluto.q3', a: ['pluto.q3a1','pluto.q3a2','pluto.q3a3'], c: 0, hint: 'pluto.q3h' }
+    ],
+    lvs: [
+      { padW: 96, fuel: 1.0, wind: 0, cr: 1, night: true, sp: 0.8, txt: 'lv.pluto.0' },
+      { padW: 80, fuel: 1.0, wind: 0, cr: 1, night: true, sp: 1.1, txt: 'lv.pluto.1' },
+      { padW: 66, fuel: 1.0, wind: 0, cr: 3, night: true, sp: 1.2, txt: 'lv.pluto.2' },
+      { padW: 54, fuel: 1.0, wind: 0, cr: 3, night: true, sp: 1.2, txt: 'lv.pluto.3' },
+      { padW: 52, fuel: 1.0, wind: 0, cr: 4, night: true, sp: 1.4, txt: 'lv.pluto.4' }
+    ] },
+  { id: 'jupiter', name: 'b.jupiter', loc: 'b.jupiter.loc', g: 24.8, c: 0.3, T: 640, wind: 80, color: 'radial-gradient(circle at 35% 30%,#ffd6a0,#b8642a)', sky: ['#b8662a', '#f0d0a0'], ground: ['#7a2a10', '#7a2a10', '#3a0a04'], stars: false, deco: 'bands', mode: 'escape', vwind: 120, burn: 16, chuteMsg: 'b.jupiter.chute', unlock: { from: 'pluto', need: 3 },
+    info: 'b.jupiter.info',
+    qs: [
+      { q: 'jupiter.q1', a: ['jupiter.q1a1','jupiter.q1a2','jupiter.q1a3'], c: 0, hint: 'jupiter.q1h' },
+      { q: 'jupiter.q2', a: ['jupiter.q2a1','jupiter.q2a2','jupiter.q2a3'], c: 0, hint: 'jupiter.q2h' },
+      { q: 'jupiter.q3', a: ['jupiter.q3a1','jupiter.q3a2','jupiter.q3a3'], c: 0, hint: 'jupiter.q3h' }
+    ],
+    lvs: [
+      { padW: 0, fuel: 1.0, wind: 0.3, cr: 0, night: false, vw: 0.2, startY: 260, v0: 100, txt: 'lv.jupiter.0' },
+      { padW: 0, fuel: 1.0, wind: 0.5, cr: 0, night: false, vw: 0.4, startY: 320, v0: 150, txt: 'lv.jupiter.1' },
+      { padW: 0, fuel: 1.0, wind: 0.6, cr: 0, night: false, vw: 0.8, startY: 360, v0: 150, txt: 'lv.jupiter.2' },
+      { padW: 0, fuel: 0.95, wind: 1.0, cr: 0, night: false, vw: 1.0, startY: 420, v0: 180, txt: 'lv.jupiter.3' },
+      { padW: 0, fuel: 0.9, wind: 1.1, cr: 0, night: false, vw: 1.1, startY: 480, v0: 190, txt: 'lv.jupiter.4' }
+    ] }
+];
+var SHIPS = [
+  { name: 's.0', fuel: 100, need: 0, col: '#ff5a4a', col2: '#ffd84a', leg: 0 },
+  { name: 's.1', fuel: 110, need: 6, col: '#3fb8ff', col2: '#fff', leg: 1 },
+  { name: 's.2', fuel: 120, need: 15, col: '#46d36a', col2: '#222', leg: 2 },
+  { name: 's.3', fuel: 130, need: 30, col: '#b06bff', col2: '#ffd84a', leg: 3 }
+];
+var LV = [
+  { padW: 96, fuel: 1.0, wind: 0, cr: 0, night: false, txt: 'lv.0' },
+  { padW: 78, fuel: 1.0, wind: 0, cr: 1, night: false, txt: 'lv.1' },
+  { padW: 64, fuel: 0.95, wind: 0.6, cr: 2, night: false, txt: 'lv.2' },
+  { padW: 54, fuel: 0.9, wind: 1, cr: 3, night: false, txt: 'lv.3' },
+  { padW: 52, fuel: 0.9, wind: 0.8, cr: 3, night: true, txt: 'lv.4' }
+];
+var K = { vy: 45, vx: 30, ang: 12 * Math.PI / 180, vy2: 25, ang2: 6 * Math.PI / 180, burn: 12, turn: 1.7, W: 375, H: 812 };
+
+/* ===== Сохранение ===== */
+var SAVE_KEY = 'posadka-v1';
+var save = { stars: {}, snd: 1, ship: 0 };
+try { var raw = PF.get(SAVE_KEY); if (raw) { var o = JSON.parse(raw); if (o && o.stars) save = o; } } catch (e) {}
+function persist() { save._t = Date.now(); var raw = JSON.stringify(save); PF.put(SAVE_KEY, raw); PF.pushSave(raw); }
+/* слияние с облаком: звёзды по площадкам — максимум; корабль/звук/язык — от более поздней стороны; пустое облако ничего не стирает.
+   Открытые планеты и корабли считаются из звёзд, поэтому объединяются сами. */
+function mergeSave(a, b) {
+  if (!b || typeof b !== 'object') return a;
+  var st = {}, k;
+  [a.stars || {}, b.stars || {}].forEach(function (o) { for (k in o) st[k] = Math.max(st[k] || 0, o[k] || 0); });
+  var later = (b._t || 0) > (a._t || 0) ? b : a, other = later === a ? b : a, out = {};
+  for (k in other) out[k] = other[k];
+  for (k in later) out[k] = later[k];
+  out.stars = st;
+  var tot = 0; for (k in st) tot += st[k];
+  if (SHIPS[out.ship | 0] && SHIPS[out.ship | 0].need > tot) out.ship = 0;
+  out._t = Math.max(a._t || 0, b._t || 0);
+  return out;
+}
+function applyCloudSave() {
+  try {
+    var cs = PF.cloudGet('save'), cj = cs ? JSON.parse(cs) : null, m = mergeSave(save, cj);
+    if (m !== save) { Object.keys(save).forEach(function (k) { delete save[k]; }); Object.keys(m).forEach(function (k) { save[k] = m[k]; }); }
+    PF.put(SAVE_KEY, JSON.stringify(save)); PF.pushSave(JSON.stringify(save));
+    if (save.langSet && save.lang && save.lang !== LANG) setLang(save.lang, false);
+    drawMenuShip(); if (cur === 'map') buildMap(); else if (cur === 'lv') buildLv(); else if (cur === 'ships') buildShips();
+    console.info('[posadka-save] облако слито, звёзд:', totalStars());
+  } catch (e) {}
+}
+function stars(b, i) { return save.stars[b + '-' + i] || 0; }
+function bodySum(b) { var s = 0; for (var i = 0; i < 5; i++) s += stars(BODIES[b].id, i); return s; }
+function bodyLanded(b) { var n = 0; for (var i = 0; i < 5; i++) if (stars(BODIES[b].id, i) > 0) n++; return n; }
+function bodyIdx(id) { for (var i = 0; i < BODIES.length; i++) if (BODIES[i].id === id) return i; return 0; }
+function lockText(i) { var u = BODIES[i].unlock; return TR('map.lock', { n: u.need, where: TR(BODIES[bodyIdx(u.from)].loc) }); }
+function totalStars() { var s = 0; for (var k in save.stars) s += save.stars[k]; return s; }
+function curLv() { var b = BODIES[selB]; return (b.lvs || LV)[selL]; }
+function bodyOpen(b) { var u = BODIES[b].unlock; return !u || bodyLanded(bodyIdx(u.from)) >= u.need; }
+function lvOpen(b, i) { return bodyOpen(b) && (i === 0 || stars(BODIES[b].id, i - 1) > 0); }
+
+/* ===== Звук (простые сигналы WebAudio, включается после первого касания) ===== */
+var Snd = (function () {
+  var ac = null, eng = null, engG = null;
+  function init() {
+    if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
+    try {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      var n = ac.createBufferSource(), buf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate), d = buf.getChannelData(0);
+      for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      n.buffer = buf; n.loop = true;
+      var f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 500;
+      engG = ac.createGain(); engG.gain.value = 0;
+      n.connect(f); f.connect(engG); engG.connect(ac.destination); n.start();
+    } catch (e) { ac = null; }
+  }
+  function tone(f, t, type, vol, slide) {
+    if (!ac || !save.snd || PF.paused()) return;
+    try {
+      var o = ac.createOscillator(), g = ac.createGain(); o.type = type || 'sine'; o.frequency.value = f;
+      if (slide) o.frequency.linearRampToValueAtTime(slide, ac.currentTime + t);
+      g.gain.value = vol || 0.15; g.gain.linearRampToValueAtTime(0.0001, ac.currentTime + t);
+      o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime + t);
+    } catch (e) {}
+  }
+  return {
+    init: init,
+    engine: function (on) { if (engG) engG.gain.value = (on && save.snd && !PF.paused()) ? 0.18 : 0; },
+    ok: function () { tone(523, .15, 'triangle'); setTimeout(function () { tone(659, .15, 'triangle'); }, 140); setTimeout(function () { tone(784, .3, 'triangle'); }, 280); },
+    boom: function () { tone(160, .6, 'sawtooth', .25, 30); },
+    click: function () { tone(660, .06, 'square', .06); },
+    warn: function () { tone(880, .08, 'square', .05); }
+  };
+})();
+
+/* ===== Вспомогательное ===== */
+function $(id) { return document.getElementById(id); }
+function rng(seed) { var a = seed >>> 0; return function () { a = (a + 0x6D2B79F5) >>> 0; var t = a; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+function fmt(v, d) { var r = v.toFixed(d == null ? 0 : d); return LANG === 'en' ? r : r.replace('.', ','); }
+
+/* ===== Премиум: тексты (publish\texts\posadka\premium.md; баннера в игре нет) ===== */
+var PM_TEXTS = {
+  ru: {
+    p30: 'Премиум на 30 дней', p365: 'Премиум на год',
+    perks: ['Полноэкранная реклама отключается.', 'Подарок каждый день, пока действует Премиум: +25 % топлива на три посадки.', 'Ролик за награду — как у всех: награда после просмотра.', 'Правила и сложность остаются прежними.'],
+    note: 'Оплата один раз. Автопродления и повторных списаний нет. Если Премиум уже идёт, новый срок добавится к концу.',
+    adTitle: 'Надоела реклама?', adText: 'Рассчитывай скорость и мягко сажай модуль на планеты с разной силой тяжести! Премиум убирает полноэкранную рекламу и каждый день дарит топливо.', adMore: 'Узнать про Премиум', later: 'Не сейчас',
+    soonTitle: 'Премиум скоро закончится', soonText: 'Ещё {0} посадок без рекламных пауз. Премиум закончится сам, без списаний. При желании его можно купить снова.',
+    endTitle: 'Премиум закончился', endText: 'Полноэкранная реклама снова показывается, подарок дня остановился. Новые планеты по-прежнему ждут посадки!'
+  },
+  en: {
+    p30: '30-Day Premium', p365: '1-Year Premium',
+    perks: ['Full-screen ads are turned off.', 'A gift every day while Premium lasts: +25% fuel for three landings.', 'Reward videos work as for everyone: the reward comes after watching.', 'Rules and difficulty stay the same.'],
+    note: 'One payment. No auto-renewal and no repeat charges. If Premium is already running, the new period is added to the end.',
+    adTitle: 'Tired of ads?', adText: 'Calculate your speed and land softly on planets with different gravity! Premium removes full-screen ads and gives you fuel every day.', adMore: 'Learn About Premium', later: 'Not Now',
+    soonTitle: 'Premium Is Ending Soon', soonText: 'Premium has {0} left. It ends automatically with no further charges. You can buy it again if you like.',
+    endTitle: 'Premium Has Ended', endText: 'Full-screen ads are back and the daily gift has stopped. There are still new planets to land on!'
+  }
+};
+var PM_GIFT = { ru: 'Подарок дня: +25 % топлива на три посадки подряд.', en: 'Daily gift: +25% fuel for your next three landings.' };
+function pmRefresh() { if (cur === 'brief' && $('b-reward')) $('b-reward').style.display = PF.canReward() ? 'block' : 'none'; }
+function calmCard() { if (window.Premium && (cur === 'menu' || cur === 'map' || cur === 'res')) { try { Premium.maybeCard(); } catch (e) {} } }
+function applyRewardLabels() {}
+function giftGrant() { save.gift = (save.gift | 0) + 3; persist(); toast(TR('toast.giftGot'), 2200); }
+/* ===== Экраны ===== */
+var cur = 'menu', selB = 0, selL = 0, bonusFuel = 0, rewardFuel = 0, attempts = 0;
+function coverReady() { $('s-menu').style.backgroundImage = 'url(' + U('cover') + ')'; $('s-menu').style.backgroundSize = '100% auto'; $('s-menu').style.backgroundPosition = 'center top'; $('s-menu').classList.add('cov'); $('menuShip').style.display = 'none'; }
+function show(id) {
+  cur = id;
+  ['menu', 'map', 'lv', 'brief', 'res', 'ships'].forEach(function (s) { $('s-' + s).classList.toggle('on', s === id); });
+  var play = id === 'play';
+  $('ctl').style.display = play ? 'block' : 'none'; $('hud-pause').style.display = play ? 'block' : 'none'; $('chute').style.display = play && !(G.body && G.body.mode === 'escape') ? 'block' : 'none';
+  if (id === 'menu') drawMenuShip();
+  if (id === 'map') buildMap();
+  if (id === 'lv') buildLv();
+  if (id === 'ships') buildShips();
+  PF.gameplay(play);
+  document.body.classList.toggle('playing', play);
+  if (id === 'brief' || id === 'res') applyRewardLabels();
+  if (id === 'menu' || id === 'map' || id === 'res') setTimeout(calmCard, 300);
+  if (id !== 'play') { G.run = false; Snd.engine(false); }
+}
+document.addEventListener('click', function (e) {
+  var t = e.target.closest ? e.target.closest('[data-go]') : null;
+  if (t) { Snd.init(); Snd.click(); show(t.getAttribute('data-go')); }
+});
+
+function shipSVG(sh, flame) {
+  return '<g><path d="M-14 22 L-26 38 M14 22 L26 38" stroke="#222" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M-30 38h8M22 38h8" stroke="#222" stroke-width="5" stroke-linecap="round"/>' +
+    '<path d="M-14 -22 Q0 -46 14 -22 L16 20 Q0 28 -16 20Z" fill="' + sh.col + '" stroke="#222" stroke-width="3"/>' +
+    '<circle cx="0" cy="-6" r="8" fill="#bfe9ff" stroke="#222" stroke-width="3"/><circle cx="-2.5" cy="-8" r="2.5" fill="#fff"/>' +
+    '<rect x="-12" y="14" width="24" height="7" rx="3" fill="' + sh.col2 + '" stroke="#222" stroke-width="2"/>' +
+    (flame ? '<path d="M-7 26 Q0 50 7 26Z" fill="#ffb02e" stroke="#222" stroke-width="2"/>' : '') + '</g>';
+}
+function drawMenuShip() { $('menuShip').innerHTML = shipSVG(SHIPS[save.ship], true); $('m-total').textContent = TR('menu.total', { n: totalStars() }); $('b-snd').textContent = TR(save.snd ? 'menu.sndOn' : 'menu.sndOff'); }
+function buildMap() {
+  var h = '';
+  BODIES.forEach(function (b, i) {
+    var open = bodyOpen(i);
+    h += '<div class="card' + (open ? '' : ' lock') + '" data-b="' + i + '"><div class="pl" style="background:' + b.color + '"></div><b>' + TR(b.name) + '</b><i>' + (open ? '★ ' + bodySum(i) + ' / 15' : lockText(i)) + '</i></div>';
+  });
+  $('mapgrid').innerHTML = h;
+  Array.prototype.forEach.call($('mapgrid').querySelectorAll('.card[data-b]'), function (el) {
+    el.onclick = function () { var i = +el.getAttribute('data-b'); if (!bodyOpen(i)) { toast(lockText(i)); return; } Snd.init(); Snd.click(); selB = i; show('lv'); };
+  });
+}
+function buildLv() {
+  var b = BODIES[selB];
+  $('lv-title').textContent = TR(b.name); $('lv-sub').textContent = TR(b.info);
+  var h = '';
+  for (var i = 0; i < 5; i++) {
+    var o = lvOpen(selB, i), s = stars(b.id, i);
+    h += '<div class="lv' + (o ? '' : ' lock') + '" data-l="' + i + '">' + (o ? (i + 1) + '<small>' + (img('ic_star') ? starsHTML(s).replace(/30px/g, '16px') : '★'.repeat(s) + '☆'.repeat(3 - s)) + '</small>' : lockHTML()) + '</div>';
+  }
+  $('lvgrid').innerHTML = h;
+  Array.prototype.forEach.call($('lvgrid').querySelectorAll('.lv'), function (el) {
+    el.onclick = function () { var i = +el.getAttribute('data-l'); if (!lvOpen(selB, i)) { toast(TR('lv.lockToast', { n: i })); return; } Snd.init(); Snd.click(); selL = i; openBrief(); };
+  });
+}
+function buildShips() {
+  var t = totalStars(); $('sh-sub').textContent = TR('ships.sub', { n: t });
+  var h = '';
+  SHIPS.forEach(function (s, i) {
+    var o = t >= s.need;
+    h += '<div class="card' + (o ? '' : ' lock') + '" data-s="' + i + '" style="' + (save.ship === i ? 'border-color:#ffd84a' : '') + '">' + (img('ship_' + i) ? '<img class="ship" style="object-fit:contain" src="' + U('ship_' + i) + '">' : '<svg class="ship" viewBox="-40 -50 80 100">' + shipSVG(s, false) + '</svg>') + '<b>' + TR(s.name) + '</b><i>' + (o ? TR('ships.tank', { n: s.fuel }) + (save.ship === i ? TR('ships.sel') : '') : TR('ships.need', { n: s.need })) + '</i></div>';
+  });
+  $('shgrid').innerHTML = h;
+  Array.prototype.forEach.call($('shgrid').querySelectorAll('.card'), function (el) {
+    el.onclick = function () { var i = +el.getAttribute('data-s'); if (totalStars() < SHIPS[i].need) { toast(TR('ships.need', { n: SHIPS[i].need })); return; } save.ship = i; persist(); Snd.click(); buildShips(); };
+  });
+}
+$('b-play').onclick = function () { Snd.init(); Snd.click(); show('map'); };
+$('b-ships').onclick = function () { Snd.init(); Snd.click(); show('ships'); };
+$('b-lang').onclick = function () { Snd.init(); Snd.click(); setLang(LANG === 'en' ? 'ru' : 'en', true); };
+$('b-snd').onclick = function () { Snd.init(); save.snd = save.snd ? 0 : 1; persist(); drawMenuShip(); };
+
+/* ===== Брифинг ===== */
+var curQ = null;
+function openBrief() {
+  var b = BODIES[selB]; curQ = b.qs[selL % b.qs.length]; bonusFuel = 0; rewardFuel = 0;
+  show('brief');
+  $('br-sub').textContent = TR(b.mode === 'escape' ? 'brief.subEsc' : 'brief.sub', { body: TR(b.name), n: selL + 1, lv: TR(curLv().txt) });
+  $('b-reward').style.display = PF.canReward() ? 'block' : 'none'; $('br-q').textContent = TR(curQ.q); $('br-hint').style.display = 'none'; $('b-go').style.display = 'none'; $('b-skip').style.display = 'block';
+  var h = ''; curQ.a.forEach(function (t, i) { h += '<button class="ans" data-a="' + i + '">' + TR(t) + '</button>'; });
+  $('br-ans').innerHTML = h;
+  Array.prototype.forEach.call($('br-ans').querySelectorAll('.ans'), function (el) {
+    el.onclick = function () {
+      var i = +el.getAttribute('data-a'), good = i === curQ.c;
+      Array.prototype.forEach.call($('br-ans').querySelectorAll('.ans'), function (e2) { e2.disabled = true; });
+      el.classList.add(good ? 'ok' : 'bad');
+      if (!good) $('br-ans').querySelectorAll('.ans')[curQ.c].classList.add('ok');
+      bonusFuel = good ? 0.1 : 0;
+      var hint = $('br-hint'); hint.style.display = 'block';
+      hint.innerHTML = good ? TR('brief.right', { hint: TR(curQ.hint) }) : TR('brief.wrong', { ans: TR(curQ.a[curQ.c]), hint: TR(curQ.hint) });
+      $('b-go').style.display = 'block'; $('b-skip').style.display = 'none';
+      if (good) Snd.ok(); else Snd.warn();
+    };
+  });
+}
+$('b-reward').onclick = function () {
+  PF.reward(function (got) { if (got) { rewardFuel = 0.25; $('b-reward').style.display = 'none'; toast(TR('toast.reward'), 1500); } });
+};
+$('b-go').onclick = function () { Snd.init(); startGame(); };
+$('b-skip').onclick = function () { Snd.init(); bonusFuel = 0; startGame(); };
+
+/* ===== Игра ===== */
+var cv = $('cv'), ctx = cv.getContext('2d');
+ctx.scale(2, 2);
+var G = { run: false, paused: false, t: 0, x: 0, y: 0, vx: 0, vy: 0, ang: 0, fuel: 100, fuel0: 100, chute: false, thrust: false, tilt: 0, H: null, padX: 0, padY: 0, padW: 80, lv: null, body: null, parts: [], ending: 0, wind: 0, minAlt: 0, kb: { l: 0, r: 0, t: 0 }, over: null, stars: [] };
+var off = document.createElement('canvas'); off.width = K.W; off.height = K.H; var octx = off.getContext('2d');
+
+function makeTerrain(b, bi, li) {
+  var lv = (b.lvs || LV)[li], r = rng(bi * 1000 + li * 37 + 11), H = new Float32Array(K.W + 1), rg = b.rough || 1;
+  var p1 = r() * 6, p2 = r() * 6, p3 = r() * 6;
+  for (var x = 0; x <= K.W; x++) H[x] = 575 + rg * (22 * Math.sin(x * 0.012 + p1) + 11 * Math.sin(x * 0.031 + p2) + 5 * Math.sin(x * 0.07 + p3));
+  var padX = 70 + r() * 235, padY = 540 + r() * 45, i;
+  var craters = [];
+  for (i = 0; i < lv.cr; i++) {
+    var cx, tries = 0;
+    do { cx = 20 + r() * 335; tries++; } while ((Math.abs(cx - padX) < lv.padW / 2 + 55) && tries < 20);
+    var wd = 14 + r() * 8, dp = 30 + r() * 16;
+    craters.push([cx, wd, dp]);
+  }
+  var lakes = [], gey = [], taken = [padX];
+  function freeX(gap) { var cx, t = 0; do { cx = 40 + r() * 295; t++; var ok = true; for (var j = 0; j < taken.length; j++) if (Math.abs(cx - taken[j]) < gap) ok = false; } while (!ok && t < 60); taken.push(cx); return cx; }
+  for (i = 0; i < (lv.lk || 0); i++) { var lx = freeX(lv.padW / 2 + 60), lw = 26 + r() * 10; lakes.push([lx, lw]); }
+  for (i = 0; i < (lv.gey || 0); i++) { var gx = freeX(lv.padW / 2 + 55), gw = 18 + r() * 6; gey.push([gx, gw, 150 + r() * 60]); }
+  lakes.forEach(function (c) { for (var x = 0; x <= K.W; x++) { var d = Math.abs(x - c[0]) / (c[1] * 1.5), w = clamp(1.4 - d, 0, 1); w = w * w * (3 - 2 * w); H[x] = H[x] * (1 - w) + 640 * w; } });
+  craters.forEach(function (c) {
+    for (var x = 0; x <= K.W; x++) {
+      var d = (x - c[0]) / c[1], dd = (Math.abs(x - c[0]) - c[1] * 1.35) / 6;
+      H[x] += c[2] * Math.exp(-d * d) - 9 * Math.exp(-dd * dd);
+    }
+  });
+  for (var x2 = 0; x2 <= K.W; x2++) {
+    var d2 = Math.max(0, Math.abs(x2 - padX) - lv.padW / 2), t = clamp(d2 / 28, 0, 1), s = t * t * (3 - 2 * t);
+    H[x2] = padY * (1 - s) + H[x2] * s;
+  }
+  var sr = rng(bi * 77 + 5), st = [];
+  for (i = 0; i < 70; i++) st.push([sr() * K.W, sr() * 470, 0.6 + sr() * 1.4, sr()]);
+  return { H: H, padX: padX, padY: padY, stars: st, r: r, lakes: lakes, gey: gey };
+}
+function groundY(x) { x = clamp(x, 0, K.W); var i = Math.floor(x), f = x - i; return G.H[i] * (1 - f) + G.H[Math.min(K.W, i + 1)] * f; }
+
+function startGame() {
+  var b = BODIES[selB], lv = (b.lvs || LV)[selL], ship = SHIPS[save.ship];
+  var T = makeTerrain(b, selB, selL);
+  G.H = T.H; G.padX = T.padX; G.padY = T.padY; G.padW = lv.padW; G.stars = T.stars; G.body = b; G.lv = lv; G.lakes = T.lakes; G.gey = T.gey; G.esc = b.mode === 'escape';
+  G.x = clamp(T.padX + (T.r() - 0.5) * 160, 40, 335); G.y = 80; G.vx = (T.r() - 0.5) * 2 * (lv.vx0 || 12); G.vy = 14; G.ang = 0;
+  if (G.esc) { G.x = 188 + (T.r() - 0.5) * 140; G.y = lv.startY; G.vy = lv.v0; G.vx = (T.r() - 0.5) * 30; }
+  G.heat = 0; G.lock = false; G.thr = 0; G.geyHit = 0;
+  var giftF = 0; if ((save.gift | 0) > 0 && window.Premium && Premium.active()) { giftF = 0.25; save.gift--; persist(); setTimeout(function () { if (G.run) toast(TR('toast.giftUse', { n: save.gift }), 1800); }, 2000); } else if (save.gift) { save.gift = 0; }
+  G.fuel0 = ship.fuel * lv.fuel * (1 + bonusFuel + rewardFuel + giftF); G.fuel = G.fuel0;
+  G.chute = false; G.parts = []; G.t = 0; G.ending = 0; G.over = null; G.paused = false; G.thrust = false; G.tilt = 0; G.wphase = T.r() * 6;
+  G.lastWarn = 0;
+  show('play'); G.run = true; $('pause').classList.remove('on'); $('chute').disabled = false; $('chute').style.opacity = 1;
+  toast(lv.night ? TR('toast.night') : TR(lv.txt), 1800);
+  last = performance.now();
+}
+var toastT = 0;
+function toast(t, ms) { var e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(function () { e.style.display = 'none'; }, ms || 2000); }
+
+function windNow() { var b = G.body, w = b.wind * G.lv.wind; return w * (Math.sin(G.t * 0.35 + G.wphase) * 0.6 + Math.sin(G.t * 1.1 + G.wphase * 2) * 0.4) ; }
+
+function step(dt) {
+  if (G.ending) { G.ending -= dt; if (G.ending <= 0 && G.over) finish(); return; }
+  var b = G.body, lv = G.lv, thrust = (G.thrust || G.kb.t) && G.fuel > 0;
+  var tilt = G.tilt || (G.kb.r - G.kb.l);
+  G.t += dt;
+  if (b.heat) {
+    if (G.lock && G.heat < b.heat.lock) G.lock = false;
+    if (!G.lock && G.heat >= 1) { G.lock = true; toast(TR('toast.overheat'), 1800); Snd.warn(); }
+    if (G.lock) thrust = false;
+    G.heat = clamp(G.heat + (thrust ? b.heat.up * (lv.sun || 1) : -b.heat.down) * dt, 0, 1);
+  }
+  if (b.spool) { var spT = b.spool * (lv.sp || 1); G.thr = thrust ? Math.min(1, G.thr + dt / spT) : Math.max(0, G.thr - dt * 4); } else G.thr = thrust ? 1 : 0;
+  G.ang = clamp(G.ang + tilt * K.turn * dt, -1.4, 1.4);
+  var ax = 0, ay = b.g * 20;
+  if (G.thr > 0 && (thrust || G.thr > 0.02)) { ax += b.T * G.thr * Math.sin(G.ang); ay -= b.T * G.thr * Math.cos(G.ang); }
+  if (thrust) G.fuel = Math.max(0, G.fuel - (b.burn || K.burn) * dt);
+  G.thrustOn = thrust;
+  if (b.c > 0) {
+    var kk = b.c * (G.chute ? 5 : 1), w = windNow(); G.wind = w;
+    var vwn = b.vwind ? b.vwind * (lv.vw || 0) * (Math.sin(G.t * 0.5 + G.wphase * 1.7) * 0.6 + Math.sin(G.t * 1.3 + G.wphase) * 0.4) : 0; G.vwind = vwn;
+    ax += kk * (w - G.vx); ay += kk * (vwn - G.vy);
+  }
+  if (G.chute && b.c > 0.02) G.ang -= G.ang * Math.min(1, 1.5 * dt);
+  G.vx += ax * dt; G.vy += ay * dt; G.x += G.vx * dt; G.y += G.vy * dt;
+  if (G.gey) G.gey.forEach(function (gg) {
+    var gy = groundY(gg[0]);
+    if (Math.abs(G.x - gg[0]) < gg[1] * 0.7 && G.y < gy && G.y > gy - gg[2]) { G.vy -= 170 * dt; if (!G.geyHit) { G.geyHit = 1; toast(TR('toast.geyser'), 1600); } }
+  });
+  if (G.esc) {
+    if (G.y <= 72 && G.vy <= 0) { var fr = G.fuel / G.fuel0; end(true, '', fr >= 0.55 ? 3 : fr >= 0.3 ? 2 : 1, 0, 0); G.over.esc = true; return; }
+    if (G.y >= 700) { end(false, TR('crash.crush')); return; }
+  }
+  if (G.x < 14) { G.x = 14; G.vx = Math.max(0, G.vx); } if (G.x > K.W - 14) { G.x = K.W - 14; G.vx = Math.min(0, G.vx); }
+  if (G.y < 20) { G.y = 20; G.vy = Math.max(0, G.vy); }
+  if (thrust && Math.random() < 0.8) G.parts.push({ x: G.x - Math.sin(G.ang) * 18, y: G.y + Math.cos(G.ang) * 18, vx: -Math.sin(G.ang) * 90 + (Math.random() - .5) * 40 + G.vx * .3, vy: Math.cos(G.ang) * 90 + (Math.random() - .5) * 30 + G.vy * .3, l: .35, m: .35, c: Math.random() < .5 ? '#ffd84a' : '#ff7a2a', r: 3 + Math.random() * 3 });
+  // касание
+  if (G.esc) return;
+  var ca = Math.cos(G.ang), sa = Math.sin(G.ang);
+  function pt(px, py) { return [G.x + px * ca - py * sa, G.y + px * sa + py * ca]; }
+  var f1 = pt(-14, 17), f2 = pt(14, 17), pts = [pt(-12, -12), pt(12, -12), pt(0, -20)];
+  var hit1 = f1[1] >= groundY(f1[0]), hit2 = f2[1] >= groundY(f2[0]), hitB = false;
+  pts.forEach(function (p) { if (p[1] >= groundY(p[0])) hitB = true; });
+  if (hit1 || hit2 || hitB) {
+    var pl = G.padX - G.padW / 2, pr = G.padX + G.padW / 2;
+    var onPad = f1[0] >= pl && f1[0] <= pr && f2[0] >= pl && f2[0] <= pr && !hitB;
+    var vy = G.vy, vx = Math.abs(G.vx), an = Math.abs(G.ang);
+    var inLake = function (x) { for (var q = 0; q < G.lakes.length; q++) if (Math.abs(x - G.lakes[q][0]) < G.lakes[q][1] * 0.9) return true; return false; };
+    if (!onPad && (inLake(f1[0]) || inLake(f2[0]))) end(false, TR('crash.lake'));
+    else if (!onPad) end(false, hitB && (hit1 || hit2) === false ? TR('crash.body') : TR('crash.miss'));
+    else if (vy > K.vy) end(false, TR('crash.vy', { v: fmt(vy), max: K.vy, chute: TR(b.c > 0.02 ? 'crash.chute1' : 'crash.chute0') }));
+    else if (vx > K.vx) end(false, TR('crash.vx', { v: fmt(vx), max: K.vx }));
+    else if (an > K.ang) end(false, TR('crash.ang', { a: fmt(an * 180 / Math.PI) }));
+    else {
+      var s = 1;
+      if (vy <= K.vy2 && an <= K.ang2) s = 2;
+      if (s === 2 && G.fuel / G.fuel0 >= 0.3) s = 3;
+      end(true, '', s, vy, an);
+    }
+  }
+}
+function end(win, why, s, vy, an) {
+  G.over = { win: win, why: why, s: s || 0, vy: vy, an: an };
+  G.ending = win ? 0.6 : 0.9; Snd.engine(false);
+  if (win) { Snd.ok(); G.vx = 0; G.vy = 0; } else { Snd.boom(); for (var i = 0; i < 45; i++) { var a = Math.random() * 6.28, sp = 40 + Math.random() * 160; G.parts.push({ x: G.x, y: G.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 30, l: .8, m: .8, c: ['#ffd84a', '#ff7a2a', '#ff4a4a', '#ddd'][i % 4], r: 3 + Math.random() * 5 }); } }
+}
+function finish() {
+  var o = G.over, b = BODIES[selB], key = b.id + '-' + selL;
+  G.run = false; G.over = null;
+  show('res');
+  if (o.win) {
+    var was = save.stars[key] || 0; if (o.s > was) save.stars[key] = o.s; persist();
+    $('r-title').textContent = TR(o.esc ? 'res.winEscT' : 'res.win'); $('r-stars').innerHTML = starsHTML(o.s);
+    var left = Math.round(G.fuel / G.fuel0 * 100);
+    if (o.esc) $('r-text').innerHTML = TR('res.winEsc', { left: left }) + (o.s === 3 ? TR('res.s3') : o.s === 2 ? TR('res.e2') : TR('res.e1'));
+    else $('r-text').innerHTML = TR('res.text', { vy: fmt(o.vy), max: K.vy, an: fmt(o.an * 180 / Math.PI, 1), left: left }) +
+      (o.s === 3 ? TR('res.s3') : o.s === 2 ? TR('res.s2') : TR('res.s1', { v: K.vy2 }));
+    var nxt = $('r-next'); nxt.style.display = (selL < 4) ? 'block' : 'block';
+    nxt.textContent = TR(selL < 4 ? 'res.next' : 'res.toPlanets');
+    nxt.onclick = function () { Snd.click(); PF.fullscreen(function () { if (selL < 4) { selL++; openBrief(); } else show('map'); }); };
+    $('r-reward').style.display = 'none';
+  } else {
+    $('r-title').textContent = TR('res.lose'); $('r-stars').innerHTML = img('boom') ? '<img src="' + U('boom') + '" style="height:90px">' : '💥';
+    $('r-text').textContent = o.why; $('r-next').style.display = 'none';
+    attempts++;
+    $('r-reward').style.display = PF.canReward() ? 'block' : 'none';
+  }
+  $('r-retry').onclick = function () { Snd.click(); bonusFuel = 0; PF.fullscreen(function () { openBrief(); }); };
+  $('r-reward').onclick = function () { PF.reward(function (got) { if (got) { bonusFuel = 0; rewardFuel = 0.25; startGame(); } }); };
+}
+
+/* ===== Рисование ===== */
+function drawSky(b) {
+  var bg = img('bg_' + b.id);
+  if (bg) { var sc = K.H / bg.naturalHeight, w = bg.naturalWidth * sc; ctx.drawImage(bg, (K.W - w) / 2, 0, w, K.H); return; }
+  var g = ctx.createLinearGradient(0, 0, 0, 600); g.addColorStop(0, b.sky[0]); g.addColorStop(1, b.sky[1]);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, K.W, K.H);
+  if (b.deco) { drawDeco(b); return; }
+  if (b.stars) { G.stars.forEach(function (s) { ctx.globalAlpha = 0.5 + 0.5 * Math.sin(G.t * 2 + s[3] * 9); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s[0], s[1], s[2], 0, 6.3); ctx.fill(); }); ctx.globalAlpha = 1;
+    ctx.fillStyle = '#4fa3ff'; ctx.beginPath(); ctx.arc(300, 150, 26, 0, 6.3); ctx.fill(); ctx.fillStyle = '#4bd16a'; ctx.beginPath(); ctx.arc(293, 146, 9, 0, 6.3); ctx.arc(307, 158, 7, 0, 6.3); ctx.fill(); }
+  else {
+    // облака
+    ctx.fillStyle = b.id === 'venus' ? 'rgba(255,240,150,.35)' : 'rgba(255,220,190,.35)';
+    for (var i = 0; i < 5; i++) { var cx = ((i * 97 + G.t * (8 + i * 3)) % 470) - 50, cy = 90 + i * 70; ctx.beginPath(); ctx.ellipse(cx, cy, 52, 14, 0, 0, 6.3); ctx.ellipse(cx + 24, cy - 8, 30, 12, 0, 0, 6.3); ctx.fill(); }
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.beginPath(); ctx.arc(80, 120, 14, 0, 6.3); ctx.fill();
+  }
+}
+function starsLayer() { G.stars.forEach(function (s) { ctx.globalAlpha = 0.5 + 0.5 * Math.sin(G.t * 2 + s[3] * 9); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s[0], s[1], s[2], 0, 6.3); ctx.fill(); }); ctx.globalAlpha = 1; }
+function disc(x, y, r, c0, c1) { var gr = ctx.createRadialGradient(x - r * .3, y - r * .3, r * .1, x, y, r); gr.addColorStop(0, c0); gr.addColorStop(1, c1); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.3); ctx.fill(); }
+function cloudAt(cx, cy, col) { ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(cx, cy, 52, 14, 0, 0, 6.3); ctx.ellipse(cx + 24, cy - 8, 30, 12, 0, 0, 6.3); ctx.fill(); }
+function drawDeco(b) {
+  var d = b.deco, i;
+  if (d === 'sun') { starsLayer(); var sg = ctx.createRadialGradient(285, 135, 10, 285, 135, 120); sg.addColorStop(0, 'rgba(255,240,180,.9)'); sg.addColorStop(0.3, 'rgba(255,190,80,.45)'); sg.addColorStop(1, 'rgba(255,150,40,0)'); ctx.fillStyle = sg; ctx.fillRect(120, 0, 255, 300); disc(285, 135, 46, '#fffbe0', '#ffb830'); }
+  else if (d === 'haze') { ctx.fillStyle = 'rgba(255,190,90,.18)'; for (i = 0; i < 4; i++) ctx.fillRect(0, 120 + i * 110, K.W, 60); disc(95, 140, 30, '#ffe9b0', '#c89040'); ctx.strokeStyle = 'rgba(255,230,170,.8)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.ellipse(95, 142, 52, 11, -0.25, 0, 6.3); ctx.stroke(); for (i = 0; i < 5; i++) cloudAt(((i * 97 + G.t * (5 + i * 2)) % 470) - 50, 180 + i * 80, 'rgba(255,200,120,.3)'); }
+  else if (d === 'earth') { for (i = 0; i < 6; i++) cloudAt(((i * 83 + G.t * (10 + i * 3)) % 470) - 50, 70 + i * 75, i % 2 ? 'rgba(255,255,255,.75)' : 'rgba(235,245,255,.6)'); disc(60, 90, 26, '#fffbe0', '#ffd860'); if (G.lv.vw >= 0.95 && Math.sin(G.t * 3.1) > 0.97) { ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fillRect(0, 0, K.W, K.H); } }
+  else if (d === 'jup') { starsLayer(); disc(105, 150, 78, '#f0c890', '#a0603a'); ctx.save(); ctx.beginPath(); ctx.arc(105, 150, 78, 0, 6.3); ctx.clip(); for (i = 0; i < 6; i++) { ctx.fillStyle = i % 2 ? 'rgba(160,80,40,.35)' : 'rgba(255,230,190,.3)'; ctx.fillRect(20, 92 + i * 22, 190, 11); } ctx.fillStyle = 'rgba(190,60,30,.7)'; ctx.beginPath(); ctx.ellipse(130, 175, 14, 8, 0, 0, 6.3); ctx.fill(); ctx.restore(); }
+  else if (d === 'ceres') { starsLayer(); disc(300, 110, 7, '#fff', '#ffe080'); ctx.fillStyle = 'rgba(200,190,180,.12)'; for (i = 0; i < 14; i++) { var px = (i * 61 + G.t * 6) % K.W, py = 200 + (i * 37) % 280; ctx.beginPath(); ctx.arc(px, py, 1.6, 0, 6.3); ctx.fill(); } }
+  else if (d === 'pluto') { starsLayer(); disc(270, 130, 34, '#e8e4e0', '#6a6460'); var hz = ctx.createLinearGradient(0, 420, 0, 600); hz.addColorStop(0, 'rgba(90,130,255,0)'); hz.addColorStop(1, 'rgba(90,130,255,.28)'); ctx.fillStyle = hz; ctx.fillRect(0, 420, K.W, 200); }
+  else if (d === 'bands') { for (i = 0; i < 14; i++) { var by = i * 62 - ((G.y || 0) * 0.15) % 62; ctx.fillStyle = i % 2 ? 'rgba(255,225,170,.28)' : 'rgba(150,60,20,.3)'; ctx.fillRect(0, by, K.W, 34); } ctx.fillStyle = 'rgba(200,50,20,.55)'; ctx.beginPath(); ctx.ellipse(70 + Math.sin(G.t * 0.2) * 10, 380, 44, 22, 0, 0, 6.3); ctx.fill(); }
+}
+function drawGround(b) {
+  if (G.esc) { var cg = ctx.createLinearGradient(0, 560, 0, K.H); cg.addColorStop(0, 'rgba(120,20,0,0)'); cg.addColorStop(0.5, 'rgba(160,30,0,.55)'); cg.addColorStop(1, 'rgba(60,0,0,.9)'); ctx.fillStyle = cg; ctx.fillRect(0, 560, K.W, K.H - 560); hudText(TR('hud.crush'), K.W / 2, 735, '#ffb090', 12, 'center'); ctx.setLineDash([8, 6]); ctx.strokeStyle = '#7dff9a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, 72); ctx.lineTo(K.W, 72); ctx.stroke(); ctx.setLineDash([]); hudText(TR('hud.exit'), K.W / 2, 88, '#7dff9a', 11, 'center'); return; }
+  G.lakes.forEach(function (c) { ctx.fillStyle = b.lakeCol || '#233'; ctx.fillRect(c[0] - c[1] * 1.6, 618, c[1] * 3.2, 200); ctx.fillStyle = 'rgba(255,200,100,.25)'; ctx.fillRect(c[0] - c[1] * 1.6, 618, c[1] * 3.2, 3); });
+  ctx.beginPath(); ctx.moveTo(0, K.H);
+  for (var x = 0; x <= K.W; x += 3) ctx.lineTo(x, G.H[x]);
+  ctx.lineTo(K.W, K.H); ctx.closePath();
+  var g = ctx.createLinearGradient(0, 480, 0, 700); g.addColorStop(0, b.ground[0]); g.addColorStop(.5, b.ground[1]); g.addColorStop(1, b.ground[2]);
+  ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = '#2b1d3a'; ctx.lineJoin = 'round'; ctx.stroke();
+  // камешки
+  var r = rng(selB * 9 + 3); ctx.fillStyle = 'rgba(0,0,0,.15)';
+  for (var i = 0; i < 24; i++) { var px = r() * K.W, py = groundY(px) + 12 + r() * 90; ctx.beginPath(); ctx.ellipse(px, py, 4 + r() * 6, 2 + r() * 3, 0, 0, 6.3); ctx.fill(); }
+  G.gey.forEach(function (gg) { var gy = groundY(gg[0]); for (var q = 0; q < 6; q++) { var ph = (G.t * 1.2 + q * 0.37) % 1, yy = gy - ph * gg[2], ww = gg[1] * (0.5 + ph * 0.9); ctx.fillStyle = 'rgba(245,252,255,' + (0.75 * (1 - ph)).toFixed(2) + ')'; ctx.beginPath(); ctx.ellipse(gg[0] + Math.sin(q * 2 + G.t * 3) * 3, yy, ww * 0.6, 14, 0, 0, 6.3); ctx.fill(); } });
+  drawPad();
+}
+function drawPad() {
+  if (G.esc) return;
+  var pi = img('pad');
+  if (pi) {
+    var pw = G.padW / 0.8, ph = pw * pi.naturalHeight / pi.naturalWidth;
+    ctx.drawImage(pi, G.padX - pw / 2, G.padY - 2 - ph * 0.47, pw, ph); return;
+  }
+  var x0 = G.padX - G.padW / 2, y = G.padY;
+  ctx.fillStyle = '#3a3a55'; ctx.fillRect(x0, y - 2, G.padW, 9); ctx.strokeStyle = '#111'; ctx.lineWidth = 3; ctx.strokeRect(x0, y - 2, G.padW, 9);
+  for (var i = 0; i < G.padW; i += 14) { ctx.fillStyle = (i / 14 | 0) % 2 ? '#ffd84a' : '#222'; ctx.fillRect(x0 + i, y - 2, Math.min(7, G.padW - i), 4); }
+  var blink = Math.sin(G.t * 6) > 0;
+  [x0, x0 + G.padW].forEach(function (lx) { ctx.fillStyle = '#555'; ctx.fillRect(lx - 1.5, y - 18, 3, 16); ctx.fillStyle = blink ? '#ff4a4a' : '#ffa0a0'; ctx.beginPath(); ctx.arc(lx, y - 20, 4.5, 0, 6.3); ctx.fill(); ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5; ctx.stroke(); });
+}
+function drawShip(c, sx, sy, ang, sh, flame, chute, crashed) {
+  var si = img('ship_' + SHIPS.indexOf(sh)), ci = img('chute'), fi = img('flame');
+  if (si) {
+    c.save(); c.translate(sx, sy); c.rotate(ang);
+    if (chute && ci) c.drawImage(ci, -50, -128, 100, 100 * ci.naturalHeight / ci.naturalWidth);
+    if (flame && fi) { var fh = 26 + Math.random() * 12; c.drawImage(fi, -11, 14, 22, fh); }
+    var hh = 50, ww = hh * si.naturalWidth / si.naturalHeight;
+    c.drawImage(si, -ww / 2, 20 - hh, ww, hh);
+    c.restore(); return;
+  }
+  c.save(); c.translate(sx, sy); c.rotate(ang);
+  if (chute) {
+    c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-34, -64); c.lineTo(-6, -18); c.moveTo(34, -64); c.lineTo(6, -18); c.moveTo(0, -70); c.lineTo(0, -20); c.stroke();
+    c.fillStyle = '#ff5a4a'; c.strokeStyle = '#222'; c.lineWidth = 3; c.beginPath(); c.moveTo(-44, -62); c.quadraticCurveTo(0, -112, 44, -62); c.quadraticCurveTo(22, -70, 0, -62); c.quadraticCurveTo(-22, -70, -44, -62); c.fill(); c.stroke();
+    c.fillStyle = '#fff'; c.beginPath(); c.moveTo(-14, -66); c.quadraticCurveTo(0, -100, 14, -66); c.quadraticCurveTo(7, -70, 0, -66); c.quadraticCurveTo(-7, -70, -14, -66); c.fill();
+  }
+  if (flame) { var fl = 14 + Math.random() * 10; c.fillStyle = '#ffd84a'; c.strokeStyle = '#222'; c.lineWidth = 2; c.beginPath(); c.moveTo(-7, 18); c.quadraticCurveTo(0, 18 + fl * 1.6, 7, 18); c.fill(); c.stroke(); c.fillStyle = '#ff6a1f'; c.beginPath(); c.moveTo(-4, 18); c.quadraticCurveTo(0, 18 + fl, 4, 18); c.fill(); }
+  var L = [0, 0, 3, 5][sh.leg];
+  c.strokeStyle = '#222'; c.lineWidth = 4; c.lineCap = 'round'; c.beginPath(); c.moveTo(-9, 10); c.lineTo(-14, 17 + L * .3); c.moveTo(9, 10); c.lineTo(14, 17 + L * .3); c.stroke();
+  c.lineWidth = 5; c.beginPath(); c.moveTo(-19, 17 + L * .3); c.lineTo(-9, 17 + L * .3); c.moveTo(9, 17 + L * .3); c.lineTo(19, 17 + L * .3); c.stroke();
+  c.fillStyle = sh.col; c.strokeStyle = '#222'; c.lineWidth = 3; c.beginPath(); c.moveTo(-12, -14); c.quadraticCurveTo(0, -34, 12, -14); c.lineTo(14, 12); c.quadraticCurveTo(0, 18, -14, 12); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = sh.col2; c.fillRect(-12, 6, 24, 5); c.strokeRect(-12, 6, 24, 5);
+  c.fillStyle = '#bfe9ff'; c.beginPath(); c.arc(0, -6, 6.5, 0, 6.3); c.fill(); c.stroke();
+  c.fillStyle = '#fff'; c.beginPath(); c.arc(-2, -8, 2, 0, 6.3); c.fill();
+  c.restore();
+}
+function hudText(t, x, y, col, size, al) { ctx.font = '700 ' + (size || 15) + 'px "Trebuchet MS",Arial'; ctx.textAlign = al || 'left'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.7)'; ctx.strokeText(t, x, y); ctx.fillStyle = col || '#fff'; ctx.fillText(t, x, y); }
+function drawHUD() {
+  var fr = G.fuel / G.fuel0;
+  ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(0, 0, K.W, 62);
+  if (img('ic_fuel')) ctx.drawImage(img('ic_fuel'), 12, 4, 18, 18); hudText(TR('hud.fuel'), img('ic_fuel') ? 34 : 12, 20, '#fff', 12);
+  ctx.fillStyle = '#222'; ctx.fillRect(12, 26, 150, 14);
+  ctx.fillStyle = fr > 0.3 ? '#4bd16a' : fr > 0.12 ? '#ffb02e' : '#ff4a4a'; ctx.fillRect(12, 26, 150 * fr, 14);
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.strokeRect(12, 26, 150, 14);
+  ctx.fillStyle = '#fff8'; ctx.fillRect(12 + 150 * 0.3 - 1, 24, 2, 18);
+  var alt = Math.max(0, Math.round(groundY(G.x) - G.y - 17));
+  hudText(G.esc ? TR('hud.press', { n: Math.round(G.y / 8) }) : TR('hud.alt', { n: alt }), 12, 58, G.esc && G.y > 600 ? '#ff7a7a' : '#fff', 13);
+  if (G.body.heat) { ctx.fillStyle = '#222'; ctx.fillRect(104, 50, 58, 8); ctx.fillStyle = G.lock ? '#ff3a3a' : G.heat > 0.7 ? '#ff9a2a' : '#ffd84a'; ctx.fillRect(104, 50, 58 * G.heat, 8); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.strokeRect(104, 50, 58, 8); hudText(TR('hud.heat'), 104, 48, '#ffd0a0', 10); }
+  if (G.body.spool) { ctx.fillStyle = '#222'; ctx.fillRect(104, 50, 58, 8); ctx.fillStyle = '#7fd0ff'; ctx.fillRect(104, 50, 58 * G.thr, 8); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.strokeRect(104, 50, 58, 8); hudText(TR('hud.pwr'), 104, 48, '#cfeaff', 10); }
+  var vyOk = G.vy <= K.vy, vxOk = Math.abs(G.vx) <= K.vx;
+  hudText((G.vy > 0 ? '↓ ' : '↑ ') + fmt(Math.abs(G.vy)), 178, 20, vyOk ? '#7dff9a' : '#ff7a7a', 15);
+  hudText('→ ' + fmt(G.vx), 178, 40, vxOk ? '#7dff9a' : '#ff7a7a', 15);
+  hudText(TR('hud.tilt', { n: fmt(Math.abs(G.ang) * 180 / Math.PI) }), 178, 58, Math.abs(G.ang) <= K.ang ? '#7dff9a' : '#ff7a7a', 13);
+  if (G.body.wind > 0 && G.lv.wind > 0) { var w = G.wind || 0; if (img('ic_wind')) ctx.drawImage(img('ic_wind'), 244, 6, 18, 18); hudText(TR('hud.wind'), 266, 20, '#cfe', 12); ctx.save(); ctx.translate(290, 38); ctx.strokeStyle = '#fff'; ctx.fillStyle = '#fff'; ctx.lineWidth = 3; var L = clamp(w / G.body.wind, -1.3, 1.3) * 22; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L, 0); ctx.stroke(); var dir = L >= 0 ? 1 : -1; ctx.beginPath(); ctx.moveTo(L + dir * 7, 0); ctx.lineTo(L, -5); ctx.lineTo(L, 5); ctx.fill(); ctx.restore(); }
+}
+function render() {
+  var b = G.body; ctx.setTransform(2, 0, 0, 2, 0, 0);
+  drawSky(b); drawGround(b);
+  // частицы
+  G.parts.forEach(function (p) { ctx.globalAlpha = clamp(p.l / p.m, 0, 1); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (p.l / p.m + .3), 0, 6.3); ctx.fill(); }); ctx.globalAlpha = 1;
+  var gone = G.over && !G.over.win;
+  if (gone && img('boom')) { var bm = img('boom'), k = 1 - G.ending / 0.9, bw = 40 + k * 90; ctx.globalAlpha = clamp(1.4 - k, 0, 1); ctx.drawImage(bm, G.x - bw / 2, G.y - bw * 0.4, bw, bw * bm.naturalHeight / bm.naturalWidth); ctx.globalAlpha = 1; }
+  if (!gone) drawShip(ctx, G.x, G.y, G.ang, SHIPS[save.ship], G.thrustOn && G.fuel > 0, G.chute, false);
+  if (G.lv.night && !G.esc) {
+    octx.setTransform(1, 0, 0, 1, 0, 0); octx.globalCompositeOperation = 'source-over'; octx.clearRect(0, 0, K.W, K.H);
+    octx.fillStyle = 'rgba(2,2,20,.93)'; octx.fillRect(0, 0, K.W, K.H);
+    octx.globalCompositeOperation = 'destination-out';
+    var gx = G.x + Math.sin(G.ang) * 0, gy = G.y;
+    var rg = octx.createRadialGradient(gx, gy, 5, gx, gy, 55); rg.addColorStop(0, 'rgba(0,0,0,1)'); rg.addColorStop(1, 'rgba(0,0,0,0)'); octx.fillStyle = rg; octx.beginPath(); octx.arc(gx, gy, 55, 0, 6.3); octx.fill();
+    octx.save(); octx.translate(G.x, G.y); octx.rotate(G.ang + Math.PI); // конус вниз вдоль оси
+    var cg = octx.createLinearGradient(0, 10, 0, 330); cg.addColorStop(0, 'rgba(0,0,0,1)'); cg.addColorStop(1, 'rgba(0,0,0,0)'); octx.fillStyle = cg;
+    octx.beginPath(); octx.moveTo(0, -10); octx.lineTo(-95, -330); octx.lineTo(95, -330); octx.closePath(); octx.fill(); octx.restore();
+    ctx.drawImage(off, 0, 0, K.W, K.H);
+    // огни площадки светят всегда
+    var blink = Math.sin(G.t * 6) > 0; [G.padX - G.padW / 2, G.padX + G.padW / 2].forEach(function (lx) { var gg = ctx.createRadialGradient(lx, G.padY - 20, 0, lx, G.padY - 20, 26); gg.addColorStop(0, blink ? 'rgba(255,60,60,.95)' : 'rgba(255,150,150,.5)'); gg.addColorStop(1, 'rgba(255,60,60,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(lx, G.padY - 20, 26, 0, 6.3); ctx.fill(); });
+    var bi = img('beacon'); if (bi) ctx.drawImage(bi, G.padX - 9, G.padY - 66, 18, 16); else { ctx.fillStyle = '#7dff9a'; ctx.beginPath(); ctx.moveTo(G.padX, G.padY - 46); ctx.lineTo(G.padX - 8, G.padY - 60); ctx.lineTo(G.padX + 8, G.padY - 60); ctx.fill(); }
+  }
+  drawHUD();
+  // стрелка к площадке, если она не видна по бокам: не нужна (одна сцена)
+}
+
+var last = 0, acc = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  var dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (!G.run) return;
+  if (!G.paused) {
+    acc += dt; var n = 0;
+    while (acc >= 1 / 120 && n < 12) { step(1 / 120); acc -= 1 / 120; n++; if (!G.run) break; }
+    if (acc > 0.1) acc = 0;
+    G.parts = G.parts.filter(function (p) { p.l -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += (G.body ? G.body.g * 10 : 20) * dt; return p.l > 0; });
+    Snd.engine(G.thrustOn && G.fuel > 0 && !G.ending);
+    if (G.run && G.fuel < G.fuel0 * 0.12 && G.fuel > 0 && now - G.lastWarn > 700 && G.thrustOn) { G.lastWarn = now; Snd.warn(); }
+  }
+  if (G.run) render();
+}
+requestAnimationFrame(frame);
+
+/* ===== Ввод ===== */
+(function () {
+  var th = $('thrust'), tp = $('tilt'), tl = $('tl'), tr = $('tr');
+  function setTilt(e) {
+    var r = tp.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, d = x < 0.5 ? -1 : 1;
+    G.tilt = d; tl.classList.toggle('d', d < 0); tr.classList.toggle('d', d > 0);
+  }
+  function clr() { G.tilt = 0; tl.classList.remove('d'); tr.classList.remove('d'); }
+  th.addEventListener('pointerdown', function (e) { Snd.init(); try { th.setPointerCapture(e.pointerId); } catch (x) {} G.thrust = true; th.classList.add('d'); e.preventDefault(); });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (n) { th.addEventListener(n, function () { G.thrust = false; th.classList.remove('d'); }); });
+  tp.addEventListener('pointerdown', function (e) { Snd.init(); try { tp.setPointerCapture(e.pointerId); } catch (x) {} setTilt(e); e.preventDefault(); });
+  tp.addEventListener('pointermove', function (e) { if (e.buttons || e.pressure > 0) setTilt(e); });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (n) { tp.addEventListener(n, clr); });
+  $('chute').addEventListener('click', function () {
+    if (!G.run || G.chute) return; G.chute = true; this.style.opacity = .4; Snd.click(); toast(TR(G.body.chuteMsg), 2200);
+  });
+  $('hud-pause').onclick = function () { PF.gameplay(false); G.paused = true; $('pause').classList.add('on'); Snd.engine(false); };
+  $('p-res').onclick = function () { PF.gameplay(true); G.paused = false; $('pause').classList.remove('on'); last = performance.now(); };
+  $('p-quit').onclick = function () { $('pause').classList.remove('on'); show('lv'); };
+  PF.onPause = function (h) { if (h && G.run && !G.paused) $('hud-pause').onclick(); };
+  window.addEventListener('keydown', function (e) {
+    if (e.code === 'ArrowLeft') G.kb.l = 1; else if (e.code === 'ArrowRight') G.kb.r = 1; else if (e.code === 'ArrowUp' || e.code === 'Space') G.kb.t = 1;
+    else if (e.code === 'KeyP' && G.run) $('chute').click(); else return; e.preventDefault();
+  });
+  window.addEventListener('keyup', function (e) {
+    if (e.code === 'ArrowLeft') G.kb.l = 0; else if (e.code === 'ArrowRight') G.kb.r = 0; else if (e.code === 'ArrowUp' || e.code === 'Space') G.kb.t = 0;
+  });
+  window.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+})();
+
+/* ===== Масштаб под экран ===== */
+function fit() {
+  var s = Math.min(window.innerWidth / 375, window.innerHeight / 812), app = $('app');
+  app.style.transform = 'translate(' + ((window.innerWidth - 375 * s) / 2) + 'px,' + ((window.innerHeight - 812 * s) / 2) + 'px) scale(' + s + ')';
+}
+window.addEventListener('resize', fit); fit();
+drawMenuShip();
+(function () {
+  var pl = ''; try { pl = (PF.lang && PF.lang()) || ''; } catch (e) {}
+  var want = save.langSet ? save.lang : (pl ? (pl === 'ru' || pl === 'be' || pl === 'kk' || pl === 'uk' || pl === 'uz' ? 'ru' : 'en') : (/^(ru|kk|be|uk|uz)/i.test(navigator.language || 'ru') ? 'ru' : 'en'));
+  setLang(want, false);
+  PF.onLang = function (l) { if (!save.langSet) setLang(l === 'ru' || l === 'be' || l === 'kk' || l === 'uk' || l === 'uz' ? 'ru' : 'en', false); };
+})();
+PF.onSdk = function (sdk) {
+  applyCloudSave();
+  if (!window.Premium) return;
+  var KEY = 'posadka-premium';
+  try { var m = Premium.mergeState(PF.get(KEY), PF.cloudGet('premium')); if (m) PF.put(KEY, m); } catch (e) {}
+  Premium.init({
+    sdk: sdk, lang: LANG, texts: PM_TEXTS, gift: { grant: giftGrant, text: PM_GIFT },
+    store: { get: function () { return PF.get(KEY); }, set: function (raw) { PF.put(KEY, raw); }, save: function () { return PF.cloudSave('premium', PF.get(KEY)); } }
+  }).then(function () { pmRefresh(); calmCard(); });
+  Premium.onChange(function () { pmRefresh(); });
+};
+PF.ready();
+</script>
+
+<script>
+/* ===== Google Play: адаптер рекламы/покупок, «Назад», офлайн ===== */
+(function () {
+  if (window.GP) {
+    PF.fullscreen = function (done) { if (GP.ads.available()) GP.ads.interstitial(function () { done(); }); else done(); };
+    PF.canReward = function () { return GP.ads.available(); };
+    PF.reward = function (cb) { GP.ads.rewarded(function (ok) { cb(!!ok); }); };
+  }
+  window.__app = { back: function () {
+    if (cur === 'play') { if (!G.paused) $('hud-pause').onclick(); return true; }
+    if ($('pause').classList.contains('on')) { $('p-res').onclick(); return true; }
+    var m = { lv: 'map', map: 'menu', brief: 'lv', res: 'lv', ships: 'menu' };
+    if (m[cur]) { show(m[cur]); return true; }
+    return false;
+  } };
+  try { history.pushState({ g: 1 }, ''); window.addEventListener('popstate', function () { if (__app.back()) history.pushState({ g: 1 }, ''); }); } catch (e) {}
+  if ('serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+})();
+</script>
+</body>
+</html>

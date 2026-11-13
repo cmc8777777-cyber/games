@@ -1,0 +1,9 @@
+/* Service worker «Фермы»: кэширует все файлы при установке, дальше работает без сети. Версия кэша: 6db9f387a2 */
+const CACHE = 'ferma-6db9f387a2';
+const FILES = ["./", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "img/an_cow.webp", "img/an_goat.webp", "img/an_hen.webp", "img/an_hive.webp", "img/c_beet_1.webp", "img/c_beet_2.webp", "img/c_beet_3.webp", "img/c_cab_1.webp", "img/c_cab_2.webp", "img/c_cab_3.webp", "img/c_car_1.webp", "img/c_car_2.webp", "img/c_car_3.webp", "img/c_cuc_1.webp", "img/c_cuc_2.webp", "img/c_cuc_3.webp", "img/c_onion_1.webp", "img/c_onion_2.webp", "img/c_onion_3.webp", "img/c_pea_1.webp", "img/c_pea_2.webp", "img/c_pea_3.webp", "img/c_pot_1.webp", "img/c_pot_2.webp", "img/c_pot_3.webp", "img/c_pum_1.webp", "img/c_pum_2.webp", "img/c_pum_3.webp", "img/c_rad_1.webp", "img/c_rad_2.webp", "img/c_rad_3.webp", "img/c_sal_1.webp", "img/c_sal_2.webp", "img/c_sal_3.webp", "img/c_str_1.webp", "img/c_str_2.webp", "img/c_str_3.webp", "img/c_tom_1.webp", "img/c_tom_2.webp", "img/c_tom_3.webp", "img/cover_start.webp", "img/ic_an.webp", "img/ic_ap.webp", "img/ic_beds.webp", "img/ic_book.webp", "img/ic_coin.webp", "img/ic_farm.webp", "img/ic_garden.webp", "img/ic_mkt.webp", "img/ic_water.webp", "img/manifest.json", "index.html", "manifest.webmanifest"];
+self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
+self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE && k.indexOf('ferma-') === 0).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(r => r || fetch(e.request).catch(() => caches.match('./index.html'))));
+});

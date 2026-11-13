@@ -113,8 +113,9 @@ window.KP = window.KP || {};
     // 1. соперник: ближний, с поправкой на ослабленных (добивание)
     var calm = G.time < (G.calmT || 0) && !(ch.lastHitBy && G.time - ch.hitT < 5);
     var best = null, bs = 1e9, lim = calm ? (T.hunt ? 15 : 0) : T.sight;
-    for (var i = 0; i < G.chars.length; i++) {
-      var o = G.chars[i]; if (!o.alive || (o.state !== "ground" && o.state !== "drive") || !enemy(ch, o)) continue;
+    var pool = G.drones && G.drones.length ? G.chars.concat(G.drones) : G.chars;
+    for (var i = 0; i < pool.length; i++) {
+      var o = pool[i]; if (!o.alive || (o.state !== "ground" && o.state !== "drive" && !o.isDrone) || !enemy(ch, o)) continue;
       var d = dist(ch, o); if (d > lim) continue;
       var sc = d - (200 - o.hp - o.sh) * 0.08 * A.skill;
       if (sc < bs) { bs = sc; best = o; }
@@ -227,7 +228,7 @@ window.KP = window.KP || {};
   function aimAt(ch, o, A) {
     var d = dist(ch, o), w = KP.WEAPONS[ch.slots[ch.cur] ? ch.slots[ch.cur].id : 0];
     var tt = w.spd ? d / w.spd : 0, lead = A.skill * 0.9;
-    var tx = o.x + o.mvx * tt * lead, ty = o.y + 1.0, tz = o.z + o.mvz * tt * lead;
+    var tx = o.x + o.mvx * tt * lead, ty = o.y + (o.isDrone ? 0 : 1.0), tz = o.z + o.mvz * tt * lead;
     var still = Math.hypot(ch.mvx, ch.mvz) < 0.5;
     var e = A.aimErr * (o.onGround ? 1 : 1.5) * (1 + Math.hypot(o.mvx, o.mvz) / 12) * (still && w.zoom ? 0.55 : 1) * (A.ambushShot ? 0.6 : 1), r = d * Math.tan(e);
     return { x: tx + (rnd() - 0.5) * 2 * r, y: ty + (rnd() - 0.5) * 1.4 * r, z: tz + (rnd() - 0.5) * 2 * r };

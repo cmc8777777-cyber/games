@@ -121,7 +121,8 @@ window.KP = window.KP || {};
     ["a_tut", function (P) { return P.tut ? 1 : 0; }, 1], ["a_frost", function (P) { return st(P, "wFrost"); }, 1], ["a_trio", function (P) { return st(P, "wTrio"); }, 1],
     ["a_cap", function (P) { return st(P, "wCap"); }, 1], ["a_tdm", function (P) { return st(P, "wTdm"); }, 1], ["a_lr", function (P) { return st(P, "wLr"); }, 1],
     ["a_snipe", function (P) { return wk(P, 5); }, 25], ["a_shotgun", function (P) { return wk(P, 3); }, 50], ["a_axe", function (P) { return wk(P, 0); }, 10],
-    ["a_cryst", function (P) { return st(P, "cryst"); }, 100], ["a_drops", function (P) { return st(P, "drops"); }, 10], ["a_pass2", function (P) { return passTier(P, 2).tier; }, 50]
+    ["a_cryst", function (P) { return st(P, "cryst"); }, 100], ["a_drops", function (P) { return st(P, "drops"); }, 10], ["a_pass2", function (P) { return passTier(P, 2).tier; }, 50],
+    ["a_chal30", function (P) { return KP.chalTotal ? KP.chalTotal(P) : 0; }, 30], ["a_chal60", function (P) { return KP.chalTotal ? KP.chalTotal(P) : 0; }, 60], ["a_pve", function (P) { return Number(P.st && P.st.pveStars) || 0; }, 3]
   ];
   /* новые выполненные достижения (отмечает и возвращает список ключей) */
   function checkAch(P) {

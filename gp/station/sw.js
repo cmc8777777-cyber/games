@@ -1,0 +1,5 @@
+/* кэш всех файлов для офлайна; поднять версию при обновлении */
+const V='kosmos-gp-v1',F=["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "img/bg_earth.webp", "img/cosmo1.webp", "img/cosmo2.webp", "img/cosmo3.webp", "img/cosmo4.webp", "img/cover_start.webp", "img/ic_food.webp", "img/ic_health.webp", "img/ic_heat.webp", "img/ic_o2.webp", "img/ic_power.webp", "img/ic_water.webp", "img/mod_batt.webp", "img/mod_core.webp", "img/mod_green.webp", "img/mod_hab.webp", "img/mod_lab.webp", "img/mod_lock.webp", "img/mod_panel.webp", "img/mod_rad.webp"];
+self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(F)).then(()=>self.skipWaiting()));});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))).then(()=>self.clients.claim()));});
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request)));});

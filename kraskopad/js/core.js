@@ -79,6 +79,7 @@ window.KP = window.KP || {};
     train: { n: 9, zone: [], r0: 230, train: true },
     cap: { n: 16, team: 8, rules: "cap", arena: 70, zone: [], r0: 70 },
     tdm: { n: 24, team: 12, rules: "tdm", arena: 85, zone: [], r0: 85 },
+    pve: { n: 4, team: 4, rules: "pve", zone: [], r0: 140 },
     lr: { n: 16, rules: "lr", zone: [[6, 16, 32, 3], [5, 14, 12, 6], [4, 12, 0, 12]], r0: 62 },
     tutor: { n: 4, zone: [], r0: 230, train: true, tutor: true },
     event: { n: 20, zone: [[50, 30, 95, 1], [35, 26, 55, 2], [26, 22, 30, 4], [22, 18, 14, 7], [16, 15, 5, 10], [10, 12, 0, 16]], r0: 200 },
@@ -493,6 +494,8 @@ window.KP = window.KP || {};
       var d = Math.hypot(o.x - x, o.y + 1 - y, o.z - z);
       if (d < R) damage(o, p.dmg * (1 - 0.6 * d / R) * (o === p.owner ? 0.35 : 1), p.owner, "splash", p.thr ? "gren" : 6);
     });
+    if (G.drones && !(p.owner && p.owner.isDrone)) G.drones.forEach(function (dr) { if (!dr.alive) return; var dd = Math.hypot(dr.x - x, dr.y - y, dr.z - z); if (dd < R + dr.D.size) KP.droneHit(dr, p.dmg * (1 - 0.5 * dd / (R + dr.D.size)), p.owner, p.thr ? "gren" : 6); });
+    if (G.pve && p.owner && p.owner.isDrone && Math.hypot(G.pve.base.x - x, G.pve.base.z - z) < R + 2.5) KP.pveBaseHit(p);
     var near = W3.query(x - R, z - R, x + R, z + R);
     near.forEach(function (c) { if ((c.kind === "wall" || c.kind === "ramp") && x > c.x0 - R && x < c.x1 + R && z > c.z0 - R && z < c.z1 + R) hurtBuild(c, p.dmg * 2); });
     burst(x, y, z, p.col, 30, 14); splat(x, W3.height(x, z), z, p.col, 2.4); KP.flash && KP.flash(x, y, z, 3.5, "#ffd27a"); KP.sparks && KP.sparks(x, y, z, 18);
@@ -516,6 +519,15 @@ window.KP = window.KP || {};
         var rad = (o.isPlayer ? 0.75 : 0.85) * (o.rollT > 0 ? 0.6 : o.crouch ? 0.85 : 1);
         if (qx * qx + qy * qy * 0.45 + qz * qz < rad * rad && tt < hitT) { hitT = tt; hitC = o; }
       }
+      // дроны (PvE)
+      var hitD = null;
+      if (G.drones && G.drones.length && !(p.owner && p.owner.isDrone)) for (var dk = 0; dk < G.drones.length; dk++) {
+        var dr = G.drones[dk]; if (!dr.alive) continue;
+        var ux2 = nx - p.x, uy2 = ny - p.y, uz2 = nz - p.z, wx2 = dr.x - p.x, wy2 = dr.y - p.y, wz2 = dr.z - p.z;
+        var t3 = Math.max(0, Math.min(1, (wx2 * ux2 + wy2 * uy2 + wz2 * uz2) / (segL * segL || 1)));
+        var qx2 = p.x + ux2 * t3 - dr.x, qy2 = p.y + uy2 * t3 - dr.y, qz2 = p.z + uz2 * t3 - dr.z, rr2 = dr.D.size * 0.95 + 0.2;
+        if (qx2 * qx2 + qy2 * qy2 + qz2 * qz2 < rr2 * rr2 && t3 < hitT) { hitT = t3; hitD = dr; hitC = null; }
+      }
       // дома и постройки
       var near = W3.query(Math.min(p.x, nx) - 0.5, Math.min(p.z, nz) - 0.5, Math.max(p.x, nx) + 0.5, Math.max(p.z, nz) + 0.5);
       for (var m = 0; m < near.length; m++) {
@@ -538,9 +550,10 @@ window.KP = window.KP || {};
         if (p.thr === "smoke") smokeAt(hx, hy, hz);
         else if (p.thr === "pop") popWall(hx, hz, p.owner);
         else if (p.splash) explode(p, hx, hy, hz);
+        else if (hitD && !hitC && !hitB && !hitProp) { KP.droneHit(hitD, p.dmg, p.owner, p.wid); KP.sparks && KP.sparks(hx, hy, hz, 5); burst(hx, hy, hz, p.col, 3, 4); }
         else if (hitC) { damage(hitC, p.dmg, p.owner, "shot", p.wid); burst(hx, hy, hz, p.col, 5, 5); KP.sparks && KP.sparks(hx, hy, hz, hitC.sh > 0 ? 6 : 3, hitC.sh > 0 ? "#8fdcff" : undefined); }
         else if (hitB) { if (hitB.kind === "wall" || hitB.kind === "ramp") hurtBuild(hitB, p.dmg); burst(hx, hy, hz, p.col, 4, 4); KP.sparks && KP.sparks(hx, hy, hz, 3); }
-        else if (hitProp) { burst(hx, hy, hz, p.col, 3, 4); }
+        else if (hitProp) { burst(hx, hy, hz, p.col, 3, 4); if (G.pve && hitProp === G.pve.base.col) KP.pveBaseHit(p); }
         else { splat(hx, gh, hz, p.col, p.wid === 3 ? 0.25 : 0.4); burst(hx, gh + 0.1, hz, p.col, 2, 3); KP.sparks && KP.sparks(hx, gh + 0.1, hz, 2); }
         G.proj.splice(i, 1); continue;
       }

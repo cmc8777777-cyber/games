@@ -17,7 +17,7 @@
   function saveProg() { PF.put("kp.prog", JSON.stringify(PROG)); }
   function loadAll() {
     var s = jget("kp.set", {}); Object.keys(s).forEach(function (k) { SET[k] = s[k]; });
-    var p = jget("kp.prog", {}); PROG.xp = Number(p.xp) || 0; PROG.pp = Number(p.pp) || 0; PROG.pp2 = Number(p.pp2) || 0; PROG.sq = p.sq; PROG.ach = p.ach || {}; PROG.ws = p.ws || {}; PROG.st = p.st || {}; PROG.ch = p.ch || {}; PROG.own = p.own || {};
+    var p = jget("kp.prog", {}); PROG.xp = Number(p.xp) || 0; PROG.pp = Number(p.pp) || 0; PROG.pp2 = Number(p.pp2) || 0; PROG.sq = p.sq; PROG.ach = p.ach || {}; PROG.ws = p.ws || {}; PROG.chal = p.chal || {}; PROG.st = p.st || {}; PROG.ch = p.ch || {}; PROG.own = p.own || {};
     PROG.skin = p.skin || 0; PROG.paint = p.paint || 0; PROG.wrap = p.wrap || 0; PROG.emote = p.emote || 0; PROG.dq = p.dq; PROG.wq = p.wq;
     if (!p.v && (PROG.skin === 10 || PROG.skin === 11)) PROG.skin = PROG.skin === 10 ? 24 : 12;   // перенос номеров скинов из v0.1
     if (PROG.skin >= KP.SKINS.length) PROG.skin = 0;
@@ -36,6 +36,9 @@
     sunset: { sun: [-0.7, 0.2, 0.45], sc: "#ffb070", si: 1.05, hs: "#ffc9a0", hg: "#4a3e3a", hi: 0.55, fog: "#e8b994", far: 0.95, top: "#3a4f8a", mid: "#d98a6a", hor: "#ffcf9a", glow: "#ffd09a" },
     morning: { sun: [0.6, 0.3, -0.5], sc: "#ffe2bd", si: 0.85, hs: "#d8e4f0", hg: "#5b5a48", hi: 0.7, fog: "#d8dfe4", far: 0.8, top: "#5a86c0", mid: "#a9c7e2", hor: "#e9e6df", glow: "#fff1d9" },
     storm: { sun: [0.3, 0.8, 0.2], sc: "#c9d2dc", si: 0.45, hs: "#a8b4c0", hg: "#3e423f", hi: 0.75, fog: "#8e9aa4", far: 0.72, top: "#4a5560", mid: "#7c8792", hor: "#9aa4ad", glow: "#c9d2dc", rain: true },
+    desert: { sun: [0.4, 0.8, 0.3], sc: "#fff1d8", si: 1.05, hs: "#e8dcc8", hg: "#a8784a", hi: 0.6, fog: "#e6d2b0", far: 1, top: "#3f78c0", mid: "#9cc6e6", hor: "#f0e2c4", glow: "#fff6e0" },
+    dustset: { sun: [-0.75, 0.22, 0.3], sc: "#ffa060", si: 1.05, hs: "#ffc8a0", hg: "#7a4a32", hi: 0.55, fog: "#e8a878", far: 0.95, top: "#4a3a6a", mid: "#d98a5a", hor: "#ffc890", glow: "#ffc890" },
+    sandstorm: { sun: [0.3, 0.7, 0.2], sc: "#f0d0a0", si: 0.6, hs: "#d8b890", hg: "#8a6a4a", hi: 0.85, fog: "#c9a070", far: 0.5, top: "#a88a64", mid: "#c9a878", hor: "#d8b88a", glow: "#f0d0a0", dust: true },
     frost: { sun: [0.5, 0.45, -0.4], sc: "#f2f6ff", si: 0.95, hs: "#dcecff", hg: "#9aa6b0", hi: 0.75, fog: "#d6e2ea", far: 0.9, top: "#3f74b5", mid: "#9cc2e2", hor: "#e6eef4", glow: "#ffffff" },
     snow: { sun: [0.3, 0.8, 0.2], sc: "#e2e8ef", si: 0.5, hs: "#c8d2dc", hg: "#8a949c", hi: 0.85, fog: "#c3ccd4", far: 0.65, top: "#7a8794", mid: "#a8b3bd", hor: "#c9d1d8", glow: "#e2e8ef", snow: true },
     polar: { sun: [-0.7, 0.18, 0.4], sc: "#ffb9a0", si: 0.9, hs: "#ffd2c4", hg: "#8a8090", hi: 0.62, fog: "#e7c2c0", far: 0.95, top: "#36477a", mid: "#c58fa8", hor: "#ffd2b8", glow: "#ffd2b8" },
@@ -50,7 +53,7 @@
     var u = sky.material.uniforms; u.top.value.set(atm.top); u.mid.value.set(atm.mid); u.hor.value.set(atm.hor); u.sunCol.value.set(atm.glow); u.sun.value.copy(SUN_DIR);
     sun.position.copy(SUN_DIR).multiplyScalar(120);
     if (aurora) aurora.visible = name === "polar" || name === "dusk";
-    if (rain) { rain.visible = !!(atm.rain || atm.snow); rain.material.color.set(atm.snow ? "#ffffff" : "#c8d6e2"); rain.material.opacity = atm.snow ? 0.8 : 0.45; rain.userData.snow = !!atm.snow; }
+    if (rain) { rain.visible = !!(atm.rain || atm.snow || atm.dust); rain.material.color.set(atm.snow ? "#ffffff" : atm.dust ? "#d8b07a" : "#c8d6e2"); rain.material.opacity = atm.snow ? 0.8 : atm.dust ? 0.55 : 0.45; rain.userData.snow = !!atm.snow; rain.userData.dust = !!atm.dust; }
     applyQuality();
   }
   function makeRain() {
@@ -100,7 +103,9 @@
     millBlades = null; beacon = null;
     world = W3.build(scene, SET.q);
     // ящики снабжения (сундуки)
-    world.chests.forEach(function (c) {
+    world.chests.forEach(function (c) { makeChestMesh(c, world.root); });
+    KP.makeChestMesh = function (c) { makeChestMesh(c, scene); };
+    if (false) world.chests.forEach(function (c) {
       c.y = W3.height(c.x, c.z);
       var g = new THREE.Group(), box = new THREE.Mesh(KP.GEO.chest, KP.mat("#2b3036")); box.position.y = 0.35; box.castShadow = true; g.add(box);
       var trim = new THREE.Mesh(KP.GEO.box, KP.mat("#ffc531", "glow")); trim.scale.set(1.16, 0.06, 0.81); trim.position.y = 0.52; g.add(trim);
@@ -109,6 +114,7 @@
       g.position.set(c.x, c.y, c.z); g.rotation.y = c.x * 7 % 6.28; g.userData.lid = lid; g.userData.beam = beam; c.mesh = g; world.root.add(g);
     });
     KP.chests = world.chests;
+    KP.trainSetup(world.root);
     // анимированные объекты локаций
     world.anim.forEach(function (a) {
       if (a.kind === "mill") {
@@ -121,13 +127,21 @@
       }
     });
   }
-  function switchMap(id) {
+  function makeChestMesh(c, parent) {
+    c.y = W3.height(c.x, c.z);
+    var g = new THREE.Group(), box = new THREE.Mesh(KP.GEO.chest, KP.mat("#2b3036")); box.position.y = 0.35; box.castShadow = true; g.add(box);
+    var trim = new THREE.Mesh(KP.GEO.box, KP.mat(c.legend ? "#7ff7ff" : "#ffc531", "glow")); trim.scale.set(1.16, 0.06, 0.81); trim.position.y = 0.52; g.add(trim);
+    var lid = new THREE.Mesh(KP.GEO.lid, KP.mat("#3a4048")); lid.position.y = 0.76; g.add(lid);
+    var beam = new THREE.Mesh(KP.GEO.beam, new THREE.MeshBasicMaterial({ color: c.legend ? "#7ff7ff" : "#ffc531", transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })); beam.position.y = 3.6; g.add(beam);
+    g.position.set(c.x, c.y, c.z); g.rotation.y = c.x * 7 % 6.28; g.userData.lid = lid; g.userData.beam = beam; c.mesh = g; parent.add(g);
+  }
+  function switchMap(id, temp) {
     if (id === W3.map && world) return;
     clearMatch();
     if (world && world.root) { scene.remove(world.root); world.root.traverse(function (o) { if (o.geometry) o.geometry.dispose(); }); }
     (G.vehicles || []).forEach(function (v) { if (v.mesh) scene.remove(v.mesh); }); G.vehicles = [];
     W3.load(id); setupWorld(); buildMinimapBase(); showcaseSpot = null;
-    SET.map = id; saveSet();
+    if (!temp) { SET.map = id; saveSet(); }
   }
   function applyQuality() {
     if (!renderer) return;
@@ -286,21 +300,23 @@
   function startMatch(mode, headless) {
     G.headless = !!headless; if (!headless) applyQuality();
     clearMatch();
-    var M = KP.MODES[mode], L = lvlInfo(PROG.xp).L, first = st("m") === 0;
+    var M = mode === "chal" ? KP.chalMode(G.chalId || 0) : KP.MODES[mode], L = lvlInfo(PROG.xp).L, first = st("m") === 0;
+    if (mode === "chal") { KP.MODES.chal = M; var cmap = KP.CHAL[M.chal].map; if (W3.map !== cmap) { switchMap(cmap, true); clearMatch(); } }
+    if (M.rules === "pve" && W3.map !== "isle") { switchMap("isle", true); clearMatch(); }   // маяк есть только на тропическом острове
     var skillBase = first ? 0.12 : Math.min(0.8, 0.16 + 0.03 * (L - 1));   // сложность растёт с уровнем игрока
     G.botDmgMul = first ? 0.6 : Math.min(1, 0.62 + 0.02 * L);
     var names = KP.botNames().slice().sort(function () { return rnd() - 0.5; });
     var TS = M.team || 1;   // размер команды: 1 — соло, 3 — трио
     G.mods = mode === "event" ? KP.todayEvent() : null; G.grav = (G.mods && G.mods.grav) || 1; G.train = !!M.train;
-    var p = KP.makeChar({ name: KP.lang === "en" ? "You" : "Ты", isPlayer: true, skin: PROG.skin, paint: KP.PAINTS[PROG.paint].c, team: 0 });
+    var p = KP.makeChar({ name: KP.t("you"), isPlayer: true, skin: PROG.skin, paint: KP.PAINTS[PROG.paint].c, team: 0 });
     G.player = p; p.wrap = PROG.wrap;
     if (showcase) { scene.remove(showcase.mesh); showcase = null; }
     if (G.auto || headless) p.ai = KP.makeAI("auto", G.autoSkill || 0.7);
     var types = first ? ["rookie", "rookie", "looter", "rookie", "sneaky", "looter"] : ["rookie", "looter", "rusher", "sniper", "builder", "sneaky", "looter", "rookie", "builder"];
     for (var i = 1; i < M.n; i++) {
       var team = Math.floor(i / TS), ally = team === 0 && !M.rules;
-      var ty = ally ? "ally" : M.train ? "dummy" : types[Math.floor(rnd() * types.length)];
-      var sk = ally ? Math.min(0.85, 0.45 + 0.03 * L) : Math.max(0.05, Math.min(0.95, skillBase + (rnd() - 0.5) * 0.3 + (ty === "rookie" ? -0.15 : 0)));
+      var ty = M.botType || (ally ? "ally" : M.train ? "dummy" : types[Math.floor(rnd() * types.length)]);
+      var sk = M.botSkill ? M.botSkill : M.rules === "pve" ? 0.7 : ally ? Math.min(0.85, 0.45 + 0.03 * L) : Math.max(0.05, Math.min(0.95, skillBase + (rnd() - 0.5) * 0.3 + (ty === "rookie" ? -0.15 : 0)));
       KP.makeChar({ name: names[i % names.length], skin: Math.floor(rnd() * KP.SKINS.length), paint: ally ? p.paint : KP.PAINTS[Math.floor(rnd() * 7)].c, ai: KP.makeAI(ty, sk), team: team, ally: ally && !p.ai });
     }
     G.teamSize = TS; G.nTeams = Math.ceil(M.n / TS);
@@ -332,13 +348,13 @@
     if (G.mods && G.mods.wood) G.chars.forEach(function (c) { c.wood = G.mods.wood; });
     if (M.rules) KP.modeSetup(M);
     KP.eventSetup(M, mode);
-    G.spec = null; G.teamPlace = {}; G.killcam = null; G.rec = []; G.tutor = null; $("tut").style.display = "none"; G.locShown = -2; G.time = 0; G.zoneKO = 0; G.calmT = M.train || M.rules ? 0 : mode === "quick" ? 75 : 160; G.running = true; G.ended = false; G.paused = false; G.mode = mode; G.zoneAcc = 0; G.endT = 0;
+    G.spec = null; G.teamPlace = {}; G.killcam = null; G.rec = []; G.pveRes = null; G.chalRes = null; G.tutor = null; $("tut").style.display = "none"; G.locShown = -2; G.time = 0; G.zoneKO = 0; G.calmT = M.train || M.rules ? 0 : mode === "quick" ? 75 : 160; G.running = true; G.ended = false; G.paused = false; G.mode = mode; G.zoneAcc = 0; G.endT = 0;
     MATCH = { mode: mode, n: M.n, start: Date.now(), dmg0: 0 };
     IN.yaw = Math.atan2(G.plane.bx - G.plane.ax, G.plane.bz - G.plane.az); IN.pitch = -0.25; IN.fire = false; IN.aim = false; IN.jump = false;
     if (M.tutor) setupTutor(p);
     if (!headless) {
       show(null); $("hud").style.display = "block"; document.body.classList.add("inmatch");
-      if (!M.train && !M.rules) toast(KP.t("jumpHint"), 5); else if (M.rules) toast(KP.t(mode + "Hint"), 5);
+      if (!M.train && !M.rules) toast(KP.t("jumpHint"), 5); else if (M.rules === "chal") toast(KP.t("chalHint_" + KP.CHAL[M.chal].t), 5); else if (M.rules) toast(KP.t(mode + "Hint"), 5);
       if (st("m") < 2 && !M.train) setTimeout(function () { if (G.running) toast(KP.t("tutorial"), 6); }, 6000);
       PF.setPlaying(true);
       planeMesh.visible = true;
@@ -449,7 +465,7 @@
       KP.moveChar(c, dt); KP.vehicleBlock(c);
       if (tick && KP.outside(c)) KP.damage(c, Math.max(1, Z.dps || 1), null, "zone");
     }
-    KP.updateProj(dt); KP.smokeTick(dt); KP.eventStep(dt);
+    KP.updateProj(dt); KP.smokeTick(dt); KP.eventStep(dt); KP.trainStep(dt);
     if (!G.headless) { G.recT = (G.recT || 0) + dt; if (G.recT >= 0.1) { G.recT = 0; G.rec = G.rec || []; G.rec.push(G.chars.map(function (c) { return [c.x, c.y, c.z, c.yaw, c.alive && c.state !== "plane" ? 1 : 0]; })); if (G.rec.length > 40) G.rec.shift(); } }
     (G.vehicles || []).forEach(function (v) { if (!v.driver && Math.abs(v.speed) > 0.1) KP.driveVehicle(v, 0, 0, dt); });
     if (P.t > 0.05) KP.zoneUpdate(dt);
@@ -560,7 +576,8 @@
     var p = G.player, N = G.teamSize > 1 ? G.nTeams : MATCH.n, win = G.win, place = win ? 1 : Math.min(N, (G.teamPlace && G.teamPlace[p.team]) || p.place || N);
     var sec = Math.round(G.endT);
     var xpPlace = Math.round(100 * (N - place) / (N - 1)), xpKo = p.kos * 25, xpWin = win ? 100 : 0, xpTime = Math.floor(sec / 6);
-    var gain = Math.round((xpPlace + xpKo + xpWin + xpTime) * ((G.mods && G.mods.xp) || 1));
+    var gain = Math.round((xpPlace + xpKo + xpWin + xpTime) * ((G.mods && G.mods.xp) || 1)) + (G.pveRes ? G.pveRes.xp : 0);
+    if (G.chalRes) { PROG.chal = PROG.chal || {}; var old = PROG.chal[G.chalRes.id] || 0; G.chalRes.isNew = Math.max(0, G.chalRes.stars - old); PROG.chal[G.chalRes.id] = Math.max(old, G.chalRes.stars); gain = 20 + G.chalRes.isNew * 60 + p.kos * 5; }
     var res = { win: win, place: place, n: N, kos: p.kos, dmg: Math.round(p.dmg), sec: sec, gain: gain, built: p.built, chests: p.chests || 0, thrown: p.thrown || 0, driven: p.driven || 0, heals: p.heals || 0, crystals: p.crystals || 0, drops: p.drops || 0 };
     G.lastRes = res;
     if (G.headless) return;
@@ -578,6 +595,8 @@
     PROG.ws = PROG.ws || {};
     Object.keys(p.koW || {}).concat(Object.keys(p.dmgW || {})).forEach(function (w) { var o = PROG.ws[w] = PROG.ws[w] || { k: 0, d: 0 }; o.k += (p.koW && p.koW[w]) || 0; o.d += Math.round((p.dmgW && p.dmgW[w]) || 0); });
     Object.keys(p.dmgW || {}).forEach(function (w) { PROG.ws[w].k -= 0; });
+    if (G.chalRes) res.chal = G.chalRes;
+    if (G.pveRes) { res.pve = G.pveRes; PROG.st.pveWave = Math.max(st("pveWave"), G.pveRes.waves); PROG.st.pveStars = Math.max(st("pveStars"), G.pveRes.stars); }
     res.ach = KP.META.checkAch(PROG); res.ach.forEach(function () { PROG.xp += 100; PROG.pp2 = (PROG.pp2 || 0) + 100; });
     var L1 = lvlInfo(PROG.xp).L, T1 = KP.META.passTier(PROG).tier, after = KP.META.openList(PROG);
     saveProg();
@@ -598,7 +617,7 @@
     feed.unshift({ s: s, t: G.time, me: ch.isPlayer || (by && by.isPlayer) }); if (feed.length > 4) feed.pop(); renderFeed();
     if (by && by.isPlayer && ch !== by) { bigMsg(KP.t("youKo", ch.name), 1.6); KP.sfx("ko"); }
     if (by && by.ai && !by.isPlayer && Math.random() < 0.3) by.emote = { anim: KP.META.EMOTES[Math.floor(Math.random() * KP.META.EMOTES.length)].anim, t: 0 };
-    if (ch.isPlayer && by && by !== ch && G.rec && G.rec.length > 5) G.killcam = { by: by.id, me: ch.id, t0: G.time, frames: G.rec.slice(-32), wname: ch.koWid !== undefined && KP.WEAPONS[ch.koWid] ? KP.t("w" + ch.koWid) : "", hp: Math.max(0, Math.round(by.hp)) };
+    if (ch.isPlayer && by && by !== ch && !by.isDrone && by.id !== undefined && G.rec && G.rec.length > 5) G.killcam = { by: by.id, me: ch.id, t0: G.time, frames: G.rec.slice(-32), wname: ch.koWid !== undefined && KP.WEAPONS[ch.koWid] ? KP.t("w" + ch.koWid) : "", hp: Math.max(0, Math.round(by.hp)) };
     if (ch.isPlayer) { bigMsg(KP.t("lose"), 2.5); KP.sfx("lose", 0, 0, true); if (by && by !== ch) toast(KP.t("byWho", by.name), 3); }
   };
   KP.onHit = function (ch, d, by, kind) {
@@ -632,7 +651,7 @@
     miniBase = document.createElement("canvas"); miniBase.width = miniBase.height = W3.N;
     var c = miniBase.getContext("2d"), img = c.createImageData(W3.N, W3.N);
     for (var i = 0; i < W3.N; i++) for (var j = 0; j < W3.N; j++) {
-      var h = W3.H[i * W3.N + j], o = (i * W3.N + j) * 4, col = W3.MAP.winter ? (h < -0.3 ? [42, 95, 120] : h < 0.5 ? [180, 214, 228] : h > 13 ? [120, 128, 136] : [226, 233, 238]) : (h < -0.3 ? [29, 110, 135] : h < 1.0 ? [205, 182, 138] : h > 13 ? [140, 136, 128] : [84, 128, 62]);
+      var h = W3.H[i * W3.N + j], o = (i * W3.N + j) * 4, col = W3.MAP.desert ? (h < -0.3 ? [42, 138, 154] : h < 0.8 ? [217, 183, 126] : h > 9 ? [168, 87, 58] : [212, 176, 118]) : W3.MAP.winter ? (h < -0.3 ? [42, 95, 120] : h < 0.5 ? [180, 214, 228] : h > 13 ? [120, 128, 136] : [226, 233, 238]) : (h < -0.3 ? [29, 110, 135] : h < 1.0 ? [205, 182, 138] : h > 13 ? [140, 136, 128] : [84, 128, 62]);
       img.data[o] = col[0]; img.data[o + 1] = col[1]; img.data[o + 2] = col[2]; img.data[o + 3] = 255;
     }
     c.putImageData(img, 0, 0);
@@ -658,6 +677,7 @@
     W3.POIS.forEach(function (q) { ctx.fillStyle = "rgba(255,255,255,0.9)"; ctx.font = "bold " + (big ? Math.round(S / 45) : 8) + "px sans-serif"; ctx.textAlign = "center"; ctx.fillText(KP.t(q.key), X(q.x), X(q.z) - 3); });
     G.chars.forEach(function (c) { if (c !== p && c.alive && c.team === p.team && c.state !== "plane") { ctx.fillStyle = "#2fd6ff"; ctx.beginPath(); ctx.arc(X(c.x), X(c.z), 3.2, 0, 6.3); ctx.fill(); } });
     if (KP.modeMini) KP.modeMini(ctx, X, k); KP.eventMini(ctx, X);
+    if (W3.RAIL) { ctx.strokeStyle = "rgba(60,40,30,.8)"; ctx.lineWidth = 1.5; ctx.beginPath(); W3.RAIL.pts.forEach(function (q, qi) { if (qi) ctx.lineTo(X(q[0]), X(q[1])); else ctx.moveTo(X(q[0]), X(q[1])); }); ctx.closePath(); ctx.stroke(); KP.trainPos().forEach(function (c, ci) { ctx.fillStyle = ci ? "#8a6a4c" : "#c43b32"; ctx.fillRect(X(c.x) - 2.5, X(c.z) - 2.5, 5, 5); }); }
     var px = p.state === "plane" ? P.ax + (P.bx - P.ax) * P.t : p.x, pz = p.state === "plane" ? P.az + (P.bz - P.az) * P.t : p.z;
     ctx.save(); ctx.translate(X(px), X(pz)); ctx.rotate(-IN.yaw + Math.PI);
     ctx.fillStyle = "#ffe14d"; ctx.strokeStyle = "#222"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(4.5, 5); ctx.lineTo(-4.5, 5); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
@@ -675,9 +695,12 @@
       var fov = IN.aim && p && p.state === "ground" ? (zoomW() ? 22 : 55) : 70;
       if (Math.abs(camera.fov - fov) > 0.1) { camera.fov += (fov - camera.fov) * Math.min(1, dt * 12); camera.updateProjectionMatrix(); }
     } else if (G.menuView === "ward" && showcase && showcaseSpot) {
-      var sa = performance.now() / 2600;
-      showcase.mesh.rotation.y = sa;
-      camera.position.set(showcaseSpot.x - 1.6, showcaseSpot.y + 1.35, showcaseSpot.z + 4.6); camera.lookAt(showcaseSpot.x - 1.1, showcaseSpot.y + 0.95, showcaseSpot.z);
+      // 3D-просмотр: бойца можно крутить пальцем/мышью и приближать колесом; без касаний он медленно поворачивается сам
+      if (!wardDrag.on && performance.now() - wardDrag.last > 2500) wardDrag.yaw += dt * 0.4;
+      showcase.mesh.rotation.y = wardDrag.yaw;
+      var land = window.innerWidth > window.innerHeight, zd = wardDrag.zoom;
+      if (land) { camera.position.set(showcaseSpot.x - 1.6 * zd, showcaseSpot.y + 1.35, showcaseSpot.z + 4.6 * zd); camera.lookAt(showcaseSpot.x - 1.1 * zd, showcaseSpot.y + 0.95, showcaseSpot.z); }
+      else { camera.position.set(showcaseSpot.x, showcaseSpot.y + 1.0, showcaseSpot.z + 5.4 * zd); camera.lookAt(showcaseSpot.x, showcaseSpot.y + 0.15, showcaseSpot.z); }
       if (camera.fov !== 45) { camera.fov = 45; camera.updateProjectionMatrix(); }
       if (showcaseEmote > 0) { showcaseEmote -= dt; emotePose(showcase.mesh, KP.META.EMOTES[PROG.emote].anim, 2.5 - showcaseEmote); } else emotePose(showcase.mesh, null, 0);
     } else {   // меню: камера кружит над островом
@@ -730,7 +753,7 @@
       planeMesh.rotation.y = Math.atan2(P2.bx - P2.ax, P2.bz - P2.az); if (P2.t >= 1) planeMesh.visible = false;
     }
     if (millBlades) millBlades.rotation.z += dt * 0.8;
-    KP.renderVehicles(); if (KP.modeRender) KP.modeRender(); KP.eventRender(dt);
+    KP.renderVehicles(); if (KP.modeRender) KP.modeRender(dt); KP.eventRender(dt); KP.trainRender(dt, !G.running);
     if (aurora && aurora.visible) { aurora.material.uniforms.t.value = performance.now() / 1000; aurora.position.set(camera.position.x, 0, camera.position.z); }
     if (beacon) beacon.material.opacity = 0.55 + 0.45 * Math.sin(performance.now() / 400);
     sky.position.copy(camera.position); KP.audio.listener(camera.position.x, camera.position.z, IN.yaw);
@@ -743,10 +766,11 @@
     scene.fog.near = out ? 8 : (atm.rain ? 25 : 45); sky.visible = !out;
     if (rain && rain.visible) {
       rain.position.set(camera.position.x, camera.position.y - 8, camera.position.z);
-      var rp = rain.geometry.attributes.position, ra = rp.array, snowy = rain.userData.snow, fallD = dt * (snowy ? 3 : 26), tt = performance.now() / 1000;
+      var rp = rain.geometry.attributes.position, ra = rp.array, snowy = rain.userData.snow, dusty = rain.userData.dust, fallD = dt * (snowy ? 3 : dusty ? 1.2 : 26), tt = performance.now() / 1000;
       for (var ri = 0; ri < ra.length; ri += 6) {
         ra[ri + 1] -= fallD; ra[ri + 4] -= fallD;
-        if (snowy) { var sw = Math.sin(tt + ri) * dt * 0.6; ra[ri] += sw; ra[ri + 3] = ra[ri] + 0.06; ra[ri + 4] = ra[ri + 1] - 0.08; ra[ri + 5] = ra[ri + 2]; }
+        if (dusty) { ra[ri] += dt * 22; if (ra[ri] > 25) ra[ri] -= 50; ra[ri + 3] = ra[ri] + 1.4; ra[ri + 4] = ra[ri + 1] - 0.05; ra[ri + 5] = ra[ri + 2]; }
+        else if (snowy) { var sw = Math.sin(tt + ri) * dt * 0.6; ra[ri] += sw; ra[ri + 3] = ra[ri] + 0.06; ra[ri + 4] = ra[ri + 1] - 0.08; ra[ri + 5] = ra[ri + 2]; }
         if (ra[ri + 4] < 0) { ra[ri + 1] += 24; ra[ri + 4] += 24; }
       }
       rp.needsUpdate = true;
@@ -828,7 +852,7 @@
   /* ---------- экраны ---------- */
   function show(id) {
     G.menuView = id === "scrWard" ? "ward" : null;
-    ["scrLoad", "scrMenu", "scrWard", "scrSet", "scrStats", "scrRes", "scrPause", "scrPass", "scrQuest"].forEach(function (s) { $(s).style.display = s === id ? "flex" : "none"; });
+    ["scrChal", "scrLoad", "scrMenu", "scrWard", "scrSet", "scrStats", "scrRes", "scrPause", "scrPass", "scrQuest"].forEach(function (s) { $(s).style.display = s === id ? "flex" : "none"; });
     if (id) { $("hud").style.display = id === "scrPause" ? "block" : "none"; }
   }
   function applyLang() {
@@ -840,17 +864,19 @@
   function menu() {
     G.running = false; G.ended = false; document.body.classList.remove("inmatch"); $("hud").style.display = "none";
     if (planeMesh) planeMesh.visible = false;
-    clearMatch(); G.zone = null; if (sky) applyAtmos(W3.MAP.winter ? "polar" : "sunset");
+    clearMatch(); G.zone = null; if (SET.map && W3.map !== SET.map && world) switchMap(SET.map); if (sky) applyAtmos(W3.MAP.winter ? "polar" : W3.MAP.desert ? "dustset" : "sunset");
     $("bMap").innerHTML = KP.t("mapLbl") + ": <b>" + KP.t("map_" + W3.map) + "</b>";
     KP.audio.music("menu"); KP.audio.ambience("menu"); $("bTutor").className = PROG.tut ? "" : "gold"; toggleMap(false);
     var I = lvlInfo(PROG.xp);
     $("mLvl").textContent = KP.t("lvl", I.L); $("mXpFill").style.width = (100 * I.cur / I.need) + "%"; $("mXp").textContent = KP.t("xp", I.cur, I.need);
     var PT = KP.META.passTier(PROG); $("mPass").textContent = KP.t("tier", PT.tier, KP.META.TIERS); $("mPassFill").style.width = (100 * PT.cur / PT.size) + "%";
     KP.META.ensureQuests(PROG); var qd = PROG.dq.l.filter(function (q) { return q.d; }).length + PROG.wq.l.filter(function (q) { return q.d; }).length; $("mQuest").textContent = KP.t("questsDone", qd, 6);
-    $("bLang").textContent = KP.lang === "ru" ? "EN" : "RU";
+    $("bLang").textContent = "🌐 " + KP.lang.toUpperCase();
+    $("bGift").style.display = window.Premium && window.Premium.giftAvailable && window.Premium.giftAvailable() ? "" : "none";
     var ev = KP.todayEvent(); $("bEvent").innerHTML = KP.t("event") + ": " + KP.t(ev.key) + "<small>" + KP.t(ev.key + "d") + " · ×" + ev.xp + " " + KP.t("resXp") + "</small>";
     $("pcHelp").style.display = isTouch ? "none" : "block";
     $("scrMenu").classList.toggle("artbg", !!(KP.ART && KP.ART.bg && KP.ART.bg.indexOf("bg_menu") >= 0 && W3.map === "isle"));   // фон Художника на тропической карте
+    $("scrMenu").classList.toggle("artbg2", !!(KP.ART && KP.ART.bg && KP.ART.bg.indexOf("bg_season2") >= 0 && W3.map === "frost"));   // зимний фон сезона 2 на «Ледяном перевале"
 
     show("scrMenu");
   }
@@ -897,7 +923,20 @@
     else if (anim === "spin") { P.arms.rotation.x = -2.4; m.userData.spin = t * 9; }
   }
   /* витрина бойца в мире (камера смотрит на неё, пока открыт экран снаряжения) */
-  var showcase = null, showcaseSpot = null, showcaseEmote = 0;
+  var showcase = null, showcaseSpot = null, showcaseEmote = 0, wardDrag = { on: false, x: 0, yaw: 0, zoom: 1, last: 0 };
+  function bindWardDrag() {
+    var el = $("scrWard");
+    function down(x, t) { if (t && t.closest && t.closest(".panel,button")) return; wardDrag.on = true; wardDrag.x = x; }
+    function move(x) { if (!wardDrag.on) return; wardDrag.yaw += (x - wardDrag.x) * 0.012; wardDrag.x = x; wardDrag.last = performance.now(); }
+    function up() { wardDrag.on = false; wardDrag.last = performance.now(); }
+    el.addEventListener("mousedown", function (e) { down(e.clientX, e.target); });
+    window.addEventListener("mousemove", function (e) { move(e.clientX); });
+    window.addEventListener("mouseup", up);
+    el.addEventListener("touchstart", function (e) { down(e.touches[0].clientX, e.target); }, { passive: true });
+    el.addEventListener("touchmove", function (e) { move(e.touches[0].clientX); }, { passive: true });
+    el.addEventListener("touchend", up);
+    el.addEventListener("wheel", function (e) { if (e.target.closest && e.target.closest(".panel")) return; wardDrag.zoom = Math.max(0.6, Math.min(1.4, wardDrag.zoom + (e.deltaY > 0 ? 0.08 : -0.08))); }, { passive: true });
+  }
   function buildShowcase() {
     if (!showcaseSpot) {
       for (var a = 0; a < 60 && !showcaseSpot; a++) { var x = 34 + Math.cos(a) * a * 0.6, z = -34 + Math.sin(a) * a * 0.6; if (W3.height(x, z) > 1.5 && W3.slope(x, z) < 0.2 && !W3.query(x - 5, z - 5, x + 5, z + 5).length) showcaseSpot = { x: x, z: z, y: W3.height(x, z) }; }
@@ -927,7 +966,9 @@
     var S = passSeason || KP.META.SEASON, PT = KP.META.passTier(PROG, S), R = KP.META.passRewards(S), prem = KP.META.premOn();
     var h = "<div class=tabs>" + [1, 2].map(function (n) { return "<button class='small" + (n === S ? " on" : "") + "' data-season=" + n + ">" + KP.t("season" + n) + "</button>"; }).join("") + "</div>";
     if (S < KP.META.SEASON) h += "<small class=dim>" + KP.t("seasonOld") + "</small>";
-    h += "<div class=passHead><b>" + KP.t("season" + S) + "</b><span>" + KP.t("tier", PT.tier, KP.META.TIERS) + "</span><div class=bar><i style='width:" + (100 * PT.cur / PT.size) + "%'></i></div><small>" + KP.t("passHow", KP.META.TIER_SIZE) + " · " + (prem ? KP.t("premOn") : KP.t("premOff")) + "</small></div><div class=passRow>";
+    var ic2 = function (n) { return KP.ART && KP.ART.icons && KP.ART.icons.indexOf(n) >= 0 ? "<img class=passIc src='img/" + n + ".webp' alt='' onerror=\"this.style.display='none'\">" : ""; };
+    $("scrPass").classList.toggle("s2bg", S === 2 && !!(KP.ART && KP.ART.bg && KP.ART.bg.indexOf("bg_season2") >= 0));
+    h += "<div class=passHead><b>" + (S === 2 ? ic2("i_crystal") : "") + KP.t("season" + S) + (S === 2 ? ic2("i_drop2") : "") + "</b><span>" + KP.t("tier", PT.tier, KP.META.TIERS) + "</span><div class=bar><i style='width:" + (100 * PT.cur / PT.size) + "%'></i></div><small>" + KP.t("passHow", KP.META.TIER_SIZE) + " · " + (prem ? KP.t("premOn") : KP.t("premOff")) + "</small></div><div class=passRow>";
     for (var t = 1; t <= KP.META.TIERS; t++) {
       var got = PT.tier >= t, f = R.free[t] || [], pr = R.prem[t] || [];
       if (!f.length && !pr.length && t % 5) continue;
@@ -949,6 +990,17 @@
     });
     $("questList").innerHTML = h; show("scrQuest");
   }
+  /* испытания: 20 карточек со звёздами; следующее открывается после ★ в предыдущем */
+  function chalScreen() {
+    var h = "<div class=passHead><b>" + KP.t("chals") + "</b><small>" + KP.t("chalStars", KP.chalTotal(PROG), KP.CHAL.length * 3) + "</small></div><div class=chals>";
+    KP.CHAL.forEach(function (C, i) {
+      var open = KP.chalOpen(PROG, i), s = (PROG.chal || {})[i] || 0;
+      h += "<div class='chal" + (open ? "" : " locked") + "' data-c=" + i + "><b>" + (i + 1) + ". " + KP.t("chal_" + C.t) + "</b><small>" + KP.t("map_" + C.map) + " · " + KP.t(W3.MAPS[C.map].pois[Math.min(C.poi, W3.MAPS[C.map].pois.length - 1)].key) + "</small><span class=st>" + "★★★".slice(0, s) + "<i>" + "☆☆☆".slice(0, 3 - s) + "</i></span>" + (open ? "" : "<small>" + KP.t("chalLocked") + "</small>") + "</div>";
+    });
+    $("chalList").innerHTML = h + "</div>";
+    Array.prototype.forEach.call($("chalList").querySelectorAll("[data-c]"), function (el) { el.onclick = function () { var i = +el.getAttribute("data-c"); if (!KP.chalOpen(PROG, i)) return; audioInit(); G.chalId = i; startMatch("chal"); }; });
+    show("scrChal");
+  }
   function settings() {
     $("sSens").value = SET.sens; $("sSnd").textContent = SET.snd ? KP.t("on") : KP.t("off"); $("sMus").textContent = SET.mus ? KP.t("on") : KP.t("off"); $("sQ").textContent = SET.qmode === "auto" ? KP.t("qAutoLbl") : SET.qmode === "high" ? KP.t("qHigh") : KP.t("qLow");
     show("scrSet");
@@ -961,10 +1013,12 @@
     $("rRows").innerHTML = [["resKos", r.kos], ["resDmg", r.dmg], ["resTime", fmt(r.sec)], ["resXp", "+" + r.gain]].map(function (x) { return "<div class=row><span>" + KP.t(x[0]) + "</span><b>" + x[1] + "</b></div>"; }).join("");
     var I = lvlInfo(PROG.xp);
     $("rLvl").textContent = KP.t("lvl", I.L) + " · " + KP.t("xp", I.cur, I.need); $("rXpFill").style.width = (100 * I.cur / I.need) + "%";
-    var notes = []; if (r.newLvl) notes.push(KP.t("newLvl", r.newLvl)); if (r.newTier) notes.push(KP.t("newTier", r.newTier));
+    var notes = []; if (r.chal) notes.push(KP.t("chalRes", r.chal.id + 1, r.chal.t) + " · " + "★★★".slice(0, r.chal.stars) + "☆☆☆".slice(0, 3 - r.chal.stars));
+    if (r.pve) notes.push(KP.t("pveRes", r.pve.waves, KP.PVE.WAVES) + " · " + "★★★".slice(0, r.pve.stars) + "☆☆☆".slice(0, 3 - r.pve.stars));
+    if (r.newLvl) notes.push(KP.t("newLvl", r.newLvl)); if (r.newTier) notes.push(KP.t("newTier", r.newTier));
     (r.quests || []).forEach(function (u) { notes.push(KP.t("questDone", u)); }); (r.ach || []).forEach(function (a) { notes.push(KP.t("achDone", KP.t(a))); }); r.unl.forEach(function (u) { notes.push(KP.t("unlocked", u)); });
     $("rNotes").innerHTML = notes.map(function (n) { return "<div>▸ " + esc(n) + "</div>"; }).join("");
-    $("bX2").style.display = PF.canReward() ? "block" : "none"; $("bX2").disabled = false; $("bX2").textContent = PF.premium() ? KP.t("x2prem") : KP.t("x2");
+    $("bX2").style.display = PF.canReward() ? "block" : "none"; $("bX2").disabled = false; $("bX2").textContent = KP.t("x2");
     if (window.Premium && PF.sdk()) setTimeout(function () { if (!G.running) window.Premium.maybeCard(); }, 900);
     show("scrRes");
   }
@@ -980,13 +1034,15 @@
     $("bCap").onclick = function () { audioInit(); startMatch("cap"); };
     $("bTdm").onclick = function () { audioInit(); startMatch("tdm"); };
     $("bLr").onclick = function () { audioInit(); startMatch("lr"); };
+    $("bPve").onclick = function () { audioInit(); startMatch("pve"); };
+    $("bChal").onclick = chalScreen;
     $("bMap").onclick = function () { var ids = Object.keys(W3.MAPS), i = ids.indexOf(W3.map); switchMap(ids[(i + 1) % ids.length]); menu(); };
     $("bEvent").onclick = function () { audioInit(); startMatch("event"); };
     $("bTrain").onclick = function () { audioInit(); startMatch("train"); };
     $("bQuick").onclick = function () { audioInit(); startMatch("quick"); };
-    $("bWard").onclick = wardrobe; $("bStats").onclick = stats; $("bSet").onclick = settings; $("bPass").onclick = passScreen; $("bQuest").onclick = questScreen;
+    $("bWard").onclick = wardrobe; bindWardDrag(); $("bStats").onclick = stats; $("bSet").onclick = settings; $("bPass").onclick = passScreen; $("bQuest").onclick = questScreen;
     Array.prototype.forEach.call(document.querySelectorAll(".bBack"), function (b) { b.onclick = menu; });
-    $("bLang").onclick = function () { KP.lang = KP.lang === "ru" ? "en" : "ru"; SET.lang = KP.lang; saveSet(); applyLang(); if (window.Premium && window.Premium.setLang) window.Premium.setLang(KP.lang); menu(); };
+    $("bLang").onclick = function () { KP.lang = KP.LANGS[(KP.LANGS.indexOf(KP.lang) + 1) % KP.LANGS.length]; SET.lang = KP.lang; saveSet(); applyLang(); if (window.Premium && window.Premium.setLang) window.Premium.setLang(premLang()); menu(); };
 
     $("sSens").oninput = function () { SET.sens = +$("sSens").value; saveSet(); };
     $("sSnd").onclick = function () { SET.snd = SET.snd ? 0 : 1; KP.audio.setVol(); saveSet(); settings(); };
@@ -998,6 +1054,8 @@
     $("sQ").onclick = function () { SET.qmode = SET.qmode === "auto" ? "low" : SET.qmode === "low" ? "high" : "auto"; setQL(qlFromSet()); saveSet(); settings(); };
     $("bAgain").onclick = function () { PF.interstitial(function () { startMatch(G.mode || "solo"); }); };
     $("bMenu").onclick = function () { PF.interstitial(menu); };
+    /* подарок дня Премиума (вместо прежних наград без ролика): раз в сутки, пока Премиум активен */
+    $("bGift").onclick = function () { if (window.Premium && window.Premium.claimGift()) menu(); else $("bGift").style.display = "none"; };
     $("bX2").onclick = function () {
       $("bX2").disabled = true;
       PF.rewarded(function (got) {
@@ -1040,17 +1098,36 @@
 
   /* ---------- автоигрок и прогоны баланса ---------- */
   
+  /* «шаг назад» (кнопка «Назад» Android в сборке Google Play, gp-adapter.js): закрыть карту, пауза/продолжить, окно → меню.
+     false — уже в главном меню, назад некуда. */
+  window.__app = { back: function () {
+    if (G.running && $("bigmap").style.display === "block") { toggleMap(false); return true; }
+    if (G.running && !G.ended) { togglePause(!G.paused); return true; }
+    if ($("scrMenu").style.display !== "flex" && $("scrLoad").style.display !== "flex") { menu(); return true; }
+    return false;
+  } };
+  /* Премиум знает только ru/en: казахский — по-русски, остальные — по-английски */
+  function premLang() { return KP.lang === "ru" || KP.lang === "kk" ? "ru" : "en"; }
+  /* подарок дня ≈ 2–3 ролика «×2 опыта»: +500 опыта и +500 очков пропуска текущего сезона */
+  var GIFT_XP = 500;
+  function grantGift() {
+    var before = KP.META.openList(PROG); PROG.xp += GIFT_XP; PROG.pp2 = (PROG.pp2 || 0) + GIFT_XP; saveProg();
+    var after = KP.META.openList(PROG).filter(function (x) { return before.indexOf(x) < 0; });
+    toast(KP.t("giftGot", GIFT_XP) + (after.length ? " · " + after.map(KP.META.itemName).join(", ") : ""));
+    if (!G.running) menu();
+  }
+  KP.grantGift = grantGift;
   /* ---------- запуск ---------- */
   PF.init().then(function () {
     loadAll();
     var nav = (navigator.language || "ru").slice(0, 2);
-    KP.lang = SET.lang || (PF.hasSdk() ? (PF.lang() === "ru" || PF.lang() === "be" || PF.lang() === "kk" || PF.lang() === "uk" ? "ru" : "en") : (nav === "ru" || nav === "be" || nav === "kk" || nav === "uk" ? "ru" : "en"));
+    KP.lang = SET.lang && KP.LANGS.indexOf(SET.lang) >= 0 ? SET.lang : KP.pickLang(PF.hasSdk() ? PF.lang() : nav);
     applyLang();
     initScene(); bindInput(); bindUI();
     if (isTouch) document.body.classList.add("touch");
     PF.onCloud = function () { loadAll(); if (!G.running) menu(); };
     if (window.Premium && PF.sdk()) {
-      window.Premium.init({ sdk: PF.sdk(), lang: KP.lang, store: { get: function () { return PF.get("kp.premium"); }, set: function (raw) { PF.put("kp.premium", raw); }, save: function () { return PF.save(); } } })
+      window.Premium.init({ sdk: PF.sdk(), lang: premLang(), gift: { grant: grantGift, text: { ru: KP.DICT.ru.giftWhat, en: KP.DICT.en.giftWhat } }, store: { get: function () { return PF.get("kp.premium"); }, set: function (raw) { PF.put("kp.premium", raw); }, save: function () { return PF.save(); } } })
         .then(function () { if (!G.running) { menu(); window.Premium.maybeCard(); } });
       window.Premium.onChange(function () { if (!G.running) menu(); });
     }

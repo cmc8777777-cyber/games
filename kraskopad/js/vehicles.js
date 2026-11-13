@@ -114,14 +114,16 @@ window.KP = window.KP || {};
   /* ИИ за рулём: едет к цели (A.goal), выходит у цели, при застревании или если рядом враг */
   KP.aiDrive = function (ch, dt) {
     var v = ch.veh, A = ch.ai, gl = A.goal || (G.zone ? { x: G.zone.tx, z: G.zone.tz } : { x: 0, z: 0 });
-    if (v.T.water) {   // на лодке — к ближайшему берегу в сторону центра зоны
+    if (v.T.water && !(G.chalState && G.chalState.C.t === "race")) {   // на лодке — к ближайшему берегу в сторону центра зоны
       var cx = G.zone ? G.zone.tx : 0, cz = G.zone ? G.zone.tz : 0; gl = { x: cx, z: cz };
       if (exitPoint(v) && Math.hypot(v.x - cx, v.z - cz) < Math.hypot(v.x, v.z) + 40 && W3.height(v.x + Math.sin(v.yaw) * 4, v.z + Math.cos(v.yaw) * 4) > -0.4) return { exit: true };
     }
     var dx = gl.x - v.x, dz = gl.z - v.z, d = Math.hypot(dx, dz);
     var want = Math.atan2(dx, dz), diff = Math.atan2(Math.sin(want - v.yaw), Math.cos(want - v.yaw));
     var near = A.target && A.target.alive && A.see && Math.hypot(A.target.x - v.x, A.target.z - v.z) < 28;
-    if ((!v.T.water && (d < 14 || near)) || v.stuckT > 1.4) return { exit: true };
+    var racing = G.chalState && G.chalState.C.t === "race";
+    if (!racing && ((!v.T.water && (d < 14 || near)) || v.stuckT > 1.4)) return { exit: true };
+    if (racing && v.stuckT > 1.4) { v.speed = -4; v.stuckT = 0; }
     return { thr: Math.abs(diff) > 1.2 ? 0.35 : 1, steer: Math.max(-1, Math.min(1, diff * 2)) };
   };
   KP.renderVehicles = function () {

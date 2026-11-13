@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#cfe8a0">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Ферма</title>
+<style>
+:root{--ink:#3b2a1a;--paper:#fff4d6;--paper2:#ffe9b0;--sun:#ffcf4a;--red:#e8604c;--blue:#4aa8d8;--green:#5cb85c;--bg:#cfe8a0}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS","Segoe UI",Roboto,Arial,sans-serif;overscroll-behavior:none}
+body{touch-action:manipulation}
+#app{max-width:430px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;padding:5px 7px 6px;gap:5px}
+#hud{display:flex;gap:4px;flex:none}
+.chip{background:var(--paper);border:3px solid var(--ink);border-radius:11px;padding:4px 6px;font-weight:800;font-size:13px;box-shadow:0 3px 0 var(--ink);display:flex;align-items:center;justify-content:center;white-space:nowrap;color:var(--ink);font-family:inherit}
+#hDay{flex:2.1;min-width:0}td .btn{white-space:nowrap}#hud .chip{padding:4px 4px;font-size:12px}#hMoney{flex:1.25;color:#1e6b2c}#hAp{flex:.95;color:#7a4db3}
+#btnMenu{font-size:19px;padding:2px 10px;cursor:pointer}
+#info{flex:none;background:var(--paper2);border:3px solid var(--ink);border-radius:11px;padding:4px 9px;font-size:12.5px;line-height:1.3;min-height:46px}
+#info .warn{color:#b8321f;font-weight:800}
+#pcontent{flex:1;min-height:0;overflow:auto;background:var(--paper);border:3px solid var(--ink);border-radius:13px;padding:7px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;line-height:1.35}
+#pfoot{flex:none;display:flex;gap:6px}#pfoot .btn{flex:1}#pfoot .btn.go{flex:2}
+#tabs{flex:none;display:flex;gap:3px}
+.tab{flex:1;font:inherit;font-weight:800;font-size:10.5px;color:var(--ink);background:var(--paper);border:3px solid var(--ink);border-radius:11px;padding:3px 0;min-height:42px;cursor:pointer;box-shadow:0 2px 0 var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.tab i{font-style:normal;font-size:17px}
+.tab.on{background:var(--sun);transform:translateY(1px);box-shadow:0 1px 0 var(--ink)}
+.btn{font:inherit;font-weight:800;font-size:15px;color:var(--ink);background:var(--sun);border:3px solid var(--ink);border-radius:13px;padding:6px 10px;min-height:42px;box-shadow:0 4px 0 var(--ink);cursor:pointer}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.btn.go{background:var(--green);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35);font-size:17px}
+.btn.alt{background:var(--paper2)}.btn.red{background:var(--red);color:#fff}.btn.sm{min-height:34px;padding:2px 9px;font-size:13px;box-shadow:0 3px 0 var(--ink)}
+.btn[disabled]{opacity:.45}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.row>.grow{flex:1}
+.head{font-weight:800;font-size:15px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.kv{display:flex;justify-content:space-between;gap:8px;border-bottom:2px dashed #d9c48a;padding:2px 0}.kv b{text-align:right}
+.hint{font-size:12.5px;opacity:.88;line-height:1.35}
+.warn{color:#b8321f;font-weight:800}.good{color:#1e6b2c;font-weight:800}
+.beds{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.bed{font:inherit;color:var(--ink);background:#b98a56;border:3px solid var(--ink);border-radius:9px;min-height:54px;padding:1px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;cursor:pointer;position:relative}
+.bed.sh{background:#8a6a45}.bed.g{background:#c9b27a}.bed .em{font-size:22px}.bed small{font-size:10px;font-weight:800}
+.bed .fl{position:absolute;top:0;right:1px;font-size:11px}
+.bed.sel{outline:4px solid var(--blue);outline-offset:-1px}.bed.rd{background:#9ad46a}
+.bar{height:5px;width:80%;background:#0003;border-radius:3px;margin-top:1px;overflow:hidden}.bar b{display:block;height:100%;background:#fff}
+.card2{background:#fff;border:3px solid var(--ink);border-radius:11px;padding:6px 8px;display:flex;flex-direction:column;gap:4px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.item{font:inherit;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:11px;padding:3px 1px 4px;display:flex;flex-direction:column;align-items:center;cursor:pointer;line-height:1.12;box-shadow:0 3px 0 var(--ink)}
+.item .em{font-size:26px}.item b{font-size:11px}.item small{font-size:10px;opacity:.8}.item.on{background:#fff2b8}
+#ov{position:fixed;inset:0;background:rgba(59,42,26,.55);display:flex;align-items:center;justify-content:center;padding:8px;z-index:10;overflow:auto}
+#ov.hidden{display:none}
+#card{background:var(--paper);border:4px solid var(--ink);border-radius:18px;box-shadow:0 6px 0 var(--ink);padding:12px;width:100%;max-width:400px;max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:8px}
+#card h2{margin:0;font-size:21px}#card p{margin:0;line-height:1.4;font-size:14.5px}
+.q{font-size:16px;line-height:1.4;font-weight:700;background:#fff;border:3px solid var(--ink);border-radius:11px;padding:8px}
+.ok{background:#dff3d2;border:3px solid var(--ink);border-radius:11px;padding:8px}.bad{background:#ffdcd3;border:3px solid var(--ink);border-radius:11px;padding:8px}
+input.in{font:inherit;font-size:20px;font-weight:800;text-align:center;width:100%;border:3px solid var(--ink);border-radius:11px;padding:6px;background:#fff;color:var(--ink)}
+.tag{display:inline-block;font-size:11.5px;font-weight:800;background:var(--blue);color:#fff;border:2px solid var(--ink);border-radius:20px;padding:1px 8px}
+.ic{width:24px;height:24px;object-fit:contain;vertical-align:middle}.bimg{width:34px;height:34px;object-fit:contain}.tic{width:26px;height:26px;object-fit:contain}.pic{width:30px;height:30px;object-fit:contain;vertical-align:middle}
+.cover{width:100%;max-height:40dvh;object-fit:cover;border-radius:12px;border:3px solid var(--ink);display:block}
+table.t{width:100%;border-collapse:collapse;font-size:13px}table.t td{padding:3px 2px;border-bottom:2px dashed #cdb57d;vertical-align:middle}table.t td:last-child{text-align:right}
+#toast{position:fixed;left:50%;bottom:62px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:20px;padding:7px 14px;font-weight:700;font-size:13.5px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:20;max-width:92%;text-align:center}
+#toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <div class="chip" id="hDay"></div>
+    <div class="chip" id="hMoney"></div>
+    <div class="chip" id="hAp"></div>
+    <button class="chip" id="btnMenu" aria-label="Меню">≡</button>
+  </div>
+  <div id="info"></div>
+  <div id="pcontent"></div>
+  <div id="pfoot"></div>
+  <div id="tabs"></div>
+</div>
+<div id="ov" class="hidden"><div id="card"></div></div>
+<div id="toast"></div>
+<script>window.I18N_DATA={"ru":{"t001":"Ферма","t002":"Меню","t003":"Весна","t004":"Лето","t005":"Осень","t006":"Зима","t007":"Крестоцветные","t008":"Сложноцветные","t009":"Бобовые","t010":"Луковые","t011":"Зонтичные","t012":"Амарантовые","t013":"Паслёновые","t014":"Тыквенные","t015":"Розоцветные","t016":"Редис","t017":"Салат","t018":"Горох","t019":"Лук","t020":"Морковь","t021":"Свёкла","t022":"Картофель","t023":"Капуста","t024":"Огурец","t025":"Томат","t026":"Клубника","t027":"Тыква","t028":"кг","t029":"Яйца","t030":"шт","t031":"Молоко коровье","t032":"л","t033":"Молоко козье","t034":"Мёд","t035":"Яблоки","t036":"Вишня","t037":"Курица","t038":"Корова","t039":"Коза","t040":"Улей","t041":"Птичник 8 м²","t042":"3 курицы на м² → до 24 кур","t043":"Коровник 32 м²","t044":"8 м² на корову → до 4 коров","t045":"Козлятник 12 м²","t046":"2 м² на козу → до 6 коз","t047":"Пасека","t048":"до 6 ульев","t049":"Теплица 24 м²","t050":"6 тёплых грядок, работают зимой","t051":"Сад (6 мест)","t052":"яблони и вишни","t053":"Компостная куча","t054":"+1 компост за 2 дня и за каждую убранную грядку","t055":"Цветочная полоса","t056":"божьи коровки и пчёлы","t057":"Трактор","t058":"посадка и уборка 0,5 ОД","t059":"Поливалка","t060":"полив без действий, воды ×1,2","t061":"Холодильная камера","t062":"порча урожая ×0,4","t063":"Яблоня","t064":"любит солнце","t065":"любит полутень","t066":"Семейство: {0}. Созревает за {1} дн., растёт от {2}°, {3}, поливать по {4} л/м² в день, нужно плодородие почвы {5}.","t067":"Цветки опыляют пчёлы.","t068":"Бобовое: на корнях живут клубеньковые бактерии, они обогащают почву азотом.","t069":"☀️ Свет","t070":"Растению нужен свет для фотосинтеза: из воды и углекислого газа в зелёных листьях образуются сахара и кислород. В тени солнцелюбивые культуры растут хуже.","t071":"💧 Вода","t072":"Корни впитывают воду с минеральными солями, лист испаряет её через устьица. В жару испарение больше — воды нужно больше. Без полива урожай падает.","t073":"🟤 Почва","t074":"Плодородие создаёт перегной (гумус): остатки растений и животных, переработанные бактериями и червями. Урожай уносит питательные вещества, их надо возвращать компостом.","t075":"🔁 Севооборот","t076":"На одной грядке нельзя сажать растения одного семейства подряд: копятся их болезни и вредители, а почва истощается одними и теми же веществами.","t077":"🫛 Бобовые","t078":"Клубеньковые бактерии на корнях гороха связывают азот воздуха. После гороха почва богаче азотом — следующая культура растёт лучше.","t079":"🐝 Опыление","t080":"У огурцов, томатов, тыкв и клубники плоды завязываются только после опыления: пчёлы переносят пыльцу с тычинок на пестик. Нет пчёл — плодов мало.","t081":"🐛 Тля","t082":"Тля — мелкие насекомые, сосут сок молодых листьев и размножаются очень быстро. Заметил рано — остановить легче.","t083":"🐞 Божья коровка","t084":"Божьи коровки и их личинки едят тлю. Цветочная полоса привлекает их. Химия убивает и вредителей, и полезных насекомых.","t085":"♻️ Компост","t086":"Компост — перегной из ботвы и навоза: гнилостные бактерии и черви превращают отходы в питательную землю. Бесплатное удобрение.","t087":"🥶 Заморозок","t088":"Теплолюбивые растения (томат, огурец) гибнут при 0°: в клетках замерзает вода. Плёнка удерживает тепло.","t089":"🔥 Жара","t090":"При жаре и засухе вода испаряется быстрее, редис и салат «стреляют» (выбрасывают цветоносы), а корове жарко — молока меньше.","t091":"🌨 Град","t092":"Град ломает листья и стебли. Укрытий в поле нет — помогает страховой запас денег и разные культуры.","t093":"🐔 Куры","t094":"Куры — птицы, питаются зерном, зеленью и насекомыми. Несутся лучше при длинном световом дне (около 14 ч): зимой помогает лампа.","t095":"🐄 Корова","t096":"Корова — травоядное жвачное млекопитающее: питается сеном и травой, много пьёт (до 60 л в день), даёт молоко для выкармливания телёнка.","t097":"🐐 Коза","t098":"Коза выносливая, неприхотливая, ест траву и ветки; молока меньше, чем у коровы, и места нужно меньше.","t099":"🍯 Пчёлы","t100":"Пчёлы собирают нектар, превращают его в мёд, опыляют цветки. Яды (пестициды) для них смертельны.","t101":"📦 Порча","t102":"Свежие продукты портятся: размножаются бактерии и плесень. Холод замедляет это.","t103":"🏪 Рынок","t104":"Цена зависит от сезона и предложения. Скидка увеличивает продажи, но уменьшает выручку с каждой единицы.","t105":"Что нужно листьям для фотосинтеза?","t106":"Свет, вода и углекислый газ","t107":"Только почва","t108":"Только тепло","t109":"В зелёных листьях из воды и углекислого газа на свету образуются сахара и кислород.","t110":"Какая часть растения впитывает воду из почвы?","t111":"Лист","t112":"Корень","t113":"Цветок","t114":"Корни с корневыми волосками всасывают воду и соли.","t115":"Через что лист испаряет воду?","t116":"Через устьица","t117":"Через жилки","t118":"Через корень","t119":"Устьица — крошечные отверстия, через них идёт и газообмен.","t120":"Зачем в почву вносят компост?","t121":"Чтобы она стала твёрже","t122":"Он возвращает почве перегной и минеральные вещества","t123":"Чтобы отпугнуть дождь","t124":"Компост — готовый перегной, источник питания растений.","t125":"Что делают клубеньковые бактерии на корнях гороха?","t126":"Съедают корень","t127":"Связывают азот воздуха","t128":"Защищают от мороза","t129":"Они превращают азот воздуха в доступную растению форму.","t130":"Почему нельзя сажать томаты после картофеля?","t131":"У них общие болезни и вредители (оба паслёновые)","t132":"Им нужна разная вода","t133":"Картофель вырастает выше","t134":"Одно семейство — одни болезни, они копятся в почве.","t135":"Кто ест тлю?","t136":"Божья коровка","t137":"Пчела","t138":"Дождевой червь","t139":"Божья коровка и её личинки — естественные враги тли.","t140":"Зачем на ферме нужны пчёлы?","t141":"Только для мёда","t142":"Они опыляют цветки, и завязываются плоды","t143":"Они удобряют почву","t144":"Пчёлы переносят пыльцу, без опыления плодов мало.","t145":"Что такое севооборот?","t146":"Сбор урожая за один день","t147":"Чередование культур на одной грядке","t148":"Полив по расписанию","t149":"Чередование культур сохраняет почву здоровой.","t150":"Какая из этих культур — бобовая?","t151":"Горох — бобовое растение.","t152":"Когда лучше поливать в жару?","t153":"В полдень","t154":"Рано утром или вечером","t155":"Не поливать","t156":"Меньше испарение — вода доходит до корней.","t157":"Зачем рыхлить почву?","t158":"Чтобы воздух дошёл до корней","t159":"Чтобы почва стала тяжелее","t160":"Чтобы пришли вредители","t161":"Корням нужен воздух, чтобы дышать.","t162":"Почему зимой куры несутся хуже?","t163":"Им нечего пить","t164":"Световой день короткий","t165":"У них растут зубы","t166":"Для яйценоскости нужен длинный световой день.","t167":"Чем питается корова?","t168":"Сеном и травой","t169":"Мясом","t170":"Нектаром","t171":"Корова — травоядное жвачное животное.","t172":"Что опасно для пчёл на ферме?","t173":"Ядохимикаты (пестициды)","t174":"Тёплая погода","t175":"Яды убивают и вредителей, и полезных насекомых.","t176":"Почему томаты в тени дают меньше урожая?","t177":"Меньше света — меньше фотосинтеза","t178":"Тень их замораживает","t179":"В тени много воды","t180":"Мало света — мало сахаров, мало плодов.","t181":"Что собирают пчёлы для мёда?","t182":"Росу","t183":"Нектар цветков","t184":"Пыльцу и мёд из улья соседей","t185":"Нектар в улье перерабатывается в мёд.","t186":"Что нужно семени, чтобы прорасти?","t187":"Вода, тепло и воздух","t188":"Только свет","t189":"Только удобрение","t190":"Влага, тепло и воздух запускают рост зародыша.","t191":"Съедобная часть моркови — это...","t192":"Видоизменённый корень (корнеплод)","t193":"Клубень","t194":"Плод","t195":"Морковь — корнеплод, запасает питательные вещества в корне.","t196":"Картофельный клубень — это...","t197":"Видоизменённый корень","t198":"Видоизменённый побег","t199":"Клубень — утолщённый подземный побег.","t200":"Зачем нужна мульча (слой соломы, листьев)?","t201":"Сохраняет влагу и не даёт сорнякам расти","t202":"Греет и сушит почву","t203":"Привлекает град","t204":"Мульча уменьшает испарение.","t205":"Чем опасна тля?","t206":"Сосёт сок листьев и размножается","t207":"Опыляет цветки","t208":"Ест корни","t209":"Тля ослабляет растения и переносит болезни.","t210":"Зачем плёнка во время заморозка?","t211":"Удерживает тепло у растений","t212":"Привлекает пчёл","t213":"Поливает растения","t214":"Плёнка защищает теплолюбивые культуры от гибели.","t215":"Чем коза отличается от коровы на ферме?","t216":"Меньше места и корма, меньше молока","t217":"Она не даёт молока","t218":"Она питается мясом","t219":"Коза мельче, неприхотливее; молока меньше.","t220":"📖 Новая запись: {0}","t221":"дождь","t222":"жара","t223":"заморозок","t224":"ярмарка","t225":"Не хватает действий (нужно {0}, есть {1}). Нужен работник или техника.","t226":"на {0}","t227":"Не хватает денег{0}.","t228":"Грядка в тени, а {0} любит солнце: света мало, фотосинтез слабее (×0,6).","t229":"{0} дн. без полива: корням не хватило воды (×{1}).","t230":"Почва бедна: плодородие {0}, а нужно {1}. Помогает компост.","t231":"Было холоднее {0}° — рост замедлился.","t232":"Жара от 30°: {0} любит прохладу и «стреляет».","t233":"Севооборот: до этого на грядке росло то же семейство ({0}). Копятся болезни, почва истощена.","t234":"После бобовых почва богата азотом — бонус ×1,15.","t235":"Мало пчёл: {0} ульев на {1} сот., опыление {2}%. Нужно по улью на сотку.","t236":"Тля сосала сок листьев (−{0}%).","t237":"Высеяно меньше нормы: растений мало.","t238":"Загущено: растения мешают друг другу.","t239":"Перезрело: урожай ждал {0} дн.","t240":"🌨 Град! Побиты листья на {0} грядках (−30%).","t241":"🥶 Заморозок убил растения на {0} грядках. Теплолюбивым нужна плёнка.","t242":"🐛 Тля на грядке {0}!","t243":"🐞 Божьи коровки съели тлю на грядке {0}.","t244":"{0} Голодные {1}: корма хватило на {2}% — продукта меньше.","t245":"🍯 Мёд: {0} кг от {1} ульев.","t246":"(опыления мало)","t247":"{0} {1}: {2} кг{3}.","t248":"❄️ Зима: на открытых грядках погибло {0} культур. Снимайте урожай до холодов!","t249":"Цель достигнута! Премия +3 000 ₽.","t250":"До цели не хватило {0}. Продолжаем — впереди ещё год.","t251":"🏁 Итоги года {0}","t252":"Капитал:","t253":"· цель: {0}.","t254":"Следующая цель: {0}.","t255":"Дальше","t256":"Весна: холодные ночи и заморозки. Смотрите прогноз и укрывайте томаты и огурцы. Сеять всё, что успеет созреть до зимы!","t257":"Лето: жарко и сухо, воды надо больше (×1,5 в жару). Появляется тля. Пчёлы опыляют огурцы, томаты, тыкву, клубнику.","t258":"Осень: время урожая и сада. Успейте убрать всё до первых морозов — с началом зимы поле замерзает.","t259":"Зима: открытый грунт спит. Теплица, животные, обрезка деревьев и планирование: на что потратить деньги весной?","t260":"{0} {1}, год {2}","t261":"Сегодня: {0}","t262":"Завтра: {0}","t263":"Вперёд!","t264":"💸 Банкрот","t265":"Деньги ушли в минус больше 15 000 ₽. Бывает у всех фермеров. Подумайте о расходах на работников, корм и воду — и начните заново!","t266":"Заново","t267":"(новый рекорд!)","t268":"🏆 Три года позади!","t269":"Капитал фермы:","t270":"Энциклопедия фермера:","t271":"{0} из {1}","t272":"Верных ответов агроному: {0}","t273":"Играть снова","t274":"🧑‍🌾 Агроном · вопрос {0} из 2","t275":"Верный ответ: +6% к урожаю до конца сезона.","t276":"Верно! +6% к урожаю.","t277":"Не совсем.","t278":"Правильный ответ: {0}.","t279":"📋 Задача фермера","t280":"Ответить","t281":"Пропустить","t282":"Награда: {0}","t283":"Сажаем {0} на {1} грядок по {2} м². Норма: {3} шт. на м². Сколько семян нужно?","t284":"{0} × {1} м² × {2} шт. = {3}.","t285":"У нас {0} кур, каждая съедает 0,1 кг зерна в день. Сколько кг зерна нужно на неделю?","t286":"{0} × 0,1 × 7 = {1} кг.","t287":"Жара! Грядка {0} м², норма полива {1} л на м² в день, при жаре воды в 1,5 раза больше. Сколько литров в день нужно на {2} грядок?","t288":"{0} × {1} × {2} × 1,5 = {3} л.","t289":"Посадили {0} в {1}-й день сезона. Она созревает за {2} дн. На какой день сезона будет урожай?","t290":"{0} + {1} = {2}. (Если больше 12 — это уже следующий сезон!)","t291":"С {0} м² собрали {1} по {2} кг с м². Цена {3} ₽/кг. Выручка?","t292":"{0} × {1} кг × {2} ₽ = {3} ₽.","t293":"Ярмарка: {0} по {1} ₽/кг со скидкой {2}%. Продали {3} кг. Сколько выручили?","t294":"Цена со скидкой: {0} × {1} = {2} ₽. × {3} кг = {4} ₽.","t295":"Участок {0} сотки. Сколько это квадратных метров? (1 сотка = 100 м²)","t296":"{0} × 100 = {1} м².","t297":"В птичник ставят {0} кур, по норме 3 курицы на м². Сколько м² птичника нужно?","t298":"{0} ÷ 3 = {1} м².","t299":"Посадили {0} на {1} грядок: семена стоили {2}, выручка с урожая {3}. Какая прибыль?","t300":"Введите число","t301":"Верно! +{0}","t302":"Выберите свободные грядки (кнопка «Пустые» выберет все).","t303":"Зимой открытый грунт спит: сажать можно только в теплице.","t304":"🌱 Посадка: {0} гр.","t305":"{0} дн.","t306":"Отмена","t307":"🔁 На {0} гр. раньше росли {1} — болезни, урожай ×0,7.","t308":"🫛 На {0} гр. раньше был горох — почва богата азотом.","t309":"🟤 На {0} гр. плодородие ниже {1} — добавьте компост.","t310":"🌑 {0} гр. в тени: {1} любит солнце.","t311":"❄️ Не успеет до зимы! Созреет на {0}-й день, а зима с {1}-го.","t312":"🥶 Тепла мало (нужно от {0}°), весной возможны заморозки.","t313":"🐝 Нужен улей на сотку: у вас {0} на {1}.","t314":"солнце","t315":"полутень","t316":"Семейство","t317":"Свет","t318":"Вода на грядку","t319":"{0} л в день","t320":"Созреет","t321":"через {0} дн. (день {1})","t322":"Растёт от","t323":"Норма семян","t324":"{0} шт. на м², пачка 100 шт. = {1}","t325":"Сколько семян купить на {0} гр. по {1} м²?","t326":"Посадить","t327":"Подсказка","t328":"Назад","t329":"Стоимость: {0}","t330":"Введите число семян","t331":"Не хватает денег на семена: {0}","t332":"Не хватает действий: нужно {0}, есть {1}.","t333":"Семян меньше нормы ({0} из {1}): растений мало.","t334":"Семян слишком много ({0} при норме {1}): загущено.","t335":"Норма семян выдержана.","t336":"{0} Посажено {1} гр. · {2}","t337":"Нет готовых грядок (выберите их или ждите созревания).","t338":"Не хватает действий (нужно {0}).","t339":"{0} кг","t340":"Почему не максимум:","t341":"(на {0} гр.)","t342":"Все условия выполнены — максимальный урожай!","t343":"🧺 Урожай собран","t344":"Отлично","t345":"Идёт дождь: полив не нужен.","t346":"Поливать нечего.","t347":"Не хватает денег на воду","t348":"— жара ×1,5","t349":"💧 Полито {0} гр.: {1} л ({2}){3}","t350":"Выберите грядки для компоста.","t351":"навоз","t352":"♻️ Компост на {0} гр.: плодородие +25","t353":"Компост вносят на пустые грядки (хватит ОД).","t354":"Тли нет на выбранных грядках.","t355":"Не хватает действий","t356":"лечение","t357":"☠️ Химия убила {0} ульев пчёл!","t358":"🧼 Грядки обработаны мылом","t359":"🧪 Химия: тля убита, но и божьи коровки тоже","t360":"{0} Построено: {1}","t361":"Сначала постройте: {0}","t362":"Не влезет: места на {0} ({1}).","t363":"корм","t364":"Нечего продать (товар кончился или спрос на сегодня исчерпан).","t365":"Продано {0} → +{1}","t366":"{0} {1} {2}/12 · г.{3}","t367":"Сегодня:","t368":"Завтра:","t369":"— укройте плёнкой!","t370":"— засуха","t371":"⚠ Деньги на исходе: зарплаты и вода списываются каждый день. Продайте урожай!","t372":"готово","t373":"выбрано {0}","t374":"нажмите грядки","t375":"Пустые","t376":"Все","t377":"Сброс","t378":"Поле · {0} сот. · {1} гр.","t379":"число = плодородие","t380":"❄️ Зима: поле спит. Ждите весны, работайте в теплице и с животными.","t381":"вкл","t382":"выкл","t383":"🏡 Теплица","t384":"Обогрев: {0}","t385":"· тень","t386":"Грядка {0}{1}","t387":"Плодородие","t388":"Раньше росло","t389":"ещё {0} дн.","t390":"🐛 Тля!","t391":"Дней без полива","t392":"Прогноз урожая сейчас: {0} кг","t393":"🌱 Посадить","t394":"🧺 Собрать","t395":"💧 Полить","t396":"♻️ Компост ({0})","t397":"🧼 Мыло","t398":"🧪 Химия","t399":"🛡 Плёнка 300 ₽","t400":"1 ОД на 4 гр.","t401":"Действия: посадка и уборка {0} ОД за грядку, полив {1}, компост и обработка 0,5 ОД. Животные сегодня заняли {2} ОД.","t402":"🌳 Сад","t403":"{0}. Яблоня плодоносит с 4-го сезона, вишня с 3-го; нужны пчёлы.","t404":"Построить за {0}","t405":"🌳 Сад: {0}/6","t406":"плодоносит","t407":"растёт: {0}/{1} сез.","t408":"Обрезано ✓","t409":"Обрезать (1 ОД) → +10%","t410":"🐞 Борьба с тлёй","t411":"Божьи коровки (уровень)","t412":"При уровне 2+ они сами съедают тлю. Химия их убивает.","t413":"Выпустить за 500 ₽","t414":"Охват опыления: {0} сот., {1} ульев → {2}%.","t415":"есть","t416":"Животные заберут {0} ОД в день. Корм и вода списываются сами; не хватает корма — продукта меньше.","t417":"Корм {0} кг/день ·","t418":"вода {0} л/день","t419":"мёд в конце сезона; опыляют огород и сад","t420":"Продать 1","t421":"🌾 Склад кормов","t422":"Зерно","t423":"Сено","t424":"Нужно в день","t425":"зерна {0} · сена {1} кг","t426":"Зерно +10 кг · 300 ₽","t427":"Мешок 100 кг · 2 400 ₽","t428":"Сено +10 кг · 120 ₽","t429":"Тюк 50 кг · 500 ₽","t430":"💡 Лампа в птичнике","t431":"Зимой световой день короткий: без лампы яйца ×0,5, с лампой ×0,9.","t432":"ЯРМАРКА: спрос ×2!","t433":"🏪 Рынок{0}","t434":"Скидка:","t435":"Скидка {0}% → покупатели возьмут в {1} раза больше, а цена за штуку ×{2}. В день каждый товар продаётся один раз.","t436":"На складе пусто. Соберите урожай или дождитесь молока и яиц.","t437":"· продано","t438":"{0} {1} · цена {2}/{3} · спрос до {4}{5}","t439":"Продать всё, что можно","t440":"Порча в день: {0}","t441":"👥 Люди","t442":"ОД в день: {0}","t443":"Работники:","t444":"+ {0}/день","t445":"Агроном:","t446":"Каждый +8 ОД; агроном ещё +6% к урожаю. Зарплата платится каждый день.","t447":"🚜 Техника","t448":"🏗 Постройки","t449":"🌍 Земля","t450":"Участок","t451":"{0} сот. = {1} м² · {2} грядок","t452":"Купить сотку: {0}","t453":"Капитал","t454":"Цель года {0}","t455":"📖 Энциклопедия фермера","t456":"Грядки","t457":"Сад","t458":"Звери","t459":"Рынок","t460":"Книга","t461":"+3 дня","t462":"Следующий день ▶","t463":"🎬 За просмотр ролика","t464":"+6 ⚡ (ещё {0} сегодня)","t465":"Совет агронома","t466":"🐛 Тля на {0} гряд. Обработайте мыльным раствором (0,5 ОД), пока не съела урожай.","t467":"🥶 Завтра заморозок: укройте плёнкой или соберите зрелое.","t468":"или","t469":"🌱 Сейчас выгодно сеять: {0}. Не сажайте подряд ту же семью — урожай упадёт.","t470":"♻️ {0} гряд. с низким плодородием: внесите компост.","t471":"👍 Ферма в порядке. Продавайте урожай со скидкой 10–20 %, пока спрос не упал.","t472":"Рекорд капитала: {0}","t473":"Продолжить","t474":"🌾 Ферма","t475":"Три года на своей ферме: грядки, теплица, сад, куры и коровы. Выращивайте овощи, считайте семена, воду и корм, продавайте на рынке — и узнавайте, как всё это устроено в природе.","t476":"Новая игра","t477":"Как играть","t478":"⚡ Каждый день есть очки действий (ОД): посадка, уборка, полив съедают их. Нанимайте работников, чтобы успевать.","t479":"🌱 Выберите грядки → «Посадить» → посчитайте семена по норме.","t480":"💧 Поливайте (в дождь не нужно, в жару — на 50% больше).","t481":"🧺 После созревания собирайте — игра объяснит, почему урожай мог быть меньше.","t482":"🏪 Продавайте на рынке: скидка помогает продать больше, но снижает цену.","t483":"🎓 Перед сезоном агроном задаёт вопросы.","t484":"Понятно","t485":"Заморозка в прогнозе нет.","t486":"Уже укрыто.","t487":"плёнку","t488":"🛡 Грядки укрыты плёнкой на ночь","t489":"лампу","t490":"Максимум 5 работников","t491":"Агроном уже есть","t492":"землю","t493":"🌍 Куплена сотка: +10 грядок","t494":"Сад заполнен","t495":"божьих коровок","t496":"🐞 Выпущены божьи коровки","t497":"На сегодня роликов больше нет","t498":"+6 ⚡ очков действий","t499":"🎓 Совет агронома","x3":"🎁 Подарок Премиума"},"en":{"t001":"Farm","t002":"Menu","t003":"Spring","t004":"Summer","t005":"Fall","t006":"Winter","t007":"Brassicas","t008":"Daisy family","t009":"Legume family","t010":"Onion family","t011":"Carrot family","t012":"Amaranth family","t013":"Nightshade family","t014":"Squash family","t015":"Rose family","t016":"Radish","t017":"Lettuce","t018":"Peas","t019":"Onion","t020":"Carrot","t021":"Beet","t022":"Potato","t023":"Cabbage","t024":"Cucumber","t025":"Tomato","t026":"Strawberry","t027":"Pumpkin","t028":"kg","t029":"Eggs","t030":"pcs.","t031":"Cow's milk","t032":"L","t033":"Goat's milk","t034":"Honey","t035":"Apples","t036":"Cherries","t037":"Chicken","t038":"Cow","t039":"Goat","t040":"Beehive","t041":"Chicken coop: 8 m²","t042":"3 chickens per m² → up to 24 chickens","t043":"Cow barn: 32 m²","t044":"8 m² per cow → up to 4 cows","t045":"Goat barn: 12 m²","t046":"2 m² per goat → up to 6 goats","t047":"Apiary","t048":"Up to 6 beehives","t049":"Greenhouse: 24 m²","t050":"6 heated beds that work in winter","t051":"Orchard (6 spots)","t052":"Apple and cherry trees","t053":"Compost pile","t054":"+1 compost every 2 days and for each cleared bed","t055":"Flower strip","t056":"Ladybugs and bees","t057":"Tractor","t058":"Planting and harvesting cost 0.5 AP","t059":"Sprinkler","t060":"Automatic watering, water use ×1.2","t061":"Cold storage","t062":"Food spoilage ×0.4","t063":"Apple tree","t064":"Likes full sun","t065":"Likes partial shade","t066":"Family: {0}. Ripens in {1} days, grows at {2}° or warmer, {3}, needs {4} L/m² of water per day and soil fertility of {5}.","t067":"Bees pollinate the flowers.","t068":"Legume: bacteria in root nodules add nitrogen to the soil.","t069":"☀️ Light","t070":"Plants need light for photosynthesis. Green leaves use water and carbon dioxide to make sugars and oxygen. Plants that love sunlight grow poorly in the shade.","t071":"💧 Water","t072":"Roots absorb water and minerals from the soil. Leaves release water through tiny openings called stomata. More water evaporates in hot weather, so plants need more water. Without watering, the harvest gets smaller.","t073":"🟤 Soil","t074":"Humus makes soil fertile. It comes from dead plants and animals broken down by bacteria and worms. Harvesting crops removes nutrients from the soil. Compost helps replace them.","t075":"🔁 Crop Rotation","t076":"Don't grow plants from the same family in the same bed again and again. Diseases and pests can build up, and the same nutrients get used up.","t077":"🫛 Legumes","t078":"Bacteria in nodules on pea roots take nitrogen from the air and turn it into a form plants can use. After peas grow, the soil has more nitrogen, helping the next crop grow better.","t079":"🐝 Pollination","t080":"Cucumbers, tomatoes, pumpkins, and strawberries need pollination to produce fruit. Bees carry pollen from stamens to pistils. Without bees, fewer fruits may grow.","t081":"🐛 Aphids","t082":"Aphids are tiny insects that suck sap from young leaves. They multiply very quickly. Catch them early, and they are easier to stop.","t083":"🐞 Ladybugs","t084":"Ladybugs and their larvae eat aphids. Flower strips attract them. Chemicals can kill both pests and helpful insects.","t085":"♻️ Compost","t086":"Compost is made from plant scraps and manure. Bacteria and worms break down the waste into nutrient-rich material for the soil. It's free fertilizer!","t087":"🥶 Frost","t088":"Warm-weather plants like tomatoes and cucumbers can die at 0°C because water freezes inside their cells. Plastic covers help keep them warm.","t089":"🔥 Heat","t090":"In hot, dry weather, water evaporates faster. Radishes and lettuce may bolt, sending up flower stalks. Cows also get too hot and produce less milk.","t091":"🌨 Hail","t092":"Hail damages leaves and stems. You can't cover every field, so keeping emergency savings and growing different crops helps protect your farm.","t093":"🐔 Chickens","t094":"Chickens are birds that eat grain, plants, and insects. They lay more eggs when daylight lasts about 14 hours. A lamp helps in winter.","t095":"🐄 Cow","t096":"A cow is a plant-eating mammal that chews cud. It eats hay and grass, drinks lots of water (up to 60 L a day), and produces milk to feed its calf.","t097":"🐐 Goat","t098":"Goats are hardy and easy to care for. They eat grass and leaves from branches. They produce less milk than cows but need less space.","t099":"🍯 Bees","t100":"Bees collect nectar and turn it into honey. They also pollinate flowers. Pesticides can kill them.","t101":"📦 Spoilage","t102":"Fresh food spoils when bacteria and mold grow. Cold temperatures slow this down.","t103":"🏪 Market","t104":"Prices depend on the season and how much is available. Discounts help sell more products, but you earn less from each one.","t105":"What do leaves need for photosynthesis?","t106":"Light, water, and carbon dioxide","t107":"Only soil","t108":"Only warmth","t109":"In sunlight, green leaves use water and carbon dioxide to make sugars and oxygen.","t110":"Which part of a plant absorbs water from the soil?","t111":"Leaf","t112":"Root","t113":"Flower","t114":"Roots have tiny root hairs that absorb water and minerals.","t115":"How do leaves release water?","t116":"Through stomata","t117":"Through veins","t118":"Through roots","t119":"Stomata are tiny openings in leaves. They also let gases move in and out.","t120":"Why do farmers add compost to soil?","t121":"To make the soil harder","t122":"To replace humus and nutrients in the soil","t123":"To keep rain away","t124":"Compost adds humus and nutrients that help plants grow.","t125":"What do bacteria in nodules on pea roots do?","t126":"They take nitrogen from the air and make it usable for plants.","t127":"They eat the roots","t128":"They protect plants from frost","t129":"They turn nitrogen from the air into a form plants can use.","t130":"Why shouldn't you plant tomatoes after potatoes?","t131":"They share diseases and pests (both are nightshades)","t132":"They need different amounts of water","t133":"Potatoes grow taller","t134":"Plants in the same family share diseases that can build up in the soil.","t135":"What eats aphids?","t136":"Ladybug","t137":"Bee","t138":"Earthworm","t139":"Ladybugs and their larvae are natural enemies of aphids.","t140":"Why do farms need bees?","t141":"Only to make honey","t142":"They pollinate flowers so fruits can grow","t143":"They fertilize the soil","t144":"Bees carry pollen between flowers. Without pollination, fewer fruits grow.","t145":"What is crop rotation?","t146":"Harvesting everything in one day","t147":"Growing different crops in the same bed over time","t148":"Watering on a schedule","t149":"Rotating crops helps keep soil healthy.","t150":"Which of these crops is a legume?","t151":"Peas are legumes.","t152":"When is the best time to water plants in hot weather?","t153":"At noon","t154":"Early morning or evening","t155":"Don't water them","t156":"Less water evaporates, so more reaches the roots.","t157":"Why should farmers loosen the soil?","t158":"To let air reach the roots","t159":"To make the soil heavier","t160":"To attract pests","t161":"Roots need air to breathe.","t162":"Why do chickens lay fewer eggs in winter?","t163":"They have nothing to drink","t164":"There are fewer hours of daylight","t165":"Their teeth are growing","t166":"Chickens need long daylight hours to lay more eggs.","t167":"What do cows eat?","t168":"Hay and grass","t169":"Meat","t170":"Nectar","t171":"Cows are plant-eating animals that chew cud.","t172":"What is dangerous for bees on a farm?","t173":"Pesticides","t174":"Warm weather","t175":"Pesticides can kill both pests and helpful insects.","t176":"Why do tomatoes produce fewer fruits in the shade?","t177":"Less light means less photosynthesis","t178":"Shade freezes them","t179":"There is too much water in the shade","t180":"Less light means less sugar and fewer fruits.","t181":"What do bees collect to make honey?","t182":"Dew","t183":"Flower nectar","t184":"Pollen and honey from other beehives","t185":"Bees turn nectar into honey inside the hive.","t186":"What does a seed need to sprout?","t187":"Water, warmth, and air","t188":"Only light","t189":"Only fertilizer","t190":"Moisture, warmth, and air help the tiny plant inside a seed start growing.","t191":"The edible part of a carrot is...","t192":"A modified root (storage root)","t193":"A tuber","t194":"A fruit","t195":"Carrots are root vegetables. They store nutrients in their roots.","t196":"A potato tuber is...","t197":"A modified root","t198":"A modified stem","t199":"A tuber is a thickened underground stem.","t200":"Why do farmers use mulch (a layer of straw or leaves)?","t201":"It keeps moisture in the soil and stops weeds","t202":"It warms and dries the soil","t203":"It attracts hail","t204":"Mulch reduces water evaporation.","t205":"Why are aphids harmful?","t206":"They suck sap from leaves and multiply","t207":"They pollinate flowers","t208":"They eat roots","t209":"Aphids weaken plants and can spread diseases.","t210":"Why cover plants with plastic during frost?","t211":"To keep warmth around the plants","t212":"To attract bees","t213":"To water the plants","t214":"Plastic covers protect warm-weather crops from freezing.","t215":"How are goats different from cows on a farm?","t216":"They need less space and food but produce less milk","t217":"They don't produce milk","t218":"They eat meat","t219":"Goats are smaller and easier to care for, but they produce less milk.","t220":"📖 New entry: {0}","t221":"rain","t222":"heat","t223":"frost","t224":"fair","t225":"Not enough action points (need {0}, have {1}). Hire a worker or get equipment.","t226":"for {0}","t227":"Not enough money{0}.","t228":"This bed is in the shade, but {0} loves sunlight. Less light means less photosynthesis (×0.6).","t229":"No watering for {0} days: the roots didn't get enough water (×{1}).","t230":"Poor soil: fertility is {0}, but {1} is needed. Compost can help.","t231":"It was colder than {0}° — growth slowed down.","t232":"Heat above 30°: {0} likes cool weather and starts to bolt.","t233":"Crop rotation: plants from the same family ({0}) grew here before. Diseases build up, and the soil loses nutrients.","t234":"After legumes, the soil has more nitrogen — bonus ×1.15.","t235":"Not enough bees: {0} hives for {1} ares, pollination {2}%. You need one hive per are.","t236":"Aphids sucked sap from the leaves (−{0}%).","t237":"Too few seeds were planted. Not enough plants grew.","t238":"Too crowded: plants are getting in each other's way.","t239":"Overripe: the crop waited {0} days.","t240":"🌨 Hail! Leaves damaged in {0} beds (−30%).","t241":"🥶 Frost killed plants in {0} beds. Warm-weather crops need plastic covers.","t242":"🐛 Aphids in bed {0}!","t243":"🐞 Ladybugs ate the aphids in bed {0}.","t244":"{0} Hungry {1}: only {2}% of the needed feed was available, so production dropped.","t245":"🍯 Honey: {0} kg from {1} hives.","t246":"(not enough pollination)","t247":"{0} {1}: {2} kg{3}.","t248":"❄️ Winter: {0} crops died in outdoor beds. Harvest before the cold arrives!","t249":"Goal reached! Bonus +3,000 ₽.","t250":"You were {0} short of your goal. Keep going — another year is ahead!","t251":"🏁 Year {0} Results","t252":"Total assets:","t253":"· goal: {0}.","t254":"Next goal: {0}.","t255":"Next","t256":"Spring: Cold nights and frost are possible. Check the forecast and cover tomatoes and cucumbers. Plant crops that have enough time to ripen before winter!","t257":"Summer: Hot and dry! Plants need more water (×1.5 in hot weather). Aphids appear. Bees pollinate cucumbers, tomatoes, pumpkins, and strawberries.","t258":"Fall: Time to harvest crops and fruit! Gather everything before the first frost. Fields freeze when winter begins.","t259":"Winter: Outdoor fields are resting. Work in the greenhouse, care for animals, prune trees, and plan what to buy in spring.","t260":"{0} {1}, year {2}","t261":"Today: {0}","t262":"Tomorrow: {0}","t263":"Let's go!","t264":"💸 Bankrupt","t265":"Your money dropped below −15,000 ₽. This happens to farmers sometimes. Think about the costs of workers, animal feed, and water, then try again!","t266":"Start over","t267":"(new record!)","t268":"🏆 Three Years Complete!","t269":"Farm assets:","t270":"Farmer's Encyclopedia:","t271":"{0} of {1}","t272":"Agronomist questions answered correctly: {0}","t273":"Play again","t274":"🧑‍🌾 Agronomist · Question {0} of 2","t275":"Correct answer: +6% harvest bonus until the end of the season.","t276":"Correct! +6% to your harvest.","t277":"Not quite.","t278":"Correct answer: {0}.","t279":"📋 Farmer's Challenge","t280":"Answer","t281":"Skip","t282":"Reward: {0}","t283":"We're planting {0} in {1} beds of {2} m² each. We need {3} seeds per m². How many seeds do we need?","t284":"{0} × {1} m² × {2} seeds = {3}.","t285":"We have {0} chickens. Each eats 0.1 kg of grain per day. How many kg of grain do they need for one week?","t286":"{0} × 0.1 × 7 = {1} kg.","t287":"It's hot! Each bed is {0} m² and needs {1} L of water per m² per day. Hot weather increases water use by 1.5 times. How many liters do {2} beds need per day?","t288":"{0} × {1} × {2} × 1.5 = {3} L.","t289":"You planted {0} on day {1} of the season. It takes {2} days to ripen. On which day of the season will it be ready?","t290":"{0} + {1} = {2}. (If it's more than 12, that's already the next season!)","t291":"You harvested {1} from {0} m², getting {2} kg per m². The price is {3} ₽/kg. How much money will you earn?","t292":"{0} × {1} kg × {2} ₽ = {3} ₽.","t293":"At the fair, {0} costs {1} ₽/kg with a {2}% discount. You sold {3} kg. How much money did you earn?","t294":"Discounted price: {0} × {1} = {2} ₽. × {3} kg = {4} ₽.","t295":"Your land is {0} ares. How many square meters is that? (1 are = 100 m²)","t296":"{0} × 100 = {1} m².","t297":"You want to keep {0} chickens in a coop. Each m² can hold 3 chickens. How many m² do you need?","t298":"{0} ÷ 3 = {1} m².","t299":"You planted {0} in {1} beds. Seeds cost {2}, and you earned {3} from the harvest. What is your profit?","t300":"Enter a number","t301":"Correct! +{0}","t302":"Select empty beds (tap \"Empty\" to select them all).","t303":"Outdoor fields rest in winter. You can only plant in the greenhouse.","t304":"🌱 Planting: {0} beds","t305":"{0} days","t306":"Cancel","t307":"🔁 {1} grew before in {0} beds — diseases may spread, harvest ×0.7.","t308":"🫛 Peas grew before in {0} beds — the soil is rich in nitrogen.","t309":"🟤 Soil fertility is below {1} in {0} beds — add compost.","t310":"🌑 {0} beds are in the shade, but {1} loves sunlight.","t311":"❄️ Not enough time before winter! Ready on day {0}, but winter starts on day {1}.","t312":"🥶 Too cold (needs at least {0}°). Frost is possible in spring.","t313":"🐝 You need one hive per are. You have {0} for {1}.","t314":"full sun","t315":"partial shade","t316":"Family","t317":"Light","t318":"Water per bed","t319":"{0} L per day","t320":"Ready in","t321":"{0} days (day {1})","t322":"Grows at","t323":"Seed rate","t324":"{0} seeds per m², pack of 100 = {1}","t325":"How many seeds should you buy for {0} beds of {1} m² each?","t326":"Plant","t327":"Hint","t328":"Back","t329":"Cost: {0}","t330":"Enter number of seeds","t331":"Not enough money for seeds: {0}","t332":"Not enough action points: need {0}, have {1}.","t333":"Too few seeds ({0} of {1} needed): fewer plants will grow.","t334":"Too many seeds ({0}, recommended {1}): plants will be crowded.","t335":"Correct number of seeds.","t336":"{0} Planted {1} beds · {2}","t337":"No beds ready to harvest (select beds or wait for crops to ripen).","t338":"Not enough action points (need {0}).","t339":"{0} kg","t340":"Why the harvest was smaller:","t341":"(in {0} beds)","t342":"All conditions were perfect — maximum harvest!","t343":"🧺 Harvest Collected","t344":"Great!","t345":"It's raining. No need to water.","t346":"Nothing needs watering.","t347":"Not enough money for water","t348":"— heat ×1.5","t349":"💧 Watered {0} beds: {1} L ({2}){3}","t350":"Select beds for compost.","t351":"manure","t352":"♻️ Added compost to {0} beds: fertility +25","t353":"Add compost to empty beds (if you have enough AP).","t354":"No aphids in the selected beds.","t355":"Not enough action points","t356":"treatment","t357":"☠️ Chemicals killed bees in {0} hives!","t358":"🧼 Beds treated with soap","t359":"🧪 Chemicals killed the aphids, but also the ladybugs","t360":"{0} Built: {1}","t361":"Build this first: {0}","t362":"Not enough space for {0} ({1}).","t363":"feed","t364":"Nothing to sell (out of stock or today's demand is used up).","t365":"Sold {0} → +{1}","t366":"{0} {1} {2}/12 · yr. {3}","t367":"Today:","t368":"Tomorrow:","t369":"— cover with plastic!","t370":"— drought","t371":"⚠ Money is running low! Wages and water costs are charged every day. Sell your crops!","t372":"ready","t373":"{0} selected","t374":"tap beds","t375":"Empty","t376":"All","t377":"Clear","t378":"Field · {0} ares · {1} beds","t379":"number = soil fertility","t380":"❄️ Winter: The field is resting. Wait for spring, work in the greenhouse, and care for animals.","t381":"on","t382":"off","t383":"🏡 Greenhouse","t384":"Heating: {0}","t385":"· shade","t386":"Bed {0}{1}","t387":"Soil fertility","t388":"Previous crop","t389":"{0} days left","t390":"🐛 Aphids!","t391":"Days without watering","t392":"Current harvest forecast: {0} kg","t393":"🌱 Plant","t394":"🧺 Harvest","t395":"💧 Water","t396":"♻️ Compost ({0})","t397":"🧼 Soap","t398":"🧪 Chemicals","t399":"🛡 Plastic cover 300 ₽","t400":"1 AP per 4 beds","t401":"Actions: planting and harvesting cost {0} AP per bed, watering costs {1}, and composting and treatment cost 0.5 AP. Animals used {2} AP today.","t402":"🌳 Orchard","t403":"{0}. Apple trees bear fruit starting in season 4, cherry trees in season 3. They need bees.","t404":"Build for {0}","t405":"🌳 Orchard: {0}/6","t406":"bearing fruit","t407":"growing: {0}/{1} seasons","t408":"Pruned ✓","t409":"Prune (1 AP) → +10%","t410":"🐞 Aphid Control","t411":"Ladybugs (level)","t412":"At level 2 or higher, ladybugs eat aphids on their own. Chemicals kill ladybugs.","t413":"Release for 500 ₽","t414":"Pollination coverage: {0} ares, {1} hives → {2}%.","t415":"owned","t416":"Animals use {0} AP each day. Feed and water costs are charged automatically. Not enough feed means less production.","t417":"Feed {0} kg/day ·","t418":"water {0} L/day","t419":"honey at the end of the season; pollinate crops and fruit trees","t420":"Sell 1","t421":"🌾 Feed Storage","t422":"Grain","t423":"Hay","t424":"Needed per day","t425":"grain {0} · hay {1} kg","t426":"Grain +10 kg · 300 ₽","t427":"100 kg bag · 2,400 ₽","t428":"Hay +10 kg · 120 ₽","t429":"50 kg bale · 500 ₽","t430":"💡 Chicken Coop Lamp","t431":"Winter days are short. Without a lamp, egg production is ×0.5. With a lamp, it's ×0.9.","t432":"FAIR: Demand ×2!","t433":"🏪 Market{0}","t434":"Discount:","t435":"A {0}% discount → customers buy {1} times as much, but the price per item is ×{2}. Each product can be sold once per day.","t436":"Your storage is empty. Harvest crops or wait for milk and eggs.","t437":"· sold","t438":"{0} {1} · price {2}/{3} · demand up to {4}{5}","t439":"Sell all available","t440":"Daily spoilage: {0}","t441":"👥 Workers","t442":"AP per day: {0}","t443":"Workers:","t444":"+ {0}/day","t445":"Agronomist:","t446":"Each worker adds 8 AP. The agronomist also boosts harvests by 6%. Wages are paid every day.","t447":"🚜 Equipment","t448":"🏗 Buildings","t449":"🌍 Land","t450":"Plot","t451":"{0} ares = {1} m² · {2} beds","t452":"Buy 1 are: {0}","t453":"Total assets","t454":"Year {0} goal","t455":"📖 Farmer's Encyclopedia","t456":"Beds","t457":"Orchard","t458":"Animals","t459":"Market","t460":"Book","t461":"+3 days","t462":"Next day ▶","t463":"🎬 Watch an ad","t464":"+6 ⚡ ({0} left today)","t465":"Agronomist's Tip","t466":"🐛 Aphids in {0} beds! Treat with soapy water (0.5 AP) before they damage your crops.","t467":"🥶 Frost tomorrow! Cover your plants with plastic or harvest ripe crops.","t468":"or","t469":"🌱 Good crops to plant now: {0}. Don't plant the same family twice in a row, or your harvest will shrink.","t470":"♻️ {0} beds have low soil fertility. Add compost.","t471":"👍 Your farm is doing well. Sell crops with a 10–20% discount before demand drops.","t472":"Record assets: {0}","t473":"Continue","t474":"🌾 Farm","t475":"Run your own farm for three years! Grow crops in garden beds, a greenhouse, and an orchard. Raise chickens and cows. Calculate seeds, water, and animal feed, then sell your products at the market. Discover how farming and nature work!","t476":"New Game","t477":"How to Play","t478":"⚡ Each day you have action points (AP). Planting, harvesting, and watering use them. Hire workers to get more done.","t479":"🌱 Select beds → \"Plant\" → calculate how many seeds you need.","t480":"💧 Water your crops. Rain does the job for you. In hot weather, plants need 50% more water.","t481":"🧺 Harvest crops when they are ripe. The game will explain why your harvest might be smaller than expected.","t482":"🏪 Sell products at the market. Discounts help you sell more, but lower the price.","t483":"🎓 Before each season, the agronomist asks you questions.","t484":"Got it","t485":"No frost in the forecast.","t486":"Already covered.","t487":"plastic cover","t488":"🛡 Beds covered with plastic for the night","t489":"lamp","t490":"Maximum 5 workers","t491":"You already have an agronomist","t492":"land","t493":"🌍 Bought 1 are of land: +10 beds","t494":"Orchard is full","t495":"ladybugs","t496":"🐞 Ladybugs released","t497":"No more ads available today","t498":"+6 ⚡ action points","t499":"🎓 Agronomist's Tip","x3":"🎁 Premium daily gift"}};</script>
+<script>
+/* Переключатель RU/EN. Исходные тексты игры русские; перевод подставляется в текстовые узлы страницы
+   по словарю (ru.json: id -> русский текст с {0},{1}; en.json: id -> перевод). Сменили язык — тексты перерисовываются. */
+window.I18N=(function(){
+  "use strict";
+  var D=window.I18N_DATA||{ru:{},en:{}};
+  var CYR=/[А-Яа-яЁё]/,lang="ru",EXACT={},PATS=[],wm=new WeakMap(),attrWm=new WeakMap(),ATTRS=["aria-label","title"],busy=false;
+  function esc(s){return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");}
+  Object.keys(D.ru).forEach(function(id){
+    var ru=D.ru[id],en=D.en[id];
+    if(typeof en!=="string"||!en)return;
+    if(ru.indexOf("{")<0){EXACT[ru]=en;return;}
+    var parts=ru.split(/\{\d+\}/),re="^"+parts.map(esc).join("([\\s\\S]*?)")+"$";
+    var st=parts.join("").length;
+    PATS.push({re:new RegExp(re),en:en,st:st});
+  });
+  PATS.sort(function(a,b){return b.st-a.st;});
+  var SING={seeds:"seed",days:"day",beds:"bed",hives:"hive",chickens:"chicken",hens:"hen",cows:"cow",goats:"goat",beehives:"beehive",workers:"worker",seasons:"season",times:"time",crops:"crop",spots:"spot",ares:"are",plants:"plant",years:"year",trees:"tree",stars:"star",questions:"question",items:"item"};
+  function plural1(s){return s.replace(/(^|[^\d.,×])1 ([a-z]+)\b/g,function(m,p,w){return SING[w]?p+"1 "+SING[w]:m;});}
+  function fix(s){return plural1(s).replace(/(\d),(\d)/g,"$1.$2").replace(/(\d)[  ](?=\d{3}(?!\d))/g,"$1,");}
+  var NUMS=/\d[, ]\d/;
+  var RUN=/[А-Яа-яЁё]+(?:[ \-][А-Яа-яЁё]+)*/g;
+  function words(core){
+    return core.replace(RUN,function(run){
+      if(Object.prototype.hasOwnProperty.call(EXACT,run))return EXACT[run];
+      return run.replace(/[А-Яа-яЁё]+/g,function(w){
+        var H=Object.prototype.hasOwnProperty;
+        if(H.call(EXACT,w))return EXACT[w];
+        var cap=w.charAt(0).toUpperCase()+w.slice(1);
+        if(w!==cap&&H.call(EXACT,cap)){var v=EXACT[cap];return v.length<24&&!/[А-Яа-я]/.test(v)?v.charAt(0).toLowerCase()+v.slice(1):v;}
+        return w;});
+    });
+  }
+  function tr(text){
+    var m=/^(\s*)([\s\S]*?)(\s*)$/.exec(text),core=m[2];
+    if(!core||!CYR.test(core))return text;
+    if(Object.prototype.hasOwnProperty.call(EXACT,core))return m[1]+EXACT[core]+m[3];
+    var pre=/^[^А-Яа-яЁёA-Za-z0-9{]+/.exec(core);
+    if(pre&&Object.prototype.hasOwnProperty.call(EXACT,core.slice(pre[0].length)))return m[1]+pre[0]+EXACT[core.slice(pre[0].length)]+m[3];
+    for(var i=0;i<PATS.length;i++){
+      var e=PATS[i],mm=e.re.exec(core);
+      if(mm){
+        var args=mm.slice(1).map(function(a){return tr(a);});
+        return m[1]+e.en.replace(/\{(\d+)\}/g,function(_,k){return args[+k]!==undefined?args[+k]:"";})+m[3];
+      }
+    }
+    return m[1]+words(core)+m[3];
+  }
+  function applyText(n){
+    var d=n.data,rec=wm.get(n);
+    if(!rec||d!==rec.out){if(!CYR.test(d)&&!NUMS.test(d)&&!rec)return;rec={ru:d,out:d};}
+    var out=lang==="en"?fix(tr(rec.ru)):rec.ru;
+    rec.out=out;wm.set(n,rec);
+    if(out!==d)n.data=out;
+  }
+  function applyEl(el){
+    ATTRS.forEach(function(a){
+      var v=el.getAttribute(a);if(v==null)return;
+      var rec=attrWm.get(el)||{};var r=rec[a];
+      if(!r||v!==r.out){if(!CYR.test(v))return;r={ru:v,out:v};}
+      var out=lang==="en"?fix(tr(r.ru)):r.ru;r.out=out;rec[a]=r;attrWm.set(el,rec);
+      if(out!==v)el.setAttribute(a,out);
+    });
+  }
+  function walk(root){
+    if(root.nodeType===3){applyText(root);return;}
+    if(root.nodeType!==1)return;
+    if(root.tagName==="SCRIPT"||root.tagName==="STYLE")return;
+    applyEl(root);
+    for(var c=root.firstChild;c;c=c.nextSibling)walk(c);
+  }
+  function all(){busy=true;try{walk(document.body);document.documentElement.lang=lang;document.title=lang==="en"?"Farm":"Ферма";}finally{busy=false;}}
+  var obs=null;
+  function observe(){
+    if(obs||!window.MutationObserver)return;
+    obs=new MutationObserver(function(list){
+      if(busy)return;busy=true;
+      try{list.forEach(function(r){
+        if(r.type==="characterData")applyText(r.target);
+        else if(r.type==="attributes")applyEl(r.target);
+        else r.addedNodes.forEach(walk);
+      });}finally{busy=false;}
+    });
+    obs.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:ATTRS});
+  }
+  var self={};
+  self.available=function(){return PATS.length>0||Object.keys(EXACT).length>0;};
+  self.lang=function(){return lang;};
+  function store(l){try{localStorage.setItem("ferma-lang",JSON.stringify(l));if(window.PF&&PF.touch)PF.touch("ferma-lang");}catch(e){}}
+  self.set=function(l){lang=l==="en"?"en":"ru";store(lang);all();};
+  self.toggle=function(){self.set(lang==="en"?"ru":"en");};
+  self.start=function(platformLang){
+    var l=null;try{l=JSON.parse(localStorage.getItem("ferma-lang"));}catch(e){}
+    if(l!=="ru"&&l!=="en"){
+      var p=String(platformLang||(navigator.language||"ru")).toLowerCase().slice(0,2);
+      l=["ru","be","kk","uk","uz","hy","az","ka","ky","tg","tk"].indexOf(p)>=0?"ru":"en";
+    }
+    lang=self.available()?l:"ru";
+    observe();all();
+  };
+  return self;
+})();
+</script>
+<script>
+'use strict';
+/* ================= ДАННЫЕ ================= */
+const SD=12,TOTAL=144,BEDM=5,SAVE_KEY='ferma-save-v1',BEST_KEY='ferma-best-v1';
+const SEAS=['Весна','Лето','Осень','Зима'],SEMO=['🌸','☀️','🍂','❄️'];
+const SPF=[1.15,.85,.95,1.3];
+const GOALS=[50000,90000,140000],STAR_AT=[100000,150000,250000];
+const WAGE=500,WAGE_AGRO=900,P_WATER=.2,P_GRAIN=30,P_HAY=12;
+/* картинки: WebP в img/ (нарезаны tools/make_art.py). Нет файла — рисуется эмодзи */
+const IMGN=/*IMGN*/['an_cow','an_goat','an_hen','an_hive','c_beet_1','c_beet_2','c_beet_3','c_cab_1','c_cab_2','c_cab_3','c_car_1','c_car_2','c_car_3','c_cuc_1','c_cuc_2','c_cuc_3','c_onion_1','c_onion_2','c_onion_3','c_pea_1','c_pea_2','c_pea_3','c_pot_1','c_pot_2','c_pot_3','c_pum_1','c_pum_2','c_pum_3','c_rad_1','c_rad_2','c_rad_3','c_sal_1','c_sal_2','c_sal_3','c_str_1','c_str_2','c_str_3','c_tom_1','c_tom_2','c_tom_3','cover_start','ic_an','ic_ap','ic_beds','ic_book','ic_coin','ic_farm','ic_garden','ic_mkt','ic_water']/*END*/;
+const IMG={};
+function imgTag(n,fb,cls){return IMGN.includes(n)?`<img class="${cls||'ic'}" src="img/${n}.webp" alt="" onerror="this.outerHTML='${fb}'">`:fb;}
+const FAM={cru:'Крестоцветные',com:'Сложноцветные',leg:'Бобовые',alm:'Луковые',umb:'Зонтичные',ama:'Амарантовые',sol:'Паслёновые',cuc:'Тыквенные',ros:'Розоцветные'};
+const C={
+ rad:{n:'Редис',e:'🔴',fam:'cru',d:5,L:'half',w:3,need:30,take:6,minT:5,y:2,p:90,seed:100,pack:30,pol:0,aph:0,D:8,spoil:.08},
+ sal:{n:'Салат',e:'🥬',fam:'com',d:6,L:'half',w:3,need:30,take:6,minT:5,y:2.5,p:100,seed:50,pack:40,pol:0,aph:1,D:8,spoil:.12},
+ pea:{n:'Горох',e:'🫛',fam:'leg',d:8,L:'sun',w:3,need:20,take:-8,minT:6,y:1.5,p:120,seed:60,pack:50,pol:0,aph:1,D:10,spoil:.08},
+ onion:{n:'Лук',e:'🧅',fam:'alm',d:9,L:'sun',w:2,need:30,take:8,minT:6,y:2.5,p:60,seed:40,pack:80,pol:0,aph:0,D:15,spoil:.005},
+ car:{n:'Морковь',e:'🥕',fam:'umb',d:10,L:'sun',w:3,need:40,take:10,minT:8,y:4,p:50,seed:150,pack:20,pol:0,aph:0,D:20,spoil:.01},
+ beet:{n:'Свёкла',e:'🟣',fam:'ama',d:10,L:'sun',w:3,need:40,take:10,minT:8,y:4,p:45,seed:40,pack:25,pol:0,aph:1,D:15,spoil:.01},
+ pot:{n:'Картофель',e:'🥔',fam:'sol',d:11,L:'sun',w:4,need:50,take:15,minT:10,y:5,p:40,seed:6,pack:1200,pol:0,aph:0,D:30,spoil:.005},
+ cab:{n:'Капуста',e:'🥦',fam:'cru',d:12,L:'sun',w:5,need:70,take:16,minT:8,y:5,p:35,seed:3,pack:900,pol:0,aph:1,D:20,spoil:.01},
+ cuc:{n:'Огурец',e:'🥒',fam:'cuc',d:8,L:'sun',w:6,need:60,take:15,minT:15,y:5,p:70,seed:4,pack:600,pol:1,aph:1,D:15,spoil:.06},
+ tom:{n:'Томат',e:'🍅',fam:'sol',d:12,L:'sun',w:5,need:70,take:18,minT:15,y:6,p:90,seed:3,pack:1500,pol:1,aph:1,D:18,spoil:.06},
+ str:{n:'Клубника',e:'🍓',fam:'ros',d:9,L:'half',w:4,need:60,take:10,minT:10,y:1.5,p:300,seed:6,pack:2500,pol:1,aph:1,D:6,spoil:.15},
+ pum:{n:'Тыква',e:'🎃',fam:'cuc',d:14,L:'sun',w:4,need:60,take:14,minT:12,y:8,p:30,seed:1,pack:1000,pol:1,aph:1,D:12,spoil:.005}
+};
+const CIDS=Object.keys(C);
+/* товары рынка: p — базовая цена, D — спрос кг/день */
+const ITEMS={};
+CIDS.forEach(k=>ITEMS[k]={n:C[k].n,e:C[k].e,u:'кг',p:C[k].p,D:C[k].D,spoil:C[k].spoil,sea:1});
+Object.assign(ITEMS,{
+ egg:{n:'Яйца',e:'🥚',u:'шт',p:12,D:40,spoil:.01,sea:0},
+ milk:{n:'Молоко коровье',e:'🥛',u:'л',p:40,D:50,spoil:.25,sea:0},
+ gmilk:{n:'Молоко козье',e:'🐐',u:'л',p:60,D:12,spoil:.25,sea:0},
+ honey:{n:'Мёд',e:'🍯',u:'кг',p:400,D:3,spoil:0,sea:0},
+ apple:{n:'Яблоки',e:'🍎',u:'кг',p:70,D:15,spoil:.02,sea:1},
+ cherry:{n:'Вишня',e:'🍒',u:'кг',p:120,D:8,spoil:.08,sea:1}
+});
+const AN={
+ hen:{n:'Курица',e:'🐔',price:400,w:.1,feed:'grain',kg:.1,water:.3,bld:'coop',prod:'egg'},
+ cow:{n:'Корова',e:'🐄',price:24000,w:1,feed:'hay',kg:10,water:60,bld:'barn',prod:'milk'},
+ goat:{n:'Коза',e:'🐐',price:7000,w:.5,feed:'hay',kg:2.5,water:8,bld:'goatshed',prod:'gmilk'},
+ hive:{n:'Улей',e:'🐝',price:5000,w:.3,feed:null,kg:0,water:0,bld:'apiary',prod:'honey'}
+};
+const BLD={
+ coop:{n:'Птичник 8 м²',e:'🏠',price:6000,cap:{hen:24},info:'3 курицы на м² → до 24 кур'},
+ barn:{n:'Коровник 32 м²',e:'🏚',price:20000,cap:{cow:4},info:'8 м² на корову → до 4 коров'},
+ goatshed:{n:'Козлятник 12 м²',e:'🛖',price:9000,cap:{goat:6},info:'2 м² на козу → до 6 коз'},
+ apiary:{n:'Пасека',e:'🌼',price:2000,cap:{hive:6},info:'до 6 ульев'},
+ gh:{n:'Теплица 24 м²',e:'🏡',price:12000,info:'6 тёплых грядок, работают зимой'},
+ garden:{n:'Сад (6 мест)',e:'🌳',price:8000,info:'яблони и вишни'},
+ heap:{n:'Компостная куча',e:'♻️',price:1500,info:'+1 компост за 2 дня и за каждую убранную грядку'},
+ flowers:{n:'Цветочная полоса',e:'🌻',price:1500,info:'божьи коровки и пчёлы'}
+};
+const TECH={tractor:{n:'Трактор',e:'🚜',price:40000,info:'посадка и уборка 0,5 ОД'},spr:{n:'Поливалка',e:'💦',price:12000,info:'полив без действий, воды ×1,2'},cool:{n:'Холодильная камера',e:'❄️',price:15000,info:'порча урожая ×0,4'}};
+const TREES={apple:{n:'Яблоня',e:'🍎',price:3000,from:4,kg:25,prod:'apple'},cherry:{n:'Вишня',e:'🍒',price:2500,from:3,kg:15,prod:'cherry'}};
+
+/* ===== Энциклопедия ===== */
+const ENC={};
+CIDS.forEach(k=>{const c=C[k];ENC[k]=[c.e+' '+c.n,`Семейство: ${FAM[c.fam]}. Созревает за ${c.d} дн., растёт от ${c.minT}°, ${c.L==='sun'?'любит солнце':'любит полутень'}, поливать по ${c.w} л/м² в день, нужно плодородие почвы ${c.need}.`+(c.pol?' Цветки опыляют пчёлы.':'')+(c.take<0?' Бобовое: на корнях живут клубеньковые бактерии, они обогащают почву азотом.':'')];});
+Object.assign(ENC,{
+ light:['☀️ Свет','Растению нужен свет для фотосинтеза: из воды и углекислого газа в зелёных листьях образуются сахара и кислород. В тени солнцелюбивые культуры растут хуже.'],
+ water:['💧 Вода','Корни впитывают воду с минеральными солями, лист испаряет её через устьица. В жару испарение больше — воды нужно больше. Без полива урожай падает.'],
+ soil:['🟤 Почва','Плодородие создаёт перегной (гумус): остатки растений и животных, переработанные бактериями и червями. Урожай уносит питательные вещества, их надо возвращать компостом.'],
+ rot:['🔁 Севооборот','На одной грядке нельзя сажать растения одного семейства подряд: копятся их болезни и вредители, а почва истощается одними и теми же веществами.'],
+ leg:['🫛 Бобовые','Клубеньковые бактерии на корнях гороха связывают азот воздуха. После гороха почва богаче азотом — следующая культура растёт лучше.'],
+ pol:['🐝 Опыление','У огурцов, томатов, тыкв и клубники плоды завязываются только после опыления: пчёлы переносят пыльцу с тычинок на пестик. Нет пчёл — плодов мало.'],
+ aph:['🐛 Тля','Тля — мелкие насекомые, сосут сок молодых листьев и размножаются очень быстро. Заметил рано — остановить легче.'],
+ lady:['🐞 Божья коровка','Божьи коровки и их личинки едят тлю. Цветочная полоса привлекает их. Химия убивает и вредителей, и полезных насекомых.'],
+ comp:['♻️ Компост','Компост — перегной из ботвы и навоза: гнилостные бактерии и черви превращают отходы в питательную землю. Бесплатное удобрение.'],
+ frost:['🥶 Заморозок','Теплолюбивые растения (томат, огурец) гибнут при 0°: в клетках замерзает вода. Плёнка удерживает тепло.'],
+ heat:['🔥 Жара','При жаре и засухе вода испаряется быстрее, редис и салат «стреляют» (выбрасывают цветоносы), а корове жарко — молока меньше.'],
+ hail:['🌨 Град','Град ломает листья и стебли. Укрытий в поле нет — помогает страховой запас денег и разные культуры.'],
+ hen:['🐔 Куры','Куры — птицы, питаются зерном, зеленью и насекомыми. Несутся лучше при длинном световом дне (около 14 ч): зимой помогает лампа.'],
+ cow:['🐄 Корова','Корова — травоядное жвачное млекопитающее: питается сеном и травой, много пьёт (до 60 л в день), даёт молоко для выкармливания телёнка.'],
+ goat:['🐐 Коза','Коза выносливая, неприхотливая, ест траву и ветки; молока меньше, чем у коровы, и места нужно меньше.'],
+ bee:['🍯 Пчёлы','Пчёлы собирают нектар, превращают его в мёд, опыляют цветки. Яды (пестициды) для них смертельны.'],
+ spoil:['📦 Порча','Свежие продукты портятся: размножаются бактерии и плесень. Холод замедляет это.'],
+ mkt:['🏪 Рынок','Цена зависит от сезона и предложения. Скидка увеличивает продажи, но уменьшает выручку с каждой единицы.']
+});
+const ENCN=Object.keys(ENC).length;
+
+/* ===== вопросы агронома ===== */
+const QS=[
+ ['Что нужно листьям для фотосинтеза?',['Свет, вода и углекислый газ','Только почва','Только тепло'],0,'В зелёных листьях из воды и углекислого газа на свету образуются сахара и кислород.','light'],
+ ['Какая часть растения впитывает воду из почвы?',['Лист','Корень','Цветок'],1,'Корни с корневыми волосками всасывают воду и соли.','water'],
+ ['Через что лист испаряет воду?',['Через устьица','Через жилки','Через корень'],0,'Устьица — крошечные отверстия, через них идёт и газообмен.','water'],
+ ['Зачем в почву вносят компост?',['Чтобы она стала твёрже','Он возвращает почве перегной и минеральные вещества','Чтобы отпугнуть дождь'],1,'Компост — готовый перегной, источник питания растений.','comp'],
+ ['Что делают клубеньковые бактерии на корнях гороха?',['Съедают корень','Связывают азот воздуха','Защищают от мороза'],1,'Они превращают азот воздуха в доступную растению форму.','leg'],
+ ['Почему нельзя сажать томаты после картофеля?',['У них общие болезни и вредители (оба паслёновые)','Им нужна разная вода','Картофель вырастает выше'],0,'Одно семейство — одни болезни, они копятся в почве.','rot'],
+ ['Кто ест тлю?',['Божья коровка','Пчела','Дождевой червь'],0,'Божья коровка и её личинки — естественные враги тли.','lady'],
+ ['Зачем на ферме нужны пчёлы?',['Только для мёда','Они опыляют цветки, и завязываются плоды','Они удобряют почву'],1,'Пчёлы переносят пыльцу, без опыления плодов мало.','pol'],
+ ['Что такое севооборот?',['Сбор урожая за один день','Чередование культур на одной грядке','Полив по расписанию'],1,'Чередование культур сохраняет почву здоровой.','rot'],
+ ['Какая из этих культур — бобовая?',['Морковь','Горох','Капуста'],1,'Горох — бобовое растение.','leg'],
+ ['Когда лучше поливать в жару?',['В полдень','Рано утром или вечером','Не поливать'],1,'Меньше испарение — вода доходит до корней.','water'],
+ ['Зачем рыхлить почву?',['Чтобы воздух дошёл до корней','Чтобы почва стала тяжелее','Чтобы пришли вредители'],0,'Корням нужен воздух, чтобы дышать.','soil'],
+ ['Почему зимой куры несутся хуже?',['Им нечего пить','Световой день короткий','У них растут зубы'],1,'Для яйценоскости нужен длинный световой день.','hen'],
+ ['Чем питается корова?',['Сеном и травой','Мясом','Нектаром'],0,'Корова — травоядное жвачное животное.','cow'],
+ ['Что опасно для пчёл на ферме?',['Цветочная полоса','Ядохимикаты (пестициды)','Тёплая погода'],1,'Яды убивают и вредителей, и полезных насекомых.','bee'],
+ ['Почему томаты в тени дают меньше урожая?',['Меньше света — меньше фотосинтеза','Тень их замораживает','В тени много воды'],0,'Мало света — мало сахаров, мало плодов.','light'],
+ ['Что собирают пчёлы для мёда?',['Росу','Нектар цветков','Пыльцу и мёд из улья соседей'],1,'Нектар в улье перерабатывается в мёд.','bee'],
+ ['Что нужно семени, чтобы прорасти?',['Вода, тепло и воздух','Только свет','Только удобрение'],0,'Влага, тепло и воздух запускают рост зародыша.','water'],
+ ['Съедобная часть моркови — это...',['Видоизменённый корень (корнеплод)','Клубень','Плод'],0,'Морковь — корнеплод, запасает питательные вещества в корне.','soil'],
+ ['Картофельный клубень — это...',['Видоизменённый корень','Видоизменённый побег','Плод'],1,'Клубень — утолщённый подземный побег.','soil'],
+ ['Зачем нужна мульча (слой соломы, листьев)?',['Сохраняет влагу и не даёт сорнякам расти','Греет и сушит почву','Привлекает град'],0,'Мульча уменьшает испарение.','water'],
+ ['Чем опасна тля?',['Сосёт сок листьев и размножается','Опыляет цветки','Ест корни'],0,'Тля ослабляет растения и переносит болезни.','aph'],
+ ['Зачем плёнка во время заморозка?',['Удерживает тепло у растений','Привлекает пчёл','Поливает растения'],0,'Плёнка защищает теплолюбивые культуры от гибели.','frost'],
+ ['Чем коза отличается от коровы на ферме?',['Меньше места и корма, меньше молока','Она не даёт молока','Она питается мясом'],0,'Коза мельче, неприхотливее; молока меньше.','goat']
+];
+
+/* ================= УТИЛИТЫ ================= */
+const $=s=>document.querySelector(s);
+const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const r1=x=>Math.round(x*10)/10;
+const num=n=>String(r1(n)).replace('.',',');
+const money=n=>Math.round(n).toLocaleString('ru-RU')+' ₽';
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=ri(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;}
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2600);}
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));PF.touch(k);}catch(e){}}
+function lsDel(k){try{localStorage.removeItem(k);PF.touch(k);}catch(e){}}
+/* ===== Адаптер платформы (Google Play). Единственное место для AdMob и Google Play Billing. =====
+   kind: 'interstitial' — полноэкранная реклама (cb() по закрытию); 'rewarded' — ролик за награду (cb(true), только если досмотрен);
+   'canReward' — доступен ли ролик; 'premium' — активна ли платная подписка/покупка. Сейчас: реклама и покупки выключены. */
+function platformAdapter(kind,cb){
+  if(kind==='interstitial'){cb&&cb();return;}
+  if(kind==='rewarded'){cb&&cb(false);return;}
+  if(kind==='canReward')return false;
+  if(kind==='premium')return false;
+}
+const PF={paused:()=>false,canReward:()=>platformAdapter('canReward'),rewarded(cb){platformAdapter('rewarded',cb);},interstitial(cb){platformAdapter('interstitial',cb);},setPlaying(){},touch(){},flush(){},lang:()=>null,premium:()=>platformAdapter('premium'),today:()=>Math.floor((Date.now()-new Date().getTimezoneOffset()*60000)/864e5),get:k=>{try{return localStorage.getItem(k);}catch(e){return null;}},put:(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}},init:()=>Promise.resolve(),ready(){}}; /*PFSTUB*/
+
+/* ================= СОСТОЯНИЕ ================= */
+let S=null,tab='beds',modal=false;
+function mkBed(t,shade){return{t,shade:!!shade,crop:null,prog:0,fert:60,last:'',dry:0,w:false,pest:0,dmg:0,sf:1,rot:1,f0:60,cold:0,hot:0,over:0,ready:false,plantedAt:0};}
+function addBeds(n,t){for(let i=0;i<n;i++)S.beds.push(mkBed(t,false));}
+function newState(){
+  const s={v:1,day:1,money:40000,workers:1,agro:0,tech:{tractor:0,spr:0,cool:0},
+    bld:{coop:1,barn:0,goatshed:0,apiary:0,gh:0,garden:0,heap:0,flowers:0},lamp:0,
+    land:2,landBuys:0,beds:[],trees:[],an:{hen:8,cow:0,goat:0,hive:0},stock:{},feed:{grain:20,hay:0},
+    compost:2,lady:0,heat:false,cover:false,wx:null,next:null,drought:0,ap:0,apCap:0,
+    task:null,enc:{},stats:{right:0,wrong:0,harv:0,rev:0,exp:0},bonusQ:0,pn:{},sold:{},disc:10,sel:[],
+    log:[],qUsed:[],pl:null,wasChem:false,goalsHit:0,over:false,tabBed:'f'};
+  for(let i=0;i<20;i++)s.beds.push(mkBed('f',i%5===4&&i<20));
+  s.beds.forEach(b=>{if(b.t==='f')b.shade=false;});
+  [4,9,14,19].forEach(i=>s.beds[i].shade=true);
+  return s;
+}
+const seasonOf=d=>Math.floor(((d-1)%48)/SD);
+const yearOf=d=>Math.floor((d-1)/48)+1;
+const dayIn=d=>(d-1)%SD+1;
+const winter=()=>seasonOf(S.day)===3;
+let live=false;/* true — игра начата или загружена (до этого S — заглушка стартового экрана, её сохранять нельзя) */
+function save(){if(live&&S&&!S.over)lsSet(SAVE_KEY,S);}
+const hives=()=>S.an.hive;
+const care=()=>Math.ceil(Object.keys(AN).reduce((a,k)=>a+S.an[k]*AN[k].w,0)-1e-9);
+const cap=()=>6+8*(S.workers+S.agro);
+function itemPrice(id){return Math.round(ITEMS[id].p*(ITEMS[id].sea?SPF[seasonOf(S.day)]:1)*(S.pn[id]||1));}
+function stockVal(){return Object.keys(S.stock).reduce((a,k)=>a+(S.stock[k]||0)*ITEMS[k].p,0);}
+function capital(){
+  let c=S.money+stockVal()+S.feed.grain*P_GRAIN+S.feed.hay*P_HAY;
+  Object.keys(AN).forEach(k=>c+=S.an[k]*AN[k].price*.7);
+  Object.keys(BLD).forEach(k=>c+=S.bld[k]*BLD[k].price*.7);
+  Object.keys(TECH).forEach(k=>c+=S.tech[k]*TECH[k].price*.6);
+  S.trees.forEach(t=>c+=TREES[t.k].price*.7);
+  c+=S.landBuys*0+(S.land-2)*15000*.8;
+  return Math.round(c);
+}
+const landPrice=()=>15000+2000*S.landBuys;
+function unlock(id){if(ENC[id]&&!S.enc[id]){S.enc[id]=1;toast(`📖 Новая запись: ${ENC[id][0]}`);}}
+function logl(t){S.log.push(t);if(S.log.length>6)S.log.shift();}
+
+/* ================= ПОГОДА ================= */
+function genWx(day){
+  const s=seasonOf(day),i=dayIn(day)-1,base=[12,24,8,-8][s];
+  const ramp=s===0?-4+8*i/11:s===2?4-8*i/11:0;
+  let T=Math.round(base+ramp+ri(-3,3)),rain=Math.random()<[.3,.15,.35,.25][s],ev=null;
+  if(S.drought>0){T+=7;rain=false;S.drought--;ev='drought';}
+  else if(s===1&&Math.random()<.04){S.drought=2;T+=7;rain=false;ev='drought';}
+  if(s===0&&i<5&&Math.random()<.3){T=ri(-3,0);rain=false;ev='frost';}
+  const fair=s<3&&Math.random()<.04&&day>2;
+  return{T,rain,heat:T>=28,frost:T<=0&&s!==3,ev,fair,hail:false};
+}
+const wxIcon=w=>w.frost?'🥶':w.heat?'🔥':w.rain?'🌧':w.T<4?'☁️':'☀️';
+const wxTxt=w=>`${wxIcon(w)} ${w.T}°${w.rain?', '+'дождь':''}${w.heat?', '+'жара':''}${w.frost?', '+'заморозок':''}${w.fair?', '+'ярмарка':''}`;
+
+/* ================= ДЕЙСТВИЯ ================= */
+function spend(ap){
+  if(S.ap+1e-9<ap){toast(`Не хватает действий (нужно ${num(ap)}, есть ${num(S.ap)}). Нужен работник или техника.`);return false;}
+  S.ap=r1(S.ap-ap);return true;
+}
+function pay(m,why){
+  if(S.money<m){toast(`Не хватает денег${why?` на ${why}`:''}.`);return false;}
+  S.money-=m;S.stats.exp+=m;return true;
+}
+const apPlant=()=>S.tech.tractor?.5:1;
+const gbeds=()=>S.beds.map((b,i)=>({b,i})).filter(o=>o.b.t==='g');
+const fbeds=()=>S.beds.map((b,i)=>({b,i})).filter(o=>o.b.t==='f');
+function selBeds(filter){return S.sel.map(i=>S.beds[i]).filter(b=>b&&(!filter||filter(b)));}
+
+function fertAfter(b,c){b.fert=clamp(b.fert-c.take,0,100);}
+function bedFx(b){
+  const c=C[b.crop],fx=[],push=(k,v,t)=>{fx.push({k,v,t});};
+  let F=1;
+  const fl=(c.L==='sun'&&b.shade)?.6:1;F*=fl;if(fl<.98)push('light',fl,`Грядка в тени, а ${c.n.toLowerCase()} любит солнце: света мало, фотосинтез слабее (×0,6).`);
+  const fw=Math.max(.3,1-.07*b.dry);F*=fw;if(fw<.98)push('water',fw,`${b.dry} дн. без полива: корням не хватило воды (×${num(r1(fw*100)/100)}).`);
+  const fs=b.f0>=c.need?1:.4+.6*b.f0/c.need;F*=fs;if(fs<.98)push('soil',fs,`Почва бедна: плодородие ${Math.round(b.f0)}, а нужно ${c.need}. Помогает компост.`);
+  let ft=1-.5*Math.min(1,b.cold/c.d);if(c.L==='half')ft*=1-.5*Math.min(1,b.hot/c.d);
+  F*=ft;if(ft<.98)push('temp',ft,b.cold>=b.hot?`Было холоднее ${c.minT}° — рост замедлился.`:`Жара от 30°: ${c.n.toLowerCase()} любит прохладу и «стреляет».`);
+  F*=b.rot;if(b.rot<.98)push('rot',b.rot,`Севооборот: до этого на грядке росло то же семейство (${FAM[c.fam]}). Копятся болезни, почва истощена.`);
+  if(b.rot>1.01)push('rotgood',b.rot,`После бобовых почва богата азотом — бонус ×1,15.`);
+  if(c.pol){const cov=Math.min(1,(hives()/S.land)+(S.bld.flowers?.1:0)),fp=.65+.35*cov;F*=fp;if(fp<.98)push('pol',fp,`Мало пчёл: ${hives()} ульев на ${S.land} сот., опыление ${Math.round(cov*100)}%. Нужно по улью на сотку.`);}
+  const fpe=1-Math.min(.7,b.dmg);F*=fpe;if(fpe<.98)push('aph',fpe,`Тля сосала сок листьев (−${Math.round(b.dmg*100)}%).`);
+  F*=b.sf;if(b.sf<.98)push('seed',b.sf,'Высеяно меньше нормы: растений мало.');if(b.sf<1&&b.sf>=.8&&false)0;
+  if(b.sf<1&&b.sf>.8&&b.sfOver)push('seed',b.sf,'Загущено: растения мешают друг другу.');
+  const fo=Math.max(.4,1-.15*b.over);F*=fo;if(fo<.98)push('over',fo,`Перезрело: урожай ждал ${b.over} дн.`);
+  const bonus=1+S.bonusQ+(S.agro?.06:0);F*=bonus;
+  return{F,fx,kg:r1(BEDM*c.y*F)};
+}
+const REASON_ENC={light:'light',water:'water',soil:'soil',rot:'rot',rotgood:'leg',pol:'pol',aph:'aph',temp:'heat'};
+
+/* ================= ДЕНЬ ================= */
+function startDay(){
+  S.sold={};S.ap=Math.max(0,cap()-care());S.apCap=cap();
+  CIDS.concat(['egg','milk','gmilk','honey','apple','cherry']).forEach(k=>S.pn[k]=1+(Math.random()-.5)*.16);
+  S.beds.forEach(b=>b.w=false);
+}
+function endDay(){
+  const W=S.wx,s=seasonOf(S.day),log=[];
+  // события
+  if(W.ev==='drought')unlock('heat');
+  if(W.frost)unlock('frost');
+  if(s>=1&&s<=2&&Math.random()<.015){W.hail=true;}
+  if(W.hail){let n=0;S.beds.forEach(b=>{if(b.t==='f'&&b.crop){b.dmg+=.3;n++;}});if(n){unlock('hail');log.push(`🌨 Град! Побиты листья на ${n} грядках (−30%).`);}}
+  // грядки
+  let died=0;
+  S.beds.forEach((b,i)=>{
+    if(!b.crop)return;
+    const c=C[b.crop],g=b.t==='g';
+    const gh=g?(S.heat?22:(s===1?3:10)):0,eT=W.T+gh;
+    if(!g&&W.frost&&c.minT>=8&&!S.cover){b.crop=null;b.prog=0;b.ready=false;b.pest=0;b.dmg=0;died++;return;}
+    if(!b.w&&!W.rain&&!(b.ready))b.dry++;
+    if(b.ready){b.over++;}
+    else{
+      const gr=eT>=c.minT?1:eT>=c.minT-5?.4:.1;
+      if(eT<c.minT)b.cold++;
+      if(eT>=30)b.hot++;
+      b.prog+=gr;if(b.prog>=c.d){b.prog=c.d;b.ready=true;}
+    }
+    if(b.pest){b.dmg+=.07;}
+  });
+  if(died){log.push(`🥶 Заморозок убил растения на ${died} грядках. Теплолюбивым нужна плёнка.`);unlock('frost');}
+  // тля и божьи коровки
+  if(s<=2){
+    const p=([.15,.25,.15][s])/(1+S.lady);
+    if(Math.random()<p){
+      const cand=S.beds.map((b,i)=>i).filter(i=>S.beds[i].crop&&C[S.beds[i].crop].aph&&!S.beds[i].pest&&S.beds[i].t==='f');
+      if(cand.length){const i=pick(cand);S.beds[i].pest=1;log.push(`🐛 Тля на грядке ${i+1}!`);unlock('aph');}
+    }
+    S.beds.forEach((b,i)=>{
+      if(!b.pest||b.t!=='f')return;
+      if(Math.random()<.35&&S.lady<2){const n=S.beds[i+1];if(n&&n.t==='f'&&n.crop&&C[n.crop].aph&&!n.pest){n.pest=1;}}
+      if(S.lady>=2&&Math.random()<.3){b.pest=0;log.push(`🐞 Божьи коровки съели тлю на грядке ${i+1}.`);unlock('lady');}
+    });
+    if(Math.random()<(S.bld.flowers?.15:.03)&&S.lady<3){S.lady++;if(S.bld.flowers)unlock('lady');}
+  }
+  // животные
+  const heatDay=W.heat;
+  ['hen','cow','goat'].forEach(k=>{
+    const n=S.an[k];if(!n)return;
+    const a=AN[k],need=n*a.kg,have=S.feed[a.feed];
+    const fed=need?Math.min(1,have/need):1;
+    S.feed[a.feed]=Math.max(0,have-need);
+    S.money-=n*a.water*(heatDay?1.5:1)*P_WATER;S.stats.exp+=n*a.water*(heatDay?1.5:1)*P_WATER;
+    let rate=k==='hen'?.8*(s===3?(S.lamp?.9:.5):s===0?.9:s===2?.8:1):k==='cow'?10*(heatDay?.85:1):2;
+    const prod=n*rate*fed;
+    S.stock[a.prod]=(S.stock[a.prod]||0)+prod;
+    if(fed<.98){log.push(`${a.e} Голодные ${a.n.toLowerCase()}: корма хватило на ${Math.round(fed*100)}% — продукта меньше.`);}
+    unlock(k);
+  });
+  if(S.an.hive)unlock('bee');
+  // порча
+  Object.keys(S.stock).forEach(k=>{const sp=ITEMS[k].spoil*(S.tech.cool&&C[k]?.4:1);S.stock[k]*=1-sp;if(S.stock[k]<.01)delete S.stock[k];});
+  if(Object.keys(S.stock).length)unlock('spoil');
+  // расходы
+  const wages=S.workers*WAGE+S.agro*WAGE_AGRO;
+  const heat=S.heat?gbeds().length*60:0;
+  S.money-=wages+heat;S.stats.exp+=wages+heat;
+  if(S.bld.heap&&S.day%2===0)S.compost++;
+  S.cover=false;
+  S.log=log;
+  // следующий день
+  S.day++;
+  if(S.day>TOTAL){return finish();}
+  const ns=seasonOf(S.day),prev=s;
+  S.wx=S.next;S.next=genWx(S.day+1);
+  startDay();
+  if(S.money<-15000){return bankrupt();}
+  if(ns!==prev||S.day===1){seasonStart(prev,ns);}
+  save();
+}
+function seasonEndProd(s){
+  // мёд и деревья
+  const msgs=[];
+  if(S.an.hive){
+    const base=[1.5,3,1.5,0][s];
+    if(base){const h=S.an.hive*base*(S.bld.flowers?1.25:1);S.stock.honey=(S.stock.honey||0)+h;msgs.push(`🍯 Мёд: ${num(h)} кг от ${S.an.hive} ульев.`);}
+  }
+  S.trees.forEach(t=>{t.age++;});
+  if(s===2){
+    const cov=Math.min(1,hives()/S.land)+(S.bld.flowers?.1:0);
+    S.trees.forEach(t=>{const T=TREES[t.k];if(t.age>=T.from){const kg=r1(T.kg*(.5+.5*Math.min(1,cov))*(t.pr?1.1:1));S.stock[T.prod]=(S.stock[T.prod]||0)+kg;t.pr=0;msgs.push(`${T.e} ${T.n}: ${num(kg)} кг${cov<1?' (опыления мало)':''}.`);}});
+  }
+  return msgs;
+}
+function seasonStart(prev,ns){
+  const msgs=seasonEndProd(prev);
+  if(ns===3){
+    let n=0;S.beds.forEach(b=>{if(b.t==='f'&&b.crop){b.crop=null;b.prog=0;b.ready=false;b.pest=0;b.dmg=0;n++;}});
+    if(n)msgs.push(`❄️ Зима: на открытых грядках погибло ${n} культур. Снимайте урожай до холодов!`);
+  }
+  S.bonusQ=0;
+  if(ns===0)S.beds.forEach(b=>{if(b.t==='f'){b.over=0;}});
+  const needGoal=(S.day-1)%48===0&&S.day>1;
+  const after=()=>{
+    const q=()=>askQ(0,()=>askQ(1,()=>seasonCard(ns,msgs)));
+    if(needGoal)goalCard(q);else q();
+  };
+  modal=true;PF.interstitial(()=>{modal=false;after();});
+}
+function goalCard(next){
+  const y=yearOf(S.day)-1,cp=capital(),goal=GOALS[y-1],ok=cp>=goal;
+  if(ok){S.money+=3000;}
+  openCard(`<h2>🏁 Итоги года ${y}</h2><p>Капитал: <b>${money(cp)}</b> · цель: ${money(goal)}.</p>
+    <div class="${ok?'ok':'bad'}">${ok?'Цель достигнута! Премия +3 000 ₽.':`До цели не хватило ${money(goal-cp)}. Продолжаем — впереди ещё год.`}</div>
+    <p class="hint">Следующая цель: ${money(GOALS[y])}.</p><button class="btn go" data-a="next">Дальше</button>`,next);
+}
+function seasonCard(s,msgs){
+  const tips=['Весна: холодные ночи и заморозки. Смотрите прогноз и укрывайте томаты и огурцы. Сеять всё, что успеет созреть до зимы!','Лето: жарко и сухо, воды надо больше (×1,5 в жару). Появляется тля. Пчёлы опыляют огурцы, томаты, тыкву, клубнику.','Осень: время урожая и сада. Успейте убрать всё до первых морозов — с началом зимы поле замерзает.','Зима: открытый грунт спит. Теплица, животные, обрезка деревьев и планирование: на что потратить деньги весной?'];
+  openCard(`<h2>${SEMO[s]} ${SEAS[s]}, год ${yearOf(S.day)}</h2><p>${tips[s]}</p>${msgs.length?`<div class="ok">${msgs.join('<br>')}</div>`:''}
+    <p class="hint">Сегодня: ${wxTxt(S.wx)}<br>Завтра: ${wxTxt(S.next)}</p><button class="btn go" data-a="next">Вперёд!</button>`,()=>{maybeTask();});
+}
+function bankrupt(){S.over=true;lsDel(SAVE_KEY);openCard(`<h2>💸 Банкрот</h2><p>Деньги ушли в минус больше 15 000 ₽. Бывает у всех фермеров. Подумайте о расходах на работников, корм и воду — и начните заново!</p><button class="btn go" data-a="newgame">Заново</button>`);}
+function finish(){
+  S.over=true;lsDel(SAVE_KEY);
+  const cp=capital(),st=STAR_AT.filter(x=>cp>=x).length,ec=Object.keys(S.enc).length;
+  const best=lsGet(BEST_KEY)||0;if(cp>best)lsSet(BEST_KEY,cp);
+  openCard(`${imgTag('final_win','','cover')}<h2>🏆 Три года позади!</h2><div class="stars" style="font-size:34px;text-align:center">${'★'.repeat(st)}${'☆'.repeat(3-st)}</div>
+    <p>Капитал фермы: <b>${money(cp)}</b> ${cp>best?'(новый рекорд!)':''}<br>Энциклопедия фермера: <b>${ec} из ${ENCN}</b><br>Верных ответов агроному: ${S.stats.right}</p>
+    <button class="btn go" data-a="newgame">Играть снова</button>`);
+}
+
+/* ================= КАРТОЧКИ ================= */
+let cardNext=null;
+function openCard(html,next){modal=true;PF.setPlaying(false);cardNext=next||null;$('#card').innerHTML=html;$('#ov').classList.remove('hidden');}
+function closeCard(){modal=false;$('#ov').classList.add('hidden');const n=cardNext;cardNext=null;render();if(n)n();}
+function askQ(i,next){
+  let pool=QS.map((q,k)=>k).filter(k=>!S.qUsed.includes(k));
+  if(!pool.length){S.qUsed=[];pool=QS.map((q,k)=>k);}
+  const k=pick(pool);S.qUsed.push(k);
+  const q=QS[k],order=shuffle([0,1,2]);
+  openCard(`<span class="tag">🧑‍🌾 Агроном · вопрос ${i+1} из 2</span><div class="q">${q[0]}</div>`+
+    order.map(o=>`<button class="btn alt" data-a="ans" data-k="${k}" data-o="${o}">${q[1][o]}</button>`).join('')+
+    `<p class="hint">Верный ответ: +6% к урожаю до конца сезона.</p>`,null);
+  askQ.next=next;
+}
+function answerQ(k,o){
+  const q=QS[k],ok=o===q[2];
+  if(ok){S.stats.right++;S.bonusQ=Math.min(.12,S.bonusQ+.06);unlock(q[4]);}else S.stats.wrong++;
+  save();
+  openCard(`<div class="${ok?'ok':'bad'}"><b>${ok?'Верно! +6% к урожаю.':'Не совсем.'}</b><br>Правильный ответ: ${q[1][q[2]]}.<br>${q[3]}</div><button class="btn go" data-a="next">Дальше</button>`,askQ.next);
+}
+
+/* ===== задачи-расчёты ===== */
+function maybeTask(){
+  if(S.over||modal)return;
+  if(S.day%4!==3||S.task&&S.task.day===S.day)return;
+  const y=yearOf(S.day),rew=[300,600,900][y-1],t=genTask();
+  S.task={day:S.day,q:t.q,a:t.a,tol:t.tol||0,rew,why:t.why};
+  openCard(`<span class="tag">📋 Задача фермера</span><div class="q">${t.q}</div><input class="in" id="tin" type="number" inputmode="decimal" placeholder="ответ"><div class="row"><button class="btn go grow" data-a="task">Ответить</button><button class="btn alt" data-a="taskskip">Пропустить</button></div><p class="hint">Награда: ${money(rew)}</p>`);
+}
+function genTask(){
+  const ty=ri(0,7),c=C[pick(CIDS)];
+  if(ty===0){const b=ri(6,15);return{q:`Сажаем ${c.n.toLowerCase()} на ${b} грядок по ${BEDM} м². Норма: ${c.seed} шт. на м². Сколько семян нужно?`,a:b*BEDM*c.seed,why:`${b} × ${BEDM} м² × ${c.seed} шт. = ${b*BEDM*c.seed}.`};}
+  if(ty===1){const n=S.an.hen||ri(6,12),a=r1(n*.1*7);return{q:`У нас ${n} кур, каждая съедает 0,1 кг зерна в день. Сколько кг зерна нужно на неделю?`,a,tol:.05,why:`${n} × 0,1 × 7 = ${num(a)} кг.`};}
+  if(ty===2){const b=2*ri(2,8),w=pick([2,3,4,5,6]),a=w*BEDM*b*1.5;return{q:`Жара! Грядка ${BEDM} м², норма полива ${w} л на м² в день, при жаре воды в 1,5 раза больше. Сколько литров в день нужно на ${b} грядок?`,a,why:`${w} × ${BEDM} × ${b} × 1,5 = ${a} л.`};}
+  if(ty===3){const d0=ri(1,10);return{q:`Посадили ${c.n.toLowerCase()} в ${d0}-й день сезона. Она созревает за ${c.d} дн. На какой день сезона будет урожай?`,a:d0+c.d,why:`${d0} + ${c.d} = ${d0+c.d}. (Если больше 12 — это уже следующий сезон!)`};}
+  if(ty===4){const m=2*ri(2,6)*BEDM/2,a=m*c.y*c.p;return{q:`С ${m} м² собрали ${c.n.toLowerCase()} по ${num(c.y)} кг с м². Цена ${c.p} ₽/кг. Выручка?`,a,why:`${m} × ${num(c.y)} кг × ${c.p} ₽ = ${a} ₽.`};}
+  if(ty===5){const kg=5*ri(2,8),d=pick([10,20,25,30]),a=kg*c.p*(100-d)/100;return{q:`Ярмарка: ${c.n.toLowerCase()} по ${c.p} ₽/кг со скидкой ${d}%. Продали ${kg} кг. Сколько выручили?`,a,why:`Цена со скидкой: ${c.p} × ${(100-d)/100} = ${c.p*(100-d)/100} ₽. × ${kg} кг = ${a} ₽.`};}
+  if(ty===6){if(Math.random()<.5){const s=ri(2,5);return{q:`Участок ${s} сотки. Сколько это квадратных метров? (1 сотка = 100 м²)`,a:s*100,why:`${s} × 100 = ${s*100} м².`};}const n=3*ri(3,8);return{q:`В птичник ставят ${n} кур, по норме 3 курицы на м². Сколько м² птичника нужно?`,a:n/3,why:`${n} ÷ 3 = ${n/3} м².`};}
+  const b=ri(2,6)*2,seeds=b*BEDM*c.seed,cost=seeds*c.pack/100,rev=b*BEDM*c.y*c.p;
+  return{q:`Посадили ${c.n.toLowerCase()} на ${b} грядок: семена стоили ${money(cost)}, выручка с урожая ${money(rev)}. Какая прибыль?`,a:rev-cost,why:`${rev} − ${cost} = ${rev-cost} ₽.`};
+}
+function answerTask(skip){
+  const t=S.task;if(!t)return closeCard();
+  if(skip){S.task=null;return closeCard();}
+  const v=parseFloat(String($('#tin').value).replace(',','.'));
+  if(isNaN(v))return toast('Введите число');
+  const ok=Math.abs(v-t.a)<=Math.max(.06,t.tol||0)+.5*(t.a>1000?0:0);
+  if(ok){S.money+=t.rew;S.stats.right++;}else S.stats.wrong++;
+  save();
+  openCard(`<div class="${ok?'ok':'bad'}"><b>${ok?`Верно! +${money(t.rew)}`:'Не совсем.'}</b><br>${t.why}</div><button class="btn go" data-a="next">Дальше</button>`);
+}
+
+/* ================= ПОСАДКА ================= */
+function openPlant(){
+  const ids=S.sel.filter(i=>S.beds[i]&&!S.beds[i].crop);
+  if(!ids.length)return toast('Выберите свободные грядки (кнопка «Пустые» выберет все).');
+  if(ids.some(i=>S.beds[i].t==='f')&&winter()){return toast('Зимой открытый грунт спит: сажать можно только в теплице.');}
+  S.pl={ids,crop:null};plantStep1();
+}
+function plantStep1(){
+  const n=S.pl.ids.length;
+  openCard(`<h2>🌱 Посадка: ${n} гр.</h2><div class="grid">`+CIDS.map(k=>{const c=C[k];return `<button class="item" data-a="pcrop" data-k="${k}"><span class="em">${imgTag('c_'+k,c.e,'pic')}</span><b>${c.n}</b><small>${c.d} дн.</small></button>`;}).join('')+`</div><button class="btn alt" data-a="close">Отмена</button>`);
+}
+function plantStep2(k){
+  const c=C[k],ids=S.pl.ids,n=ids.length;S.pl.crop=k;
+  const out=ids.some(i=>S.beds[i].t==='f');
+  const rotBad=ids.filter(i=>S.beds[i].last===c.fam).length,rotGood=ids.filter(i=>S.beds[i].last==='leg').length;
+  const poor=ids.filter(i=>S.beds[i].fert<c.need).length,shade=ids.filter(i=>S.beds[i].shade&&c.L==='sun').length;
+  const ripe=S.day+c.d,lastOut=Math.floor((S.day-1)/48)*48+37;
+  const warns=[];
+  if(rotBad)warns.push(`🔁 На ${rotBad} гр. раньше росли ${FAM[c.fam].toLowerCase()} — болезни, урожай ×0,7.`);
+  if(rotGood)warns.push(`🫛 На ${rotGood} гр. раньше был горох — почва богата азотом.`);
+  if(poor)warns.push(`🟤 На ${poor} гр. плодородие ниже ${c.need} — добавьте компост.`);
+  if(shade)warns.push(`🌑 ${shade} гр. в тени: ${c.n.toLowerCase()} любит солнце.`);
+  if(out&&ripe>lastOut)warns.push(`❄️ Не успеет до зимы! Созреет на ${ripe}-й день, а зима с ${lastOut+1}-го.`);
+  if(out&&seasonOf(S.day)===0&&c.minT>=15)warns.push(`🥶 Тепла мало (нужно от ${c.minT}°), весной возможны заморозки.`);
+  if(c.pol&&hives()<S.land)warns.push(`🐝 Нужен улей на сотку: у вас ${hives()} на ${S.land}.`);
+  openCard(`<h2>${c.e} ${c.n}</h2>
+    <div class="card2"><div class="kv"><span>Семейство</span><b>${FAM[c.fam]}</b></div><div class="kv"><span>Свет</span><b>${c.L==='sun'?'солнце':'полутень'}</b></div>
+    <div class="kv"><span>Вода на грядку</span><b>${num(c.w*BEDM)} л в день</b></div><div class="kv"><span>Созреет</span><b>через ${c.d} дн. (день ${ripe})</b></div>
+    <div class="kv"><span>Растёт от</span><b>${c.minT}°</b></div><div class="kv"><span>Норма семян</span><b>${c.seed} шт. на м², пачка 100 шт. = ${money(c.pack)}</b></div></div>
+    ${warns.map(w=>`<div class="hint warn">${w}</div>`).join('')}
+    <p><b>Сколько семян купить на ${n} гр. по ${BEDM} м²?</b></p>
+    <input class="in" id="seedin" type="number" inputmode="numeric" placeholder="число семян">
+    <div class="hint" id="seedcost"></div>
+    <div class="row"><button class="btn go grow" data-a="doplant">Посадить</button><button class="btn alt sm" data-a="phint">Подсказка</button><button class="btn alt sm" data-a="plantback">Назад</button></div>`);
+  const inp=$('#seedin');inp.oninput=()=>{const v=parseInt(inp.value)||0;$('#seedcost').textContent=v?`Стоимость: ${money(v*c.pack/100)}`:'';};
+}
+function doPlant(){
+  const k=S.pl.crop,c=C[k],ids=S.pl.ids,n=ids.length;
+  const v=parseInt($('#seedin').value);
+  if(!v||v<1)return toast('Введите число семян');
+  const need=n*BEDM*c.seed,ratio=v/need,cost=v*c.pack/100;
+  if(S.money<cost)return toast(`Не хватает денег на семена: ${money(cost)}`);
+  if(S.ap+1e-9<apPlant()*n)return toast(`Не хватает действий: нужно ${num(apPlant()*n)}, есть ${num(S.ap)}.`);
+  S.money-=cost;S.stats.exp+=cost;S.ap=r1(S.ap-apPlant()*n);
+  const sf=ratio<1?ratio:ratio>1.2?.85:1;
+  ids.forEach(i=>{const b=S.beds[i];
+    b.crop=k;b.prog=0;b.ready=false;b.dry=0;b.dmg=0;b.pest=0;b.cold=0;b.hot=0;b.over=0;b.sf=sf;b.sfOver=ratio>1.2;b.f0=b.fert;b.plantedAt=S.day;
+    b.rot=b.last===c.fam?(c.fam==='sol'?.6:.7):b.last==='leg'?1.15:1;
+    if(b.rot<1)unlock('rot');});
+  S.sel=[];S.pl=null;
+  const msg=ratio<.98?`Семян меньше нормы (${v} из ${need}): растений мало.`:ratio>1.2?`Семян слишком много (${v} при норме ${need}): загущено.`:'Норма семян выдержана.';
+  closeCard();toast(`${c.e} Посажено ${n} гр. · ${msg}`);
+  save();render();
+}
+
+/* ================= УБОРКА, ПОЛИВ ================= */
+function harvest(){
+  const idx=(S.sel.length?S.sel:S.beds.map((b,i)=>i)).filter(i=>S.beds[i].ready&&S.beds[i].crop);
+  if(!idx.length)return toast('Нет готовых грядок (выберите их или ждите созревания).');
+  const cost=apPlant()*idx.length;
+  if(S.ap+1e-9<cost){const can=Math.floor(S.ap/apPlant());if(can<1)return toast(`Не хватает действий (нужно ${num(cost)}).`);idx.length=can;}
+  S.ap=r1(S.ap-apPlant()*idx.length);
+  const tot={},reasons={};let kg=0;
+  idx.forEach(i=>{const b=S.beds[i],c=C[b.crop],r=bedFx(b);
+    S.stock[b.crop]=(S.stock[b.crop]||0)+r.kg;tot[b.crop]=(tot[b.crop]||0)+r.kg;kg+=r.kg;S.stats.harv+=r.kg;
+    r.fx.forEach(f=>{if(!reasons[f.k])reasons[f.k]={t:f.t,n:0,v:f.v};reasons[f.k].n++;if(REASON_ENC[f.k])unlock(REASON_ENC[f.k]);});
+    unlock(b.crop);
+    fertAfter(b,c);b.last=c.fam;b.crop=null;b.prog=0;b.ready=false;b.pest=0;b.dmg=0;
+    if(S.bld.heap)S.compost++;
+  });
+  S.sel=[];
+  const pot=idx.length;
+  openCard(`<h2>🧺 Урожай собран</h2><div class="ok">${Object.keys(tot).map(k=>`${C[k].e} ${C[k].n}: <b>${num(tot[k])} кг</b>`).join('<br>')}</div>
+    ${Object.keys(reasons).length?`<p><b>Почему не максимум:</b></p>`+Object.keys(reasons).map(k=>`<div class="${reasons[k].v>1?'ok':'bad'}" style="font-size:13px">${reasons[k].t}${reasons[k].n>1?` <i>(на ${reasons[k].n} гр.)</i>`:''}</div>`).join(''):'<p class="good">Все условия выполнены — максимальный урожай!</p>'}
+    <button class="btn go" data-a="close">Отлично</button>`);
+  save();
+}
+function waterAll(){
+  const idx=S.beds.map((b,i)=>i).filter(i=>S.beds[i].crop&&!S.beds[i].ready&&!S.beds[i].w);
+  const W=S.wx;
+  if(W.rain)return toast('Идёт дождь: полив не нужен.');
+  if(!idx.length)return toast('Поливать нечего.');
+  let apc=S.tech.spr?0:Math.ceil(idx.length/4);
+  const mult=(W.heat?1.5:1)*(S.tech.spr?1.2:1);
+  const L=idx.reduce((a,i)=>a+C[S.beds[i].crop].w*BEDM*mult,0),cost=L*P_WATER;
+  if(S.money<cost)return toast('Не хватает денег на воду');
+  if(!spend(apc))return;
+  S.money-=cost;S.stats.exp+=cost;
+  idx.forEach(i=>S.beds[i].w=true);
+  unlock('water');
+  toast(`💧 Полито ${idx.length} гр.: ${num(L)} л (${money(cost)})${W.heat?' — жара ×1,5':''}`);
+  save();render();
+}
+function composting(){
+  const bs=S.sel.length?S.sel:[];
+  if(!bs.length)return toast('Выберите грядки для компоста.');
+  let did=0;
+  for(const i of bs){const b=S.beds[i];if(b.crop)continue;
+    if(S.ap<.5)break;
+    if(S.compost<1){if(!pay(150,'навоз'))break;}else S.compost--;
+    b.fert=Math.min(100,b.fert+25);S.ap=r1(S.ap-.5);did++;}
+  if(did){unlock('comp');toast(`♻️ Компост на ${did} гр.: плодородие +25`);}else toast('Компост вносят на пустые грядки (хватит ОД).');
+  save();render();
+}
+function treat(kind){
+  const bs=(S.sel.length?S.sel:S.beds.map((b,i)=>i)).filter(i=>S.beds[i].pest);
+  if(!bs.length)return toast('Тли нет на выбранных грядках.');
+  const unit=kind==='soap'?30:100,cost=unit*bs.length;
+  if(S.ap<.5*bs.length)return toast('Не хватает действий');
+  if(!pay(cost,'лечение'))return;
+  S.ap=r1(S.ap-.5*bs.length);
+  bs.forEach(i=>S.beds[i].pest=0);
+  if(kind==='chem'){S.lady=0;const s=seasonOf(S.day);
+    if(S.an.hive&&s<=1){let d=0;for(let i=0;i<S.an.hive;i++)if(Math.random()<.5)d++;S.an.hive-=d;if(d)toast(`☠️ Химия убила ${d} ульев пчёл!`);}
+    unlock('lady');}
+  toast(kind==='soap'?'🧼 Грядки обработаны мылом':'🧪 Химия: тля убита, но и божьи коровки тоже');
+  S.sel=[];save();render();
+}
+function buyBld(k,info){
+  const b=BLD[k];if(S.bld[k])return;
+  if(!pay(b.price,b.n))return;
+  S.bld[k]=1;
+  if(k==='gh')addBeds(6,'g');
+  toast(`${b.e} Построено: ${b.n}`);save();render();
+}
+function buyAnimal(k,n){
+  const a=AN[k],b=BLD[a.bld];
+  if(!S.bld[a.bld])return toast(`Сначала постройте: ${b.n}`);
+  const cap=b.cap[k];
+  if(n>0){if(S.an[k]+n>cap)return toast(`Не влезет: места на ${cap} (${b.info}).`);if(!pay(a.price*n,a.n))return;S.an[k]+=n;}
+  else{if(S.an[k]<1)return;S.an[k]--;S.money+=a.price*.7;}
+  save();render();
+}
+function buyFeed(k,kg,price){
+  if(!pay(price,'корм'))return;S.feed[k]+=kg;save();render();
+}
+function sell(ids){
+  const mult=1+1.5*S.disc/100;let tot=0,lines=[];
+  ids.forEach(k=>{
+    const st=S.stock[k]||0;if(st<.5||S.sold[k])return;
+    const D=ITEMS[k].D*mult*(S.wx.fair?2:1);
+    const q=Math.min(Math.floor(st),Math.floor(D));if(q<1)return;
+    const price=itemPrice(k)*(1-S.disc/100);
+    S.stock[k]=st-q;S.sold[k]=1;tot+=q*price;lines.push(`${ITEMS[k].e}${q}`);
+  });
+  if(!tot)return toast('Нечего продать (товар кончился или спрос на сегодня исчерпан).');
+  S.money+=tot;S.stats.rev+=tot;unlock('mkt');
+  toast(`Продано ${lines.join(' ')} → +${money(tot)}`);save();render();
+}
+
+/* ================= ОТРИСОВКА ================= */
+function renderHud(){
+  const s=seasonOf(S.day);
+  $('#hDay').textContent=`${SEMO[s]} ${SEAS[s]} ${dayIn(S.day)}/12 · г.${yearOf(S.day)}`;
+  $('#hMoney').textContent=money(S.money);
+  $('#hAp').textContent=`⚡ ${num(S.ap)}/${S.apCap}`;
+  const w=S.wx,n=S.next;
+  $('#info').innerHTML=`<b>Сегодня:</b> ${wxTxt(w)}<br><b>Завтра:</b> ${wxTxt(n)}`+(n.frost?` <span class="warn">— укройте плёнкой!</span>`:n.ev==='drought'?' <span class="warn">— засуха</span>':'')+(S.money<3000?`<br><span class="warn">⚠ Деньги на исходе: зарплаты и вода списываются каждый день. Продайте урожай!</span>`:'')+(S.log.length?`<br><span class="hint">${S.log.slice(-2).map(t=>`<span>${t}</span>`).join(' ')}</span>`:'');
+}
+function bedHtml(i){
+  const b=S.beds[i],c=b.crop?C[b.crop]:null;
+  const thirsty=c&&!b.ready&&!b.w&&!S.wx.rain;
+  const fl=(b.pest?'🐛':'')+(thirsty?'💧':'')+(b.shade?'🌑':'');
+  return `<button class="bed ${b.t==='g'?'g':b.shade?'sh':''} ${S.sel.includes(i)?'sel':''} ${b.ready?'rd':''}" data-a="bed" data-i="${i}">
+   <span class="fl">${fl}</span><span class="em">${c?imgTag('c_'+b.crop+'_'+(b.ready?3:b.prog/c.d<.4?1:2),c.e,'bimg'):'▫️'}</span><small>${c?(b.ready?'готово':`${Math.max(0,Math.ceil(c.d-b.prog))} дн.`):(Math.round(b.fert))}</small>${c?`<div class="bar"><b style="width:${Math.min(100,b.prog/c.d*100)}%"></b></div>`:''}</button>`;
+}
+function tBeds(){
+  const f=fbeds(),g=gbeds(),w=winter();
+  let h=`<div class="row"><button class="btn sm alt" data-a="selempty">Пустые</button><button class="btn sm alt" data-a="selall">Все</button><button class="btn sm alt" data-a="selnone">Сброс</button><span class="hint grow" style="text-align:right">${S.sel.length?`выбрано ${S.sel.length}`:'нажмите грядки'}</span></div>`;
+  h+=`<div class="head"><span>Поле · ${S.land} сот. · ${f.length} гр.</span><span class="hint">число = плодородие</span></div>`;
+  if(w)h+=`<div class="hint warn">❄️ Зима: поле спит. Ждите весны, работайте в теплице и с животными.</div>`;
+  h+=`<div class="beds">${f.map(o=>bedHtml(o.i)).join('')}</div>`;
+  if(g.length)h+=`<div class="head"><span>🏡 Теплица</span><button class="btn sm ${S.heat?'red':'alt'}" data-a="heat">Обогрев: ${S.heat?'вкл':'выкл'}</button></div><div class="beds">${g.map(o=>bedHtml(o.i)).join('')}</div>`;
+  // информация по одной выбранной
+  if(S.sel.length===1){
+    const b=S.beds[S.sel[0]],c=b.crop?C[b.crop]:null;
+    h+=`<div class="card2"><b>Грядка ${S.sel[0]+1}${b.shade?' · тень':''}</b>
+      <div class="kv"><span>Плодородие</span><b>${Math.round(b.fert)}</b></div><div class="kv"><span>Раньше росло</span><b>${b.last?FAM[b.last]:'—'}</b></div>`+
+      (c?`<div class="kv"><span>${c.e} ${c.n}</span><b>${b.ready?'готово':`ещё ${Math.ceil(c.d-b.prog)} дн.`}</b></div><div class="kv"><span>Дней без полива</span><b class="${b.dry>1?'warn':''}">${b.dry}</b></div>${b.pest?'<div class="warn">🐛 Тля!</div>':''}<div class="hint">Прогноз урожая сейчас: ${num(bedFx(b).kg)} кг</div>`:'')+`</div>`;
+  }
+  h+=`<div class="row"><button class="btn sm go" data-a="plant">🌱 Посадить</button><button class="btn sm go" data-a="harvest">🧺 Собрать</button><button class="btn sm" data-a="water">💧 Полить</button><button class="btn sm alt" data-a="compost">♻️ Компост (${S.compost})</button></div>`;
+  h+=`<div class="row"><button class="btn sm alt" data-a="soap">🧼 Мыло</button><button class="btn sm alt" data-a="chem">🧪 Химия</button><button class="btn sm alt" data-a="film">🛡 Плёнка 300 ₽</button></div>`;
+  h+=`<div class="hint">Действия: посадка и уборка ${num(apPlant())} ОД за грядку, полив ${S.tech.spr?'0':'1 ОД на 4 гр.'}, компост и обработка 0,5 ОД. Животные сегодня заняли ${care()} ОД.</div>`;
+  return h;
+}
+function tGarden(){
+  let h='';
+  if(!S.bld.garden)h+=`<div class="card2"><b>🌳 Сад</b><div class="hint">${BLD.garden.info}. Яблоня плодоносит с 4-го сезона, вишня с 3-го; нужны пчёлы.</div><button class="btn sm go" data-a="bld" data-k="garden">Построить за ${money(BLD.garden.price)}</button></div>`;
+  else{
+    h+=`<div class="head"><span>🌳 Сад: ${S.trees.length}/6</span></div>`;
+    S.trees.forEach((t,i)=>{const T=TREES[t.k];h+=`<div class="card2"><div class="head"><span>${T.e} ${T.n}</span><span class="hint">${t.age>=T.from?'плодоносит':`растёт: ${t.age}/${T.from} сез.`}</span></div>${winter()?`<button class="btn sm alt" data-a="prune" data-i="${i}" ${t.pr?'disabled':''}>${t.pr?'Обрезано ✓':'Обрезать (1 ОД) → +10%'}</button>`:''}</div>`;});
+    if(S.trees.length<6)h+=`<div class="row">`+Object.keys(TREES).map(k=>`<button class="btn sm" data-a="tree" data-k="${k}">${TREES[k].e} ${TREES[k].n} ${money(TREES[k].price)}</button>`).join('')+`</div>`;
+  }
+  h+=`<div class="head"><span>🐞 Борьба с тлёй</span></div><div class="card2"><div class="kv"><span>Божьи коровки (уровень)</span><b>${S.lady}/3</b></div><div class="hint">При уровне 2+ они сами съедают тлю. Химия их убивает.</div><button class="btn sm" data-a="lady">Выпустить за 500 ₽</button></div>`;
+  ['heap','flowers'].forEach(k=>{h+=bldCard(k);});
+  h+=`<div class="hint">Охват опыления: ${S.land} сот., ${hives()} ульев → ${Math.round(Math.min(1,hives()/S.land)*100)}%.</div>`;
+  return h;
+}
+function bldCard(k){const b=BLD[k];return `<div class="card2"><div class="head"><span>${imgTag('b_'+k,b.e,'pic')} ${b.n}</span>${S.bld[k]?'<span class="good">есть</span>':`<button class="btn sm" data-a="bld" data-k="${k}">${money(b.price)}</button>`}</div><div class="hint">${b.info}</div></div>`;}
+function tAnimals(){
+  let h=`<div class="hint">Животные заберут ${care()} ОД в день. Корм и вода списываются сами; не хватает корма — продукта меньше.</div>`;
+  Object.keys(AN).forEach(k=>{
+    const a=AN[k],b=BLD[a.bld],has=S.bld[a.bld];
+    h+=`<div class="card2"><div class="head"><span>${imgTag('an_'+k,a.e,'pic')} ${a.n}: <b>${S.an[k]}</b>${has?` / ${b.cap[k]}`:''}</span><span class="hint">${money(a.price)}</span></div>`;
+    if(!has)h+=`<div class="hint">${b.e} <span>${b.n}</span>: <span>${b.info}</span></div><button class="btn sm go" data-a="bld" data-k="${a.bld}">Построить за ${money(b.price)}</button>`;
+    else h+=`<div class="hint">${a.feed?`<span>Корм ${num(a.kg)} кг/день ·</span> `:''}${a.water?`<span>вода ${a.water} л/день</span>`:''}${k==='hive'?'мёд в конце сезона; опыляют огород и сад':''}</div><div class="row"><button class="btn sm" data-a="an" data-k="${k}" data-n="1">+1</button><button class="btn sm" data-a="an" data-k="${k}" data-n="5">+5</button><button class="btn sm alt" data-a="an" data-k="${k}" data-n="-1">Продать 1</button></div>`;
+    h+='</div>';
+  });
+  h+=`<div class="head"><span>🌾 Склад кормов</span></div><div class="card2"><div class="kv"><span>Зерно</span><b>${num(S.feed.grain)} кг</b></div><div class="kv"><span>Сено</span><b>${num(S.feed.hay)} кг</b></div>
+    <div class="kv"><span>Нужно в день</span><b>зерна ${num(S.an.hen*.1)} · сена ${num(S.an.cow*10+S.an.goat*2.5)} кг</b></div>
+    <div class="row"><button class="btn sm" data-a="feed" data-k="grain" data-kg="10" data-p="300">Зерно +10 кг · 300 ₽</button><button class="btn sm" data-a="feed" data-k="grain" data-kg="100" data-p="2400">Мешок 100 кг · 2 400 ₽</button></div>
+    <div class="row"><button class="btn sm" data-a="feed" data-k="hay" data-kg="10" data-p="120">Сено +10 кг · 120 ₽</button><button class="btn sm" data-a="feed" data-k="hay" data-kg="50" data-p="500">Тюк 50 кг · 500 ₽</button></div></div>`;
+  if(S.bld.coop)h+=`<div class="card2"><div class="head"><span>💡 Лампа в птичнике</span>${S.lamp?'<span class="good">есть</span>':'<button class="btn sm" data-a="lamp">1 500 ₽</button>'}</div><div class="hint">Зимой световой день короткий: без лампы яйца ×0,5, с лампой ×0,9.</div></div>`;
+  return h;
+}
+function tMarket(){
+  const keys=Object.keys(S.stock).filter(k=>S.stock[k]>=.5);
+  const mult=1+1.5*S.disc/100;
+  let h=`<div class="head"><span>🏪 Рынок${S.wx.fair?' · <span class="good">ЯРМАРКА: спрос ×2!</span>':''}</span></div>
+   <div class="card2"><div class="head"><span>Скидка: <b>${S.disc}%</b></span><span class="row"><button class="btn sm alt" data-a="disc" data-d="-10">−</button><button class="btn sm alt" data-a="disc" data-d="10">+</button></span></div>
+   <div class="hint">Скидка ${S.disc}% → покупатели возьмут в ${num(mult)} раза больше, а цена за штуку ×${num(1-S.disc/100)}. В день каждый товар продаётся один раз.</div></div>`;
+  if(!keys.length)h+=`<div class="hint">На складе пусто. Соберите урожай или дождитесь молока и яиц.</div>`;
+  else{
+    h+=`<table class="t">`+keys.map(k=>{const st=Math.floor(S.stock[k]),D=ITEMS[k].D*mult*(S.wx.fair?2:1),q=Math.min(st,Math.floor(D)),p=itemPrice(k);
+      return `<tr><td>${imgTag((C[k]?'c_':'p_')+k,ITEMS[k].e,'pic')} <b>${ITEMS[k].n}</b><br><span class="hint">${st} ${ITEMS[k].u} · цена ${money(p*(1-S.disc/100))}/${ITEMS[k].u} · спрос до ${Math.floor(D)}${S.sold[k]?' · продано':''}</span></td><td><button class="btn sm" data-a="sell" data-k="${k}" ${S.sold[k]?'disabled':''}>+${money(q*p*(1-S.disc/100))}</button></td></tr>`;}).join('')+`</table>`;
+    h+=`<button class="btn go" data-a="sellall">Продать всё, что можно</button>`;
+  }
+  h+=`<div class="hint">Порча в день: ${keys.map(k=>`${ITEMS[k].e}${num(ITEMS[k].spoil*(S.tech.cool&&C[k]?.4:1)*100)}%`).join(' ')||'—'}</div>`;
+  return h;
+}
+function tFarm(){
+  let h=`<div class="head"><span>👥 Люди</span><span class="hint">ОД в день: ${S.apCap}</span></div>
+   <div class="card2"><div class="head"><span>Работники: <b>${S.workers}</b>/5</span><span class="row"><button class="btn sm" data-a="hire" data-k="w">+ ${money(WAGE)}/день</button><button class="btn sm alt" data-a="fire" data-k="w">−</button></span></div>
+   <div class="head"><span>Агроном: <b>${S.agro}</b>/1</span><span class="row"><button class="btn sm" data-a="hire" data-k="a">+ ${money(WAGE_AGRO)}/день</button><button class="btn sm alt" data-a="fire" data-k="a">−</button></span></div>
+   <div class="hint">Каждый +8 ОД; агроном ещё +6% к урожаю. Зарплата платится каждый день.</div></div>`;
+  h+=`<div class="head"><span>🚜 Техника</span></div>`;
+  Object.keys(TECH).forEach(k=>{const t=TECH[k];h+=`<div class="card2"><div class="head"><span>${imgTag('t_'+k,t.e,'pic')} ${t.n}</span>${S.tech[k]?'<span class="good">есть</span>':`<button class="btn sm" data-a="tech" data-k="${k}">${money(t.price)}</button>`}</div><div class="hint">${t.info}</div></div>`;});
+  h+=`<div class="head"><span>🏗 Постройки</span></div>`;
+  ['gh','apiary'].forEach(k=>{h+=bldCard(k);});
+  h+=`<div class="head"><span>🌍 Земля</span></div><div class="card2"><div class="kv"><span>Участок</span><b>${S.land} сот. = ${S.land*100} м² · ${S.beds.filter(b=>b.t==='f').length} грядок</b></div><button class="btn sm" data-a="land">Купить сотку: ${money(landPrice())}</button></div>`;
+  h+=`<div class="card2"><div class="kv"><span>Капитал</span><b>${money(capital())}</b></div><div class="kv"><span>Цель года ${yearOf(S.day)}</span><b>${money(GOALS[yearOf(S.day)-1])}</b></div></div>`;
+  return h;
+}
+function tBook(){
+  const ks=Object.keys(ENC);
+  return `<div class="head"><span>📖 Энциклопедия фермера</span><span class="hint">${Object.keys(S.enc).length}/${ENCN}</span></div>`+ks.map(k=>S.enc[k]?`<div class="card2"><b>${ENC[k][0]}</b><div class="hint">${ENC[k][1]}</div></div>`:`<div class="card2" style="opacity:.5"><b>🔒 ???</b></div>`).join('');
+}
+const TABS=[['beds','🌱','Грядки',tBeds],['garden','🌳','Сад',tGarden],['an','🐔','Звери',tAnimals],['mkt','🏪','Рынок',tMarket],['farm','🏗','Ферма',tFarm],['book','📖','Книга',tBook]];
+function render(){
+  if(!S)return;
+  renderHud();
+  const t=TABS.find(x=>x[0]===tab)||TABS[0];
+  const pc=$('#pcontent'),top=pc.scrollTop;
+  pc.innerHTML=t[3]()+(t[0]==='beds'?(PF.canReward()?rewardRow():'')+giftRow():'');pc.scrollTop=top;
+  $('#tabs').innerHTML=TABS.map(x=>`<button class="tab ${x[0]===tab?'on':''}" data-a="tab" data-k="${x[0]}"><i>${imgTag('ic_'+x[0],x[1],'tic')}</i>${x[2]}</button>`).join('');
+  PF.setPlaying(!modal&&!S.over&&!PF.paused());
+  $('#pfoot').innerHTML=`<button class="btn" data-a="skip3">+3 дня</button><button class="btn go" data-a="next1">Следующий день ▶</button>`;
+}
+function rewardRow(){
+  if(S.rwDay!==S.day){S.rwDay=S.day;S.rwN=0;}
+  const left=3-S.rwN;
+  return `<div class="card2"><div class="head"><span>🎬 За просмотр ролика</span></div><div class="row"><button class="btn sm" data-a="rwap" ${left<1?'disabled':''}>+6 ⚡ (ещё ${Math.max(0,left)} сегодня)</button><button class="btn sm alt" data-a="rwhint">Совет агронома</button></div></div>`;
+}
+/* Подарок дня Премиума: раз в сутки (серверная дата), без ролика и без значка рекламы. Деньги фермы не дарим. */
+const GIFT_AP=12,GIFT_KEY='ferma-gift';
+function giftTaken(){return (Number(PF.get(GIFT_KEY))||0)>=PF.today();}
+function giftRow(){
+  if(!PF.premium())return '';
+  return giftTaken()
+    ?`<div class="card2"><div class="head"><span>🎁 Подарок Премиума</span></div><p class="hint">Сегодняшний подарок получен. Завтра будет новый.</p></div>`
+    :`<div class="card2"><div class="head"><span>🎁 Подарок Премиума</span></div><div class="row"><button class="btn go sm" data-a="gift">Забрать: +12 ⚡ и совет агронома</button></div></div>`;
+}
+function claimGift(){
+  if(!PF.premium()||giftTaken())return render();
+  PF.put(GIFT_KEY,String(PF.today()));
+  S.ap=r1(S.ap+GIFT_AP);save();
+  openCard(`<h2>🎁 Подарок Премиума</h2><p>+12 ⚡ очков действий и совет агронома.</p>${advice().map(t=>`<p>${t}</p>`).join('')}<button class="btn go" data-a="close">Спасибо!</button>`);
+}
+function advice(){
+  const out=[],left=(Math.floor((S.day-1)/48)*48+36)-S.day,sn=seasonOf(S.day);
+  const pests=S.beds.filter(b=>b.pest).length;
+  if(pests)out.push(`🐛 Тля на ${pests} гряд. Обработайте мыльным раствором (0,5 ОД), пока не съела урожай.`);
+  if(S.next&&S.next.frost)out.push('🥶 Завтра заморозок: укройте плёнкой или соберите зрелое.');
+  const empty=S.beds.filter(b=>!b.crop).length;
+  const cand=CIDS.filter(k=>{const c=C[k];return c.d<=left&&!(sn===0&&c.minT>=12&&dayIn(S.day)<6)&&!(c.pol&&hives()<S.land);})
+    .map(k=>[k,C[k].y*itemPrice(k)/C[k].d]).sort((a,b)=>b[1]-a[1]).slice(0,2);
+  if(empty&&cand.length&&sn!==3)out.push(`🌱 Сейчас выгодно сеять: ${cand.map(x=>C[x[0]].e+' '+C[x[0]].n).join(' или ')}. Не сажайте подряд ту же семью — урожай упадёт.`);
+  const poor=S.beds.filter(b=>!b.crop&&b.fert<30).length;
+  if(poor)out.push(`♻️ ${poor} гряд. с низким плодородием: внесите компост.`);
+  if(!out.length)out.push('👍 Ферма в порядке. Продавайте урожай со скидкой 10–20 %, пока спрос не упал.');
+  return out;
+}
+function advance(n){
+  for(let i=0;i<n&&!modal&&S&&!S.over;i++){
+    endDay();
+    if(modal||S.over)break;
+  }
+  render();
+}
+
+/* ================= СТАРТ / МЕНЮ ================= */
+function startNew(){
+  S=newState();S.next=null;
+  S.wx=genWx(1);S.wx.frost=false;S.wx.ev=null;S.wx.T=Math.max(S.wx.T,6);S.next=genWx(2);
+  startDay();tab='beds';live=true;save();
+  const nx=()=>askQ(0,()=>askQ(1,()=>seasonCard(0,[])));
+  render();nx();
+}
+function loadGame(){const s=lsGet(SAVE_KEY);if(!s)return false;S=s;live=true;tab='beds';modal=false;render();return true;}
+function titleCard(){
+  const best=lsGet(BEST_KEY),has=!!lsGet(SAVE_KEY);
+  openCard(`${imgTag('cover_start','','cover')}<h2>🌾 Ферма</h2><p>Три года на своей ферме: грядки, теплица, сад, куры и коровы. Выращивайте овощи, считайте семена, воду и корм, продавайте на рынке — и узнавайте, как всё это устроено в природе.</p>${best?`<p class="hint">Рекорд капитала: ${money(best)}</p>`:''}
+   <button class="btn go" data-a="newgame">Новая игра</button>${has?'<button class="btn" data-a="cont">Продолжить</button>':''}<button class="btn alt" data-a="lang">🌐 RU / EN</button>${typeof Premium!=='undefined'&&(Premium.available()||Premium.active())?'<button class="btn alt" data-a="prem">★ Премиум</button>':''}`);
+}
+function menuCard(){openCard(`<h2>Меню</h2><button class="btn" data-a="close">Продолжить</button><button class="btn alt" data-a="help">Как играть</button><button class="btn alt" data-a="lang">🌐 RU / EN</button>${typeof Premium!=='undefined'&&(Premium.available()||Premium.active())?'<button class="btn alt" data-a="prem">★ Премиум</button>':''}<button class="btn red" data-a="newgame">Новая игра</button>`);}
+function helpCard(){openCard(`<h2>Как играть</h2><p>⚡ Каждый день есть очки действий (ОД): посадка, уборка, полив съедают их. Нанимайте работников, чтобы успевать.<br>🌱 Выберите грядки → «Посадить» → посчитайте семена по норме.<br>💧 Поливайте (в дождь не нужно, в жару — на 50% больше).<br>🧺 После созревания собирайте — игра объяснит, почему урожай мог быть меньше.<br>🏪 Продавайте на рынке: скидка помогает продать больше, но снижает цену.<br>🎓 Перед сезоном агроном задаёт вопросы.</p><button class="btn go" data-a="close">Понятно</button>`);}
+
+/* ================= ОБРАБОТКА НАЖАТИЙ ================= */
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-a]');if(!el)return;
+  const a=el.dataset.a,d=el.dataset;
+  if(a==='next'){return closeCard();}
+  if(a==='close'){return closeCard();}
+  if(a==='ans'){return answerQ(+d.k,+d.o);}
+  if(a==='task'){return answerTask(false);}
+  if(a==='taskskip'){return answerTask(true);}
+  if(a==='newgame'){$('#ov').classList.add('hidden');modal=false;cardNext=null;return startNew();}
+  if(a==='cont'){$('#ov').classList.add('hidden');modal=false;return loadGame();}
+  if(a==='prem'){Premium.openShop();return;}
+  if(a==='lang'){I18N.toggle();return;}
+  if(a==='help'){return helpCard();}
+  if(a==='pcrop'){return plantStep2(d.k);}
+  if(a==='plantback'){return plantStep1();}
+  if(PF.paused()&&a!=='tab')return;
+  if(a==='phint'){const c=C[S.pl.crop];$('#seedin').value=S.pl.ids.length*BEDM*c.seed;$('#seedin').oninput();return;}
+  if(a==='doplant'){return doPlant();}
+  if(modal)return;
+  switch(a){
+    case 'tab':tab=d.k;render();break;
+    case 'bed':{const i=+d.i,k=S.sel.indexOf(i);if(k>=0)S.sel.splice(k,1);else S.sel.push(i);render();break;}
+    case 'selempty':S.sel=S.beds.map((b,i)=>i).filter(i=>!S.beds[i].crop&&(!winter()||S.beds[i].t==='g'));render();break;
+    case 'selall':S.sel=S.beds.map((b,i)=>i).filter(i=>!winter()||S.beds[i].t==='g');render();break;
+    case 'selnone':S.sel=[];render();break;
+    case 'plant':openPlant();break;
+    case 'harvest':harvest();render();break;
+    case 'water':waterAll();break;
+    case 'compost':composting();break;
+    case 'soap':treat('soap');break;
+    case 'chem':treat('chem');break;
+    case 'film':if(!S.next.frost&&!S.wx.frost)return toast('Заморозка в прогнозе нет.');if(S.cover)return toast('Уже укрыто.');if(!pay(300,'плёнку'))break;if(!spend(1)){S.money+=300;break;}S.cover=true;toast('🛡 Грядки укрыты плёнкой на ночь');save();render();break;
+    case 'heat':S.heat=!S.heat;render();break;
+    case 'bld':buyBld(d.k);break;
+    case 'an':buyAnimal(d.k,+d.n);break;
+    case 'feed':buyFeed(d.k,+d.kg,+d.p);break;
+    case 'lamp':if(pay(1500,'лампу')){S.lamp=1;render();}break;
+    case 'disc':S.disc=clamp(S.disc+(+d.d),0,30);render();break;
+    case 'sell':sell([d.k]);break;
+    case 'sellall':sell(Object.keys(S.stock));break;
+    case 'hire':if(d.k==='w'){if(S.workers>=5)return toast('Максимум 5 работников');S.workers++;}else{if(S.agro)return toast('Агроном уже есть');S.agro=1;}S.apCap=cap();S.ap+=8;render();break;
+    case 'fire':if(d.k==='w'){if(S.workers<1)return;S.workers--;}else{if(!S.agro)return;S.agro=0;}S.apCap=cap();S.ap=Math.max(0,S.ap-8);render();break;
+    case 'tech':{const t=TECH[d.k];if(pay(t.price,t.n)){S.tech[d.k]=1;render();}break;}
+    case 'land':{const p=landPrice();if(pay(p,'землю')){S.land++;S.landBuys++;addBeds(10,'f');toast('🌍 Куплена сотка: +10 грядок');save();render();}break;}
+    case 'tree':{const T=TREES[d.k];if(S.trees.length>=6)return toast('Сад заполнен');if(pay(T.price,T.n)){S.trees.push({k:d.k,age:0,pr:0});render();}break;}
+    case 'prune':{const t=S.trees[+d.i];if(t&&!t.pr&&spend(1)){t.pr=1;render();}break;}
+    case 'lady':if(pay(500,'божьих коровок')){S.lady=Math.min(3,S.lady+2);unlock('lady');toast('🐞 Выпущены божьи коровки');render();}break;
+    case 'rwap':
+      if(S.rwDay!==S.day){S.rwDay=S.day;S.rwN=0;}
+      if(S.rwN>=3)return toast('На сегодня роликов больше нет');
+      modal=true;PF.rewarded(got=>{modal=false;if(got){S.rwN++;S.ap=r1(S.ap+6);toast('+6 ⚡ очков действий');}render();});break;
+    case 'gift':claimGift();break;
+    case 'rwhint':
+      modal=true;PF.rewarded(got=>{modal=false;if(got){openCard(`<h2>🎓 Совет агронома</h2>${advice().map(t=>`<p>${t}</p>`).join('')}<button class="btn go" data-a="close">Понятно</button>`);}else render();});break;
+    case 'skip3':advance(3);break;
+    case 'next1':advance(1);maybeTask();break;
+  }
+});
+$('#btnMenu').addEventListener('click',()=>{if(!modal)menuCard();});
+/* Премиум (общий модуль publish\shared\premium, подключается сборкой; без него кнопок нет). Игровые деньги и прогресс не продаются. */
+const PREM_TEXTS={
+ ru:{perks:['Полноэкранная реклама отключается.','Подарок каждый день, пока Премиум действует: +12 ⚡ и совет агронома.','Ролики за награду работают как обычно: награда — после просмотра. Правила игры не меняются.'],
+  adTitle:'Надоела реклама?',adText:'Выращивай урожай, ухаживай за грядками и изучай растения без рекламных пауз! Премиум убирает полноэкранную рекламу и дарит подарок каждый день.',adMore:'Узнать про Премиум',
+  soonTitle:'Премиум скоро закончится',soonText:'Ещё {0} без рекламных пауз и с подарком каждый день. Премиум закончится сам, без списаний. Если захочешь, его можно купить снова.',
+  endTitle:'Премиум закончился',endText:'Полноэкранная реклама вернулась, подарок дня больше не выдаётся. Твоя ферма продолжает расти!',buy:'Купить Премиум',p30:'Премиум на 30 дней',p365:'Премиум на год'},
+ en:{perks:['Full-screen ads are turned off.','A gift every day while Premium lasts: +12 ⚡ and an agronomist tip.','Reward videos work as usual: the reward comes after watching. Game rules stay the same.'],
+  adTitle:'Tired of ads?',adText:'Grow crops, care for garden beds and learn about plants without ad breaks! Premium removes full-screen ads and gives you a gift every day.',adMore:'Learn About Premium',
+  soonTitle:'Premium Is Ending Soon',soonText:'Enjoy {0} more without ad breaks and with a daily gift. Premium ends automatically with no further charges. You can buy it again if you like.',
+  endTitle:'Premium Has Ended',endText:'Full-screen ads are back and the daily gift stops. Your farm keeps growing!',buy:'Buy Premium',p30:'30-Day Premium',p365:'1-Year Premium'}};
+function initPremium(){
+  if(typeof Premium==='undefined')return;
+  try{Premium.init({sdk:PF.sdk(),lang:window.I18N?I18N.lang():'ru',texts:PREM_TEXTS,config:{corner:false},
+    store:{get:()=>PF.get('ferma-premium'),set:r=>PF.put('ferma-premium',r),save:()=>PF.save()}}).then(()=>{const c=$('#card');if(c&&c.querySelector('.cover')&&!$('#ov').classList.contains('hidden')&&!c.querySelector('[data-a=prem]')&&(Premium.available()||Premium.active()))titleCard();Premium.maybeCard();});
+    Premium.onChange(()=>{if(!modal)render();});}catch(e){}
+}
+/* позднее облако (SDK ответил дольше 4 с): если открыт стартовый экран — перерисовать, чтобы появилось «Продолжить» */
+PF.onCloud=()=>{try{const c=$('#card');if(c&&c.querySelector('.cover')&&c.querySelector('[data-a=newgame]')&&!$('#ov').classList.contains('hidden'))titleCard();}catch(e){}};
+/* сохранение при сворачивании/закрытии: локально сразу, облако — сразу же (flush); во время игры, не на стартовом экране */
+const hideSave=()=>{try{save();if(PF.flush)PF.flush();}catch(e){}};
+window.addEventListener('pagehide',hideSave);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)hideSave();});
+/* старт */
+PF.init().then(()=>{I18N.start(PF.lang());S=newState();S.wx=genWx(1);S.next=genWx(2);S.wx.frost=false;S.wx.ev=null;startDay();render();titleCard();PF.ready();initPremium();});
+</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
+</body>
+</html>

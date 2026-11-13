@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#5cb85c">
+<link rel="icon" href="icons/icon-192.png">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Зоопарк</title>
+<style>
+:root{--ink:#3b2a1a;--paper:#fff4d6;--paper2:#ffe9b0;--sun:#ffcf4a;--red:#e8604c;--blue:#4aa8d8;--green:#5cb85c;--bg:#f6e7c0}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS","Segoe UI",Roboto,Arial,sans-serif;overscroll-behavior:none}
+body{touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#app{max-width:430px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;padding:5px 7px 6px;gap:5px}
+#hud{display:flex;gap:5px;flex:none}
+.chip{background:var(--paper);border:3px solid var(--ink);border-radius:11px;padding:4px 8px;font-weight:800;font-size:14px;box-shadow:0 3px 0 var(--ink);display:flex;align-items:center;white-space:nowrap;color:var(--ink);font-family:inherit}
+#hDay{flex:1.1}#hMoney{flex:1.5;justify-content:center;color:#1e6b2c;font-size:15px}#hRep{flex:.9;justify-content:center;color:#b8860b}#hCoin{flex:.7;justify-content:center;color:#7a4db3;cursor:pointer}
+#btnMenu{font-size:19px;padding:2px 11px;cursor:pointer}
+#info{flex:none;background:var(--paper2);border:3px solid var(--ink);border-radius:11px;padding:4px 9px;font-size:12.5px;line-height:1.3;min-height:44px}
+#info .warn{color:#b8321f;font-weight:800}
+#mapWrap{flex:0 0 27dvh;min-height:150px;overflow-y:auto;overflow-x:hidden;border:3px solid var(--ink);border-radius:13px;background:#a6d874;-webkit-overflow-scrolling:touch}
+canvas#map{display:block;width:100%;height:auto}
+#panel{flex:1;min-height:0;display:flex;flex-direction:column;gap:5px}
+#pcontent{flex:1;min-height:0;overflow:auto;background:var(--paper);border:3px solid var(--ink);border-radius:13px;padding:7px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;line-height:1.35}
+#pfoot{flex:none;display:flex;gap:6px}#pfoot .btn{flex:1}#pfoot .btn.go{flex:1.6}
+#tabs{flex:none;display:flex;gap:4px}
+.tab{flex:1;font:inherit;font-weight:800;font-size:12px;color:var(--ink);background:var(--paper);border:3px solid var(--ink);border-radius:11px;padding:7px 0;min-height:40px;cursor:pointer;box-shadow:0 2px 0 var(--ink)}
+.tab.on{background:var(--sun);transform:translateY(1px);box-shadow:0 1px 0 var(--ink)}
+.btn{font:inherit;font-weight:800;font-size:16px;color:var(--ink);background:var(--sun);border:3px solid var(--ink);border-radius:13px;padding:8px 12px;min-height:44px;box-shadow:0 4px 0 var(--ink);cursor:pointer}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.btn.go{background:var(--green);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35);font-size:17px}
+.btn.alt{background:var(--paper2)}.btn.red{background:var(--red);color:#fff}.btn.sm{min-height:34px;padding:3px 10px;font-size:14px;box-shadow:0 3px 0 var(--ink)}
+.btn[disabled]{opacity:.45}
+.row{display:flex;gap:6px;align-items:center}.row>.grow{flex:1}
+.head{font-weight:800;font-size:15px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.kv{display:flex;justify-content:space-between;gap:8px;border-bottom:2px dashed #d9c48a;padding:2px 0}.kv b{text-align:right}
+.hint{font-size:12.5px;opacity:.85;line-height:1.35}
+.warn{color:#b8321f;font-weight:800}.good{color:#1e6b2c;font-weight:800}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.item{font:inherit;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:11px;padding:2px 1px 4px;display:flex;flex-direction:column;align-items:center;cursor:pointer;line-height:1.12;box-shadow:0 3px 0 var(--ink)}
+.item:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.item canvas{width:40px;height:40px}.item b{font-size:10.5px}.item span{font-size:10.5px;font-weight:800;color:#1e6b2c}.item small{font-size:9px;opacity:.8}
+.item.no{opacity:.5}
+.elist{display:flex;flex-direction:column;gap:5px}
+.erow{display:flex;align-items:center;gap:8px;background:#fff;border:3px solid var(--ink);border-radius:11px;padding:3px 8px;cursor:pointer}
+.erow.on{background:#fff2b8}.erow canvas{width:34px;height:34px;flex:none}
+.step{display:flex;align-items:center;gap:6px}.step b{min-width:22px;text-align:center;font-size:16px}
+.step .btn{min-height:34px;width:38px;padding:0;font-size:18px;box-shadow:0 3px 0 var(--ink)}
+#ov{position:fixed;inset:0;background:rgba(59,42,26,.55);display:flex;align-items:center;justify-content:center;padding:8px;z-index:10;overflow:auto}
+#ov.hidden{display:none}
+#card{background:var(--paper);border:4px solid var(--ink);border-radius:18px;box-shadow:0 6px 0 var(--ink);padding:12px;width:100%;max-width:400px;max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:8px}
+#card h2{margin:0;font-size:21px}#card p{margin:0;line-height:1.4;font-size:14.5px}
+.q{font-size:16px;line-height:1.4;font-weight:700;background:#fff;border:3px solid var(--ink);border-radius:11px;padding:8px}
+.tag{display:inline-block;font-size:11.5px;font-weight:800;background:var(--blue);color:#fff;border:2px solid var(--ink);border-radius:20px;padding:1px 8px}
+.fld{display:flex;align-items:center;gap:8px;background:#fff;border:3px solid var(--ink);border-radius:11px;padding:5px 9px;cursor:pointer;min-height:42px}
+.fld.on{background:#fff2b8;box-shadow:0 0 0 3px var(--sun)}.fld span{flex:1;font-size:13.5px;font-weight:700}.fld b{font-size:22px;min-width:60px;text-align:right}.fld small{flex:none;min-width:26px;font-size:12px;opacity:.7;white-space:nowrap}.fld b{min-width:40px}
+.pad{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.pad .btn{font-size:20px;padding:4px 0;min-height:44px}
+.ok{background:#dff3d2;border:3px solid var(--ink);border-radius:11px;padding:8px}.bad{background:#ffdcd3;border:3px solid var(--ink);border-radius:11px;padding:8px}
+.sum{width:100%;border-collapse:collapse;font-size:14px}.sum td{padding:2px 0;border-bottom:2px dashed #cdb57d}.sum td:last-child{text-align:right;font-weight:800}
+.sum tr.sub td{font-weight:800;border-bottom:2px solid var(--ink)}
+.stars{font-size:36px;text-align:center;letter-spacing:6px;color:#e5a600;text-shadow:0 2px 0 var(--ink)}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 3px;font-weight:800}.fr i{font-style:normal;border-bottom:2px solid currentColor;padding:0 4px 1px}.fr b{padding-top:1px}
+.ic{width:22px;height:22px;object-fit:contain;vertical-align:middle}
+.tic{width:26px;height:26px;object-fit:contain}.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;line-height:1.1;padding:3px 0}
+.evi{width:56px;height:56px;object-fit:contain;flex:none}.evrow{display:flex;gap:8px;align-items:center}
+.pic{width:42px;height:42px;object-fit:contain;flex:none}
+.hero{position:relative}.hero h2{position:absolute;top:5%;left:0;right:0;text-align:center;color:#fff;margin:0;line-height:1.05;-webkit-text-stroke:2px var(--ink);paint-order:stroke fill;text-shadow:0 3px 0 var(--ink)}
+.cover{width:100%;max-height:52dvh;object-fit:cover;object-position:center top;border-radius:12px;border:3px solid var(--ink);display:block}
+@media(max-width:380px){#hud{gap:3px}.chip{padding:4px 5px;font-size:12.5px;min-width:0}#hMoney{font-size:13px}#btnMenu{padding:2px 8px}}
+#toast{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:20px;padding:7px 14px;font-weight:700;font-size:13.5px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:20;max-width:92%;text-align:center}
+#toast.on{opacity:1}
+[data-act=ad]{display:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hud">
+    <div class="chip" id="hDay">День 1/60</div>
+    <div class="chip" id="hMoney">0 ₽</div>
+    <div class="chip" id="hRep">★ 2,5</div>
+    <button class="chip" id="hCoin" aria-label="Монеты знаний" data-i18n-aria="meta_002">◎ 0</button>
+    <button class="chip" id="btnMenu" aria-label="Меню" data-i18n-aria="meta_003">≡</button>
+  </div>
+  <div id="info"></div>
+  <div id="mapWrap"><canvas id="map" width="720" height="720"></canvas></div>
+  <div id="panel">
+    <div id="pcontent"></div>
+    <div id="pfoot"></div>
+    <div id="tabs"></div>
+  </div>
+</div>
+<div id="ov" class="hidden"><div id="card"></div></div>
+<div id="toast"></div>
+<script>
+/* Google Play: рекламы и покупок нет. Место под AdMob/Billing — только этот адаптер (done() вызывать один раз). */
+window.GPLAY=true;
+window.GP_ADAPTER={
+  interstitial:function(done){done();},          // AdMob interstitial: показать и вызвать done() после закрытия
+  rewarded:function(done){done(false);}          // AdMob rewarded: done(true) только после награды
+};
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
+</script>
+<script>
+'use strict';
+var LANG='ru';
+var EN=/*EN*/{"data_001":"4th grade","data_002":"5th grade","data_003":"5th–6th grade","data_004":"6th grade","data_005":"Rabbit","data_006":"rabbit","data_007":"rabbits","data_008":"rabbits","data_009":"Goat","data_010":"goat","data_011":"goats","data_012":"goats","data_013":"Penguin","data_014":"penguin","data_015":"penguins","data_016":"penguins","data_017":"Monkey","data_018":"monkey","data_019":"monkeys","data_020":"monkeys","data_021":"Zebra","data_022":"zebra","data_023":"zebras","data_024":"zebras","data_025":"Lion","data_026":"lion","data_027":"lions","data_028":"lions","data_029":"Giraffe","data_030":"giraffe","data_031":"giraffes","data_032":"giraffes","data_033":"Elephant","data_034":"elephant","data_035":"elephants","data_036":"elephants","util_001":"+1 knowledge coin","util_002":"Ads are not available right now","util_003":"<h2>Confirm<\/h2><p>{0}<\/p><div class=\"row\"><button class=\"btn red grow\" data-act=\"yes\">Yes<\/button><button class=\"btn alt grow\" data-act=\"no\">No<\/button><\/div>","econ_001":"Zoo operations","econ_002":"Hungry animals","econ_003":"Sick animals","econ_004":"Crowded enclosures","econ_005":"Line at the ticket booth","econ_006":"Inspector: problems found","econ_007":"Inspector: everything looks good","econ_008":"Loan repaid: {0}","econ_009":"Not enough money to repay the loan! You have {0} more days, but your debt has grown to {1}. Reputation −10","econ_010":"Goal reached: {0}! +5,000 ₽ and +5 reputation","econ_011":"Goal missed: {0}. Reputation −5","econ_012":"30 guests in one day by Day 10","econ_013":"15 animals by Day 30","task_001":"An enclosure is {0}×{1} m and has {2} {3}. How many m² of space does each animal get?","task_002":"m²","task_003":"{0} × {1} = {2} m²; {3} ÷ {4} = {5}","task_004":"An enclosure is {0}×{1} m and has {2} animals. How many m² of space does each animal get?","task_005":"An enclosure has an area of {0} m². Each \"{1}\" needs {2} m² of space. How many animals can live there?","task_006":"animals","task_007":"{0} ÷ {1} = {2} → {3} (whole animals)","task_008":"We want to keep {0} {1}. Each animal needs {2} m². We already have an enclosure of {3} m². How many more m² do we need?","task_009":"An enclosure is {0}×{1} m. How many meters of fencing do you need to go all the way around it?","task_010":"m","task_011":"An enclosure is {0}×{1} m. Fencing costs {2} ₽ per meter. How many rubles will the fence cost?","task_012":"P = {0} m; {1} × {2} = {3}","task_013":"An enclosure is {0}×{1} m and needs a fence. You already have {2} m of fencing in storage. How many rubles will the missing fencing cost at {3} ₽/m?","task_014":"P = {0} m; need {1} m more; {2} × {3} = {4}","task_015":"An enclosure is {0}×{1} m. You ordered {2} m of fencing at {3} ₽/m, then bought the missing fencing at the rush price of {4} ₽/m. How many rubles did you spend in total?","task_016":"P = {0} m; needed {1} m more; {2}×{3} + {4}×{5} = {6}","task_017":"There are {0} {1} in an enclosure. Each needs {2} kg of food per day. How many kg of food do they need in one day?","task_018":"kg","task_019":"There are {0} animals in an enclosure. Each needs {1} kg of food per day. How many kg do they need in one day?","task_020":"You have {0} kg of food in storage. All the zoo animals eat {1} kg per day. How many full days will the food last?","task_021":"days","task_022":"{0} ÷ {1} = {2} → {3} full days","task_023":"You have {0} kg of food in storage. The animals eat {1} kg per day. How many full days will it last?","task_024":"divide by {0}, whole-number part = {1}","task_025":"A 100 kg bag of food costs {0} ₽ wholesale, but buying food by the kg costs {1} ₽ per kg. How many rubles will you save by buying {2} bags wholesale?","task_026":"Retail price for {0} kg: {1} ₽; bag price: {2} ₽; savings per bag: {3}; × {4} = {5}","task_027":"You need {0} kg of food. Buy full 100 kg bags at {1} ₽ per bag, then buy the rest at {2} ₽/kg. How many rubles will you pay?","task_028":"{0} bags × {1} = {2}; {3} kg × {4} = {5}; total {6}","task_029":"The ticket price went up from {0} ₽ to {1} ₽. What percent did the price increase?","task_030":"{0} − {1} = {2}; {3} out of {4} is {5}%","task_031":"At this zoo, every 10% increase in ticket price means 8% fewer guests. The price went up by {0}%. What percent fewer guests will come?","task_032":"The ticket price went up by {0}%, and the number of guests dropped by {1}%. Before, {2} guests came. How many come now?","task_033":"people","task_034":"Subtract {0}% of {1} = {2}; {3} − {4} = {5}","task_035":"At an adult ticket price of 200 ₽, {0} adults visit the zoo. The price goes up to {1} ₽ (a {2}% increase). Rule: +10% in price → −8% in guests. How many adults will come?","task_036":"+{0}% in price → −{1}% in guests: {2} × {3} ÷ 100 = {4}","task_037":"The zoo has {0} animals. One feeding worker can feed {1} animals. How many workers are needed to feed them all?","task_038":"{0} ÷ {1} = {2} → {3} (round up)","task_039":"The enclosures have a total area of {0} m². One worker can clean {1} m² per day. How many workers are needed for cleaning?","task_040":"A worker earns {0} ₽ per day. How many rubles are needed to pay {2} workers for {1} days?","task_041":"The zoo has {0} animals. There are {1} feeding workers, and each can feed {2} animals. How many animals will not get fed?","task_045":"A cashier can serve {0} guests per hour. The ticket booth is open for 10 hours. How many guests can {1} {2} serve in one day?","task_042":"cashier","task_043":"cashiers","task_044":"cashiers","task_046":"{0} × 10 = {1} per cashier; × {2} = {3}","task_047":"The zoo expects {0} guests. One cashier can serve {1} guests per day. How many cashiers are needed?","task_048":"The zoo expects {0} guests and has {1} {2} at the ticket booth. Each can serve {3} guests per day. How many guests will not get into the zoo?","task_049":"Because there were not enough cashiers, {0} guests could not enter the zoo. A ticket costs {1} ₽. How many rubles in ticket sales were lost?","task_050":"A loan of {0} ₽ has 10% interest for 10 days. How many rubles is the interest?","task_051":"You borrowed {0} ₽ at 10% interest for 10 days. How many rubles must you repay in total?","task_052":"A loan of {0} ₽ was not repaid on time. The deadline was extended, and another 10% of {1} ₽ was added as interest. How much is owed now (loan + 20% interest)?","task_053":"You need to repay {0} ₽ in 10 days. How many rubles should you save each day to have enough?","task_054":"There were {0} guests. {1} of them were children (40%). How many children visited?","task_055":"There were {0} guests, and 40% were children. How many were adults?","task_056":"Adults are 60%: {0} ÷ 10 × 6 = {1}","task_057":"Over three days, the zoo had {0}, {1}, and {2} guests. What was the average number of guests per day?","task_058":"The zoo earned {0} ₽ in one day and paid {1} ₽ in wages. What percent of the revenue went to wages?","gfx_001":"ZOO","sim_001":"Guests: <b>{0}<\/b> out of {1} · tickets: <b>{2}<\/b>","card_001":"Done","card_002":"Cancel","panel_001":"Day {0}/{1}","panel_003":"<b>Day {0} is underway<\/b>{1}<br>Guests walk along the paths, and coins jingle at the entrance.","panel_002":" · weekend","panel_005":"<b>Day {0}<\/b>{1}","panel_004":" · <b>weekend: guests ×1.4<\/b>","panel_006":"Heat wave: water ×2, guests −10%","panel_007":"<span class=\"warn\">Disease outbreak!<\/span>","panel_008":"<span class=\"warn\">Inspector visiting today!<\/span>","panel_009":"<span class=\"warn\">Inspector coming tomorrow<\/span>","panel_010":"Animals: <b>{0}<\/b> · enclosures: <b>{1} m²<\/b> · free land: {2} m²","panel_011":" · base guests: <b>{0}<\/b> adults + <b>{1}<\/b> children","panel_012":"Enclosures","panel_013":"Staff","panel_014":"Prices","panel_015":"Storage","panel_016":"Bank","panel_018":"<button class=\"btn alt\" data-act=\"check\">Check {0}<\/button><button class=\"btn go\" data-act=\"open\">Start Day ▶<\/button>","panel_017":"(free)","panel_021":"<div class=\"erow {0}\" data-act=\"selenc\" data-id=\"{1}\"><canvas width=\"68\" height=\"68\" data-k=\"{2}\"><\/canvas><div class=\"grow\"><b>{3} × {4}<\/b><br><span class=\"hint\">{5}×{6} m{7}{8}<\/span><\/div><\/div>","panel_019":" · <span class=\"warn\">sick: {0}<\/span>","panel_020":" · <span class=\"warn\">too crowded!<\/span>","panel_022":"<div class=\"head\"><span>Workday<\/span><\/div><div class=\"bar\" style=\"height:14px;border:3px solid var(--ink);border-radius:8px;background:#fff;overflow:hidden\"><i id=\"simBar\" style=\"display:block;height:100%;background:var(--green);width:0\"><\/i><\/div><div class=\"hint\" id=\"simLive\"><\/div><div class=\"hint\">The ticket booth can serve {0} guests, but {1} wanted to visit.<\/div>","panel_023":"<div class=\"head\"><span>{0} × {1}<\/span><button class=\"btn sm alt\" data-act=\"unsel\">Back<\/button><\/div>","panel_024":"Enclosure size","panel_025":"{0} × {1} m","panel_026":"Space needed per animal","panel_027":"{0} m²","panel_028":"Food","panel_029":"{0} kg per animal per day","panel_030":"Attracts","panel_031":"{0} guests (first animal)","panel_032":"Sick animals","panel_033":"Too crowded! Each animal has less space than it needs. Animals get sick!","panel_034":"Enough space.","panel_035":"<div class=\"row\"><button class=\"btn sm grow\" data-act=\"addan\">+ Animals<\/button><button class=\"btn sm alt grow\" data-act=\"sellan\">Sell<\/button><\/div><button class=\"btn sm red\" data-act=\"demol\">Remove enclosure<\/button>","panel_036":"<div class=\"head\"><span>Enclosures ({0})<\/span><button class=\"btn sm go\" data-act=\"newenc\">+ New<\/button><\/div>","panel_037":"<div class=\"hint\">Nothing here yet.<\/div>","panel_038":"<div class=\"hint\">Cafe: {0},{1} (4×3 m)<\/div>","panel_039":"<button class=\"btn sm alt\" data-act=\"buycafe\">Build cafe 4×3 m · {0}<\/button>","panel_040":"<div class=\"hint\">Tap an enclosure on the map or in the list. Tap \"New\" to see prices, space needs, and food.<\/div>","panel_041":"<div class=\"row\">{0}<div class=\"grow\"><b>Workers: {1}<\/b><br><span class=\"hint\">{2} per day each<\/span><\/div><div class=\"step\"><button class=\"btn\" data-act=\"fire\" data-t=\"w\">−<\/button><button class=\"btn\" data-act=\"hire\" data-t=\"w\">+<\/button><\/div><\/div>","panel_042":"<div class=\"row\">{0}<div class=\"grow\"><b>Vets: {1}<\/b><br><span class=\"hint\">{2} per day each<\/span><\/div><div class=\"step\"><button class=\"btn\" data-act=\"fire\" data-t=\"v\">−<\/button><button class=\"btn\" data-act=\"hire\" data-t=\"v\">+<\/button><\/div><\/div>","panel_043":"<div class=\"head\"><span>Today's jobs<\/span><span class=\"{0}\">available: {1}<\/span><\/div>","panel_044":"Feeding","panel_045":"1 worker = {0} animals","panel_046":"Cleaning","panel_047":"1 worker = {0} m² of enclosures","panel_048":"Ticket booth","panel_049":"1 worker = {0} guests","panel_050":"Cafe","panel_052":"<div class=\"hint\">Treatment: 1 vet = {0} sick animals. Today you have <b>{1}<\/b> animals and <b>{2} m²<\/b> of enclosures. Figure out if you have enough staff!{3}<\/div>","panel_051":" Cafe not built.","panel_053":"<div class=\"head\"><span>Prices<\/span><button class=\"btn sm go\" data-act=\"setprice\">Change<\/button><\/div>","panel_054":"Adult ticket","panel_055":"{0} (base {1})","panel_056":"Child ticket","panel_057":"Cafe lunch","panel_058":"Base number of guests","panel_059":"adults {0} · children {1}","panel_060":"Reputation","panel_061":"<div class=\"hint\"><b>Rule:<\/b> Raise prices by 10% → 8% fewer guests. Lower prices by 10% → 8% more guests. Base guest numbers use base prices. Each cashier can serve {0} guests. If you cannot serve everyone, try raising prices. Weekends and school trips change demand.<\/div>","panel_062":"<div class=\"row\">{0}<div class=\"grow hint\">Store food and fencing. Buy ahead: animals eat food every day.<\/div><\/div>","panel_063":"Food in storage","panel_064":"{0} kg","panel_065":"Food price (average)","panel_066":"{0} ₽/kg","panel_067":"Fencing in storage","panel_068":"{0} m","panel_070":"<div class=\"hint\"><b>Food needed per day:<\/b><br>{0}<\/div>","panel_069":"{0} × {1} — {2} kg each","panel_071":"<div class=\"row\"><button class=\"btn sm grow\" data-act=\"buyfood\">Food, kg · {0} ₽<\/button><button class=\"btn sm grow\" data-act=\"buybag\">Bags {1} kg · {2}<\/button><\/div><button class=\"btn sm alt\" data-act=\"buyfence\">Fencing, m · {3} ₽/m<\/button>","panel_072":"<div class=\"hint\">Buying in bulk saves money: a {0} kg bag costs less than buying by the kg. Animals eat food every day. If you run out of fencing, the missing amount will be bought at the rush price of {1} ₽/m.<\/div>","panel_073":"Money","panel_074":"Capital","panel_075":"<div class=\"head\"><span>Land<\/span><button class=\"btn sm go\" data-act=\"buyland\">Buy<\/button><\/div>","panel_076":"Lot","panel_077":"{0} × {1} m = {2} m²","panel_078":"Price","panel_079":"{0} ₽ per m²","panel_080":"<div class=\"hint\">One row of land = {0} m². Each purchase raises the price by 50 ₽/m². The bottom 2 rows are for the entrance, and the left row is a path.<\/div>","panel_081":"<div class=\"head\"><span>Loan<\/span><\/div>","panel_082":"Debt","panel_083":"Repay on Day","panel_084":"<button class=\"btn sm alt\" data-act=\"repay\">Repay early<\/button>","panel_085":"<div class=\"hint\">Borrow up to {0} at 10% interest for 10 days.<\/div><button class=\"btn sm go\" data-act=\"takeloan\">Take a loan<\/button>","panel_086":"<div class=\"head\"><span>Goals<\/span><\/div><div class=\"hint\">Day 10: 30 guests in one day {0}<br>Day 30: 15 animals {1}<br>Day 60: 100,000 ₽ profit (now {2})<\/div>","x_001":"Enclosure: {0}","x_002":"needs {0} m²","x_003":"Width","x_004":"Length","x_005":"Animals","x_006":"Area (calculate it yourself)","x_007":"Fencing order (calculate it yourself)","x_011":"Animal: {0} · food {1} kg/day · fencing {2} ₽/m (in storage: {3} m, extra fencing: {4} ₽/m){5}","x_010":"<br>Per animal: {0} m² — {1}","x_008":"<span class=\"good\">enough space<\/span>","x_009":"<span class=\"warn\">too crowded!<\/span>","x_012":" m","x_013":"Build","x_014":"Enter the width, length, and number of animals","x_015":"Calculate the area and fencing, then enter your answers","x_016":"Each side can be no longer than 18 m","x_017":"Not enough room for this size. Buy more land or make the enclosure smaller","x_018":"Not enough {0}","x_027":"<h2>Enclosure built<\/h2><table class=\"sum\">\n    <tr><td>Area<\/td><td>{0} m² {1}<\/td><\/tr>\n    <tr><td>Perimeter (fencing)<\/td><td>{2} m<\/td><\/tr>\n    <tr><td>Fencing ordered<\/td><td>{3} m {4}<\/td><\/tr>\n    <tr><td>Spent<\/td><td>{5}<\/td><\/tr><\/table>\n    {6}\n    {7}\n    <button class=\"btn go\" data-act=\"close\">OK<\/button>","x_019":"✓ correct","x_020":"(you entered a different number)","x_021":"· needed {0} m more, bought at {1} ₽","x_022":"· left in storage","x_023":"· exactly enough","x_024":"<div class=\"bad\">Too crowded! Each animal needs {0} m², but yours have {1}. The animals will get sick.<\/div>","x_025":"<div class=\"ok\">Enough space: {0} m² per animal (needs {1}).<\/div>","x_026":"<div class=\"ok\">+1 knowledge coin: correct area, and no extra charge for fencing.<\/div>","x_028":"<button class=\"item {0}\" data-act=\"shopk\" data-k=\"{1}\"><canvas width=\"80\" height=\"80\" data-k=\"{2}\"><\/canvas><b>{3}<\/b><span>{4}<\/span><small>{5} m² · {6} kg · +{7}<\/small><\/button>","x_029":"<div class=\"head\"><span>Which animal?<\/span><button class=\"btn sm alt\" data-act=\"close\">Close<\/button><\/div><div class=\"grid\">{0}<\/div><div class=\"hint\">Below the price: m² needed per animal · kg of food per day · guests per day.<\/div>","x_030":"Enter a number greater than zero","x_031":"Not enough room for 4×3 m","x_032":"Cafe built! Assign a cook in \"Staff\"","x_033":"Add: {0}","x_034":"How many animals?","x_035":"{0} each. You have {1} now. Enclosure: {2} m². Each animal needs {3} m².","x_036":"Sell: {0}","x_037":"Get back 70% of the price: {0} each. You have {1} now.","x_038":"You don't have that many","x_039":"Remove this enclosure? Animals will be sold for 70% of their price, and the fencing will go back into storage.","x_040":"Maximum 14 staff members","x_041":"First remove the worker from their assigned job","x_042":"Build a cafe first","x_043":"No available workers. Hire more!","x_044":"Adult","x_045":"Child","x_046":"Lunch","x_047":"Base prices: {0} / {1} / {2} ₽.<br>Raise prices by 10% → 8% fewer guests. Figure out which prices earn more!","x_048":"Save","x_049":"Prices must be at least 10 ₽","x_050":"Food by the kg","x_051":"How many kg?","x_052":"{0} ₽ per kg. In storage: {1} kg.","x_053":"Bought {0} kg for {1}","x_054":"Bulk food","x_055":"How many bags?","x_056":"bags","x_057":"One {0} kg bag = {1} ({2} ₽/kg, retail price {3}).","x_058":"Fencing","x_059":"How many meters?","x_060":"{0} ₽ per meter. In storage: {1} m.","x_061":"No more land available","x_062":"Buy land","x_063":"How many rows?","x_064":"row","x_066":"1 row = {0} m² ({1} × 1 m). Price: {2} ₽ per m².{3}","x_065":"<br>Total: {0} m² for {1}","x_067":"Buy","x_068":"From 1 to {0} rows","x_069":"Your lot has grown to {0} m²","x_070":"Loan","x_071":"Amount","x_072":"Borrow up to {0} at {1}% interest for {2} days. You must repay the loan plus interest. Calculate how much!","x_073":"No more than {0}","x_074":"Loan received. Repay {0} on Day {1}","x_075":"Loan repaid","x_076":"No cashiers are working, so no guests can enter. Start the day anyway?","x_077":"<h2>Calculator Check<\/h2><p>You need 1 knowledge coin. Earn a coin by solving a problem correctly.<\/p><button class=\"btn go\" data-act=\"ad\">Watch video → ◎1<\/button><button class=\"btn alt\" data-act=\"close\">Close<\/button>","x_078":"Expected guests","x_079":"Ticket booth can serve","x_080":" — {0} cannot enter","x_081":"Food: needed / available","x_082":"{0} kg / {1} kg","x_083":" — not enough!","x_084":"Animals fed","x_085":"{0} out of {1} animals","x_086":"Area cleaned","x_087":"{0} out of {1} m²","x_088":"Crowded enclosures","x_089":"Expected profit","x_090":"<h2>Calculator Check<\/h2><table class=\"sum\">{0}<\/table><p class=\"hint\">This is only an estimate. It does not include sickness or random events.<\/p><button class=\"btn go\" data-act=\"close\">Got it<\/button>","x_091":"<b>Welcome, Zoo Director!<\/b> You have ","x_092":", a 20×20 m lot, and a small zoo with rabbits, goats, and penguins. Buy animals, hire staff, set prices, and start the day. Goals: 30 guests by Day 10, 15 animals by Day 30, and 100,000 ₽ profit by Day 60. Math problems help you run the zoo. Correct answers earn money and knowledge coins.","x_093":"<b>Disease outbreak!<\/b> Up to 40% of the animals may get sick. One vet can treat 15 sick animals per day.","x_094":"<b>Heat wave!<\/b> Animals need twice as much water, and 10% fewer guests will visit.","x_095":"<b>Inspector visiting today!<\/b> Each crowded enclosure means a 5,000 ₽ fine and −5 reputation.","x_096":"<b>Inspector coming tomorrow.<\/b> Check that every animal has enough space!","x_097":"<b>Weekend:<\/b> 40% more guests will visit. Do you have enough cashiers?","x_098":"<b>School field trip:<\/b> {0} children are coming with a {1}% discount on child tickets.","x_100":"<h2>Morning, Day {0}<\/h2>{1}<button class=\"btn go\" data-act=\"{2}\">Next ▶<\/button>","x_099":"<p>Everything is calm. Time to get to work!<\/p>","x_101":"School field trip","x_102":"percentages","x_103":"The school will pay","x_104":"{0} children are coming. A child ticket costs {1} ₽ today, and the school gets a {2}% discount. How many rubles will the whole school pay?","x_105":"Answer","x_106":"Skip","x_107":"Correct! +1 knowledge coin, reputation +2","x_108":"The correct answer was: {0} × {1} = {2}","x_109":"<h2>Field trip booked<\/h2><p>The group is coming today. Remember the ticket booth: more children will arrive!<\/p><button class=\"btn go\" data-act=\"taskgo\">Next ▶<\/button>","x_110":"Day {0}: Director's challenge","x_111":"Answer","x_112":"Enter your answer first","x_113":"<div class=\"bad\"><b>Skipped.<\/b><br>Correct answer: <b>{0} {1}<\/b><br><small>{2}<\/small><\/div>","x_117":"<div class=\"ok\"><b>Correct! +{0} and ◎1<\/b><br>{1}<br><small>{2}<\/small><\/div>","x_114":"The director is happy!","x_115":"Keep it up!","x_116":"The accounting team is cheering!","x_118":"<div class=\"bad\"><b>Not quite. −{0}<\/b><br>Correct answer: <b>{1} {2}<\/b><br><small>{3}<\/small><\/div>","x_121":"<h2>{0}<\/h2><div class=\"q\" style=\"font-size:14px\">{1}<\/div>{2}<button class=\"btn go\" data-act=\"close\">Back to work ▶<\/button>","x_119":"Great job!","x_120":"Problem explanation","x_122":"Today's revenue was {0}, and food cost {1}. What percent of the revenue was spent on food? (Round to the nearest whole number.)","x_123":"Revenue was {0}, and wages were {1}. What percent of the revenue went to wages? (Round to the nearest whole number.)","x_124":"The zoo had {0} guests and earned {1}. How many rubles did the zoo earn per guest on average? (Round to the nearest whole number.)","x_125":"Out of {0} guests, {1} were children. What percent of the guests were children? (Round to the nearest whole number.)","x_126":"Today's expenses: food {0}, wages {1}, water {2}. How many rubles were spent in total? (Round to the nearest whole number.)","x_127":"Guests served","x_129":"{0} (adults {1}, children {2}{3})","x_128":", school {0}","x_130":"Left because of the line","x_131":"Revenue: tickets","x_132":"Revenue: cafe","x_133":"Wages","x_134":"Water","x_135":"Cafe supplies","x_136":"Loan interest","x_137":"Inspector's fine","x_139":"<h2>Day {0} Report<\/h2><table class=\"sum\">{1}<tr class=\"sub\"><td>Profit<\/td><td class=\"{2}\">{3}<\/td><\/tr><\/table>\n   <div class=\"hint\">Reputation {4}{5}: {6}<\/div>\n   {7}{8}\n   <button class=\"btn go\" data-act=\"repq\">Report question ▶<\/button><button class=\"btn alt\" data-act=\"nextday\" style=\"min-height:38px;font-size:14px\">Skip question<\/button>","x_138":"not","x_140":"Report question","x_141":"percentages and money","x_142":"Enter a number","x_143":"<h2>Correct!<\/h2><div class=\"ok\">Reputation +3 and ◎1.<br><small>{0}<\/small><\/div><button class=\"btn go\" data-act=\"nextday\">Next day ▶<\/button>","x_144":"<h2>Not quite<\/h2><div class=\"bad\">Correct answer: <b>{0} {1}<\/b><br><small>{2}<\/small><\/div><button class=\"btn go\" data-act=\"nextday\">Next day ▶<\/button>","x_154":"{0}<div class=\"stars\">{1}{2}<\/div>\n    <table class=\"sum\"><tr><td>Capital<\/td><td>{3}<\/td><\/tr><tr><td>Total profit<\/td><td>{4} {5}<\/td><\/tr>\n    <tr><td>Total guests<\/td><td>{6}<\/td><\/tr><tr><td>Animals<\/td><td>{7}<\/td><\/tr><tr><td>Reputation<\/td><td>★ {8}<\/td><\/tr>\n    <tr><td>Correct answers (problems / reports)<\/td><td>{9} / {10}<\/td><\/tr><tr><td>High score<\/td><td>{11}<\/td><\/tr><\/table>\n    <p>{12}{13}<\/p><button class=\"btn go\" data-act=\"new\">Play again<\/button>","x_145":"Your zoo has been open for<br>","x_146":" days!","x_147":"✓ 100,000 goal reached","x_148":"✗ 100,000 goal missed","x_149":"New high score! ","x_150":"A dream zoo!","x_151":"An amazing zoo!","x_152":"Your zoo is staying open.","x_153":"You'll do better next time.","x_159":"{0}<p style=\"text-align:center\">Run your zoo for 60 days! Manage money, land, workers, and prices. Use math to help your zoo grow!<\/p>\n    {1}\n    {2}","x_155":"Zoo","x_156":"<p style=\"text-align:center\">High score: <b>{0}<\/b> {1}<\/p>","x_157":"<button class=\"btn go\" data-act=\"continue\">Continue (Day {0})<\/button><button class=\"btn alt\" data-act=\"new\">New game<\/button>","x_158":"<button class=\"btn go\" data-act=\"new\">Play<\/button>","x_160":"<h2>Menu<\/h2><p><b>How to play.<\/b> Each day: solve a problem → manage enclosures, staff, prices, and food → tap \"Start Day\". More guests will come if your animals are interesting and your reputation is high. Higher ticket prices mean fewer guests. Each cashier can serve 60 guests. Animals get sick if their enclosures are too crowded. Do the math yourself: area, fencing, food, wages, and percentages.<\/p>\n    <div class=\"row\"><button class=\"btn alt grow\" data-act=\"ad\">Watch video → ◎1<\/button><button class=\"btn go grow\" data-act=\"close\">Play<\/button><\/div><button class=\"btn red\" data-act=\"restart\">Start over<\/button>","x_161":"Start over? All your progress will be lost.","meta_001":"Zoo","prem_002":"Premium","lock_001":"Gray cards are not affordable yet: they unlock once you save enough money for the animal's price. Guests and correct answers bring in money.","gift_001":"Daily gift: ◎{0}","gift_002":"Daily gift collected. A new one tomorrow.","gift_003":"Daily gift: +◎{0}"}/*ENDEN*/;
+/* T(ключ, русский текст, [аргументы]): в режиме EN берёт перевод из EN, иначе русский; {0},{1} — подстановки */
+function T(k,ru,a){var s=(LANG==='en'&&EN[k]!=null)?EN[k]:ru;return a?s.replace(/\{(\d+)\}/g,function(m,i){return a[i];}):s;}
+function hasEN(){for(var k in EN)return true;return false;}
+function pickLang(){
+  var v=PF.get('zoopark-lang');
+  if(v==='ru'||v==='en')return(v==='en'&&!hasEN())?'ru':v;
+  if(!hasEN())return 'ru';
+  var l=(PF.lang()||navigator.language||'ru').toLowerCase().slice(0,2);
+  return['ru','be','kk','uk','uz','hy','az','ka','ky','tg','tk','mo','tt'].indexOf(l)>=0?'ru':'en';
+}
+/* Слой платформы (как в «Кругосветке»): Яндекс Игры SDK, если страница запущена на площадке; иначе заглушки.
+   Хранилище идёт через PF.get/put/del: localStorage + зеркало в памяти + облако (player.setData). */
+const PF=(function(){
+  "use strict";
+  var ysdk=null,player=null,sdkOk=false,cloudOk=false,gaveUp=false,wantReady=false,readyDone=false;
+  var adBusy=false,tabHidden=false,apiPaused=false,gpOn=false,wantGp=false,lastAdAt=0,bornAt=Date.now();
+  var AD_FIRST_MS=300000,INIT_TIMEOUT_MS=4000,SYNC_DELAY_MS=2500,T_KEY="zoopark-syncT";
+  var KT_KEY="zoopark-keyT",kt={},lsOk=false,setErr=0;
+  var mem={},dirty=false,syncTimer=0,self={onPause:function(){},onCloud:function(){},mergers:{}};
+  function isSynced(k){return k!==T_KEY&&k!==KT_KEY&&k.indexOf("zoopark-")===0;}
+  function log(){try{console.info.apply(console,["[zoopark-save]"].concat([].slice.call(arguments)));}catch(e){}}
+  function lsSetRaw(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+  function lsDelRaw(k){try{localStorage.removeItem(k);}catch(e){}}
+  function seedMem(){
+    try{localStorage.setItem("zoopark-probe","1");lsOk=localStorage.getItem("zoopark-probe")==="1";localStorage.removeItem("zoopark-probe");}catch(e){lsOk=false;}
+    try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(isSynced(k)||k===T_KEY)mem[k]=localStorage.getItem(k);}}catch(e){}
+    try{var o=JSON.parse(localStorage.getItem(KT_KEY)||"{}");if(o&&typeof o==="object")kt=o;}catch(e){}
+    log("localStorage:",lsOk?"работает":"НЕДОСТУПЕН","| ключей игры:",Object.keys(mem).filter(isSynced).length);
+  }
+  function ktSave(){lsSetRaw(KT_KEY,JSON.stringify(kt));}
+  function localT(){return Number(mem[T_KEY])||0;}
+  function keyT(k){return kt[k]||(Object.prototype.hasOwnProperty.call(mem,k)?localT():0);}
+  function schedule(){if(!syncTimer&&player&&cloudOk)syncTimer=setTimeout(function(){flush(false);},SYNC_DELAY_MS);}
+  function touch(){var t=String(Date.now());mem[T_KEY]=t;lsSetRaw(T_KEY,t);dirty=true;schedule();}
+  self.get=function(k){if(Object.prototype.hasOwnProperty.call(mem,k))return mem[k];try{return localStorage.getItem(k);}catch(e){return null;}};
+  self.put=function(k,raw){raw=String(raw);mem[k]=raw;lsSetRaw(k,raw);if(isSynced(k)){kt[k]=Date.now();ktSave();touch();}};
+  self.del=function(k){delete mem[k];lsDelRaw(k);if(isSynced(k)){kt[k]=Date.now();ktSave();touch();}};
+  /* Облако: слияние ПО КЛЮЧАМ. У каждого ключа побеждает более позднее изменение; у ключей с правилом слияния (mergers) побеждает больший прогресс.
+     Пустой ответ облака (гость) ничего не стирает; ключ, которого нет на устройстве, не затирается. Снимок v1 без времён ключей: время ключа = _t снимка. */
+  function importCloud(data){
+    var d=data&&typeof data==="object"?data:{},ct=Number(d._t)||0,blob=d.d&&typeof d.d==="object"?d.d:{},ckt=d.kt&&typeof d.kt==="object"?d.kt:{};
+    var keys={},took=0,kept=0,merged=0,changedAny=false;
+    [mem,kt,blob,ckt].forEach(function(o){Object.keys(o).forEach(function(k){if(isSynced(k))keys[k]=1;});});
+    Object.keys(keys).forEach(function(k){
+      var hasL=Object.prototype.hasOwnProperty.call(mem,k),hasC=typeof blob[k]==="string";
+      var lt=keyT(k),cT=Number(ckt[k])||(hasC?ct:0),lv=hasL?mem[k]:null,cv=hasC?blob[k]:null,fn=self.mergers[k];
+      if(fn&&hasL&&hasC&&lv!==cv){
+        var m=null;try{m=fn(lv,cv);}catch(e){}
+        if(typeof m==="string"){if(m!==lv){mem[k]=m;lsSetRaw(k,m);changedAny=true;}if(m!==cv)dirty=true;kt[k]=Math.max(lt,cT);merged++;return;}
+      }
+      if(cT>lt||(cT===lt&&hasC&&!hasL)){
+        if(hasC){if(lv!==cv){mem[k]=cv;lsSetRaw(k,cv);changedAny=true;}}else if(hasL){delete mem[k];lsDelRaw(k);changedAny=true;}
+        kt[k]=cT;took++;
+      }else if(lt>cT||(hasL&&!hasC)){dirty=true;kept++;}
+    });
+    ktSave();
+    if(ct>localT()){mem[T_KEY]=String(ct);lsSetRaw(T_KEY,String(ct));}
+    cloudOk=true;
+    log("облако:",Object.keys(blob).length?"снимок v"+(d.v||1)+", ключей "+Object.keys(blob).length:"пусто","| из облака:",took,"с устройства:",kept,"объединено:",merged);
+    if(dirty)schedule();
+    if(changedAny)try{self.onCloud();}catch(e){}
+  }
+  function snapshot(){var d={},t={};Object.keys(mem).forEach(function(k){if(isSynced(k)&&mem[k]!=null)d[k]=mem[k];});Object.keys(kt).forEach(function(k){if(isSynced(k))t[k]=kt[k];});return{v:2,_t:localT(),d:d,kt:t};}
+  function flush(now){
+    clearTimeout(syncTimer);syncTimer=0;
+    if(!dirty||!player||!cloudOk)return;
+    dirty=false;
+    try{var p=player.setData(snapshot(),!!now);if(p&&p.then)p.then(function(){if(setErr){setErr=0;log("setData снова работает");}},function(e){dirty=true;if(!setErr++)log("setData ОШИБКА:",e&&(e.message||e));});}catch(e){dirty=true;}
+  }
+  /* Запись в облако с подтверждением: Promise<true>, когда данные сохранены (нужна Премиуму: сначала запись, потом consumePurchase). */
+  self.save=function(){
+    clearTimeout(syncTimer);syncTimer=0;
+    if(!player||!cloudOk)return Promise.resolve(false);
+    dirty=false;
+    try{return Promise.resolve(player.setData(snapshot(),true)).then(function(){return true;},function(){dirty=true;return false;});}
+    catch(e){dirty=true;return Promise.resolve(false);}
+  };
+  self.sdk=function(){return ysdk;};
+  self.paused=function(){tabHidden=!!document.hidden;return adBusy||tabHidden||apiPaused;};
+  function applyGp(){
+    if(!sdkOk||!readyDone)return;
+    var should=wantGp&&!self.paused();if(should===gpOn)return;gpOn=should;
+    try{var g=ysdk.features&&ysdk.features.GameplayAPI;if(g){if(should)g.start();else g.stop();}}catch(e){}
+  }
+  function changed(){applyGp();try{self.onPause(self.paused());}catch(e){}}
+  function onVis(){tabHidden=!!document.hidden;if(tabHidden)flush(true);changed();}
+  self.setPlaying=function(on){wantGp=!!on;applyGp();};
+  function tryReady(){
+    if(readyDone||!wantReady||!sdkOk)return;readyDone=true;
+    try{var l=ysdk.features&&ysdk.features.LoadingAPI;if(l)l.ready();}catch(e){}
+    applyGp();
+  }
+  self.ready=function(){wantReady=true;tryReady();};
+  self.init=function(){
+    seedMem();
+    try{document.addEventListener("visibilitychange",onVis);window.addEventListener("pagehide",function(){flush(true);});}catch(e){}
+    if(!window.NoPlatformSDK||!window.NoPlatformSDK.init)return Promise.resolve();
+    return new Promise(function(resolve){
+      var timer=setTimeout(function(){gaveUp=true;resolve();},INIT_TIMEOUT_MS);
+      function fin(){clearTimeout(timer);resolve();}
+      window.NoPlatformSDK.init().then(function(sdk){
+        ysdk=sdk;sdkOk=true;
+        try{sdk.on("game_api_pause",function(){apiPaused=true;changed();});sdk.on("game_api_resume",function(){apiPaused=false;changed();});}catch(e){}
+        tryReady();
+        return sdk.getPlayer({scopes:false}).then(function(p){player=p;var md='';try{md=p.getMode?p.getMode():'';}catch(e){}log('игрок:',md==='lite'?'гость (lite)':'авторизован');return p.getData();}).then(function(data){importCloud(data);},function(e){log('игрок или getData: ОШИБКА —',e&&(e.message||e),'| сохранение только на устройстве');});
+      }).then(fin,fin);
+    });
+  };
+  self.hasSdk=function(){return sdkOk;};
+  self.lang=function(){try{return String(ysdk.environment.i18n.lang||"");}catch(e){return "";}};
+  function adBegin(){adBusy=true;changed();}
+  function adEnd(){adBusy=false;changed();}
+  /* Полноэкранная реклама между днями: не чаще раза в 5 минут, первая не раньше 5 минут после загрузки. done вызывается один раз. */
+  self.interstitial=function(done){
+    if(window.GPLAY){window.GP_ADAPTER.interstitial(done);return;}
+    if(adBusy)return;
+    if(window.Premium&&window.Premium.active()){done();return;}
+    var now=Date.now(),gap=(window.Premium&&window.Premium.config&&window.Premium.config.adGapMs)||300000,allowedAt=lastAdAt?lastAdAt+gap:bornAt+AD_FIRST_MS;
+    if(!sdkOk||!ysdk.adv||!ysdk.adv.showFullscreenAdv||now<allowedAt){done();return;}
+    var fin=false;
+    function end(shown){if(fin)return;fin=true;if(shown){lastAdAt=Date.now();try{if(window.Premium)window.Premium.noteFullscreen();}catch(e){}}adEnd();done();}
+    adBegin();
+    try{ysdk.adv.showFullscreenAdv({callbacks:{onClose:function(w){end(w);},onError:function(){end(false);},onOffline:function(){end(false);}}});}catch(e){end(false);}
+  };
+  /* Ролик за награду. done(got): true, только если досмотрен. Без платформы (сайт, демо) награда засчитывается сразу. */
+  self.rewarded=function(done){
+    if(window.GPLAY){window.GP_ADAPTER.rewarded(done);return;}
+    if(!sdkOk){var demo=!window.NoPlatformSDK;setTimeout(function(){done(demo);},demo?700:0);return;}
+    if(adBusy||!ysdk.adv||!ysdk.adv.showRewardedVideo){done(false);return;}
+    var fin=false,got=false;
+    function end(){if(fin)return;fin=true;if(got)lastAdAt=Date.now();adEnd();done(got);}
+    adBegin();
+    try{ysdk.adv.showRewardedVideo({callbacks:{onRewarded:function(){got=true;},onClose:end,onError:end}});}catch(e){end();}
+  };
+  return self;
+})();
+</script>
+<script>
+function __start(){
+'use strict';
+/* ================= ДАННЫЕ ================= */
+const DAYS=60, COLS=20, CP=18;
+const SAVE_KEY='zoopark-save-v2', BEST_KEY='zoopark-best-v2';
+let START_MONEY=60000, START_ROWS=20, ROW_STEP=1;
+let P_FOOD=30, P_BAG=2400, BAG=100, P_FENCE=100, P_FENCE_X=150, P_WATER=20, P_MEAL_COST=60;
+let SAL_W=900, SAL_V=1600, N_FEED=8, N_CLEAN=120, N_KASSA=60, N_CAFE=40, N_VET=15, REP_A=.6, REP_B=.6;
+let BASE_A=120, BASE_C=60, BASE_M=90, CAFE_PRICE=15000, SELL_K=.7, LOAN_MAX=60000, LOAN_RATE=.1, LOAN_DAYS=10;
+let REWARD=[300,500,700,1000], GRADE=[T("data_001","4 класс"),T("data_002","5 класс"),T("data_003","5–6 класс"),T("data_004","6 класс")];
+const ANI={
+ rab:{name:T("data_005","Кролик"),pl:[T("data_006","кролик"),T("data_007","кролика"),T("data_008","кроликов")],price:2000,area:2,kg:1,vis:3,gr:'#b9dc8a'},
+ goat:{name:T("data_009","Коза"),pl:[T("data_010","коза"),T("data_011","козы"),T("data_012","коз")],price:4000,area:6,kg:3,vis:5,gr:'#a8d57a'},
+ peng:{name:T("data_013","Пингвин"),pl:[T("data_014","пингвин"),T("data_015","пингвина"),T("data_016","пингвинов")],price:7000,area:4,kg:2,vis:8,gr:'#cfe9f2'},
+ monk:{name:T("data_017","Обезьяна"),pl:[T("data_018","обезьяна"),T("data_019","обезьяны"),T("data_020","обезьян")],price:12000,area:10,kg:4,vis:11,gr:'#8fcf7a'},
+ zebra:{name:T("data_021","Зебра"),pl:[T("data_022","зебра"),T("data_023","зебры"),T("data_024","зебр")],price:20000,area:24,kg:10,vis:16,gr:'#d9d58a'},
+ lion:{name:T("data_025","Лев"),pl:[T("data_026","лев"),T("data_027","льва"),T("data_028","львов")],price:30000,area:30,kg:8,vis:24,gr:'#e3cf8e'},
+ giraf:{name:T("data_029","Жираф"),pl:[T("data_030","жираф"),T("data_031","жирафа"),T("data_032","жирафов")],price:40000,area:50,kg:15,vis:30,gr:'#c9d98c'},
+ slon:{name:T("data_033","Слон"),pl:[T("data_034","слон"),T("data_035","слона"),T("data_036","слонов")],price:60000,area:60,kg:120,vis:70,gr:'#d8cba0'}
+};
+const AIDS=Object.keys(ANI);
+
+/* ================= УТИЛИТЫ ================= */
+const $=s=>document.querySelector(s);
+const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const money=n=>Math.round(n).toLocaleString(LANG==='en'?'en-US':'ru-RU')+' ₽';
+const num=n=>LANG==='en'?String(n):String(n).replace('.',',');
+const plur=(n,f)=>{if(LANG==='en')return n===1?f[0]:(f[1]||f[2]);const a=n%100,b=n%10;return(a>10&&a<15)?f[2]:b===1?f[0]:(b>1&&b<5)?f[1]:f[2];};
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2400);}
+function lsGet(k){try{const v=PF.get(k);return v==null?null:JSON.parse(v);}catch(e){return null;}}
+function lsSet(k,v){try{PF.put(k,JSON.stringify(v));}catch(e){}}
+function lsDel(k){try{PF.del(k);}catch(e){}}
+const INK='#3b2a1a';
+
+
+function watchAd(){
+  PF.rewarded(got=>{if(got){coin(1);toast(T("util_001","+1 монета знаний"));}else toast(T("util_002","Реклама сейчас недоступна"));});}
+/* Кнопка «★ Премиум» и подпись награды на спокойных экранах (меню, старт, итоги) */
+const GIFT_KEY='zoopark-gift', GIFT_COINS=3;
+function srvDay(){let t=Date.now();try{const k=PF.sdk();if(k&&typeof k.serverTime==='function'){const v=k.serverTime();if(v>0)t=v;}}catch(e){}return Math.floor(t/864e5);}
+function giftTaken(){const g=lsGet(GIFT_KEY);return !!(g&&g.d>=srvDay());}
+function giftHtml(){
+  if(!window.Premium||!Premium.active())return '';
+  return giftTaken()?'<div class="hint" data-gift="1">'+T("gift_002","Подарок дня получен. Завтра будет новый.")+'</div>'
+    :'<button class="btn sm go" data-act="gift" data-gift="1">'+T("gift_001","Подарок дня: ◎{0}",[GIFT_COINS])+'</button>';
+}
+function claimGift(){
+  if(!window.Premium||!Premium.active()||giftTaken())return false;
+  lsSet(GIFT_KEY,{d:srvDay()});coin(GIFT_COINS);toast(T("gift_003","Подарок дня: +◎{0}",[GIFT_COINS]));
+  const c=$('#card');if(c){c.querySelectorAll('[data-gift]').forEach(e=>e.remove());c.insertAdjacentHTML('beforeend',giftHtml());}
+  return true;
+}
+/* Кнопка «★ Премиум» и подарок дня на спокойных экранах (меню, старт, итоги) */
+function premUi(){
+  try{
+    if(!window.Premium||!(Premium.available()||Premium.active()))return;
+    const c=$('#card');if(!c)return;
+    if(!c.querySelector('[data-gift]')&&Premium.active())c.insertAdjacentHTML('beforeend',giftHtml());
+    if(!c.querySelector('[data-act=prem]'))c.insertAdjacentHTML('beforeend','<button class="btn sm alt" data-act="prem">★ '+T("prem_002","Премиум")+'</button>');
+  }catch(e){}
+}
+let YN=null;
+function yesNo(msg,fn){YN=fn;mode='over';card(T("util_003","<h2>Подтверди</h2><p>{0}</p><div class=\"row\"><button class=\"btn red grow\" data-act=\"yes\">Да</button><button class=\"btn alt grow\" data-act=\"no\">Нет</button></div>",[msg]));}
+
+/* картинки (WebP в img/, нарезаны tools/make_art.py). Нет файла — рисуется кодом */
+const IMGN=/*IMGN*/['an_giraf','an_goat','an_lion','an_monk','an_peng','an_rab','an_slon','an_zebra','bg_grass','bg_path','cafe','coin_know','cover_start','ev_epi','ev_exc','ev_heat','ev_insp','fence_h','fence_post','final_win','food_bag','ic_bank','ic_enc','ic_price','ic_staff','ic_stock','kassa','vet','vis_boy','vis_girl','vis_man','vis_woman','worker']/*END*/;
+const IMG={},PAT={};
+IMGN.forEach(n=>{const i=new Image();i.onload=()=>{IMG[n]=i;delete PAT[n];if(typeof S!=='undefined'&&S&&typeof renderHud==='function'){renderHud();if(mode!=='sim')renderPanel();}};i.src='img/'+n+'.webp';});
+const imgTag=(n,cls,fb)=>!IMGN.includes(n)?(fb||''):`<img class="${cls||'ic'}" src="img/${n}.webp" alt="" onerror="this.outerHTML='${fb||''}'">`;
+const SPR={rab:.85,goat:1,peng:1,monk:1,zebra:1.02,lion:1.05,giraf:1.3,slon:1.2};
+
+/* ================= СОСТОЯНИЕ ================= */
+let S=null,mode='over',tab='enc',selId=0,sim=null;
+function newState(){
+  const s={v:2,day:1,money:START_MONEY,rep:50,coins:2,rows:START_ROWS,landBuys:0,landPaid:0,
+    enc:[],cafe:null,staff:{w:2,v:0},duty:{feed:1,clean:0,kassa:1,cafe:0},
+    stock:{food:100,foodVal:100*P_FOOD,fence:0},price:{a:BASE_A,c:BASE_C,m:BASE_M},loan:null,
+    heat:0,epi:false,insp:0,exc:null,task:null,taskDone:false,lastTask:'',nid:1,
+    stats:{right:0,wrong:0,skip:0,vis:0,profit:0,maxGuests:0,repQ:0},goals:{d10:null,d30:null},morning:false};
+  s.enc.push({id:s.nid++,k:'rab',n:3,w:3,h:2,x:1,y:0,sick:0});
+  s.enc.push({id:s.nid++,k:'goat',n:2,w:4,h:3,x:5,y:0,sick:0});
+  s.enc.push({id:s.nid++,k:'peng',n:2,w:3,h:3,x:1,y:4,sick:0});
+  return s;
+}
+function save(){if(S)lsSet(SAVE_KEY,S);}
+const animalsN=()=>S.enc.reduce((a,e)=>a+e.n,0);
+const areaTot=()=>S.enc.reduce((a,e)=>a+e.w*e.h,0);
+const tier=()=>{const d=S.day;return d<=12?1:d<=28?2:d<=45?3:4;};
+const isWeekend=d=>{const r=d%7;return r===6||r===0;};
+const tutor=()=>S.day<=10;
+const crowded=e=>e.w*e.h<e.n*ANI[e.k].area;
+const landPrice=()=>200+50*S.landBuys;
+const foodAvg=()=>S.stock.food>0?S.stock.foodVal/S.stock.food:P_FOOD;
+const foodNeed=()=>S.enc.reduce((a,e)=>a+e.n*ANI[e.k].kg,0);
+function capital(){
+  const an=S.enc.reduce((a,e)=>a+e.n*ANI[e.k].price,0);
+  return Math.round(S.money+an+(S.cafe?CAFE_PRICE:0)+S.landPaid+S.stock.foodVal+S.stock.fence*P_FENCE-(S.loan?S.loan.total:0));
+}
+const STAR_AT=[100000,200000,300000]; // автоигрок test\\bot.js: неумелый ≈226k, умелый ≈360k
+const starsOf=c=>STAR_AT.filter(x=>c>=x).length;
+
+/* ================= ГЕОМЕТРИЯ ================= */
+function occGrid(){
+  const g=[];for(let y=0;y<S.rows;y++)g.push(Array(COLS).fill(0));
+  S.enc.forEach(e=>{for(let y=e.y;y<e.y+e.h;y++)for(let x=e.x;x<e.x+e.w;x++)g[y][x]=e.id;});
+  if(S.cafe)for(let y=S.cafe.y;y<S.cafe.y+3;y++)for(let x=S.cafe.x;x<S.cafe.x+4;x++)g[y][x]=-1;
+  return g;
+}
+function rectFree(g,x,y,w,h){
+  for(let yy=y-1;yy<=y+h;yy++)for(let xx=x-1;xx<=x+w;xx++){
+    if(yy<0||xx<0||yy>=S.rows||xx>=COLS)continue;
+    if(g[yy][xx])return false;
+  }
+  return true;
+}
+function findSpot(w,h){
+  const g=occGrid();
+  for(let y=0;y+h<=S.rows-2;y++)for(let x=1;x+w<=COLS;x++)if(rectFree(g,x,y,w,h))return{x,y};
+  return null;
+}
+function bfs(g,from,to){
+  const key=(x,y)=>y*COLS+x,prev=new Map([[key(from.x,from.y),null]]),q=[from];
+  while(q.length){
+    const c=q.shift();
+    if(c.x===to.x&&c.y===to.y){const p=[];let k=key(c.x,c.y);while(k!==null){p.push({x:k%COLS,y:Math.floor(k/COLS)});k=prev.get(k);}return p.reverse();}
+    for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx=c.x+dx,ny=c.y+dy;
+      if(nx<0||ny<0||nx>=COLS||ny>=S.rows||g[ny][nx])continue;
+      const k=key(nx,ny);if(prev.has(k))continue;
+      prev.set(k,key(c.x,c.y));q.push({x:nx,y:ny});
+    }
+  }
+  return null;
+}
+
+/* ================= ЭКОНОМИКА ДНЯ ================= */
+function binom(n,p){let k=0;for(let i=0;i<n;i++)if(Math.random()<p)k++;return k;}
+function computeDay(det){
+  const r={};
+  const animals=animalsN(),area=areaTot(),need=foodNeed();
+  const d=S.duty;
+  // кормление
+  const fcov=animals?Math.min(1,d.feed*N_FEED/animals):1;
+  const consumed=Math.min(S.stock.food,need*fcov);
+  const fedFrac=need?consumed/need:1;
+  r.consumed=consumed;r.hungry=Math.round(animals*(1-fedFrac));
+  r.foodCost=consumed*foodAvg();
+  // уборка
+  const ccov=area?Math.min(1,d.clean*N_CLEAN/area):1,dirty=1-ccov;r.dirty=dirty;
+  // болезни
+  r.crowded=S.enc.filter(crowded).length;
+  const inspToday=S.insp===S.day;
+  let sickNew=[],totalSick=0;
+  S.enc.forEach(e=>{
+    const healthy=e.n-e.sick;
+    const p=.02+(crowded(e)?.25:0)+.2*dirty+(S.epi?.4:0);
+    const nw=det?Math.round(healthy*p):binom(healthy,p);
+    sickNew.push(nw);totalSick+=e.sick+nw;
+  });
+  const treat=Math.min(totalSick,S.staff.v*N_VET);
+  let left=treat;const sickAfter=[];
+  S.enc.forEach((e,i)=>{const s=e.sick+sickNew[i];const t=Math.min(s,left);left-=t;sickAfter.push(s-t);});
+  r.sickNew=sickNew;r.sickAfter=sickAfter;r.sickN=sickAfter.reduce((a,b)=>a+b,0);r.treated=treat;
+  // привлекательность
+  const cnt={};S.enc.forEach(e=>cnt[e.k]=(cnt[e.k]||0)+e.n);
+  let A=0;for(const k in cnt)A+=ANI[k].vis*(2-Math.pow(2,1-cnt[k]));
+  if(animals){A*=1-.5*r.sickN/animals;A*=1-.6*r.hungry/animals;}
+  const repMult=REP_A+REP_B*S.rep/100,wk=isWeekend(S.day)?1.4:1,heat=S.heat>0?.9:1;
+  r.A=A;r.repMult=repMult;r.wk=wk;
+  r.G0=A*repMult*wk*heat;
+  r.a0=r.G0*.6;r.c0=r.G0*.4;
+  const fa=clamp(1-.8*(S.price.a/BASE_A-1),.2,1.6),fc=clamp(1-.8*(S.price.c/BASE_C-1),.2,1.6);
+  r.fa=fa;r.fc=fc;
+  let aD=r.a0*fa,cD=r.c0*fc,grp=S.exc?S.exc.n:0;
+  const dem=aD+cD+grp;r.demand=Math.round(dem);
+  r.cap=d.kassa*N_KASSA;
+  const sc=dem>0?Math.min(1,r.cap/dem):1;
+  r.adults=Math.round(aD*sc);r.kids=Math.round(cD*sc);r.grp=Math.round(grp*sc);
+  r.served=r.adults+r.kids+r.grp;r.lost=Math.max(0,r.demand-r.served);
+  const grpPrice=S.exc?Math.round(S.price.c*(1-S.exc.p/100)):0;
+  r.revTick=r.adults*S.price.a+r.kids*S.price.c+r.grp*grpPrice;
+  // кафе
+  r.meals=0;r.revCafe=0;r.costMeals=0;
+  if(S.cafe&&d.cafe>=1){
+    const fm=clamp(1-.8*(S.price.m/BASE_M-1),.2,1.6);
+    r.meals=Math.min(Math.round(r.served*.5*fm),d.cafe*N_CAFE);
+    r.revCafe=r.meals*S.price.m;r.costMeals=r.meals*P_MEAL_COST;
+  }
+  r.rev=r.revTick+r.revCafe;
+  r.sal=S.staff.w*SAL_W+S.staff.v*SAL_V;
+  r.water=animals*P_WATER*(S.heat>0?2:1);
+  r.interest=(S.loan&&S.loan.due===S.day)?Math.round(S.loan.total-S.loan.amt):0;
+  r.fine=0;r.inspN=0;
+  if(inspToday){r.inspN=r.crowded;r.fine=r.crowded*5000;}
+  r.exp=r.foodCost+r.sal+r.water+r.costMeals+r.interest+r.fine;
+  r.profit=r.rev-r.exp;
+  // репутация
+  const why=[];let dr=1;why.push([T("econ_001","Работа зоопарка"),1]);
+  const add=(t,v)=>{if(v){dr+=v;why.push([t,v]);}};
+  add(T("econ_002","Голодные животные"),-.8*r.hungry);
+  add(T("econ_003","Больные животные"),-1*r.sickN);
+  add(T("econ_004","Тесные вольеры"),-2*r.crowded);
+  add(T("econ_005","Очередь у кассы"),-r.lost/20);
+  if(inspToday){add(r.crowded?T("econ_006","Инспектор: нарушения"):T("econ_007","Инспектор: всё в порядке"),r.crowded?-5*r.crowded:5);}
+  r.dRep=dr;r.why=why;r.insp=inspToday;r.holiday=wk>1;r.heat=S.heat>0;r.epi=S.epi;
+  return r;
+}
+function commitDay(r){
+  S.money+=r.rev-r.sal-r.water-r.costMeals-r.fine;
+  S.stock.food-=r.consumed;S.stock.foodVal=Math.max(0,S.stock.foodVal-r.foodCost);
+  if(S.stock.food<=0.0001){S.stock.food=0;S.stock.foodVal=0;}
+  S.enc.forEach((e,i)=>{e.sick=r.sickAfter[i];});
+  S.rep=clamp(S.rep+r.dRep,0,100);
+  S.stats.vis+=r.served;S.stats.profit+=r.profit;S.stats.maxGuests=Math.max(S.stats.maxGuests,r.served);
+  // кредит
+  r.loanNote='';
+  if(S.loan&&S.loan.due===S.day){
+    if(S.money>=S.loan.total){S.money-=S.loan.total;r.loanNote=T("econ_008","Кредит возвращён: {0}",[money(S.loan.total)]);S.loan=null;}
+    else{S.rep=clamp(S.rep-10,0,100);S.loan.total=Math.round(S.loan.total+S.loan.amt*LOAN_RATE);S.loan.due+=LOAN_DAYS;r.loanNote=T("econ_009","Нечем платить по кредиту! Срок продлён на {0} дней, долг вырос до {1}, репутация −10",[LOAN_DAYS,money(S.loan.total)]);}
+  }
+  // цели
+  r.goalNote='';
+  const g=(key,ok,txt)=>{S.goals[key]=ok;if(ok){S.money+=5000;S.rep=clamp(S.rep+5,0,100);r.goalNote=T("econ_010","Цель выполнена: {0}! +5 000 ₽ и +5 к репутации",[txt]);}else{S.rep=clamp(S.rep-5,0,100);r.goalNote=T("econ_011","Цель не выполнена: {0}. Репутация −5",[txt]);}};
+  if(S.day===10)g('d10',S.stats.maxGuests>=30,T("econ_012","30 гостей за день к 10-му дню"));
+  if(S.day===30)g('d30',animalsN()>=15,T("econ_013","15 животных к 30-му дню"));
+  S.heat=Math.max(0,S.heat-1);S.epi=false;S.exc=null;
+  S.day++;
+}
+
+/* ================= ЗАДАЧИ (числа из зоопарка) ================= */
+const fr=(a,b)=>`<span class="fr"><i>${a}</i><b>${b}</b></span>`;
+const pickEnc=()=>S.enc.length?pick(S.enc):null;
+const TK={
+ area(t){
+  const e=pickEnc();
+  if(t<=2){
+    if(e&&(e.w*e.h)%e.n===0)return{q:T("task_001","Вольер {0}×{1} м, в нём {2} {3}. Сколько м² приходится на одно животное?",[e.w,e.h,e.n,plur(e.n,ANI[e.k].pl)]),a:e.w*e.h/e.n,u:T("task_002","м²"),sol:T("task_003","{0} × {1} = {2} м²; {3} ÷ {4} = {5}",[e.w,e.h,e.w*e.h,e.w*e.h,e.n,e.w*e.h/e.n])};
+    const p=ri(3,8),n=ri(2,5);return{q:T("task_004","Вольер {0}×{1} м, в нём {2} животных. Сколько м² приходится на одно животное?",[p,n,n]),a:p,u:T("task_002","м²"),sol:`${p} × ${n} = ${p*n}; ${p*n} ÷ ${n} = ${p}`};
+  }
+  if(t===3){
+    const k=e?e.k:pick(AIDS),A=e?e.w*e.h:ri(4,12)*ANI[k].area,m=ANI[k].area,a=Math.floor(A/m);
+    return{q:T("task_005","Площадь вольера {0} м². Норма для вида «{1}» — {2} м² на одно животное. Сколько животных можно держать?",[A,ANI[k].name,m]),a,u:T("task_006","шт"),sol:T("task_007","{0} ÷ {1} = {2} → {3} (целых)",[A,m,num((A/m).toFixed(1)),a])};
+  }
+  const k=pick(AIDS.slice(1)),m=ANI[k].area,A=ri(2,5)*m+ri(1,m-1),N=Math.ceil(A/m)+ri(1,3);
+  return{q:T("task_008","Хотим держать {0} {1}. Норма {2} м² на особь. Уже есть вольер {3} м². Сколько м² нужно добавить?",[N,plur(N,ANI[k].pl),m,A]),a:N*m-A,u:T("task_002","м²"),sol:`${N} × ${m} = ${N*m}; ${N*m} − ${A} = ${N*m-A}`};
+ },
+ fence(t){
+  const e=t<=2?pickEnc():null;const a=e?e.w:ri(3,9),b=e?e.h:ri(3,9),P=2*(a+b);
+  if(t===1)return{q:T("task_009","Вольер {0}×{1} м. Сколько метров забора нужно, чтобы обнести его?",[a,b]),a:P,u:T("task_010","м"),sol:`2 × (${a} + ${b}) = ${P}`};
+  if(t===2)return{q:T("task_011","Вольер {0}×{1} м. Забор стоит {2} ₽ за метр. Сколько рублей стоит забор?",[a,b,P_FENCE]),a:P*P_FENCE,u:'₽',sol:T("task_012","P = {0} м; {1} × {2} = {3}",[P,P,P_FENCE,P*P_FENCE])};
+  const A=ri(5,12),B=ri(6,14),PP=2*(A+B);
+  if(t===3){const st=ri(4,PP-4);return{q:T("task_013","Для вольера {0}×{1} м нужен забор. На складе уже {2} м. Сколько рублей заплатить за недостающий забор по {3} ₽/м?",[A,B,st,P_FENCE]),a:(PP-st)*P_FENCE,u:'₽',sol:T("task_014","P = {0} м; не хватает {1} м; {2} × {3} = {4}",[PP,PP-st,PP-st,P_FENCE,(PP-st)*P_FENCE])};}
+  const O=ri(4,PP-4);return{q:T("task_015","Вольер {0}×{1} м. Заказали {2} м забора по {3} ₽/м, а недостающее докупили срочно по {4} ₽/м. Сколько рублей потратили всего?",[A,B,O,P_FENCE,P_FENCE_X]),a:O*P_FENCE+(PP-O)*P_FENCE_X,u:'₽',sol:T("task_016","P = {0} м; не хватило {1} м; {2}×{3} + {4}×{5} = {6}",[PP,PP-O,O,P_FENCE,PP-O,P_FENCE_X,O*P_FENCE+(PP-O)*P_FENCE_X])};
+ },
+ food(t){
+  const e=pickEnc();
+  if(t===1){
+    if(e){const A=ANI[e.k];return{q:T("task_017","В вольере {0} {1}. Каждому нужно {2} кг корма в день. Сколько кг корма нужно на день?",[e.n,plur(e.n,A.pl),A.kg]),a:e.n*A.kg,u:T("task_018","кг"),sol:`${e.n} × ${A.kg} = ${e.n*A.kg}`};}
+    const n=ri(2,6),kg=pick([2,3,4,5]);return{q:T("task_019","В вольере {0} животных, каждому нужно {1} кг корма в день. Сколько кг на день?",[n,kg]),a:n*kg,u:T("task_018","кг"),sol:`${n} × ${kg} = ${n*kg}`};
+  }
+  if(t===2){
+    const need=foodNeed(),st=Math.round(S.stock.food);
+    if(need>0&&st>=need)return{q:T("task_020","На складе {0} кг корма. Все животные зоопарка съедают {1} кг в день. На сколько полных дней хватит корма?",[st,need]),a:Math.floor(st/need),u:T("task_021","дн."),sol:T("task_022","{0} ÷ {1} = {2} → {3} полных",[st,need,num((st/need).toFixed(1)),Math.floor(st/need)])};
+    const need2=pick([20,25,40]),d=ri(3,9);return{q:T("task_023","На складе {0} кг корма, в день уходит {1} кг. На сколько полных дней хватит?",[need2*d+ri(1,need2-1),need2]),a:d,u:T("task_021","дн."),sol:T("task_024","делим на {0}, целая часть = {1}",[need2,d])};
+  }
+  if(t===3){const k=ri(2,8);return{q:T("task_025","Мешок корма 100 кг оптом стоит {0} ₽, а в розницу кг стоит {1} ₽. Сколько рублей сэкономим, купив {2} мешков оптом?",[P_BAG,P_FOOD,k]),a:(P_FOOD*BAG-P_BAG)*k,u:'₽',sol:T("task_026","Розница {0} кг: {1} ₽; мешок {2} ₽; экономия {3} с мешка; × {4} = {5}",[BAG,BAG*P_FOOD,P_BAG,BAG*P_FOOD-P_BAG,k,(BAG*P_FOOD-P_BAG)*k])};}
+  const q=ri(1,5),r=ri(1,9)*10;return{q:T("task_027","Нужно купить {0} кг корма: целые мешки по 100 кг ({1} ₽ за мешок), остаток в розницу по {2} ₽/кг. Сколько рублей заплатить?",[q*BAG+r,P_BAG,P_FOOD]),a:q*P_BAG+r*P_FOOD,u:'₽',sol:T("task_028","{0} меш. × {1} = {2}; {3} кг × {4} = {5}; вместе {6}",[q,P_BAG,q*P_BAG,r,P_FOOD,r*P_FOOD,q*P_BAG+r*P_FOOD])};
+ },
+ pct(t){
+  if(t===1){const a=pick([100,200,250,400,500]),p=pick([10,20,25,50]),b=a+a*p/100;return{q:T("task_029","Цена билета выросла с {0} до {1} ₽. На сколько процентов выросла цена?",[a,b]),a:p,u:'%',sol:T("task_030","{0} − {1} = {2}; {3} от {4} — это {5} %",[b,a,b-a,b-a,a,p])};}
+  if(t===2){const p=pick([5,10,15,20,25,30]);return{q:T("task_031","По правилу зоопарка, когда цена растёт на 10 %, гостей становится на 8 % меньше. Цену подняли на {0} %. На сколько процентов станет меньше гостей?",[p]),a:.8*p,u:'%',sol:`${p} % ÷ 10 = ${p/10}; ${p/10} × 8 = ${.8*p} %`};}
+  const N=pick([50,100,150,200,250]),p=pick([10,20,25,50]);
+  if(t===3)return{q:T("task_032","Цену подняли на {0} %, и гостей стало на {1} % меньше. Раньше приходило {2} гостей. Сколько приходит теперь?",[p,num(.8*p),N]),a:N*(100-.8*p)/100,u:T("task_033","чел."),sol:T("task_034","Минус {0} % от {1} = {2}; {3} − {4} = {5}",[num(.8*p),N,N*.8*p/100,N,N*.8*p/100,N*(100-.8*p)/100])};
+  return{q:T("task_035","При цене взрослого билета 200 ₽ приходит {0} взрослых. Цену подняли до {1} ₽ (это +{2} %). Правило: +10 % цены → −8 % гостей. Сколько взрослых придёт?",[N,200+2*p,p]),a:N*(100-.8*p)/100,u:T("task_033","чел."),sol:T("task_036","+{0} % цены → −{1} % гостей: {2} × {3} ÷ 100 = {4}",[p,num(.8*p),N,100-.8*p,N*(100-.8*p)/100])};
+ },
+ staff(t){
+  const an=animalsN();
+  if(t===1){const n=an>=3?an:ri(10,30);return{q:T("task_037","В зоопарке {0} животных. Один работник на кормлении обслуживает {1} животных. Сколько работников нужно, чтобы накормить всех?",[n,N_FEED]),a:Math.ceil(n/N_FEED),u:T("task_033","чел."),sol:T("task_038","{0} ÷ {1} = {2} → {3} (округляем вверх)",[n,N_FEED,num((n/N_FEED).toFixed(2)),Math.ceil(n/N_FEED)])};}
+  if(t===2){const A=areaTot()>=100?areaTot():ri(200,500);return{q:T("task_039","Общая площадь вольеров {0} м². Один работник убирает {1} м² в день. Сколько работников нужно на уборку?",[A,N_CLEAN]),a:Math.ceil(A/N_CLEAN),u:T("task_033","чел."),sol:`${A} ÷ ${N_CLEAN} = ${num((A/N_CLEAN).toFixed(2))} → ${Math.ceil(A/N_CLEAN)}`};}
+  if(t===3){const k=ri(2,6),d=pick([5,7,10]);return{q:T("task_040","Работнику платят {0} ₽ в день. Сколько рублей зарплаты за {1} дней нужно на {2} работников?",[SAL_W,d,k]),a:k*d*SAL_W,u:'₽',sol:`${k} × ${d} × ${SAL_W} = ${k*d*SAL_W}`};}
+  const k=ri(2,5),N=k*N_FEED+ri(2,7);return{q:T("task_041","В зоопарке {0} животных. На кормлении работают {1} человек, каждый кормит {2} животных. Сколько животных останутся без корма?",[N,k,N_FEED]),a:N-k*N_FEED,u:T("task_006","шт"),sol:`${k} × ${N_FEED} = ${k*N_FEED}; ${N} − ${k*N_FEED} = ${N-k*N_FEED}`};
+ },
+ cash(t){
+  if(t===1){const k=ri(1,4);return{q:T("task_045","Кассир пропускает {0} гостей в час. Касса работает 10 часов. Сколько гостей пропустят {1} {2} за день?",[N_KASSA/10,k,plur(k,[T("task_042","кассир"),T("task_043","кассира"),T("task_044","кассиров")])]),a:k*N_KASSA,u:T("task_033","чел."),sol:T("task_046","{0} × 10 = {1} на одного; × {2} = {3}",[N_KASSA/10,N_KASSA,k,k*N_KASSA])};}
+  if(t===2){const G=pick([100,150,200,250,300]);return{q:T("task_047","Ожидается {0} гостей. Один кассир пропускает {1} гостей в день. Сколько кассиров нужно?",[G,N_KASSA]),a:Math.ceil(G/N_KASSA),u:T("task_033","чел."),sol:`${G} ÷ ${N_KASSA} = ${num((G/N_KASSA).toFixed(2))} → ${Math.ceil(G/N_KASSA)}`};}
+  const k=ri(1,3),G=k*N_KASSA+ri(2,12)*10;
+  if(t===3)return{q:T("task_048","Ожидается {0} гостей, на кассе {1} {2} (по {3} гостей в день каждый). Сколько гостей не попадут в зоопарк?",[G,k,plur(k,[T("task_042","кассир"),T("task_043","кассира"),T("task_044","кассиров")]),N_KASSA]),a:G-k*N_KASSA,u:T("task_033","чел."),sol:`${k} × ${N_KASSA} = ${k*N_KASSA}; ${G} − ${k*N_KASSA} = ${G-k*N_KASSA}`};
+  const pr=pick([100,150,200]);return{q:T("task_049","Из-за нехватки касс не попали в зоопарк {0} гостей. Билет стоит {1} ₽. Сколько рублей выручки потеряно?",[G-k*N_KASSA,pr]),a:(G-k*N_KASSA)*pr,u:'₽',sol:`${G-k*N_KASSA} × ${pr} = ${(G-k*N_KASSA)*pr}`};
+ },
+ loan(t){
+  const am=S.loan?S.loan.amt:pick([10000,15000,20000,30000,40000]);
+  if(t===1)return{q:T("task_050","Кредит {0} ₽ даётся под 10 % на 10 дней. Сколько рублей составят проценты?",[am]),a:am/10,u:'₽',sol:`10 % = ${am} ÷ 10 = ${am/10}`};
+  if(t===2)return{q:T("task_051","Взяли кредит {0} ₽ под 10 % на 10 дней. Сколько рублей нужно вернуть всего?",[am]),a:am*1.1,u:'₽',sol:`${am} + ${am/10} = ${am*1.1}`};
+  if(t===3)return{q:T("task_052","Кредит {0} ₽ не вернули вовремя: срок продлили, и ещё начислили 10 % от {1} ₽. Сколько теперь должны всего (кредит + 20 % процентов)?",[am,am]),a:am*1.2,u:'₽',sol:`${am} + 2 × ${am/10} = ${am*1.2}`};
+  return{q:T("task_053","Нужно вернуть {0} ₽ за 10 дней. Сколько рублей надо откладывать в день, чтобы собрать нужную сумму?",[am*1.1]),a:am*1.1/10,u:'₽',sol:`${am*1.1} ÷ 10 = ${am*1.1/10}`};
+ },
+ share(t){
+  if(t===1){const G=pick([50,100,150,200,250]);return{q:T("task_054","Пришло {0} гостей. {1} из них — дети (40 %). Сколько детей пришло?",[G,fr(2,5)]),a:G*2/5,u:T("task_033","чел."),sol:`${G} ÷ 5 × 2 = ${G*2/5}`};}
+  if(t===2){const G=pick([50,100,150,200,250]);return{q:T("task_055","Пришло {0} гостей, из них 40 % — дети. Сколько взрослых?",[G]),a:G*3/5,u:T("task_033","чел."),sol:T("task_056","Взрослых 60 %: {0} ÷ 10 × 6 = {1}",[G,G*3/5])};}
+  if(t===3){const m=ri(6,20)*10,d=ri(1,4)*10,e=ri(1,4)*10,v=[m-d,m+e,m+d-e];return{q:T("task_057","За три дня пришло {0}, {1} и {2} гостей. Сколько гостей в среднем за день?",[v[0],v[1],v[2]]),a:m,u:T("task_033","чел."),sol:`(${v[0]} + ${v[1]} + ${v[2]}) ÷ 3 = ${v[0]+v[1]+v[2]} ÷ 3 = ${m}`};}
+  const R=pick([10000,20000,25000,40000]),p=pick([20,30,35,40,45]);return{q:T("task_058","Выручка за день {0} ₽, зарплаты — {1} ₽. Сколько процентов выручки ушло на зарплаты?",[R,R*p/100]),a:p,u:'%',sol:`${R*p/100} ÷ ${R} = ${p/100} = ${p} %`};
+ }
+};
+function genTask(){
+  const t=tier(),fam=pick(Object.keys(TK).filter(x=>x!==S.lastTask));S.lastTask=fam;
+  const g=TK[fam](t);return{type:fam,tier:t,q:g.q,a:g.a,u:g.u,sol:g.sol,reward:REWARD[t-1]};
+}
+
+/* ================= ГРАФИКА ================= */
+const cv=$('#map'),ctx=cv.getContext('2d');
+function oval(c,x,y,rx,ry,f,lw=3){c.beginPath();c.ellipse(x,y,rx,ry,0,0,6.2832);c.fillStyle=f;c.fill();if(lw){c.lineWidth=lw;c.strokeStyle=INK;c.stroke();}}
+function rect(c,x,y,w,h,f,lw=3){c.fillStyle=f;c.fillRect(x,y,w,h);if(lw){c.lineWidth=lw;c.strokeStyle=INK;c.strokeRect(x,y,w,h);}}
+function poly(c,pts,f,lw=3){c.beginPath();pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();c.fillStyle=f;c.fill();if(lw){c.lineWidth=lw;c.lineJoin='round';c.strokeStyle=INK;c.stroke();}}
+function dot(c,x,y,r=1.8,f=INK){c.beginPath();c.arc(x,y,r,0,6.2832);c.fillStyle=f;c.fill();}
+function line(c,pts,col,lw){c.beginPath();pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.lineWidth=lw;c.strokeStyle=col;c.lineCap='round';c.stroke();}
+const DRAW={
+ rab(c){oval(c,-17,6,5,5,'#fff');oval(c,8,17,6,3.5,'#f6f0e4');oval(c,-8,17,6,3.5,'#f6f0e4');oval(c,0,7,17,12,'#f6f0e4');oval(c,9,-20,3.6,10,'#f6f0e4');oval(c,9,-20,1.4,6.5,'#f4a3b5',0);oval(c,17,-19,3.6,10,'#f6f0e4');oval(c,17,-19,1.4,6.5,'#f4a3b5',0);oval(c,14,-4,10,9,'#f6f0e4');dot(c,17,-6);dot(c,23,-3,1.7,'#e86a8a');},
+ goat(c){line(c,[[15,-14],[13,-25]],INK,5);line(c,[[15,-14],[13,-25]],'#f2f2f2',2);line(c,[[21,-14],[24,-24]],INK,5);line(c,[[21,-14],[24,-24]],'#f2f2f2',2);[-14,-8,6,12].forEach(x=>rect(c,x-2.5,8,5,13,'#d9c8a5',2.5));poly(c,[[-21,-2],[-27,-6],[-22,3]],'#efe3c8');oval(c,-2,3,20,11,'#efe3c8');oval(c,18,-8,9,8,'#efe3c8');poly(c,[[24,-2],[19,-1],[22,8]],'#fff',2.5);oval(c,11,-9,5,2.5,'#d9c8a5',2);dot(c,20,-10);dot(c,25,-7,1.4);},
+ peng(c){oval(c,-6,21,6,3,'#f5a623');oval(c,6,21,6,3,'#f5a623');oval(c,0,1,15,21,'#2f3e52');oval(c,0,5,9.5,15,'#fff',0);oval(c,-15,3,4,11,'#2f3e52');oval(c,15,3,4,11,'#2f3e52');poly(c,[[-4,-13],[4,-13],[0,-7]],'#f5a623',2.5);dot(c,-5,-17,2.6,'#fff');dot(c,5,-17,2.6,'#fff');dot(c,-5,-17,1.2);dot(c,5,-17,1.2);},
+ monk(c){line(c,[[-9,16],[-24,18],[-26,2],[-18,-3]],INK,6);line(c,[[-9,16],[-24,18],[-26,2],[-18,-3]],'#8a5a34',3);oval(c,0,8,13,15,'#8a5a34');oval(c,0,11,8,10,'#e8c79a',0);oval(c,-15,8,4,10,'#8a5a34');oval(c,15,8,4,10,'#8a5a34');oval(c,-12,-14,5,5,'#8a5a34');oval(c,12,-14,5,5,'#8a5a34');dot(c,-12,-14,2.4,'#e8c79a');dot(c,12,-14,2.4,'#e8c79a');oval(c,0,-13,12,11,'#8a5a34');oval(c,0,-10,8.5,7.5,'#e8c79a',0);dot(c,-3.5,-13,1.7);dot(c,3.5,-13,1.7);line(c,[[-3,-6],[0,-4],[3,-6]],INK,2);},
+ zebra(c){[-14,-8,10,16].forEach(x=>{rect(c,x-2.5,8,5,14,'#fff',2.5);rect(c,x-2.5,16,5,3,INK,0);});line(c,[[-22,-2],[-28,6],[-26,12]],INK,3);c.save();c.beginPath();c.ellipse(-2,3,22,12,0,0,6.2832);c.clip();c.fillStyle='#fff';c.fillRect(-30,-12,60,30);c.fillStyle=INK;for(let x=-18;x<=16;x+=7){c.beginPath();c.moveTo(x,-12);c.lineTo(x+4,-12);c.lineTo(x+1,18);c.lineTo(x-3,18);c.fill();}c.restore();c.beginPath();c.ellipse(-2,3,22,12,0,0,6.2832);c.lineWidth=3;c.strokeStyle=INK;c.stroke();poly(c,[[14,-3],[20,-17],[28,-14],[24,0]],'#fff');oval(c,26,-12,8,6,'#fff');oval(c,30,-10,3,2.5,'#444',0);poly(c,[[18,-18],[21,-26],[24,-16]],'#fff',2.5);line(c,[[18,-17],[14,-4]],INK,3);dot(c,25,-15,1.6);},
+ lion(c){[-14,-7,7,13].forEach(x=>rect(c,x-3,9,6,12,'#f0b73c',2.5));line(c,[[-22,2],[-30,-4],[-30,-14]],INK,5);line(c,[[-22,2],[-30,-4],[-30,-14]],'#f0b73c',2);oval(c,-30,-16,4,5,'#c77a1d',2.5);oval(c,-6,5,20,12,'#f0b73c');oval(c,14,-4,16,16,'#c77a1d');oval(c,14,-3,10.5,10,'#f0b73c');oval(c,7,-18,3.5,3.5,'#f0b73c',2.5);oval(c,21,-18,3.5,3.5,'#f0b73c',2.5);dot(c,10,-6);dot(c,18,-6);poly(c,[[12,-2],[16,-2],[14,1]],'#e86a8a',1.5);line(c,[[14,1],[14,4],[10,5]],INK,1.8);line(c,[[14,4],[18,5]],INK,1.8);},
+ giraf(c){c.scale(.78,.78);c.translate(0,8);[-14,-8,8,14].forEach(x=>rect(c,x-2,8,4.5,17,'#f2c14e',2.5));line(c,[[-20,0],[-26,8]],INK,3);oval(c,-2,4,19,10,'#f2c14e');poly(c,[[9,0],[15,-30],[22,-30],[19,0]],'#f2c14e');oval(c,23,-32,8,5,'#f2c14e');line(c,[[20,-37],[19,-43]],INK,3);line(c,[[25,-37],[26,-43]],INK,3);dot(c,19,-43,2);dot(c,26,-43,2);[[-8,2],[0,6],[6,0],[-14,6]].forEach(p=>dot(c,p[0],p[1],3,'#b9742a'));dot(c,15,-14,2.5,'#b9742a');dot(c,17,-24,2.5,'#b9742a');dot(c,26,-33,1.6);dot(c,30,-31,1.2);},
+ slon(c){c.scale(.82,.82);c.translate(-2,4);[-16,-6,10,20].forEach(x=>rect(c,x-4,8,8,16,'#9aa7b5',2.5));oval(c,-4,2,28,17,'#9aa7b5');line(c,[[-30,0],[-34,12]],INK,3);oval(c,22,-5,13,13,'#9aa7b5');oval(c,12,-6,9,13,'#8895a4');line(c,[[32,-2],[38,10],[34,22]],INK,10);line(c,[[32,-2],[38,10],[34,22]],'#9aa7b5',6);poly(c,[[28,6],[40,10],[30,10]],'#fff7e0',2);dot(c,26,-8,2);}
+};
+function drawAnimal(c,k,x,y,s){
+  const im=IMG['an_'+k];
+  if(im){const h=60*s*SPR[k],w=Math.min(h*im.width/im.height,74*s*SPR[k]),hh=w*im.height/im.width;c.drawImage(im,x-w/2,y-hh*.55,w,hh);return;}
+  c.save();c.translate(x,y);c.scale(s,s);c.lineJoin='round';DRAW[k](c);c.restore();}
+function drawCafe(c,x,y){
+  rect(c,x+14,y+34,52,34,'#f7e1b5');rect(c,x+30,y+46,20,22,'#9a6232',2.5);
+  for(let i=0;i<6;i++)poly(c,[[x+10+i*10,y+22],[x+20+i*10,y+22],[x+20+i*10,y+36],[x+10+i*10,y+36]],i%2?'#fff':'#e8604c',2.5);
+  poly(c,[[x+10,y+22],[x+70,y+22],[x+64,y+12],[x+16,y+12]],'#e8604c');
+  oval(c,x+22,y+52,5,5,'#fff',2.5);oval(c,x+58,y+52,5,5,'#ffcf4a',2.5);
+}
+function iconCanvas(k){const c=document.createElement('canvas');c.width=c.height=80;const g=c.getContext('2d');g.fillStyle=k==='cafe'?'#bfe3a0':ANI[k].gr;g.fillRect(0,0,80,80);if(k==='cafe')drawCafe(g,0,0);else drawAnimal(g,k,40,44,k==='slon'||k==='giraf'?.9:.95);return c;}
+
+function fenceLine(c,x1,y1,x2,y2,th){
+  const im=IMG.fence_h,L=Math.hypot(x2-x1,y2-y1),n=Math.max(1,Math.round(L/(th*im.width/im.height))),sl=L/n;
+  c.save();c.translate(x1,y1);c.rotate(Math.atan2(y2-y1,x2-x1));
+  for(let i=0;i<n;i++)c.drawImage(im,i*sl,-th*.6,sl+.5,th);
+  c.restore();
+}
+function hero(name,title,size){return IMGN.includes(name)?`<div class="hero">${imgTag(name,'cover','')}<h2 style="font-size:${size}px">${title}</h2></div>`:`<h2 style="text-align:center;font-size:${size}px">${title}</h2>`;}
+function drawEnc(c,e,time){
+  const x=e.x*CP,y=e.y*CP,w=e.w*CP,h=e.h*CP,A=ANI[e.k];
+  c.fillStyle=A.gr;c.fillRect(x,y,w,h);
+  // сетка м
+  c.strokeStyle='rgba(59,42,26,.10)';c.lineWidth=1;
+  for(let i=1;i<e.w;i++){c.beginPath();c.moveTo(x+i*CP,y);c.lineTo(x+i*CP,y+h);c.stroke();}
+  for(let j=1;j<e.h;j++){c.beginPath();c.moveTo(x,y+j*CP);c.lineTo(x+w,y+j*CP);c.stroke();}
+  // звери
+  const cols=Math.max(1,Math.ceil(Math.sqrt(e.n*e.w/e.h))),rows=Math.ceil(e.n/cols),cw=w/cols,ch=h/rows;
+  const sc=clamp(Math.min(cw,ch)/52,.28,1.05);
+  for(let i=0;i<e.n;i++){
+    const cx=x+(i%cols+.5)*cw,cy=y+(Math.floor(i/cols)+.55)*ch,bob=Math.sin(time*3+i*1.7+e.id)*1.2;
+    drawAnimal(c,e.k,cx,cy+bob,sc);
+    if(i<e.sick){c.fillStyle='#e8604c';c.fillRect(cx-1.5,cy-14*sc-6,3,8);c.fillRect(cx-4,cy-14*sc-3.5,8,3);}
+  }
+  // забор
+  if(IMG.fence_h){fenceLine(c,x,y,x+w,y,13);fenceLine(c,x+w,y,x+w,y+h,10);fenceLine(c,x+w,y+h,x,y+h,13);fenceLine(c,x,y+h,x,y,10);}
+  else{c.lineWidth=5;c.strokeStyle=INK;c.strokeRect(x,y,w,h);c.lineWidth=2.6;c.strokeStyle='#d9a066';c.strokeRect(x,y,w,h);}
+  [[0,0],[w,0],[0,h],[w,h]].forEach(p=>rect(c,x+p[0]-3,y+p[1]-3,6,6,'#b9783a',2));
+  if(e.id===selId){c.lineWidth=3;c.strokeStyle='#ffcf4a';c.strokeRect(x-4,y-4,w+8,h+8);}
+  if(tutor()&&crowded(e)){oval(c,x+w-6,y+6,7,7,'#e8604c',2);c.fillStyle='#fff';c.font='bold 10px sans-serif';c.textAlign='center';c.fillText('!',x+w-6,y+10);}
+}
+function drawPerson(c,x,y,col,t,a){
+  const im=a&&IMG[a.spr];
+  if(im){const h=a.spr==='vis_boy'||a.spr==='vis_girl'?24:30,w=h*im.width/im.height,bob=Math.abs(Math.sin(t*9+x*.1))*1.2;
+    oval(c,x,y+4,5,2,'rgba(0,0,0,.18)',0);c.save();c.translate(x,y+4-bob);if(a.dir<0)c.scale(-1,1);c.drawImage(im,-w/2,-h,w,h);c.restore();return;}
+  oval(c,x,y+4,5,2,'rgba(0,0,0,.2)',0);rect(c,x-3,y-5,6,7,col,1.6);oval(c,x,y-8,3.3,3.3,'#f7d2a8',1.6);
+}
+function pat(name,size){
+  if(!IMG[name])return null;
+  if(!PAT[name]){const p=ctx.createPattern(IMG[name],'repeat');if(p&&p.setTransform)p.setTransform(new DOMMatrix().scale(size/IMG[name].width));PAT[name]=p;}
+  return PAT[name];
+}
+function render(time){
+  if(!S)return;
+  const H=S.rows*CP,sc=cv.width/(COLS*CP);
+  ctx.setTransform(sc,0,0,sc,0,0);
+  const pg=pat('bg_grass',120),pp=pat('bg_path',90);
+  ctx.fillStyle=pg||'#a6d874';ctx.fillRect(0,0,COLS*CP,H);
+  if(!pg)for(let y=0;y<S.rows;y++)for(let x=0;x<COLS;x++)if((x+y)%2)ctx.fillStyle='rgba(255,255,255,.06)',ctx.fillRect(x*CP,y*CP,CP,CP);
+  // дорожка слева и площадь у ворот
+  ctx.fillStyle=pp||'#ecd7a4';ctx.fillRect(0,0,CP,H);ctx.fillRect(0,(S.rows-2)*CP,COLS*CP,2*CP);
+  if(pp){ctx.strokeStyle='rgba(59,42,26,.35)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(CP,0);ctx.lineTo(CP,(S.rows-2)*CP);ctx.lineTo(COLS*CP,(S.rows-2)*CP);ctx.stroke();}
+  else{ctx.fillStyle='#d9c48a';for(let x=2;x<COLS*CP;x+=24)ctx.fillRect(x,(S.rows-1)*CP+6,12,3);}
+  // ворота
+  const gx=10*CP;
+  rect(ctx,gx-30,(S.rows-2)*CP+2,10,30,'#c97d3c',2.5);rect(ctx,gx+20,(S.rows-2)*CP+2,10,30,'#c97d3c',2.5);rect(ctx,gx-34,(S.rows-2)*CP-4,68,16,'#4aa8d8',2.5);
+  ctx.fillStyle='#fff';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.fillText(T("gfx_001","ЗООПАРК"),gx,(S.rows-2)*CP+8);
+  S.enc.forEach(e=>drawEnc(ctx,e,time));
+  if(S.cafe){
+    if(IMG.cafe){const im=IMG.cafe,w=4*CP*1.25,h=w*im.height/im.width;ctx.drawImage(im,S.cafe.x*CP+2*CP-w/2,(S.cafe.y+3)*CP-h+4,w,h);}
+    else{ctx.save();ctx.translate(S.cafe.x*CP,S.cafe.y*CP);ctx.scale(4*CP/80,3*CP/60);ctx.translate(0,-10);drawCafe(ctx,0,0);ctx.restore();}
+  }
+  if(IMG.kassa){const k=Math.min(S.duty.kassa,4),w=34,h=w*IMG.kassa.height/IMG.kassa.width;for(let i=0;i<k;i++)ctx.drawImage(IMG.kassa,gx+44+i*(w-4),(S.rows-1)*CP+CP-h,w,h);}
+  if(IMG.fence_post)S.enc.forEach(e=>{[[0,0],[e.w,0],[0,e.h],[e.w,e.h]].forEach(p=>{const im=IMG.fence_post,h=15,w=h*.3*im.width/im.height;ctx.drawImage(im,0,0,im.width*.3,im.height,(e.x+p[0])*CP-w/2,(e.y+p[1])*CP-h+4,w,h);});});
+  if(sim){
+    sim.agents.forEach(a=>drawPerson(ctx,a.x,a.y,a.col,time,a));
+    sim.pops.forEach(p=>{ctx.globalAlpha=Math.max(0,1-p.age/1.2);ctx.fillStyle='#1e6b2c';ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.strokeText(p.txt,p.x,p.y-p.age*22);ctx.fillText(p.txt,p.x,p.y-p.age*22);ctx.globalAlpha=1;});
+  }
+}
+function fitCanvas(){
+  if(!S){cv.width=720;cv.height=720;return;}
+  const dpr=Math.min(window.devicePixelRatio||1,2),w=Math.max(360,Math.round(cv.clientWidth*dpr||360));
+  cv.width=w;cv.height=Math.round(w*S.rows*CP/(COLS*CP));
+}
+
+/* ================= СИМУЛЯЦИЯ ДНЯ ================= */
+const PCOL=['#e8604c','#4aa8d8','#f2b632','#7ac26b','#b57edc','#f08cb0'];
+function mkAgent(g,targets){
+  const gate={x:10,y:S.rows-1};let cur=gate;const wp=[];
+  const n=Math.min(targets.length,ri(1,3));
+  for(let i=0;i<n;i++){
+    const t=pick(targets),p=bfs(g,cur,t);
+    if(!p)continue;p.forEach((c,k)=>wp.push({x:(c.x+.5)*CP,y:(c.y+.5)*CP,wait:k===p.length-1?ri(8,14)/10:0}));cur=t;
+  }
+  const back=bfs(g,cur,gate);if(back)back.forEach(c=>wp.push({x:(c.x+.5)*CP,y:(c.y+.5)*CP,wait:0}));
+  return{x:(gate.x+.5)*CP,y:(gate.y+.5)*CP,col:pick(PCOL),spr:pick(['vis_man','vis_woman','vis_boy','vis_girl']),dir:1,wp,i:0,wait:0};
+}
+function targetsList(g){
+  const out=[];
+  const ring=(x,y,w,h)=>{const c=[];for(let xx=x-1;xx<=x+w;xx++)for(let yy=y-1;yy<=y+h;yy++){if(xx<0||yy<0||xx>=COLS||yy>=S.rows)continue;if(xx>=x&&xx<x+w&&yy>=y&&yy<y+h)continue;if(!g[yy][xx])c.push({x:xx,y:yy});}return c;};
+  S.enc.forEach(e=>{const c=ring(e.x,e.y,e.w,e.h);if(c.length)out.push(pick(c));});
+  if(S.cafe){const c=ring(S.cafe.x,S.cafe.y,4,3);if(c.length)out.push(pick(c));}
+  return out;
+}
+function startSim(){
+  if(!S.cafe&&S.duty.cafe>0)S.duty.cafe=0;
+  const r=computeDay(false);
+  sim={t:0,T:10,r,entered:0,agents:[],pops:[],speed:1,cash:0,g:occGrid()};
+  mode='sim';selId=0;
+  renderAll();
+}
+function updateSim(dt){
+  const s=sim,d=dt*s.speed;s.t+=d;
+  const tgt=Math.min(s.r.served,Math.floor(s.r.served*Math.min(1,s.t/s.T)));
+  while(s.entered<tgt){
+    s.entered++;
+    const pr=s.entered<=s.r.adults?S.price.a:S.price.c;
+    s.cash+=pr;if(s.pops.length<10)s.pops.push({x:(10+ (Math.random()*2-1))*CP,y:(S.rows-2)*CP,age:0,txt:'+'+pr});
+    const every=Math.max(1,Math.ceil(s.r.served/40));
+    if(s.entered%every===0&&s.agents.length<40){const tl=targetsList(s.g);if(tl.length)s.agents.push(mkAgent(s.g,tl));}
+  }
+  s.pops.forEach(p=>p.age+=d);s.pops=s.pops.filter(p=>p.age<1.2);
+  s.agents.forEach(a=>{
+    let left=75*d;
+    while(left>0&&a.i<a.wp.length){
+      if(a.wait>0){const w=Math.min(a.wait,left/75);a.wait-=w;left-=w*75;if(a.wait>0)break;a.i++;continue;}
+      const p=a.wp[a.i],dx=p.x-a.x,dy=p.y-a.y,dist=Math.hypot(dx,dy);
+      if(dist<=left){a.x=p.x;a.y=p.y;left-=dist;a.wait=p.wait||0;if(!a.wait)a.i++;}
+      else{a.x+=dx/dist*left;a.y+=dy/dist*left;left=0;}
+      if(Math.abs(dx)>.5)a.dir=dx>0?1:-1;
+    }
+  });
+  s.agents=s.agents.filter(a=>a.i<a.wp.length);
+  const bar=$('#simBar');if(bar)bar.style.width=Math.min(100,s.t/s.T*100)+'%';
+  const live=$('#simLive');if(live)live.innerHTML=T("sim_001","Гостей: <b>{0}</b> из {1} · билеты: <b>{2}</b>",[s.entered,s.r.served,money(s.cash)]);
+  if(s.t>=s.T&&s.entered>=s.r.served)finishDay();
+}
+function finishDay(){
+  const r=sim.r,dayNo=S.day;
+  commitDay(r);sim=null;mode='over';save();renderAll();showReport(r,dayNo);
+}
+
+/* ================= КАРТОЧКИ и ВВОД ЧИСЕЛ ================= */
+function card(html){$('#card').innerHTML=html;$('#ov').classList.remove('hidden');$('#card').scrollTop=0;}
+function closeCard(){$('#ov').classList.add('hidden');}
+let AK=null;
+function ask(cfg){
+  AK={cfg,vals:{},act:cfg.fields[0].id};
+  cfg.fields.forEach(f=>AK.vals[f.id]=f.val!==undefined?String(f.val):'');
+  mode='over';
+  const flds=cfg.fields.map(f=>`<div class="fld" data-act="fld" data-f="${f.id}" id="fld_${f.id}"><span>${f.label}</span><b id="fv_${f.id}">—</b><small>${f.unit||''}</small></div>`).join('');
+  const keys=[1,2,3,4,5,6,7,8,9].map(n=>`<button class="btn" data-act="key" data-k="${n}">${n}</button>`).join('')
+    +`<button class="btn alt" data-act="kback">⌫</button><button class="btn" data-act="key" data-k="0">0</button><button class="btn alt" data-act="knext">${cfg.fields.length>1?'→':'C'}</button>`;
+  card(`<div class="head"><span>${cfg.title}</span>${cfg.tag?`<span class="tag">${cfg.tag}</span>`:''}</div>
+    ${cfg.preview?'<canvas id="askPrev" width="720" height="260" style="width:100%;height:130px;border:3px solid var(--ink);border-radius:10px;background:#fff"></canvas>':''}
+    <div class="q" id="askInfo" style="font-size:14.5px"></div>${flds}
+    <div class="pad">${keys}</div>
+    <div class="row"><button class="btn go grow" data-act="kok">${cfg.ok||T("card_001","Готово")}</button>${cfg.cancel===false?'':'<button class="btn alt grow" data-act="kcancel">'+(cfg.cancelText||T("card_002","Отмена"))+'</button>'}</div>
+    ${(cfg.extra||[]).map((x,i)=>`<button class="btn alt" data-act="kextra" data-i="${i}" style="min-height:38px;font-size:14px">${x.label}</button>`).join('')}`);
+  updateAsk();
+}
+function askNums(){const o={};for(const k in AK.vals)o[k]=AK.vals[k]===''?NaN:Number(AK.vals[k]);return o;}
+function updateAsk(){
+  const c=AK.cfg,v=askNums();
+  c.fields.forEach(f=>{$('#fv_'+f.id).textContent=AK.vals[f.id]||'—';$('#fld_'+f.id).classList.toggle('on',f.id===AK.act);});
+  const inf=$('#askInfo');inf.innerHTML=typeof c.info==='function'?c.info(v):(c.info||'');inf.style.display=inf.innerHTML?'':'none';
+  if(c.preview){const cc=$('#askPrev'),g=cc.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cc.width,cc.height);c.preview(g,v,cc.width,cc.height);}
+}
+function askKey(d){const f=AK.cfg.fields.find(x=>x.id===AK.act);const cur=AK.vals[AK.act];if(cur.length>=(f.max||7))return;AK.vals[AK.act]=(cur==='0'?'':cur)+d;updateAsk();}
+
+/* ================= ПОЛУЧЕНИЕ НАГРАД ================= */
+function coin(n=1){S.coins+=n;renderHud();}
+
+/* ================= ПАНЕЛИ ================= */
+function renderHud(){
+  if(!S)return;
+  $('#hDay').textContent=T("panel_001","День {0}/{1}",[Math.min(S.day,DAYS),DAYS]);
+  $('#hMoney').textContent=money(S.money);
+  $('#hRep').textContent='★ '+num((S.rep/20).toFixed(1));
+  $('#hCoin').innerHTML=imgTag('coin_know','ic','◎')+' '+S.coins;
+}
+function renderInfo(){
+  if(!S)return;const el=$('#info');
+  if(mode==='sim'){el.innerHTML=T("panel_003","<b>Идёт день {0}</b>{1}<br>Гости ходят по дорожкам, у ворот звенят монеты.",[S.day,isWeekend(S.day)?T("panel_002"," · выходной"):'']);return;}
+  const parts=[];
+  parts.push(T("panel_005","<b>День {0}</b>{1}",[S.day,isWeekend(S.day)?T("panel_004"," · <b>выходной: гостей ×1,4</b>"):'']));
+  if(S.heat>0)parts.push(T("panel_006","Жара: вода ×2, гостей −10 %"));
+  if(S.epi)parts.push(T("panel_007","<span class=\"warn\">Эпидемия!</span>"));
+  if(S.insp===S.day)parts.push(T("panel_008","<span class=\"warn\">Сегодня инспектор!</span>"));
+  else if(S.insp===S.day+1)parts.push(T("panel_009","<span class=\"warn\">Завтра проверка инспектора</span>"));
+  const a=animalsN(),r=computeDay(true);
+  let l2=T("panel_010","Животных: <b>{0}</b> · вольеры: <b>{1} м²</b> · свободно земли: {2} м²",[a,areaTot(),freeArea()]);
+  if(!tutor()||true)l2+=T("panel_011"," · база гостей: <b>{0}</b> взр. + <b>{1}</b> дет.",[Math.round(r.a0),Math.round(r.c0)]);
+  el.innerHTML=parts.join(' · ')+'<br>'+l2;
+}
+function freeArea(){return Math.max(0,(S.rows-2)*(COLS-1)-areaTot()-(S.cafe?12:0));}
+const kv=(a,b)=>`<div class="kv"><span>${a}</span><b>${b}</b></div>`;
+const TABS=[['enc',T("panel_012","Вольеры")],['staff',T("panel_013","Люди")],['price',T("panel_014","Цены")],['stock',T("panel_015","Склад")],['bank',T("panel_016","Банк")]];
+function renderTabs(){
+  $('#tabs').innerHTML=TABS.map(t=>`<button class="tab ${t[0]===tab?'on':''}" data-act="tab" data-t="${t[0]}">${imgTag('ic_'+t[0],'tic','')}<span>${t[1]}</span></button>`).join('');
+}
+function renderFoot(){
+  const f=$('#pfoot');
+  if(mode==='sim'){f.innerHTML=`<button class="btn alt" data-act="speed">×${sim.speed}</button>`;return;}
+  f.innerHTML=T("panel_018","<button class=\"btn alt\" data-act=\"check\">Проверка {0}</button><button class=\"btn go\" data-act=\"open\">Открыть день ▶</button>",[tutor()?T("panel_017","(беспл.)"):'◎1']);
+}
+function encRow(e){
+  return T("panel_021","<div class=\"erow {0}\" data-act=\"selenc\" data-id=\"{1}\"><canvas width=\"68\" height=\"68\" data-k=\"{2}\"></canvas><div class=\"grow\"><b>{3} × {4}</b><br><span class=\"hint\">{5}×{6} м{7}{8}</span></div></div>",[e.id===selId?'on':'',e.id,e.k,ANI[e.k].name,e.n,e.w,e.h,e.sick?T("panel_019"," · <span class=\"warn\">больных: {0}</span>",[e.sick]):'',tutor()&&crowded(e)?T("panel_020"," · <span class=\"warn\">тесно!</span>"):'']);
+}
+function renderPanel(){
+  const p=$('#pcontent');renderTabs();renderFoot();
+  if(mode==='sim'){p.innerHTML=T("panel_022","<div class=\"head\"><span>Рабочий день</span></div><div class=\"bar\" style=\"height:14px;border:3px solid var(--ink);border-radius:8px;background:#fff;overflow:hidden\"><i id=\"simBar\" style=\"display:block;height:100%;background:var(--green);width:0\"></i></div><div class=\"hint\" id=\"simLive\"></div><div class=\"hint\">Касса пропускает {0} гостей, спрос был {1}.</div>",[sim.r.cap,sim.r.demand]);return;}
+  let h='';
+  if(tab==='enc'){
+    const e=S.enc.find(x=>x.id===selId);
+    if(e){
+      const A=ANI[e.k],area=e.w*e.h;
+      h+=T("panel_023","<div class=\"head\"><span>{0} × {1}</span><button class=\"btn sm alt\" data-act=\"unsel\">Назад</button></div>",[A.name,e.n]);
+      h+=kv(T("panel_024","Размер вольера"),T("panel_025","{0} × {1} м",[e.w,e.h]))+kv(T("panel_026","Норма на особь"),T("panel_027","{0} м²",[A.area]))+kv(T("panel_028","Корм"),T("panel_029","{0} кг в день на животное",[A.kg]))+kv(T("panel_030","Привлекает"),T("panel_031","{0} гостей (1-е животное)",[A.vis]))+kv(T("panel_032","Больных"),e.sick||0);
+      if(tutor())h+=`<div class="${crowded(e)?'warn':'good'}">${crowded(e)?T("panel_033","Тесно: на особь меньше нормы. Животные болеют!"):T("panel_034","Места хватает.")}</div>`;
+      h+=T("panel_035","<div class=\"row\"><button class=\"btn sm grow\" data-act=\"addan\">+ животные</button><button class=\"btn sm alt grow\" data-act=\"sellan\">Продать</button></div><button class=\"btn sm red\" data-act=\"demol\">Снести вольер</button>");
+    } else {
+      h+=T("panel_036","<div class=\"head\"><span>Вольеры ({0})</span><button class=\"btn sm go\" data-act=\"newenc\">+ Новый</button></div>",[S.enc.length]);
+      h+=`<div class="elist">${S.enc.map(encRow).join('')||T("panel_037","<div class=\"hint\">Пока пусто.</div>")}</div>`;
+      h+=S.cafe?T("panel_038","<div class=\"hint\">Кафе: {0},{1} (4×3 м)</div>",[S.cafe.x,S.cafe.y]):T("panel_039","<button class=\"btn sm alt\" data-act=\"buycafe\">Построить кафе 4×3 м · {0}</button>",[money(CAFE_PRICE)]);
+      h+=T("panel_040","<div class=\"hint\">Тапни вольер на карте или в списке. Цена, норма м² и корм — в «Новый».</div>");
+    }
+  }
+  else if(tab==='staff'){
+    const d=S.duty,used=d.feed+d.clean+d.kassa+d.cafe,free=S.staff.w-used;
+    h+=T("panel_041","<div class=\"row\">{0}<div class=\"grow\"><b>Работники: {1}</b><br><span class=\"hint\">{2} в день каждому</span></div><div class=\"step\"><button class=\"btn\" data-act=\"fire\" data-t=\"w\">−</button><button class=\"btn\" data-act=\"hire\" data-t=\"w\">+</button></div></div>",[imgTag('worker','pic',''),S.staff.w,money(SAL_W)]);
+    h+=T("panel_042","<div class=\"row\">{0}<div class=\"grow\"><b>Ветеринары: {1}</b><br><span class=\"hint\">{2} в день каждому</span></div><div class=\"step\"><button class=\"btn\" data-act=\"fire\" data-t=\"v\">−</button><button class=\"btn\" data-act=\"hire\" data-t=\"v\">+</button></div></div>",[imgTag('vet','pic',''),S.staff.v,money(SAL_V)]);
+    h+=T("panel_043","<div class=\"head\"><span>Поручения на сегодня</span><span class=\"{0}\">свободно: {1}</span></div>",[free<0?'warn':'',free]);
+    const duties=[['feed',T("panel_044","Кормление"),T("panel_045","1 раб. = {0} животных",[N_FEED])],['clean',T("panel_046","Уборка"),T("panel_047","1 раб. = {0} м² вольеров",[N_CLEAN])],['kassa',T("panel_048","Касса"),T("panel_049","1 раб. = {0} гостей",[N_KASSA])],['cafe',T("panel_050","Кафе"),T("panel_049","1 раб. = {0} гостей",[N_CAFE])]];
+    duties.forEach(x=>{h+=`<div class="row"><div class="grow"><b>${x[1]}</b><br><span class="hint">${x[2]}</span></div><div class="step"><button class="btn" data-act="dm" data-d="${x[0]}">−</button><b>${d[x[0]]}</b><button class="btn" data-act="dp" data-d="${x[0]}">+</button></div></div>`;});
+    h+=T("panel_052","<div class=\"hint\">Лечение: 1 ветеринар = {0} больных. Сегодня животных: <b>{1}</b>, площадь вольеров: <b>{2} м²</b>. Посчитай, хватит ли людей!{3}</div>",[N_VET,animalsN(),areaTot(),S.cafe?'':T("panel_051"," Кафе не построено.")]);
+  }
+  else if(tab==='price'){
+    h+=T("panel_053","<div class=\"head\"><span>Цены</span><button class=\"btn sm go\" data-act=\"setprice\">Изменить</button></div>");
+    h+=kv(T("panel_054","Билет взрослый"),T("panel_055","{0} (база {1})",[money(S.price.a),BASE_A]))+kv(T("panel_056","Билет детский"),T("panel_055","{0} (база {1})",[money(S.price.c),BASE_C]))+kv(T("panel_057","Обед в кафе"),T("panel_055","{0} (база {1})",[money(S.price.m),BASE_M]));
+    const r=computeDay(true);
+    h+=kv(T("panel_058","База гостей"),T("panel_059","взр. {0} · дет. {1}",[Math.round(r.a0),Math.round(r.c0)]))+kv(T("panel_060","Репутация"),`×${num(r.repMult.toFixed(2))}`);
+    h+=T("panel_061","<div class=\"hint\"><b>Правило:</b> +10 % к цене — минус 8 % гостей, −10 % — плюс 8 %. База гостей посчитана при базовых ценах. Касса пропускает {0} гостей на кассира: если не хватает — подними цену. Выходные и школа меняют спрос.</div>",[N_KASSA]);
+  }
+  else if(tab==='stock'){
+    h+=T("panel_062","<div class=\"row\">{0}<div class=\"grow hint\">Запас корма и забора. Закупай заранее: корм списывается каждый день.</div></div>",[imgTag('food_bag','pic','')]);
+    h+=kv(T("panel_063","Корм на складе"),T("panel_064","{0} кг",[Math.round(S.stock.food)]))+kv(T("panel_065","Цена корма (средняя)"),T("panel_066","{0} ₽/кг",[num(foodAvg().toFixed(1))]))+kv(T("panel_067","Забор на складе"),T("panel_068","{0} м",[S.stock.fence]));
+    h+=T("panel_070","<div class=\"hint\"><b>Норма корма в день:</b><br>{0}</div>",[S.enc.map(e=>T("panel_069","{0} × {1} — по {2} кг",[ANI[e.k].name,e.n,ANI[e.k].kg])).join('<br>')||'—']);
+    h+=T("panel_071","<div class=\"row\"><button class=\"btn sm grow\" data-act=\"buyfood\">Корм, кг · {0} ₽</button><button class=\"btn sm grow\" data-act=\"buybag\">Мешки {1} кг · {2}</button></div><button class=\"btn sm alt\" data-act=\"buyfence\">Забор, м · {3} ₽/м</button>",[P_FOOD,BAG,P_BAG,P_FENCE]);
+    h+=T("panel_072","<div class=\"hint\">Оптом выгоднее: мешок {0} кг дешевле розницы. Корм списывается каждый день. Забор: нехватку докупят срочно по {1} ₽/м.</div>",[BAG,P_FENCE_X]);
+  }
+  else {
+    h+=kv(T("panel_073","Деньги"),money(S.money))+kv(T("panel_074","Капитал"),money(capital()));
+    h+=T("panel_075","<div class=\"head\"><span>Земля</span><button class=\"btn sm go\" data-act=\"buyland\">Купить</button></div>")+kv(T("panel_076","Участок"),T("panel_077","{0} × {1} м = {2} м²",[COLS,S.rows,COLS*S.rows]))+kv(T("panel_078","Цена"),T("panel_079","{0} ₽ за м²",[landPrice()]));
+    h+=T("panel_080","<div class=\"hint\">Один ряд земли = {0} м². Каждая покупка поднимает цену на 50 ₽/м². Нижние 2 ряда — ворота, левый ряд — дорожка.</div>",[COLS]);
+    h+=T("panel_081","<div class=\"head\"><span>Кредит</span></div>");
+    if(S.loan)h+=kv(T("panel_082","Долг"),money(S.loan.total))+kv(T("panel_083","Вернуть на день"),S.loan.due)+T("panel_084","<button class=\"btn sm alt\" data-act=\"repay\">Вернуть досрочно</button>");
+    else h+=T("panel_085","<div class=\"hint\">Не более {0}, под 10 % на 10 дней.</div><button class=\"btn sm go\" data-act=\"takeloan\">Взять кредит</button>",[money(LOAN_MAX)]);
+    h+=T("panel_086","<div class=\"head\"><span>Цели</span></div><div class=\"hint\">День 10: 30 гостей за день {0}<br>День 30: 15 животных {1}<br>День 60: прибыль 100 000 ₽ (сейчас {2})</div>",[S.goals.d10===true?'✓':S.goals.d10===false?'✗':'',S.goals.d30===true?'✓':S.goals.d30===false?'✗':'',money(S.stats.profit)]);
+  }
+  p.innerHTML=h;
+  p.querySelectorAll('canvas[data-k]').forEach(c=>{const g=c.getContext('2d');g.scale(68/80,68/80);g.drawImage(iconCanvas(c.dataset.k),0,0);});
+}
+function renderAll(){renderHud();renderInfo();renderPanel();fitCanvas();}
+
+/* ================= ДЕЙСТВИЯ ================= */
+function openBuilder(k){
+  const A=ANI[k];
+  ask({title:T("x_001","Вольер: {0}",[A.name]),tag:T("x_002","норма {0} м²",[A.area]),
+    fields:[{id:'w',label:T("x_003","Ширина"),unit:T("task_010","м"),max:2},{id:'h',label:T("x_004","Длина"),unit:T("task_010","м"),max:2},{id:'n',label:T("x_005","Животных"),unit:T("task_006","шт"),max:2},{id:'s',label:T("x_006","Площадь (сам посчитай)"),unit:T("task_002","м²"),max:4},{id:'f',label:T("x_007","Заказ забора (сам посчитай)"),unit:T("task_010","м"),max:4}],
+    info:v=>T("x_011","Животное: {0} · корм {1} кг/день · забор {2} ₽/м (на складе {3} м, нехватка — {4} ₽/м){5}",[money(A.price),A.kg,P_FENCE,S.stock.fence,P_FENCE_X,tutor()&&v.w>0&&v.h>0&&v.n>0?T("x_010","<br>На особь: {0} м² — {1}",[num((v.w*v.h/v.n).toFixed(1)),v.w*v.h>=v.n*A.area?T("x_008","<span class=\"good\">хватает</span>"):T("x_009","<span class=\"warn\">тесно!</span>")]):'']),
+    preview:(g,v,W,H)=>{
+      g.fillStyle='#f3ead0';g.fillRect(0,0,W,H);
+      if(!(v.w>0&&v.h>0))return;
+      const sc=Math.min((W-80)/v.w,(H-60)/v.h,40),w=v.w*sc,h=v.h*sc,x=(W-w)/2,y=(H-h)/2+6;
+      g.fillStyle=A.gr;g.fillRect(x,y,w,h);g.strokeStyle='rgba(59,42,26,.18)';g.lineWidth=1;
+      for(let i=1;i<v.w;i++){g.beginPath();g.moveTo(x+i*sc,y);g.lineTo(x+i*sc,y+h);g.stroke();}
+      for(let j=1;j<v.h;j++){g.beginPath();g.moveTo(x,y+j*sc);g.lineTo(x+w,y+j*sc);g.stroke();}
+      g.lineWidth=6;g.strokeStyle=INK;g.strokeRect(x,y,w,h);
+      g.fillStyle=INK;g.font='bold 24px sans-serif';g.textAlign='center';g.fillText(v.w+T("x_012"," м"),W/2,y-8);g.save();g.translate(x-14,y+h/2);g.rotate(-Math.PI/2);g.fillText(v.h+T("x_012"," м"),0,0);g.restore();
+      if(v.n>0)drawAnimal(g,k,W/2,y+h/2+6,Math.min(1.6,sc*Math.min(v.w,v.h)/60));
+    },
+    ok:T("x_013","Построить"),
+    onOk:v=>{
+      if(!(v.w>=1&&v.h>=1&&v.n>=1)){toast(T("x_014","Укажи ширину, длину и число животных"));return false;}
+      if(!(v.f>=0)||isNaN(v.f)||isNaN(v.s)){toast(T("x_015","Посчитай площадь и забор и впиши их"));return false;}
+      if(v.w>18||v.h>18){toast(T("x_016","Не больше 18 м по стороне"));return false;}
+      const res=doBuild(k,v.n,v.w,v.h,v.s,v.f);
+      if(res.err){toast(res.err);return false;}
+      showBuildResult(res);return true;
+    }});
+}
+function doBuild(k,n,w,h,sTyped,fOrd){
+  const A=ANI[k],spot=findSpot(w,h);
+  if(!spot)return{err:T("x_017","Нет места такого размера: докупи землю или уменьши вольер")};
+  const area=w*h,P=2*(w+h),have=S.stock.fence+fOrd,miss=Math.max(0,P-have);
+  const cost=n*A.price+fOrd*P_FENCE+miss*P_FENCE_X;
+  if(cost>S.money)return{err:T("x_018","Не хватает {0}",[money(cost-S.money)])};
+  S.money-=cost;S.stock.fence=have+miss-P;
+  S.enc.push({id:S.nid++,k,n,w,h,x:spot.x,y:spot.y,sick:0});
+  return{ok:true,k,n,w,h,area,P,miss,fOrd,cost,areaOk:sTyped===area,fenceOk:fOrd===P,crowd:area<n*A.area};
+}
+function showBuildResult(r){
+  const A=ANI[r.k];let coinGot=false;
+  if(r.areaOk&&r.miss===0){coinGot=true;coin(1);}
+  save();renderAll();
+  card(T("x_027","<h2>Вольер построен</h2><table class=\"sum\">\n    <tr><td>Площадь</td><td>{0} м² {1}</td></tr>\n    <tr><td>Периметр (забор)</td><td>{2} м</td></tr>\n    <tr><td>Заказано забора</td><td>{3} м {4}</td></tr>\n    <tr><td>Потрачено</td><td>{5}</td></tr></table>\n    {6}\n    {7}\n    <button class=\"btn go\" data-act=\"close\">Хорошо</button>",[r.area,r.areaOk?T("x_019","✓ верно"):T("x_020","(ты написал другое)"),r.P,r.fOrd,r.miss?T("x_021","· не хватило {0} м, докупили по {1} ₽",[r.miss,P_FENCE_X]):r.fOrd>r.P?T("x_022","· осталось на складе"):T("x_023","· ровно"),money(r.cost),r.crowd?T("x_024","<div class=\"bad\">Тесно! Норма {0} м² на особь, а у тебя {1}. Животные будут болеть.</div>",[A.area,num((r.area/r.n).toFixed(1))]):T("x_025","<div class=\"ok\">Места хватает: {0} м² на особь (норма {1}).</div>",[num((r.area/r.n).toFixed(1)),A.area]),coinGot?T("x_026","<div class=\"ok\">+1 монета знаний: площадь верна, забор заказан без доплаты.</div>"):'']));
+}
+function openShop(){
+  const g=AIDS.map(k=>{const A=ANI[k];return T("x_028","<button class=\"item {0}\" data-act=\"shopk\" data-k=\"{1}\"><canvas width=\"80\" height=\"80\" data-k=\"{2}\"></canvas><b>{3}</b><span>{4}</span><small>{5} м² · {6} кг · +{7}</small></button>",[S.money<A.price?'no':'',k,k,A.name,A.price.toLocaleString('ru-RU'),A.area,A.kg,A.vis]);}).join('');
+  card(T("x_029","<div class=\"head\"><span>Какое животное?</span><button class=\"btn sm alt\" data-act=\"close\">Закрыть</button></div><div class=\"grid\">{0}</div><div class=\"hint\">Под ценой: норма м² на особь · корм кг в день · гостей в день.</div>",[g])+(AIDS.some(k=>S.money<ANI[k].price)?'<div class="hint">'+T("lock_001","Серые карточки пока не по карману: откроются, когда накопишь денег на цену животного. Деньги приносят гости и верные ответы.")+'</div>':''));
+  $('#card').querySelectorAll('canvas[data-k]').forEach(c=>c.getContext('2d').drawImage(iconCanvas(c.dataset.k),0,0));
+}
+function simpleAsk(title,label,unit,info,onOk,extra){
+  ask({title,fields:[{id:'x',label,unit,max:6}],info,ok:T("card_001","Готово"),onOk:v=>{if(!(v.x>0)){toast(T("x_030","Введи число больше нуля"));return false;}return onOk(v.x);},...extra});
+}
+function doAct(a,b){
+  switch(a){
+  case 'tab':tab=b.dataset.t;selId=0;renderPanel();break;
+  case 'selenc':selId=+b.dataset.id;tab='enc';renderPanel();break;
+  case 'unsel':selId=0;renderPanel();break;
+  case 'newenc':openShop();break;
+  case 'shopk':openBuilder(b.dataset.k);break;
+  case 'gift':claimGift();return;
+  case 'prem':if(window.Premium)Premium.openShop();return;
+  case 'close':closeCard();mode='idle';renderAll();break;
+  case 'lang':PF.put('zoopark-lang',LANG==='en'?'ru':'en');location.reload();return;
+  case 'buycafe':
+    if(S.money<CAFE_PRICE){toast(T("x_018","Не хватает {0}",[money(CAFE_PRICE-S.money)]));break;}
+    {const sp=findSpot(4,3);if(!sp){toast(T("x_031","Нет места 4×3 м"));break;}S.money-=CAFE_PRICE;S.cafe={x:sp.x,y:sp.y};save();renderAll();toast(T("x_032","Кафе построено: поставь повара в «Люди»"));}
+    break;
+  case 'addan':{const e=S.enc.find(x=>x.id===selId);if(!e)break;const A=ANI[e.k];
+    simpleAsk(T("x_033","Добавить: {0}",[A.name]),T("x_034","Сколько животных"),T("task_006","шт"),T("x_035","{0} за штуку. Сейчас {1}, вольер {2} м², норма {3} м² на особь.",[money(A.price),e.n,e.w*e.h,A.area]),x=>{const c=x*A.price;if(c>S.money){toast(T("x_018","Не хватает {0}",[money(c-S.money)]));return false;}S.money-=c;e.n+=x;save();renderAll();closeCard();mode='idle';return true;});break;}
+  case 'sellan':{const e=S.enc.find(x=>x.id===selId);if(!e)break;const A=ANI[e.k];
+    simpleAsk(T("x_036","Продать: {0}",[A.name]),T("x_034","Сколько животных"),T("task_006","шт"),T("x_037","Возврат 70 % цены: {0} за штуку. Сейчас {1}.",[money(A.price*SELL_K),e.n]),x=>{if(x>e.n){toast(T("x_038","Столько нет"));return false;}S.money+=Math.round(x*A.price*SELL_K);e.n-=x;e.sick=Math.min(e.sick,e.n);if(e.n===0){S.enc=S.enc.filter(z=>z!==e);selId=0;}save();renderAll();closeCard();mode='idle';return true;});break;}
+  case 'demol':{const e=S.enc.find(x=>x.id===selId);if(!e)break;yesNo(T("x_039","Снести вольер? Животные продаются за 70 %, забор вернётся на склад."),()=>{S.money+=Math.round(e.n*ANI[e.k].price*SELL_K);S.stock.fence+=2*(e.w+e.h);S.enc=S.enc.filter(z=>z!==e);selId=0;save();renderAll();});break;}
+  case 'hire':{const t=b.dataset.t;if(S.staff.w+S.staff.v>=14){toast(T("x_040","Не больше 14 сотрудников"));break;}S.staff[t]++;save();renderAll();break;}
+  case 'fire':{const t=b.dataset.t;if(S.staff[t]<=0)break;const d=S.duty;if(t==='w'&&S.staff.w-1<d.feed+d.clean+d.kassa+d.cafe){toast(T("x_041","Сначала сними человека с поручения"));break;}S.staff[t]--;save();renderAll();break;}
+  case 'dp':{const d=S.duty,k=b.dataset.d;if(k==='cafe'&&!S.cafe){toast(T("x_042","Сначала построй кафе"));break;}if(d.feed+d.clean+d.kassa+d.cafe>=S.staff.w){toast(T("x_043","Нет свободных работников — найми ещё"));break;}d[k]++;save();renderAll();break;}
+  case 'dm':{const d=S.duty,k=b.dataset.d;if(d[k]>0)d[k]--;save();renderAll();break;}
+  case 'setprice':
+    ask({title:T("panel_014","Цены"),fields:[{id:'a',label:T("x_044","Взрослый"),unit:'₽',val:S.price.a,max:4},{id:'c',label:T("x_045","Детский"),unit:'₽',val:S.price.c,max:4},{id:'m',label:T("x_046","Обед"),unit:'₽',val:S.price.m,max:4}],
+      info:v=>T("x_047","Базовые цены: {0} / {1} / {2} ₽.<br>+10 % к цене → −8 % гостей. Подсчитай сам, что выгоднее.",[BASE_A,BASE_C,BASE_M]),
+      ok:T("x_048","Сохранить"),onOk:v=>{if(!(v.a>=10&&v.c>=10&&v.m>=10)){toast(T("x_049","Цены от 10 ₽"));return false;}S.price={a:v.a,c:v.c,m:v.m};save();closeCard();mode='idle';renderAll();return true;}});break;
+  case 'buyfood':simpleAsk(T("x_050","Корм в розницу"),T("x_051","Сколько кг"),T("task_018","кг"),T("x_052","{0} ₽ за кг. На складе {1} кг.",[P_FOOD,Math.round(S.stock.food)]),x=>{const c=x*P_FOOD;if(c>S.money){toast(T("x_018","Не хватает {0}",[money(c-S.money)]));return false;}S.money-=c;S.stock.food+=x;S.stock.foodVal+=c;save();closeCard();mode='idle';renderAll();toast(T("x_053","Куплено {0} кг за {1}",[x,money(c)]));return true;});break;
+  case 'buybag':simpleAsk(T("x_054","Корм оптом"),T("x_055","Сколько мешков"),T("x_056","меш."),T("x_057","Мешок {0} кг = {1} ({2} ₽/кг, розница {3}).",[BAG,money(P_BAG),P_BAG/BAG,P_FOOD]),x=>{const c=x*P_BAG;if(c>S.money){toast(T("x_018","Не хватает {0}",[money(c-S.money)]));return false;}S.money-=c;S.stock.food+=x*BAG;S.stock.foodVal+=c;save();closeCard();mode='idle';renderAll();toast(T("x_053","Куплено {0} кг за {1}",[x*BAG,money(c)]));return true;});break;
+  case 'buyfence':simpleAsk(T("x_058","Забор"),T("x_059","Сколько метров"),T("task_010","м"),T("x_060","{0} ₽ за метр. На складе {1} м.",[P_FENCE,S.stock.fence]),x=>{const c=x*P_FENCE;if(c>S.money){toast(T("x_018","Не хватает {0}",[money(c-S.money)]));return false;}S.money-=c;S.stock.fence+=x;save();closeCard();mode='idle';renderAll();return true;});break;
+  case 'buyland':{const maxR=Math.floor((44-S.rows)/ROW_STEP);if(maxR<=0){toast(T("x_061","Земля закончилась"));break;}
+    ask({title:T("x_062","Купить землю"),fields:[{id:'x',label:T("x_063","Сколько рядов"),unit:T("x_064","ряд"),max:2}],info:v=>T("x_066","1 ряд = {0} м² ({1} × 1 м). Цена: {2} ₽ за м².{3}",[COLS,COLS,landPrice(),v.x>0?T("x_065","<br>Итого: {0} м² за {1}",[v.x*COLS,money(v.x*COLS*landPrice())]):'']),ok:T("x_067","Купить"),
+      onOk:v=>{if(!(v.x>0)||v.x>maxR){toast(T("x_068","От 1 до {0} рядов",[maxR]));return false;}const c=v.x*COLS*landPrice();if(c>S.money){toast(T("x_018","Не хватает {0}",[money(c-S.money)]));return false;}S.money-=c;S.landPaid+=c;S.rows+=v.x*ROW_STEP;S.landBuys++;save();closeCard();mode='idle';renderAll();toast(T("x_069","Участок вырос до {0} м²",[COLS*S.rows]));return true;}});break;}
+  case 'takeloan':
+    simpleAsk(T("x_070","Кредит"),T("x_071","Сумма"),'₽',T("x_072","До {0} под {1} % на {2} дней. Вернуть нужно будет сумму плюс проценты — сам посчитай, сколько.",[money(LOAN_MAX),LOAN_RATE*100,LOAN_DAYS]),x=>{
+      if(x>LOAN_MAX){toast(T("x_073","Не больше {0}",[money(LOAN_MAX)]));return false;}S.loan={amt:x,total:Math.round(x*(1+LOAN_RATE)),due:S.day+LOAN_DAYS};S.money+=x;save();closeCard();mode='idle';renderAll();toast(T("x_074","Кредит взят. Вернуть {0} на {1}-й день",[money(S.loan.total),S.loan.due]));return true;});break;
+  case 'repay':if(S.money<S.loan.total){toast(T("x_018","Не хватает {0}",[money(S.loan.total-S.money)]));break;}S.money-=S.loan.total;S.loan=null;save();renderAll();toast(T("x_075","Кредит погашен"));break;
+  case 'check':runCheck();break;
+  case 'open':
+    if(S.duty.kassa<1){yesNo(T("x_076","На кассе никого нет — гостей не будет. Всё равно открыть день?"),()=>startSim());break;}
+    startSim();break;
+  case 'speed':sim.speed=sim.speed===1?2:1;renderFoot();break;
+  }
+}
+function runCheck(){
+  if(!tutor()){if(S.coins<1){card(T("x_077","<h2>Проверка-калькулятор</h2><p>Нужна 1 монета знаний. Получи монету за верный ответ на задачу.</p><button class=\"btn go\" data-act=\"ad\">Ролик → ◎1</button><button class=\"btn alt\" data-act=\"close\">Закрыть</button>"));return;}S.coins--;renderHud();}
+  const r=computeDay(true),an=animalsN(),need=foodNeed();
+  const lines=[];
+  lines.push([T("x_078","Гостей ждём"),`${r.demand}`]);
+  lines.push([T("x_079","Касса пропустит"),`${r.cap} (${S.duty.kassa} × ${N_KASSA})`+(r.lost?T("x_080"," — не войдут {0}",[r.lost]):'')]);
+  lines.push([T("x_081","Корм: нужно / есть"),T("x_082","{0} кг / {1} кг",[need,Math.round(S.stock.food)])+(S.stock.food<need?T("x_083"," — не хватит!"):'')]);
+  lines.push([T("x_084","Кормят"),T("x_085","{0} из {1} животных",[S.duty.feed*N_FEED,an])]);
+  lines.push([T("x_086","Убирают"),T("x_087","{0} из {1} м²",[Math.min(areaTot(),S.duty.clean*N_CLEAN),areaTot()])]);
+  lines.push([T("x_088","Тесных вольеров"),r.crowded]);
+  lines.push([T("x_089","Ожидаемая прибыль"),money(r.profit)]);
+  card(T("x_090","<h2>Проверка-калькулятор</h2><table class=\"sum\">{0}</table><p class=\"hint\">Прогноз приблизительный: болезни и случайности в нём не учтены.</p><button class=\"btn go\" data-act=\"close\">Понятно</button>",[lines.map(l=>`<tr><td>${l[0]}</td><td>${l[1]}</td></tr>`).join('')]));
+}
+
+/* ================= ДЕНЬ: утро, события, задача ================= */
+function startDay(){
+  PF.setPlaying(true);
+  if(S.day>DAYS){showFinal();return;}
+  if(S.day>=3&&!S.morning){
+    // события
+    const wk=isWeekend(S.day),r=Math.random();
+    if(r<.07&&animalsN()>=3)S.epi=true;
+    else if(r<.14&&S.heat<=0)S.heat=2;
+    else if(r<.26&&!wk&&S.insp!==S.day){const n=ri(20,50),p=pick([10,15,20,25,30]);S.exc={n,p};}
+    if(S.insp<S.day&&Math.random()<.08&&S.day<DAYS)S.insp=S.day+1;
+  }
+  S.morning=true;
+  if(!S.task||S.taskDone)S.task=genTask();
+  S.taskDone=false;
+  save();renderAll();showMorning();
+}
+function showMorning(){
+  mode='over';
+  const ev=[];
+  if(S.day===1)ev.push(['',T("x_091","<b>Добро пожаловать, директор!</b> У тебя ") + money(START_MONEY) + T("x_092",", участок 20×20 м и маленький зоопарк: кролики, козы и пингвины. Купи животных, найми людей, поставь цены и открой день. Цели: 30 гостей к дню 10, 15 животных к дню 30, прибыль 100 000 ₽ к дню 60. Задачи — это счёт зоопарка: верный ответ приносит деньги и монеты знаний.")]);
+  if(S.epi)ev.push(['ev_epi',T("x_093","<b>Эпидемия!</b> Заболеют до 40 % животных. Ветеринар лечит 15 больных в день.")]);
+  if(S.heat>0)ev.push(['ev_heat',T("x_094","<b>Жара.</b> Воды нужно вдвое больше, гостей на 10 % меньше.")]);
+  if(S.insp===S.day)ev.push(['ev_insp',T("x_095","<b>Сегодня проверка инспектора!</b> За каждый тесный вольер — штраф 5 000 ₽ и −5 репутации.")]);
+  else if(S.insp===S.day+1)ev.push(['ev_insp',T("x_096","<b>Завтра придёт инспектор.</b> Проверь, хватает ли каждому зверю места по норме!")]);
+  if(isWeekend(S.day))ev.push(['',T("x_097","<b>Выходной:</b> гостей на 40 % больше. Хватит ли касс?")]);
+  if(S.exc)ev.push(['ev_exc',T("x_098","<b>Школьная экскурсия:</b> придут {0} детей со скидкой {1} % на детский билет.",[S.exc.n,S.exc.p])]);
+  card(T("x_100","<h2>Утро, день {0}</h2>{1}<button class=\"btn go\" data-act=\"{2}\">Дальше ▶</button>",[S.day,ev.map(x=>`<div class="q evrow" style="font-size:14px">${x[0]?imgTag(x[0],'evi',''):''}<div>${x[1]}</div></div>`).join('')||T("x_099","<p>Всё спокойно. Время работать!</p>"),S.exc?'excask':'taskgo']));
+}
+function excAsk(){
+  const e=S.exc,pr=Math.round(S.price.c*(1-e.p/100));
+  ask({title:T("x_101","Школьная экскурсия"),tag:T("x_102","проценты"),fields:[{id:'x',label:T("x_103","Школа заплатит"),unit:'₽',max:7}],
+    info:T("x_104","Приходят {0} детей. Детский билет сегодня {1} ₽, школе скидка {2} %. Сколько рублей заплатит вся школа?",[e.n,S.price.c,e.p]),ok:T("x_105","Ответить"),cancelText:T("x_106","Пропустить"),
+    onOk:v=>{
+      const right=e.n*pr;
+      if(v.x===right){coin(1);S.rep=clamp(S.rep+2,0,100);toast(T("x_107","Верно! +1 монета, репутация +2"));}else toast(T("x_108","Верно было: {0} × {1} = {2}",[e.n,pr,money(right)]));
+      save();renderAll();showMorning2();return true;
+    },extra:[]});
+  AK.cancelFn=()=>{showMorning2();};
+}
+function showMorning2(){card(T("x_109","<h2>Экскурсия записана</h2><p>Группа придёт сегодня. Не забудь про кассу: детей станет больше.</p><button class=\"btn go\" data-act=\"taskgo\">Дальше ▶</button>"));}
+function showTask(){
+  const t=S.task;
+  ask({title:T("x_110","День {0}: задача директора",[S.day]),tag:GRADE[t.tier-1],fields:[{id:'x',label:T("x_111","Ответ"),unit:t.u,max:8}],info:t.q,ok:T("x_105","Ответить"),cancelText:T("x_106","Пропустить"),
+    onOk:v=>{if(isNaN(v.x)){toast(T("x_112","Сначала введи ответ"));return false;}answerTask(v.x,false);return true;}});
+  AK.cancelFn=()=>answerTask(null,true);
+}
+function answerTask(x,skip){
+  const t=S.task;let html,ok=false;
+  if(skip){S.stats.skip++;html=T("x_113","<div class=\"bad\"><b>Пропущено.</b><br>Верный ответ: <b>{0} {1}</b><br><small>{2}</small></div>",[num(t.a),t.u,t.sol]);}
+  else if(Math.abs(x-t.a)<1e-6){ok=true;S.stats.right++;S.money+=t.reward;coin(1);html=T("x_117","<div class=\"ok\"><b>Верно! +{0} и ◎1</b><br>{1}<br><small>{2}</small></div>",[money(t.reward),pick([T("x_114","Директор доволен!"),T("x_115","Так держать!"),T("x_116","Бухгалтерия аплодирует!")]),t.sol]);}
+  else{const fine=Math.min(S.money,Math.round(t.reward/2/10)*10);S.stats.wrong++;S.money-=fine;html=T("x_118","<div class=\"bad\"><b>Не совсем. −{0}</b><br>Верный ответ: <b>{1} {2}</b><br><small>{3}</small></div>",[money(fine),num(t.a),t.u,t.sol]);}
+  S.taskDone=true;save();renderAll();
+  card(T("x_121","<h2>{0}</h2><div class=\"q\" style=\"font-size:14px\">{1}</div>{2}<button class=\"btn go\" data-act=\"close\">К делам ▶</button>",[ok?T("x_119","Отлично!"):T("x_120","Разбор задачи"),t.q,html]));
+}
+
+/* ================= ОТЧЁТ ДНЯ ================= */
+function reportQuestion(r){
+  const qs=[];
+  if(r.rev>0&&r.foodCost>0)qs.push({q:T("x_122","Выручка за день {0}, на корм ушло {1}. Сколько процентов выручки ушло на корм? (округли до целого)",[money(r.rev),money(r.foodCost)]),a:Math.round(r.foodCost/r.rev*100),tol:1,u:'%',sol:`${Math.round(r.foodCost)} ÷ ${Math.round(r.rev)} × 100 ≈ ${Math.round(r.foodCost/r.rev*100)} %`});
+  if(r.rev>0&&r.sal>0)qs.push({q:T("x_123","Выручка {0}, зарплаты {1}. Сколько процентов выручки составили зарплаты? (округли до целого)",[money(r.rev),money(r.sal)]),a:Math.round(r.sal/r.rev*100),tol:1,u:'%',sol:`${r.sal} ÷ ${Math.round(r.rev)} × 100 ≈ ${Math.round(r.sal/r.rev*100)} %`});
+  if(r.served>0)qs.push({q:T("x_124","Пришло {0} гостей, выручка {1}. Сколько рублей выручки в среднем на одного гостя? (округли до целого)",[r.served,money(r.rev)]),a:Math.round(r.rev/r.served),tol:2,u:'₽',sol:`${Math.round(r.rev)} ÷ ${r.served} ≈ ${Math.round(r.rev/r.served)}`});
+  if(r.adults+r.kids>0)qs.push({q:T("x_125","Из {0} гостей детей было {1}. Сколько процентов гостей — дети? (округли до целого)",[r.adults+r.kids,r.kids]),a:Math.round(r.kids/(r.adults+r.kids)*100),tol:1,u:'%',sol:`${r.kids} ÷ ${r.adults+r.kids} × 100 ≈ ${Math.round(r.kids/(r.adults+r.kids)*100)} %`});
+  qs.push({q:T("x_126","Расходы за день: корм {0}, зарплаты {1}, вода {2}. Сколько рублей это всего? (округли до целого)",[money(r.foodCost),money(r.sal),money(r.water)]),a:Math.round(r.foodCost+r.sal+r.water),tol:1,u:'₽',sol:`${Math.round(r.foodCost)} + ${r.sal} + ${r.water}`});
+  return pick(qs);
+}
+function showReport(r,dayNo){
+  const rows=[[T("x_127","Гостей обслужено"),T("x_129","{0} (взр. {1}, дет. {2}{3})",[r.served,r.adults,r.kids,r.grp?T("x_128",", школа {0}",[r.grp]):''])],
+    ...(r.lost?[[T("x_130","Ушли из-за очереди"),r.lost]]:[]),
+    [T("x_131","Выручка: билеты"),money(r.revTick)],[T("x_132","Выручка: кафе"),money(r.revCafe)],
+    [T("panel_028","Корм"),money(-r.foodCost)],[T("x_133","Зарплаты"),money(-r.sal)],[T("x_134","Вода"),money(-r.water)],...(r.costMeals?[[T("x_135","Продукты кафе"),money(-r.costMeals)]]:[])];
+  if(r.interest)rows.push([T("x_136","Проценты по кредиту"),money(-r.interest)]);
+  if(r.fine)rows.push([T("x_137","Штраф инспектора"),money(-r.fine)]);
+  const why=r.why.map(w=>`${w[0]}: ${w[1]>0?'+':''}${num(w[1].toFixed(1))}`).join(' · ');
+  const q=reportQuestion(r);r._q=q;
+  card(T("x_139","<h2>Отчёт дня {0}</h2><table class=\"sum\">{1}<tr class=\"sub\"><td>Прибыль</td><td class=\"{2}\">{3}</td></tr></table>\n   <div class=\"hint\">Репутация {4}{5}: {6}</div>\n   {7}{8}\n   <button class=\"btn go\" data-act=\"repq\">Вопрос по отчёту ▶</button><button class=\"btn alt\" data-act=\"nextday\" style=\"min-height:38px;font-size:14px\">Пропустить вопрос</button>",[dayNo,rows.map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td></tr>`).join(''),r.profit>=0?'good':'warn',money(r.profit),r.dRep>=0?'+':'',num(r.dRep.toFixed(1)),why,r.loanNote?`<div class="bad">${r.loanNote}</div>`:'',r.goalNote?`<div class="${r.goalNote.includes(T("x_138","не"))?'bad':'ok'}">${r.goalNote}</div>`:'']));
+  showReport.last=r;
+}
+function askReportQ(){
+  const q=showReport.last._q;
+  ask({title:T("x_140","Вопрос по отчёту"),tag:T("x_141","проценты и деньги"),fields:[{id:'x',label:T("x_111","Ответ"),unit:q.u,max:7}],info:q.q,ok:T("x_105","Ответить"),cancelText:T("x_106","Пропустить"),
+    onOk:v=>{if(isNaN(v.x)){toast(T("x_142","Введи число"));return false;}
+      if(Math.abs(v.x-q.a)<=q.tol){S.rep=clamp(S.rep+3,0,100);S.stats.repQ++;coin(1);save();card(T("x_143","<h2>Верно!</h2><div class=\"ok\">Репутация +3 и ◎1.<br><small>{0}</small></div><button class=\"btn go\" data-act=\"nextday\">Следующий день ▶</button>",[q.sol]));}
+      else card(T("x_144","<h2>Не совсем</h2><div class=\"bad\">Верный ответ: <b>{0} {1}</b><br><small>{2}</small></div><button class=\"btn go\" data-act=\"nextday\">Следующий день ▶</button>",[q.a,q.u,q.sol]));
+      renderHud();return true;}});
+  AK.cancelFn=()=>nextDay();
+}
+function nextDay(){
+  S.morning=false;
+  if(S.day>DAYS||S.money<-50000){showFinal();return;}
+  PF.interstitial(()=>{closeCard();startDay();try{if(window.Premium)Premium.maybeCard();}catch(e){}});
+}
+function showFinal(){
+  PF.setPlaying(false);
+  const cap=capital(),st=starsOf(cap),best=lsGet(BEST_KEY),isBest=!best||cap>best.capital;
+  if(isBest)lsSet(BEST_KEY,{capital:cap,stars:st});
+  lsDel(SAVE_KEY);mode='over';
+  const goal=S.stats.profit>=100000;
+  card(T("x_154","{0}<div class=\"stars\">{1}{2}</div>\n    <table class=\"sum\"><tr><td>Капитал</td><td>{3}</td></tr><tr><td>Прибыль за всё время</td><td>{4} {5}</td></tr>\n    <tr><td>Гостей всего</td><td>{6}</td></tr><tr><td>Животных</td><td>{7}</td></tr><tr><td>Репутация</td><td>★ {8}</td></tr>\n    <tr><td>Верных ответов (задачи / отчёты)</td><td>{9} / {10}</td></tr><tr><td>Рекорд</td><td>{11}</td></tr></table>\n    <p>{12}{13}</p><button class=\"btn go\" data-act=\"new\">Сыграть ещё</button>",[hero('final_win',T("x_145","Зоопарк работает<br>")+DAYS+T("x_146"," дней!"),26),'★'.repeat(st),'☆'.repeat(3-st),money(cap),money(S.stats.profit),goal?T("x_147","✓ цель 100 000"):T("x_148","✗ цель 100 000"),S.stats.vis,animalsN(),num((S.rep/20).toFixed(1)),S.stats.right,S.stats.repQ,money(isBest?cap:best.capital),isBest?T("x_149","Новый рекорд! "):'',st===3?T("x_150","Зоопарк мечты!"):st===2?T("x_151","Отличный зоопарк!"):st===1?T("x_152","Зоопарк на плаву."):T("x_153","В следующий раз выйдет лучше.")]));
+  premUi();
+}
+function showStart(){
+  PF.setPlaying(false);
+  const sv=lsGet(SAVE_KEY),best=lsGet(BEST_KEY);mode='over';
+  card(T("x_159","{0}<p style=\"text-align:center\">Управляй зоопарком 60 дней: бюджет, земля, работники, цены. Считай — и зоопарк процветёт.</p>\n    {1}\n    {2}",[hero('cover_start',T("x_155","Зоопарк"),44),best?T("x_156","<p style=\"text-align:center\">Рекорд: <b>{0}</b> {1}</p>",[money(best.capital),'★'.repeat(best.stars)]):'',sv&&sv.v===2?T("x_157","<button class=\"btn go\" data-act=\"continue\">Продолжить (день {0})</button><button class=\"btn alt\" data-act=\"new\">Новая игра</button>",[sv.day]):T("x_158","<button class=\"btn go\" data-act=\"new\">Играть</button>")]));
+  premUi();
+}
+function showMenu(){
+  if(mode==='sim')return;
+  card(T("x_160","<h2>Меню</h2><p><b>Как играть.</b> Каждый день: задача → вольеры, люди, цены, корм → «Открыть день». Гостей приходит тем больше, чем интереснее животные и выше репутация, и тем меньше, чем дороже билет. Касса пропускает 60 гостей на кассира. Тесно животным — болеют. Считай сам: площадь, забор, корм, зарплаты, проценты.</p>\n    <div class=\"row\"><button class=\"btn alt grow\" data-act=\"ad\">Ролик → ◎1</button><button class=\"btn go grow\" data-act=\"close\">Играть</button></div><button class=\"btn red\" data-act=\"restart\">Начать заново</button>")+(hasEN()?'<button class="btn sm alt" data-act="lang">RU ⇄ EN</button>':''));
+  premUi();
+}
+function startGame(){S=newState();save();fitCanvas();startDay();}
+
+/* ================= СОБЫТИЯ ВВОДА ================= */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const a=b.dataset.act;
+  switch(a){
+  case 'fld':AK.act=b.dataset.f;updateAsk();return;
+  case 'key':askKey(b.dataset.k);return;
+  case 'kback':AK.vals[AK.act]=AK.vals[AK.act].slice(0,-1);updateAsk();return;
+  case 'knext':{const ids=AK.cfg.fields.map(f=>f.id),i=ids.indexOf(AK.act);if(ids.length>1)AK.act=ids[(i+1)%ids.length];else AK.vals[AK.act]='';updateAsk();return;}
+  case 'kok':{const r=AK.cfg.onOk(askNums());if(r===true){/* закрытие внутри onOk */}return;}
+  case 'kcancel':{const f=AK.cfg.cancelFn||AK.cancelFn;if(f)f();else{closeCard();mode=S?'idle':'over';if(S)renderAll();}return;}
+  case 'kextra':AK.cfg.extra[+b.dataset.i].fn();return;
+  case 'taskgo':showTask();return;
+  case 'excask':excAsk();return;
+  case 'repq':askReportQ();return;
+  case 'nextday':nextDay();return;
+  case 'ad':watchAd();return;
+  case 'new':startGame();return;
+  case 'continue':{const sv=lsGet(SAVE_KEY);if(sv&&sv.v===2){S=sv;PF.setPlaying(true);fitCanvas();renderAll();if(!S.taskDone)showMorning();else{closeCard();mode='idle';renderAll();}}else startGame();return;}
+  case 'restart':yesNo(T("x_161","Начать заново? Весь прогресс будет потерян."),startGame);return;
+  case 'yes':{const f=YN;YN=null;closeCard();mode='idle';if(f)f();return;}
+  case 'no':YN=null;closeCard();mode=S?'idle':'over';if(S)renderAll();return;
+  }
+  doAct(a,b);
+});
+$('#btnMenu').addEventListener('click',()=>{if(S&&mode!=='sim')showMenu();});
+$('#hCoin').addEventListener('click',()=>{if(S&&mode!=='sim'&&!window.GPLAY)watchAd();});
+cv.addEventListener('click',ev=>{
+  if(!S||mode==='sim'||mode==='over')return;
+  const r=cv.getBoundingClientRect(),x=Math.floor((ev.clientX-r.left)/r.width*COLS),y=Math.floor((ev.clientY-r.top)/r.height*S.rows);
+  const e=S.enc.find(z=>x>=z.x&&x<z.x+z.w&&y>=z.y&&y<z.y+z.h);
+  if(e){selId=e.id;tab='enc';renderPanel();}else if(selId){selId=0;renderPanel();}
+});
+
+/* ================= ЦИКЛ ================= */
+let last=0;
+function frame(ts){requestAnimationFrame(frame);const dt=Math.min(.05,(ts-last)/1000||0);last=ts;if(sim&&!PF.paused())updateSim(dt);render(ts/1000);}
+window.addEventListener('resize',()=>{if(S)fitCanvas();});
+requestAnimationFrame(frame);
+
+
+document.title=T("meta_001","Зоопарк");
+document.querySelectorAll('[data-i18n-aria]').forEach(e=>e.setAttribute('aria-label',T(e.dataset.i18nAria,e.getAttribute('aria-label'))));
+window.__premUi=premUi;
+PF.onCloud=function(){try{premInit();}catch(e){}if(mode==='over'&&!S&&!$('#ov').classList.contains('hidden'))showStart();};
+showStart();PF.ready();
+}
+</script>
+<script>
+
+var PREM_TEXTS={
+  ru:{perks:["Полноэкранная реклама отключается.","Подарок каждый день: 3 монеты знаний (кнопка в меню).","Ролики за награду остаются как у всех: награда после просмотра. Правила и сложность не меняются."],
+      adTitle:"Надоела реклама?",adText:"Строй вольеры и управляй бюджетом зоопарка без рекламных пауз! Премиум отключает полноэкранную рекламу и дарит подарок каждый день.",
+      endText:"Полноэкранная реклама вернулась, подарок дня закончился. Твой зоопарк продолжает работать!"},
+  en:{perks:["Full-screen ads are disabled.","A gift every day: 3 knowledge coins (button in the menu).","Reward videos work the same for everyone: you get the reward after watching. Rules and difficulty stay the same."],
+      adTitle:"Tired of ads?",adText:"Build animal habitats and manage your zoo budget without ad breaks! Premium disables full-screen ads and gives you a gift every day.",
+      endText:"Full-screen ads are back and the daily gift has ended. Your zoo is still open!"}
+};
+
+/* Правила слияния облака и устройства: побеждает больший прогресс, а не более поздняя запись. */
+function jp(x){try{return JSON.parse(x);}catch(e){return null;}}
+PF.mergers['zoopark-save-v2']=function(a,b){var x=jp(a),y=jp(b);if(!x||!y)return null;if((x.day||0)!==(y.day||0))return(x.day||0)>(y.day||0)?a:b;return null;};
+PF.mergers['zoopark-best-v2']=function(a,b){var x=jp(a),y=jp(b);if(!x||!y)return null;return(x.capital||0)>=(y.capital||0)?a:b;};
+PF.mergers['zoopark-gift']=function(a,b){var x=jp(a),y=jp(b);if(!x||!y)return null;return(x.d||0)>=(y.d||0)?a:b;};
+PF.mergers['zoopark-premium']=function(a,b){return window.Premium&&Premium.mergeState?Premium.mergeState(a,b):null;};
+function premInit(){
+try{Premium.init({sdk:PF.sdk(),lang:LANG,texts:PREM_TEXTS,config:{corner:false},store:{get:function(){return PF.get('zoopark-premium');},set:function(r){PF.put('zoopark-premium',r);},save:function(){return PF.save();}}}).then(function(){try{if(!document.getElementById('ov').classList.contains('hidden'))window.__premUi();}catch(e){}});}catch(e){}
+}
+PF.init().then(function(){LANG=pickLang();document.documentElement.lang=LANG;__start();
+  premInit();
+});
+</script>
+
+</body>
+</html>

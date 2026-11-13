@@ -1,0 +1,6 @@
+/* Кэш для офлайна: все файлы игры. Версию менять при каждой сборке. */
+const CACHE='zoopark-gp-1794545780';
+const FILES=["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "img/an_giraf.webp", "img/an_goat.webp", "img/an_lion.webp", "img/an_monk.webp", "img/an_peng.webp", "img/an_rab.webp", "img/an_slon.webp", "img/an_zebra.webp", "img/bg_grass.webp", "img/bg_path.webp", "img/cafe.webp", "img/coin_know.webp", "img/cover_start.webp", "img/ev_epi.webp", "img/ev_exc.webp", "img/ev_heat.webp", "img/ev_insp.webp", "img/fence_h.webp", "img/fence_post.webp", "img/final_win.webp", "img/food_bag.webp", "img/ic_bank.webp", "img/ic_enc.webp", "img/ic_price.webp", "img/ic_staff.webp", "img/ic_stock.webp", "img/kassa.webp", "img/vet.webp", "img/vis_boy.webp", "img/vis_girl.webp", "img/vis_man.webp", "img/vis_woman.webp", "img/worker.webp"];
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()));});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(r=>r||fetch(e.request)));});
