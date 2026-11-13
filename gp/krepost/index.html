@@ -2093,8 +2093,16 @@ if (window.ResizeObserver) new ResizeObserver(resize).observe(field);
 
 // ---------- Цикл ----------
 let last = 0, uiAcc = 0, mmAcc = 1, MANUAL = false;
+// предохранители (13.11, охота на зависание): один цикл кадров; во скрытой вкладке не считаем и не рисуем;
+// после паузы больше 250 мс (возврат во вкладку, подвисание системы) кадр не догоняет время, а пропускается; шаг не больше 100 мс
+let rafOn = false;
+function startLoop(){ if (rafOn) return; rafOn = true; requestAnimationFrame(frame); }
+const FX_MAX = 300;
 function frame(ts){
-  const raw = last ? Math.min(0.1, (ts - last)/1000) : 0; last = ts;
+  const gap = last ? ts - last : 0; last = ts;
+  const raw = gap > 250 ? 0 : Math.min(0.1, gap/1000);
+  if (document.hidden) { requestAnimationFrame(frame); return; }
+  if (G.fx && G.fx.length > FX_MAX) G.fx.splice(0, G.fx.length - FX_MAX);
   PF.setPlaying(!!B && isPlaying() && !G.paused && !modalOpen());
   if (B && !G.paused && isPlaying() && !MANUAL && !modalOpen() && !PF.paused()) {
     let dt = raw * G.speed;
@@ -2125,7 +2133,7 @@ function boot(){
   const first = CAMPAIGN.find(c => validBattle(BATTLES[c.id]));
   if (first) { prepareBattle(first.id); }
   showMap();
-  requestAnimationFrame(frame);
+  startLoop();
   // платформа: SDK и облачное сохранение; если в облаке прогресс новее — перерисовать карту / экран битвы
   PF.onCloud = () => { if (B && G.state === 'menu') { reset(); if (!$('scrStart').hidden) renderStart(); } if (!$('scrMap').hidden) renderMapList(); fortUI(); if (!scrFort.hidden && !FS.busy) renderFort(); };
   PF.onPause = p => { if (p) saveNow(); };
