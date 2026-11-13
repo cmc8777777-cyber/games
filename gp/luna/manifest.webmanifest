@@ -1,0 +1,32 @@
+{
+ "name": "Лунная база",
+ "short_name": "Лунная база",
+ "description": "Выживание на Луне: считай запасы и переживи 12 лунных ночей.",
+ "lang": "ru",
+ "start_url": "./index.html",
+ "scope": "./",
+ "display": "fullscreen",
+ "orientation": "portrait",
+ "theme_color": "#0b1030",
+ "background_color": "#0b1030",
+ "icons": [
+  {
+   "src": "icons/icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icons/icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icons/maskable-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}

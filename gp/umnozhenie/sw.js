@@ -1,0 +1,9 @@
+/* Service worker: кэширует все файлы игры, работает офлайн. Версия кэша меняется вместе с index.html. */
+var CACHE = 'umn-de81b585';
+var FILES = ["./", "index.html", "manifest.webmanifest", "img/bg_castle.webp", "img/bg_forest.webp", "img/bg_swamp.webp", "img/cover.webp", "img/hero_dragon.webp", "img/hero_fox.webp", "img/hero_knight.webp", "img/hero_robot.webp", "img/ic_bolt.webp", "img/ic_bulb.webp", "img/ic_clock.webp", "img/ic_crown.webp", "img/ic_cup.webp", "img/ic_gear.webp", "img/ic_heart.webp", "img/ic_lock.webp", "img/ic_star.webp", "img/mon_castle_1.webp", "img/mon_castle_2.webp", "img/mon_castle_3.webp", "img/mon_castle_boss.webp", "img/mon_forest_1.webp", "img/mon_forest_2.webp", "img/mon_forest_3.webp", "img/mon_forest_boss.webp", "img/mon_swamp_1.webp", "img/mon_swamp_2.webp", "img/mon_swamp_3.webp", "img/mon_swamp_boss.webp", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png"];
+self.addEventListener('install', function (e) { e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); }).then(function () { return self.skipWaiting(); })); });
+self.addEventListener('activate', function (e) { e.waitUntil(caches.keys().then(function (ks) { return Promise.all(ks.filter(function (k) { return k !== CACHE; }).map(function (k) { return caches.delete(k); })); }).then(function () { return self.clients.claim(); })); });
+self.addEventListener('fetch', function (e) {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(function (r) { return r || fetch(e.request); }));
+});

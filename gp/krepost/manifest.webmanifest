@@ -1,0 +1,32 @@
+{
+ "name": "Битвы истории: защити крепость",
+ "short_name": "Битвы истории",
+ "lang": "ru",
+ "description": "10 битв истории: защити крепость, отвечай на вопросы, узнай, как было на самом деле.",
+ "start_url": "./index.html",
+ "scope": "./",
+ "display": "fullscreen",
+ "orientation": "portrait",
+ "theme_color": "#9d2b1f",
+ "background_color": "#e6dfd0",
+ "icons": [
+  {
+   "src": "icons/icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icons/icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "icons/maskable-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}

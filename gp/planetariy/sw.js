@@ -1,0 +1,6 @@
+/* Service worker: кэш всех файлов для офлайна. Версия меняется при каждой сборке. */
+var CACHE = 'planetariy-7a880150';
+var FILES = ["./", "index.html", "gp-adapter.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "img/bg_w1.webp", "img/bg_w2.webp", "img/sun.webp", "img/cover.webp", "img/mira.webp", "img/mira_think.webp", "img/mira_win.webp", "img/kometa.webp", "img/kometa_hint.webp", "img/stars_pop.webp"];
+self.addEventListener('install', function (e) { e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); }).then(function () { return self.skipWaiting(); })); });
+self.addEventListener('activate', function (e) { e.waitUntil(caches.keys().then(function (ks) { return Promise.all(ks.filter(function (k) { return k !== CACHE; }).map(function (k) { return caches.delete(k); })); }).then(function () { return self.clients.claim(); })); });
+self.addEventListener('fetch', function (e) { var u = new URL(e.request.url); if (u.origin !== location.origin) return; e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(function (r) { return r || fetch(e.request).catch(function () { return caches.match('index.html'); }); })); });

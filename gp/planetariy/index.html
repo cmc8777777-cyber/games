@@ -1,0 +1,931 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<title>Планетарий</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<style>
+:root{--bg:#0b1034;--bg2:#1a2160;--card:#1f2a6e;--card2:#2a378c;--ink:#fff;--muted:#a9b4ff;--gold:#ffd23f;--orange:#ff7a45;--cyan:#5ee0ff;--good:#5ce08a;--bad:#ff6b8a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#050820;color:var(--ink);font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
+#app{position:relative;max-width:480px;height:100vh;height:100dvh;margin:0 auto;overflow:hidden;background:radial-gradient(120% 80% at 50% 0,var(--bg2),var(--bg))}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column}
+.screen[hidden]{display:none}
+.scroll{overflow-y:auto;flex:1;padding:12px 14px 20px}
+button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulation}
+.btn{background:linear-gradient(#ffdc5c,#ffb21f);color:#4a2a00;font-weight:800;border-radius:16px;padding:12px 18px;font-size:17px;box-shadow:0 4px 0 #b97500}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 #b97500}
+.btn.alt{background:linear-gradient(#5b6bff,#3a47d6);color:#fff;box-shadow:0 4px 0 #222c93}
+.btn.ghost{background:rgba(255,255,255,.12);color:#fff;box-shadow:none}
+.btn[disabled]{opacity:.4}
+h1,h2{margin:0}
+/* заставка */
+#scrTitle{align-items:center;justify-content:center;text-align:center;gap:14px;padding:20px}
+#scrTitle .logo{font-size:44px;font-weight:900;color:var(--gold);text-shadow:0 4px 0 #b97500,0 0 30px rgba(255,210,63,.5);letter-spacing:1px}
+#scrTitle .sub{color:var(--muted);margin-bottom:10px}
+#scrTitle .planet{font-size:92px;animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px) rotate(6deg)}}
+#scrTitle .btn{width:240px}
+/* карта уровней */
+.top{display:flex;align-items:center;gap:8px;padding:10px 12px;min-height:50px}
+.top h2{flex:1;font-size:18px}
+.ib{background:rgba(255,255,255,.14);border-radius:12px;min-width:40px;height:40px;font-size:18px;padding:0 10px}
+.world{background:var(--card);border-radius:18px;padding:12px;margin-bottom:12px}
+.world h3{margin:0 0 2px;font-size:17px}
+.world p{margin:0 0 10px;color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.lv{aspect-ratio:1;border-radius:14px;background:var(--card2);font-weight:800;font-size:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.lv small{font-size:11px;color:var(--gold);letter-spacing:-1px;min-height:13px}
+.lv.boss{background:linear-gradient(#ff8a5c,#e0452c)}
+.lv.lock{opacity:.35}
+.lv.next{outline:3px solid var(--gold)}
+.world.soon{opacity:.5}
+/* игра */
+#gTop{display:flex;align-items:center;gap:8px;padding:8px 10px}
+#gTitle{flex:1;font-weight:800;font-size:15px}
+#bubble{display:flex;gap:8px;align-items:center;margin:0 10px;background:rgba(255,255,255,.1);border-radius:16px;padding:8px 10px;min-height:76px}
+#bubble .av{font-size:34px;line-height:1;width:64px;text-align:center}#bubble .av img{width:64px;height:72px;object-fit:contain;display:block}.pane .hero{height:110px;margin:-4px auto 0;display:block}#scrTitle.cov{background-size:cover;background-position:center;justify-content:flex-start;gap:10px;padding-top:34px}#scrTitle.cov .planet{display:none}#scrTitle.cov .sub{margin-bottom:auto;text-shadow:0 2px 6px #000}#scrTitle.cov .btn.ghost{background:rgba(10,14,60,.7)}
+#bubble .tx{flex:1;font-size:15px;line-height:1.25}
+#bubble .tx b{color:var(--gold)}
+#stage{position:relative;flex:1;min-height:0;margin:4px 0}
+#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+#ctl{padding:6px 10px 12px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:8px;justify-content:center;align-items:center}
+.row .btn{padding:10px 12px;font-size:15px}
+.sm{background:rgba(255,255,255,.16);border-radius:12px;padding:9px 11px;font-weight:700;font-size:14px}
+#hintBtn.on{background:var(--gold);color:#4a2a00}
+.cards{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.ccard{background:var(--card);border-radius:16px;padding:8px;width:156px;text-align:center}
+.ccard .cn{font-weight:800;font-size:14px}
+.ccard .dg{font-size:28px;font-weight:900;color:var(--gold)}
+.ccard svg{width:70px;height:70px}
+.ccard .cr{display:flex;gap:6px;justify-content:center;margin-top:4px}
+.ccard .cr button{background:rgba(255,255,255,.18);border-radius:10px;width:44px;height:36px;font-size:20px;font-weight:900}
+.ccard .dy{margin-top:5px;background:rgba(255,255,255,.1);border-radius:10px;font-size:12px;padding:5px 8px;width:100%}
+.ccard.ok{outline:3px solid var(--good)}.ccard.no{outline:3px solid var(--bad)}
+/* результат */
+.modal{background:rgba(5,8,32,.86);align-items:center;justify-content:center;padding:18px;z-index:5}
+.pane{background:var(--card);border-radius:22px;padding:18px;width:100%;max-width:380px;text-align:center}
+.stars{font-size:46px;letter-spacing:4px;color:var(--gold);text-shadow:0 0 18px rgba(255,210,63,.6)}
+.stars i{opacity:.25;font-style:normal}
+.pane .fact{background:rgba(255,255,255,.1);border-radius:14px;padding:10px;margin:12px 0;font-size:14px;text-align:left}
+.pane .fact b{color:var(--cyan)}
+/* викторина */
+#scrQuiz .qq{font-size:20px;font-weight:800;margin:10px 4px 16px;line-height:1.25}
+.opt{display:block;width:100%;background:var(--card2);border-radius:16px;padding:14px;margin-bottom:10px;font-size:16px;font-weight:700;text-align:left}
+.opt.ok{background:#1f9d57}.opt.no{background:#b3304f}
+#qExp{margin:6px 4px;color:var(--muted);font-size:14px;min-height:40px}
+/* журнал */
+.fc{background:var(--card);border-radius:14px;padding:10px 12px;margin-bottom:8px;font-size:14px}
+.fc b{color:var(--cyan);display:block;margin-bottom:2px}
+.fc.lock{opacity:.4}
+.pm-hide .pm-corner{display:none!important}
+#toast{position:absolute;left:14px;right:14px;bottom:24px;z-index:9;background:#ffd23f;color:#4a2a00;font-weight:800;border-radius:14px;padding:12px 14px;text-align:center;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+#toast[hidden]{display:none}
+@supports(padding:max(0px)){.top,#gTop{padding-top:calc(env(safe-area-inset-top,0px) + 8px)}#ctl{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 12px)}#scrTitle{padding-top:calc(env(safe-area-inset-top,0px) + 20px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 20px)}.scroll{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 20px)}}
+#pks .opt{padding:10px 12px;font-size:14px;margin-bottom:6px}
+.world .lh{color:var(--gold);font-weight:700}
+.world.wlock{opacity:.85}
+.pm-on .top{padding-right:128px}
+.pm-corner{--pm-paper:#1f2a6e;--pm-ink:#fff;--paper:#1f2a6e;--fg:#fff}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);max-width:88vw;background:#101a3a;color:#fff;border:1px solid #6fd3ff;border-radius:14px;padding:10px 16px;font-weight:700;font-size:15px;text-align:center;opacity:0;pointer-events:none;transition:opacity .2s;z-index:99}#toast.on{opacity:1}
+</style><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0b1034"><link rel="icon" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/icon-192.png"></head><body><div id="toast"></div>
+<div id="app">
+ <div id="toast" hidden></div>
+ <div class="screen" id="scrTitle">
+  <div class="planet">🌍</div>
+  <div class="logo" data-t="logo">ПЛАНЕТАРИЙ</div>
+  <div class="sub" data-t="title.sub">Крути Землю — разгадывай космос</div>
+  <button class="btn" id="bPlay" data-t="title.play">Играть</button>
+  <button class="btn alt" id="bRepeat" data-t="title.repeat">Повторение</button>
+  <button class="btn ghost" id="bJournal" data-t="title.journal">Журнал наблюдений</button>
+  <button class="btn ghost" id="bLang" hidden style="font-size:13px;padding:8px 14px;width:auto">English</button>
+  <button class="btn ghost" id="bReset" data-t="title.reset" style="font-size:13px;padding:8px 14px;width:auto">Сбросить прогресс</button>
+ </div>
+
+ <div class="screen" id="scrMap" hidden>
+  <div class="top"><button class="ib" data-go="title">←</button><h2 data-t="map.title">Миры</h2><span id="mapStars" style="color:var(--gold);font-weight:800"></span></div>
+  <div class="scroll" id="worlds"></div>
+ </div>
+
+ <div class="screen" id="scrGame" hidden>
+  <div id="gTop"><button class="ib" id="gBack">←</button><div id="gTitle"></div><button class="ib" id="gHint">💡 <span id="hn">3</span></button></div>
+  <div id="bubble"><div class="av" id="av">🧑‍🚀</div><div class="tx" id="msg"></div></div>
+  <div id="stage"><canvas id="cv"></canvas></div>
+  <div id="ctl"></div>
+ </div>
+
+ <div class="screen" id="scrQuiz" hidden>
+  <div class="top"><button class="ib" id="qBack">←</button><h2 id="qTitle" data-t="quiz.title">Викторина</h2><span id="qProg" style="color:var(--gold);font-weight:800"></span></div>
+  <div class="scroll"><div class="qq" id="qq"></div><div id="qo"></div><div id="qExp"></div><button class="btn" id="qNext" hidden style="width:100%" data-t="res.next">Дальше</button></div>
+ </div>
+
+ <div class="screen" id="scrJournal" hidden>
+  <div class="top"><button class="ib" data-go="title">←</button><h2 data-t="journal.title">Журнал наблюдений</h2><span id="jCnt" style="color:var(--gold);font-weight:800"></span></div>
+  <div class="scroll" id="jList"></div>
+ </div>
+
+ <div class="screen modal" id="scrRes" hidden>
+  <div class="pane">
+   <div id="rHero"></div><h2 id="rTitle"></h2>
+   <div class="stars" id="rStars"></div>
+   <div class="fact" id="rFact"></div>
+   <div class="row"><button class="btn ghost" id="rAgain" data-t="res.again">Ещё раз</button><button class="btn" id="rNext" data-t="res.next">Дальше</button></div>
+   <div class="row" style="margin-top:8px"><button class="btn ghost" id="rMap" style="font-size:14px" data-t="res.map">К уровням</button></div>
+  </div>
+ </div>
+</div>
+
+<script>window.I18N_EN={"logo": "PLANETARIUM", "title.sub": "Spin Earth — explore space", "title.play": "Play", "title.repeat": "Practice", "title.journal": "Observation Journal", "title.reset": "Reset Progress", "title.reset_ask": "Erase progress? Tap again", "title.reset_done": "Progress erased", "map.title": "Worlds", "map.world": "World {n}. {name}", "map.soon": "{sub} — coming soon", "quiz.title": "Quiz", "quiz.boss": "Boss {n}", "quiz.right": "Correct!", "quiz.wrong": "Not quite.", "journal.title": "Observation Journal", "journal.obs": "Observation {n}", "journal.locked": "Unlocks after you finish the level.", "game.title": "Level {n} · {w}", "game.w1": "Day and Night", "game.w2": "Time Zones", "ctl.rew": "🎬 Watch an ad for the answer", "ctl.m1h": "⟲ −1 hr", "ctl.m15": "−15 min", "ctl.p15": "+15 min", "ctl.p1h": "+1 hr ⟳", "ctl.ok": "Done ✓", "day.m1": "yesterday", "day.0": "today", "day.1": "tomorrow", "day.label": "day: {d}", "rew.spin": "🎬 Comet spun Earth for you. Tap \"Done\".", "rew.clock": "🎬 Comet showed the answer. Tap \"Done\".", "hint.ring": "💡 The golden ring on Earth shows where the city should be.", "hint.clock2": "💡 You can now see the time in the right cities on Earth. Set the clocks to match.", "hint.auto.spin": "💡 Comet spun Earth for you. Tap \"Done\".", "hint.auto.clock": "💡 Comet gave you a hint. Tap \"Done\".", "err.spin": "🐱 Not quite. In {city}, it's <b>{now}<\/b>, but it should be <b>{need}<\/b>. Keep spinning!", "err.between": "between {a} and {b}", "err.clock": "🐱 Something's not right. Look at Earth: farther east means a later time. Move east, add an hour.", "res.great": "Great job!", "res.boss_win": "Boss defeated! {n} out of 5", "res.boss_lose": "Correct answers: {n} out of 5. You need 4", "res.lose_text": "That's okay! Play the levels again and try once more. You'll get new questions each time.", "res.journal": "📖 Observation Journal:", "res.next": "Next", "res.next_repeat": "Next (Practice)", "res.again": "Try Again", "res.map": "Levels", "scene.rot": "rotation", "scene.day": "☀ day", "city.msk": "Moscow", "city.lon": "London", "city.ber": "Berlin", "city.cai": "Cairo", "city.ekb": "Yekaterinburg", "city.omsk": "Omsk", "city.vl": "Vladivostok", "city.tok": "Tokyo", "city.ny": "New York", "city.la": "L.A.", "world.1.name": "Day and Night", "world.1.sub": "Day, night, and Earth's rotation", "world.2.name": "Time Zones", "world.2.sub": "Time zones and trains", "world.3.name": "Seasons", "world.3.sub": "Earth's orbit and tilt", "world.4.name": "Polar Day", "world.4.sub": "Latitude and daylight hours", "world.5.name": "Moon", "world.5.sub": "Moon phases and eclipses", "world.6.name": "Planets", "world.6.sub": "The Solar System and planet years", "world.7.name": "Starry Sky", "world.7.sub": "Constellations and the North Star", "lv.1.txt": "Hi! I'm Mira, and this is my cat, Comet. Spin Earth with your finger until <b>it's noon in Moscow<\/b> — when the Sun is directly above the city.", "lv.1.fact": "Earth spins on its axis. That's why day turns into night.", "lv.1.h1": "Noon is when a city faces the Sun. Spin Earth until Moscow is on the right.", "lv.2.txt": "Now <b>it's midnight in Moscow<\/b>. Where is the Sun?", "lv.2.fact": "Night happens on the side of Earth facing away from the Sun. When it's midnight here, it's noon on the other side.", "lv.2.h1": "At midnight, Moscow is on the darkest side, on the left.", "lv.3.txt": "<b>It's sunrise in Moscow<\/b> (6:00). Earth spins counterclockwise. Which way should Moscow move?", "lv.3.fact": "Earth spins from west to east. That's why the Sun rises in the east.", "lv.3.h1": "At sunrise, a city moves out of the dark and into the light. Moscow should be at the bottom, where day meets night.", "lv.4.txt": "<b>It's sunset in Moscow<\/b> (18:00).", "lv.4.fact": "Sunset happens when a city moves into Earth's shadow as Earth spins. The Sun seems to go down.", "lv.4.h1": "At sunset, Moscow is at the top, where day meets night.", "lv.5.txt": "<b>It's daytime in Tokyo, but nighttime in London.<\/b> Yes, that can happen!", "lv.5.fact": "When it's daytime on one side of Earth, it's nighttime on the other. That's why people in different countries have different times.", "lv.5.h1": "Tokyo and London are far apart, almost on opposite sides of Earth.", "lv.6.txt": "<b>It's noon in New York.<\/b> Look at the time in London!", "lv.6.fact": "The farther east a city is, the later its time. The Sun appears to move from east to west.", "lv.6.h1": "New York should be on the right, facing the Sun. London is farther east, so it's already evening there.", "lv.7.txt": "<b>It's noon in London.<\/b> Look at Moscow: it's already past 13:00 there!", "lv.7.fact": "Every 15° of longitude makes about one hour of difference in solar time. Moscow is 37.6° east of London. That's about 2.5 hours.", "lv.7.h1": "London should be on the right, facing the Sun.", "lv.8.txt": "<b>It's midnight in London.<\/b> London is on the prime (Greenwich) meridian.", "lv.8.fact": "The prime (Greenwich) meridian passes through Greenwich, an area of London. We use it to measure longitude and count time zones.", "lv.8.h1": "London should be on the darkest side, on the left.", "lv.9.txt": "<b>It's sunset in Moscow and morning in Los Angeles.<\/b> Set Moscow to sunset and look at Los Angeles.", "lv.9.fact": "Earth makes one full turn in 24 hours: 360° ÷ 24 = 15° per hour.", "lv.9.h1": "Moscow should be at the top, where day meets night.", "lv.10.txt": "<b>Boss quiz!<\/b> Five questions about day and night. Get at least 4 right.", "lv.10.fact": "You know how day and night work: Earth spins, and the Sun lights up one side.", "lv.11.txt": "It's <b>12:00<\/b> in Moscow. Set the clock in <b>London<\/b>.", "lv.11.fact": "Time zones help large areas use the same time.", "lv.11.h1": "London is 3 hours behind Moscow. Look at Earth to see which city is closer to the Sun.", "lv.12.txt": "It's <b>12:00<\/b> in Moscow. What time is it in <b>Vladivostok<\/b>?", "lv.12.fact": "Vladivostok is 7 hours ahead of Moscow. It's already evening there.", "lv.12.h1": "Vladivostok is farther east, so its time is later.", "lv.13.txt": "It's <b>12:00<\/b> in Moscow. What time is it in <b>New York<\/b>?", "lv.13.fact": "Earth has 24 main time zones. Each zone is 15° wide.", "lv.13.h1": "New York is 8 hours behind Moscow.", "lv.14.txt": "It's <b>12:00<\/b> in Moscow. What time is it in <b>Yekaterinburg<\/b>?", "lv.14.fact": "Russia has 11 time zones, more than any other country.", "lv.14.h1": "Yekaterinburg is 2 hours ahead of Moscow.", "lv.15.txt": "It's <b>8:00<\/b> in London. Set the clocks in <b>Berlin<\/b> and <b>Cairo<\/b>.", "lv.15.fact": "Greenwich in London is the starting point for time zones. Berlin is 1 hour ahead, and Cairo is 2 hours ahead.", "lv.15.h1": "Berlin is one time zone east of London. Cairo is two.", "lv.16.txt": "A train leaves Moscow at <b>10:00<\/b> and crosses <b>3 time zones east<\/b> to Omsk. What time is it in Omsk?", "lv.16.fact": "When you travel east, clocks move forward. Each time zone adds one hour.", "lv.16.h1": "Each time zone east adds one hour. Three zones add three hours.", "lv.17.txt": "A train leaves Moscow at <b>15:00<\/b> Moscow time. What time is it in <b>Vladivostok<\/b> at that moment?", "lv.17.fact": "The Trans-Siberian Railway crosses 7 time zones. The trip from Moscow to Vladivostok takes 7 days.", "lv.17.h1": "Vladivostok is 7 hours ahead of Moscow.", "lv.18.txt": "It's <b>8:00<\/b> in Tokyo. Set the clock in <b>Los Angeles<\/b>. Don't forget the day!", "lv.18.fact": "The International Date Line is between Tokyo and Los Angeles. Los Angeles is 17 hours behind Tokyo, so it's still yesterday there.", "lv.18.h1": "Tokyo is 17 hours ahead of L.A. Subtract 17 hours. You'll go back past midnight.", "lv.19.txt": "Spin Earth until <b>it's 9:00 in Moscow<\/b> by the clock (time zone time).", "lv.19.fact": "Moscow uses UTC+3. That's 3 hours ahead of Greenwich.", "lv.19.h1": "It's morning in Moscow. The city is still near the dark side, close to sunrise, at the bottom.", "lv.20.txt": "<b>Boss quiz!<\/b> Day, night, and time zones. Get at least 4 right.", "lv.20.fact": "Now you can find the time in different cities and understand how time zones work.", "q.1.q": "Why do we have day and night on Earth?", "q.1.a0": "Earth spins on its axis", "q.1.a1": "The Sun circles Earth", "q.1.a2": "The Moon blocks the Sun", "q.1.e": "Earth spins on its axis, so the Sun lights up different sides of Earth.", "q.2.q": "How long does Earth take to spin once?", "q.2.a0": "12 hours", "q.2.a1": "24 hours", "q.2.a2": "365 days", "q.2.e": "One full spin takes one day, or 24 hours.", "q.3.q": "Which way does Earth spin?", "q.3.a0": "East to west", "q.3.a1": "North to south", "q.3.a2": "West to east", "q.3.e": "Earth spins from west to east. That's why the Sun rises in the east.", "q.4.q": "How many degrees does Earth turn in 1 hour?", "q.4.a0": "15°", "q.4.a1": "24°", "q.4.a2": "60°", "q.4.e": "360° ÷ 24 hours = 15° per hour.", "q.5.q": "If it's noon in Moscow, on the opposite side of Earth it's…", "q.5.a0": "Noon too", "q.5.a1": "Midnight", "q.5.a2": "Sunrise", "q.5.e": "The opposite side faces away from the Sun, so it's nighttime there.", "q.6.q": "Where does the Sun rise first?", "q.6.a0": "Moscow", "q.6.a1": "Vladivostok", "q.6.a2": "London", "q.6.e": "Earth spins east. Vladivostok is farther east, so it sees the sunrise first.", "q.7.q": "What line do we use to measure longitude?", "q.7.a0": "Equator", "q.7.a1": "Tropic", "q.7.a2": "Prime (Greenwich) meridian", "q.7.e": "The prime (Greenwich) meridian passes through Greenwich, an area of London.", "q.8.q": "How many main time zones are there on Earth?", "q.8.a0": "12", "q.8.a1": "24", "q.8.a2": "60", "q.8.e": "360° ÷ 15° = 24 time zones.", "q.9.q": "How wide is one time zone in longitude?", "q.9.a0": "15°", "q.9.a1": "10°", "q.9.a2": "30°", "q.9.e": "One time zone equals one hour of Earth's rotation, or 15°.", "q.10.q": "It's 12:00 in Moscow. What time is it in London?", "q.10.a0": "15:00", "q.10.a1": "12:00", "q.10.a2": "9:00", "q.10.e": "London is 3 hours behind Moscow.", "q.11.q": "You're traveling east by train. What happens to your clock?", "q.11.a0": "Move it forward", "q.11.a1": "Move it back", "q.11.a2": "Nothing", "q.11.e": "Time is later to the east. Cross one time zone and add one hour.", "q.12.q": "How many time zones does Russia have?", "q.12.a0": "3", "q.12.a1": "11", "q.12.a2": "24", "q.12.e": "Russia has 11 time zones, from Kaliningrad to Kamchatka.", "lv.locked": "🔒 Unlocks after level {n}", "map.lockworld": "🔒 Opens after you beat the boss of world {n}", "date.fmt": "{m} {d}", "u.d": "d", "u.mo": "mo", "u.y": "yr", "u.h": "h", "season.0": "winter", "season.1": "spring", "season.2": "summer", "season.3": "fall", "ro.north": "North: {s}", "ro.south": "South: {s}", "dir.n": "N", "dir.s": "S", "ro.sunlat": "Sun overhead: {v}", "ro.day": "Day: {h} h", "ro.day24": "Day: 24 h, the Sun never sets", "ro.day0": "Day: 0 h, the Sun never rises", "ro.day24s": "24 h, never sets", "ro.day0s": "0 h, never rises", "ro.age": "Moon age: {d} days", "ro.view": "View from Earth", "ro.ecl.sun": "☀ Solar eclipse", "ro.ecl.moon": "🌑 Lunar eclipse", "ph.0": "New Moon", "ph.1": "Waxing Crescent", "ph.2": "First Quarter", "ph.3": "Waxing Gibbous", "ph.4": "Full Moon", "ph.5": "Waning Gibbous", "ph.6": "Last Quarter", "ph.7": "Waning Crescent", "ro.years": "Elapsed: {y} years", "ro.start": "start", "ro.laps": "{p}: {n} orbits", "pl.merc": "Mercury", "pl.venus": "Venus", "pl.earth": "Earth", "pl.mars": "Mars", "pl.jup": "Jupiter", "pl.sat": "Saturn", "pl.ura": "Uranus", "pl.nep": "Neptune", "ro.sky": "The sky turned {d}° ({h} h)", "sk.pol": "Polaris", "sk.uma": "Big Dipper", "sk.umi": "Little Dipper", "sk.cas": "Cassiopeia", "hint.sol": "💡 Look near this value: {v}.", "hint.ring2": "💡 The golden ring shows the right spot.", "hint.tap2": "💡 The golden ring is what you need!", "hint.pick2": "💡 One wrong answer was removed.", "hint.auto.dial": "💡 The comet set everything. Press \"Done.\"", "hint.auto.tap": "💡 The comet showed the right one. Tap it.", "hint.auto.pick": "💡 The comet showed the right answer.", "rew.dial": "🎬 The comet set everything. Press \"Done.\"", "rew.tap": "🎬 The comet showed the right one. Tap it.", "rew.pick": "🎬 The comet showed the right answer.", "err.dial": "🐱 Not yet. Right now: {ro} Think again!", "err.tap": "🐱 That's not it. Try another object!", "err.pick": "🐱 Not quite. Pick another answer.", "mon.1": "January", "mon.2": "February", "mon.3": "March", "mon.4": "April", "mon.5": "May", "mon.6": "June", "mon.7": "July", "mon.8": "August", "mon.9": "September", "mon.10": "October", "mon.11": "November", "mon.12": "December", "lv.21.txt": "Earth travels around the Sun for a whole year. <b>It's summer in the Northern Hemisphere<\/b> in June, July and August. Drag Earth along its orbit so it's summer in the north.", "lv.21.fact": "Winter and summer happen because Earth's axis is tilted: in summer our half of the world leans toward the Sun.", "lv.21.h1": "In summer the Northern Hemisphere leans toward the Sun. Look at the \"North: …\" label at the top.", "lv.22.txt": "<b>It's summer in Australia<\/b> while we have winter. Find that position of Earth.", "lv.22.fact": "When it's winter in the north, it's summer in the south: the two halves of Earth take turns leaning toward the Sun.", "lv.22.h1": "Australia is in the Southern Hemisphere. When we have winter, they have summer.", "lv.23.txt": "<b>June 21 is the longest day of the year.<\/b> Set Earth to that date.", "lv.23.fact": "On the summer solstice, June 21, the north has its longest day and shortest night.", "lv.23.h1": "June 21 is the solstice: the North Pole leans toward the Sun the most.", "lv.24.txt": "<b>Day equals night<\/b>: this happens on March 20 and September 23. Find one of these dates.", "lv.24.fact": "The equinox happens twice a year, on March 20 and September 23. Day and night are then 12 hours each.", "lv.24.h1": "On these days Earth's axis is sideways to the Sun, and light is shared equally between the two halves.", "lv.25.txt": "Here is Earth on <b>December 21<\/b>. What season is it in the north now?", "lv.25.fact": "On December 21 the North Pole leans away from the Sun. The north has winter and the shortest day.", "lv.25.h1": "Look: does the North Pole lean toward the Sun or away from it?", "lv.25.a0": "Summer", "lv.25.a1": "Winter", "lv.25.a2": "Spring", "lv.26.txt": "<b>New Year's Day, January 1.<\/b> Set Earth to that date. Surprising: that's exactly when Earth is closest to the Sun!", "lv.26.fact": "Earth is closest to the Sun in early January, and that's winter for us. So winter and summer depend on the tilt of the axis, not on distance.", "lv.26.h1": "The start of the year is the start of January, right after December.", "lv.27.txt": "<b>Fall in the north<\/b> is September, October and November. Find this time on the orbit.", "lv.27.fact": "In fall the days get shorter: Earth turns its northern half away from the Sun.", "lv.27.h1": "In fall the North Pole starts to turn away from the Sun.", "lv.28.txt": "<b>On January 3 Earth is closest to the Sun<\/b>, but it's winter for us. Why?", "lv.28.fact": "In winter the north leans away from the Sun, so the rays hit at a slant and warm less, even though Earth is close to it.", "lv.28.h1": "Look at the tilt of the axis: where does the North Pole point?", "lv.28.a0": "The north leans away from the Sun", "lv.28.a1": "In January Earth is farther from the Sun", "lv.28.a2": "In winter the Sun shines weaker", "lv.29.txt": "<b>Spring in the north<\/b> is March, April and May. Place Earth.", "lv.29.fact": "In spring the days get longer, and the Sun climbs higher.", "lv.29.h1": "In spring the days grow: the north starts turning toward the Sun.", "lv.30.txt": "<b>Boss quiz!<\/b> Five questions about the seasons. You need at least 4 right.", "lv.30.fact": "You know why the seasons change: it's all about the tilt of Earth's axis.", "lv.31.txt": "Here is <b>Murmansk<\/b>, north of the Arctic Circle (69° N). Find the date when <b>the Sun never sets<\/b>: the polar day.", "lv.31.fact": "North of the Arctic Circle there is a polar day in summer: the Sun doesn't dip below the horizon for many days in a row.", "lv.31.h1": "You need a day that is 24 hours long. Look at the summer dates and check \"Day: … h.\"", "lv.32.txt": "In Murmansk it's now <b>polar night<\/b>: the Sun doesn't rise above the horizon. Find this date.", "lv.32.fact": "In winter north of the Arctic Circle there is a polar night: the Sun doesn't rise for many days.", "lv.32.h1": "These are winter dates, when the north leans away from the Sun.", "lv.33.txt": "<b>June 21.<\/b> Find the latitude where the day lasts about 17–18 hours, like in Moscow.", "lv.33.fact": "The farther north a city is, the longer its summer day: in Moscow it's about 17 hours.", "lv.33.h1": "Moscow is at about 56° north latitude.", "lv.34.txt": "<b>December 21.<\/b> In winter, Moscow has only about 7 hours of daylight. Find this latitude.", "lv.34.fact": "The farther north a city is, the shorter its winter day: in Moscow it's about 7 hours.", "lv.34.h1": "Moscow is at about 56° north latitude.", "lv.35.txt": "This is the <b>equator<\/b>, 0° latitude. What happens to the length of the day through the year?", "lv.35.fact": "At the equator, day and night are almost always 12 hours each, and there are no seasons like ours.", "lv.35.h1": "The equator lies halfway between the poles: the Sun stays high above it all year.", "lv.35.a0": "Always about 12 hours", "lv.35.a1": "24 hours in summer, 0 in winter", "lv.35.a2": "17 hours in summer, 7 in winter", "lv.36.txt": "Here is <b>Saint Petersburg<\/b> (60° N). Find the dates of the <b>white nights<\/b>: the day lasts more than 18 hours.", "lv.36.fact": "In Saint Petersburg, from late May to July the night is almost bright: the Sun sets only briefly and not very deep.", "lv.36.h1": "White nights are in summer, around June 21.", "lv.37.txt": "<b>Antarctica<\/b> (75° S). Find the date when it has a polar day.", "lv.37.fact": "In Antarctica the polar day comes in December and January. It's summer there when we have winter.", "lv.37.h1": "When we have winter, the south has summer.", "lv.38.txt": "<b>The North Pole.<\/b> Find the date when it's daytime there and the Sun shines around the clock.", "lv.38.fact": "At the North Pole there are six months of day and six months of night: the Sun rises around March 20 and sets around September 23.", "lv.38.h1": "At the pole it's day when the North Pole leans toward the Sun: in spring and summer.", "lv.39.txt": "<b>June 21.<\/b> Find the latitude where the Sun doesn't set at all.", "lv.39.fact": "The Arctic Circle is at 66.5° N. North of it, on the summer solstice, the Sun doesn't set.", "lv.39.h1": "It's north of the Arctic Circle. It runs along 66.5° north latitude.", "lv.40.txt": "<b>Boss quiz!<\/b> Five questions about polar day and the length of the day. You need at least 4 right.", "lv.40.fact": "Now you understand why north of the Arctic Circle the Sun sometimes never sets and sometimes never rises.", "lv.41.txt": "The Moon travels around Earth. <b>New Moon<\/b>: the Moon is between Earth and the Sun, and we can't see it. Drag the Moon.", "lv.41.fact": "At New Moon the Moon turns its dark side toward us, so we can't see it.", "lv.41.h1": "The Moon should be on the line between Earth and the Sun, closer to the Sun (on the left).", "lv.42.txt": "<b>Full Moon<\/b>: Earth is between the Sun and the Moon, and the whole disk glows.", "lv.42.fact": "At Full Moon the Moon shines as a full circle, and it's bright all night.", "lv.42.h1": "The Moon should be on the side of Earth that has no Sun.", "lv.43.txt": "<b>First Quarter<\/b>: the right half of the disk is lit. Find it.", "lv.43.fact": "At First Quarter the Moon is growing. In the Northern Hemisphere the right half is lit.", "lv.43.h1": "A waxing Moon is lit on the right. Look at \"View from Earth.\"", "lv.44.txt": "<b>Last Quarter<\/b>: the left half is lit, and the Moon is getting old.", "lv.44.fact": "At Last Quarter the Moon is waning: the left half is lit, and then only a thin crescent is left.", "lv.44.h1": "A waning Moon is lit on the left.", "lv.45.txt": "<b>A thin waxing crescent<\/b>, shaped like a backwards C. Find it.", "lv.45.fact": "A waxing crescent looks like a backwards C, and a waning one looks like a C. This rule works for the Northern Hemisphere.", "lv.45.h1": "It's between New Moon and First Quarter. A narrow strip is lit on the right.", "lv.46.txt": "Here is the Moon on its orbit. What will we see in the sky?", "lv.46.fact": "After Full Moon the Moon wanes: less and less of it is lit, until New Moon comes.", "lv.46.h1": "Look at \"View from Earth\": is it lit on the left or on the right?", "lv.46.a0": "Waning crescent, like a C", "lv.46.a1": "Waxing crescent, like a backwards C", "lv.46.a2": "Full Moon", "lv.47.txt": "<b>Lunar eclipse<\/b>: the Moon enters Earth's shadow. Place the Moon exactly behind Earth.", "lv.47.fact": "A lunar eclipse happens only at Full Moon: the Moon passes through Earth's shadow and turns red.", "lv.47.h1": "An eclipse happens when the Sun, Earth and Moon are in one line, with Earth in the middle.", "lv.48.txt": "<b>Solar eclipse<\/b>: the Moon covers the Sun. Place the Moon exactly between Earth and the Sun.", "lv.48.fact": "A solar eclipse happens only at New Moon: the Moon's shadow falls on a small patch of Earth.", "lv.48.h1": "The Moon should be on the line joining Earth and the Sun, closer to the Sun.", "lv.49.txt": "The Moon makes a full circle in <b>29.5 days<\/b>. Set the Moon to day 29: the last night before New Moon.", "lv.49.fact": "From one New Moon to the next takes 29.5 days. This time is called a lunar month.", "lv.49.h1": "Each day the Moon moves about 12° along its orbit. Look at \"Moon age.\"", "lv.50.txt": "<b>Boss quiz!<\/b> Five questions about the Moon. You need at least 4 right.", "lv.50.fact": "The Moon shines with reflected light, and its phases are just how we see the lit half.", "lv.51.txt": "The planets travel around the Sun. <b>Tap the planet closest to the Sun.<\/b>", "lv.51.fact": "Mercury is closest to the Sun. A year there is only 88 Earth days.", "lv.51.h1": "The closest to the Sun is the smallest and fastest planet.", "lv.52.txt": "<b>The biggest planet<\/b> is a real giant. Tap it.", "lv.52.fact": "Jupiter is bigger than all the other planets put together: more than a thousand Earths would fit inside it.", "lv.52.h1": "This planet is bigger than all the others put together.", "lv.53.txt": "<b>The planet with beautiful rings.<\/b> Find it.", "lv.53.fact": "Saturn has the most visible rings: they are made of ice and rocks.", "lv.53.h1": "It's the second biggest and comes after Jupiter.", "lv.54.txt": "<b>The red planet<\/b>, where people look for signs of water. Tap it.", "lv.54.fact": "Mars is red because of rusty dust. There may once have been water there.", "lv.54.h1": "It comes right after Earth.", "lv.55.txt": "<b>Our planet<\/b> is the only one where life is sure to exist. Find it.", "lv.55.fact": "Earth is the third planet from the Sun and the only one where life is known.", "lv.55.h1": "It's third from the Sun.", "lv.56.txt": "<b>A year on Mercury.<\/b> Spin time: let Mercury make a full orbit and return to the golden line.", "lv.56.fact": "A year is the time of one trip around the Sun. On Mercury it lasts 88 Earth days.", "lv.56.h1": "Mercury circles the Sun in 88 days, which is a bit less than three months.", "lv.57.txt": "<b>A year on Venus.<\/b> Spin time until Venus returns to the golden line.", "lv.57.fact": "A year on Venus lasts 225 Earth days.", "lv.57.h1": "A Venus year is 225 Earth days, about seven months.", "lv.58.txt": "<b>A year on Mars.<\/b> Spin time until Mars makes a full orbit.", "lv.58.fact": "A year on Mars is 687 Earth days, almost two Earth years.", "lv.58.h1": "A Mars year is almost twice as long as an Earth year.", "lv.59.txt": "<b>A year on Jupiter.<\/b> Jupiter is far away, and its orbit takes a long time. Spin time until it returns to the golden line.", "lv.59.fact": "Jupiter circles the Sun in 12 Earth years: while Earth makes 12 laps, it makes one.", "lv.59.h1": "Jupiter goes around the Sun in almost 12 Earth years. The \"+1 yr\" buttons will help.", "lv.60.txt": "<b>Boss quiz!<\/b> Five questions about the planets. You need at least 4 right.", "lv.60.fact": "You know the planets of the Solar System and what a year is on different planets.", "lv.61.txt": "This is the night sky facing north. <b>Find the North Star<\/b>, which barely moves.", "lv.61.fact": "The North Star barely moves and always points north.", "lv.61.h1": "All the stars circle around it. It's right in the center of the sky.", "lv.62.txt": "<b>The Big Dipper<\/b> is a ladle of seven bright stars. Find it.", "lv.62.fact": "The Big Dipper helps you find the North Star: extend the edge of its bowl five times.", "lv.62.h1": "Look for seven stars shaped like a big ladle with a handle.", "lv.63.txt": "<b>Cassiopeia<\/b> is stars shaped like the letter W (or M). Find it.", "lv.63.fact": "Cassiopeia is on the opposite side of the North Star from the Big Dipper.", "lv.63.h1": "It's on the other side of the North Star from the Big Dipper.", "lv.64.txt": "<b>The Little Dipper<\/b> is a small ladle. The North Star is the end of its handle. Tap it.", "lv.64.fact": "The North Star belongs to the Little Dipper: it's at the end of the small ladle's handle.", "lv.64.h1": "It's the small ladle around the most motionless star.", "lv.65.txt": "The sky spins around the North Star. <b>Turn the sky so the Big Dipper is above the North Star.<\/b>", "lv.65.fact": "Because Earth spins, the stars seem to circle around the North Star.", "lv.65.h1": "\"Above\" means at the top of the screen, closer to the top edge.", "lv.66.txt": "Now turn the sky so that <b>Cassiopeia is at the bottom<\/b>, below the North Star.", "lv.66.fact": "Cassiopeia and the Big Dipper seem to ride a seesaw around the North Star.", "lv.66.h1": "Cassiopeia and the Big Dipper are always on opposite sides of the North Star.", "lv.67.txt": "In one day the sky makes a full turn: 360° in 24 hours. <b>Turn the sky forward by exactly 4 hours.<\/b>", "lv.67.fact": "The sky turns 15° every hour: it only seems that way because Earth is spinning.", "lv.67.h1": "1 hour is 15°, so 4 hours is 60°.", "lv.68.txt": "The star in the center barely moves. <b>Where does it point?<\/b>", "lv.68.fact": "The North Star points north: travelers use it to find their way.", "lv.68.h1": "The North Star stands above Earth's North Pole.", "lv.68.a0": "North", "lv.68.a1": "South", "lv.68.a2": "East", "lv.69.txt": "Turn the sky by <b>12 hours<\/b>: Cassiopeia and the Big Dipper will swap places.", "lv.69.fact": "After 12 hours Cassiopeia and the Big Dipper swap places: the sky has turned 180°.", "lv.69.h1": "12 hours is half a turn of the sky, 180°.", "lv.70.txt": "<b>Final boss!<\/b> Five questions from all the worlds. You need at least 4 right.", "lv.70.fact": "You're a real astronomer: you know days, time zones, seasons, the Moon, planets and stars!", "q.13.q": "Why does Earth have seasons?", "q.13.a0": "Because Earth's axis is tilted", "q.13.a1": "Earth moves closer to the Sun and then farther away", "q.13.a2": "The Sun gets brighter and then dimmer", "q.13.e": "Earth's axis is tilted, so the two halves take turns facing the Sun's direct rays.", "q.14.q": "How long does Earth take to go around the Sun?", "q.14.a0": "One day", "q.14.a1": "One year", "q.14.a2": "One month", "q.14.e": "One trip around the Sun is one year, about 365 days.", "q.15.q": "On what date is the longest day in the north?", "q.15.a0": "June 21", "q.15.a1": "December 21", "q.15.a2": "March 20", "q.15.e": "June 21 is the summer solstice.", "q.16.q": "When it's winter in Moscow, in Australia it's…", "q.16.a0": "Winter too", "q.16.a1": "Summer", "q.16.a2": "Always fall", "q.16.e": "The two halves take turns leaning toward the Sun, so their seasons are opposite.", "q.17.q": "When is day equal to night?", "q.17.a0": "Only on June 21", "q.17.a1": "March 20 and September 23", "q.17.a2": "Every day", "q.17.e": "These are the equinox days: day and night are 12 hours each.", "q.18.q": "When is Earth closest to the Sun?", "q.18.a0": "In June, that's why it's summer", "q.18.a1": "In early January", "q.18.a2": "It's always the same distance", "q.18.e": "It's closest in early January, but that's winter for us: it's all about the tilt of the axis.", "q.19.q": "How many seasons are there in a year?", "q.19.a0": "Two", "q.19.a1": "Four", "q.19.a2": "Six", "q.19.e": "Spring, summer, fall and winter.", "q.20.q": "What season is it in the north in October?", "q.20.a0": "Spring", "q.20.a1": "Summer", "q.20.a2": "Fall", "q.20.e": "September, October and November are fall.", "q.21.q": "What is a polar day?", "q.21.a0": "A time when the Sun doesn't set for many days", "q.21.a1": "A day that lasts one hour", "q.21.a2": "A day when it's cold on Earth", "q.21.e": "North of the Arctic Circle in summer, the Sun doesn't go below the horizon.", "q.22.q": "Where does polar night happen?", "q.22.a0": "At the equator", "q.22.a1": "North of the Arctic Circle", "q.22.a2": "In Moscow", "q.22.e": "In winter north of the Arctic Circle, the Sun doesn't rise for many days.", "q.23.q": "At what latitude is the Arctic Circle?", "q.23.a0": "23.4° N", "q.23.a1": "66.5° N", "q.23.a2": "90° N", "q.23.e": "It's 90° minus the tilt of Earth's axis.", "q.24.q": "How long is the day at the equator?", "q.24.a0": "About 12 hours all year", "q.24.a1": "24 hours in summer", "q.24.a2": "6 hours in winter", "q.24.e": "At the equator, day and night are almost equal all year round.", "q.25.q": "What are white nights?", "q.25.a0": "Nights with snow", "q.25.a1": "Nights when the sky is almost bright", "q.25.a2": "Nights without stars and Moon", "q.25.e": "In summer the Sun sets only briefly and not very deep, so the night is bright.", "q.26.q": "Where does the Sun not set on June 21?", "q.26.a0": "In Moscow", "q.26.a1": "In Murmansk", "q.26.a2": "In Cairo", "q.26.e": "Murmansk is north of the Arctic Circle.", "q.27.q": "How long does the polar day last at the North Pole?", "q.27.a0": "A month", "q.27.a1": "About half a year", "q.27.a2": "One day", "q.27.e": "From March 20 to September 23 the Sun doesn't set.", "q.28.q": "What kind of day is December 21 in Moscow?", "q.28.a0": "The longest", "q.28.a1": "The shortest", "q.28.a2": "Like at the equator", "q.28.e": "In winter, Moscow has only about 7 hours of daylight.", "q.29.q": "Why does the Moon shine?", "q.29.a0": "It burns by itself, like the Sun", "q.29.a1": "It reflects sunlight", "q.29.a2": "Earth lights it up", "q.29.e": "The Moon doesn't shine by itself; it reflects sunlight.", "q.30.q": "What is the Moon called when we can't see it?", "q.30.a0": "Full Moon", "q.30.a1": "New Moon", "q.30.a2": "Quarter", "q.30.e": "At New Moon the Moon turns its dark side toward us.", "q.31.q": "How many days are there from one New Moon to the next?", "q.31.a0": "About 7", "q.31.a1": "About 30", "q.31.a2": "About 365", "q.31.e": "A lunar month is 29.5 days.", "q.32.q": "A lunar eclipse happens when…", "q.32.a0": "The Moon is in Earth's shadow", "q.32.a1": "The Moon covers the Sun", "q.32.a2": "Earth covers the stars", "q.32.e": "Earth is between the Sun and the Moon.", "q.33.q": "A solar eclipse happens at…", "q.33.a0": "Full Moon", "q.33.a1": "New Moon", "q.33.a2": "First Quarter", "q.33.e": "The Moon passes between Earth and the Sun.", "q.34.q": "If the Moon looks like the letter C, it is…", "q.34.a0": "Waxing", "q.34.a1": "Waning", "q.34.a2": "Standing still", "q.34.e": "A waning Moon looks like a C, and a waxing one looks like a backwards C.", "q.35.q": "Why do we always see the same side of the Moon?", "q.35.a0": "The Moon doesn't spin", "q.35.a1": "The Moon spins once on its axis in the same time it orbits Earth", "q.35.a2": "The other side doesn't shine", "q.35.e": "The Moon always faces Earth with the same side.", "q.36.q": "Which Moon phase shows half of the disk lit?", "q.36.a0": "Quarter", "q.36.a1": "New Moon", "q.36.a2": "Full Moon", "q.36.e": "At a quarter we see half of the lit disk.", "q.37.q": "Which planet is closest to the Sun?", "q.37.a0": "Venus", "q.37.a1": "Mercury", "q.37.a2": "Mars", "q.37.e": "Mercury is the closest to the Sun.", "q.38.q": "Which planet is the biggest?", "q.38.a0": "Saturn", "q.38.a1": "Jupiter", "q.38.a2": "Earth", "q.38.e": "Jupiter is a giant planet.", "q.39.q": "How many planets are in the Solar System?", "q.39.a0": "Five", "q.39.a1": "Eight", "q.39.a2": "Twelve", "q.39.e": "Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus and Neptune.", "q.40.q": "Which planet is red?", "q.40.a0": "Mars", "q.40.a1": "Venus", "q.40.a2": "Neptune", "q.40.e": "Mars is red because of rusty dust.", "q.41.q": "Which planet has the most visible rings?", "q.41.a0": "Mars", "q.41.a1": "Saturn", "q.41.a2": "Mercury", "q.41.e": "Saturn's rings can be seen even in a small telescope.", "q.42.q": "What is a year on a planet?", "q.42.a0": "One day", "q.42.a1": "The time of one trip around the Sun", "q.42.a2": "The time of one spin on its axis", "q.42.e": "Every planet has its own year.", "q.43.q": "Which planet from the Sun is our Earth?", "q.43.a0": "Second", "q.43.a1": "Third", "q.43.a2": "Fifth", "q.43.e": "Earth is third, after Mercury and Venus.", "q.44.q": "Whose year is longer: Earth's or Jupiter's?", "q.44.a0": "Earth's", "q.44.a1": "Jupiter's", "q.44.a2": "They're the same", "q.44.e": "Jupiter goes around the Sun in almost 12 Earth years.", "q.45.q": "Which star barely moves across the sky?", "q.45.a0": "Sirius", "q.45.a1": "The North Star", "q.45.a2": "Betelgeuse", "q.45.e": "The North Star stands above Earth's North Pole.", "q.46.q": "Where does the North Star point?", "q.46.a0": "North", "q.46.a1": "South", "q.46.a2": "West", "q.46.e": "The North Star points north.", "q.47.q": "How many degrees does the sky turn in an hour?", "q.47.a0": "15°", "q.47.a1": "60°", "q.47.a2": "1°", "q.47.e": "Divide 360° by 24 hours and you get 15° per hour.", "q.48.q": "Which constellation looks like a ladle?", "q.48.a0": "Cassiopeia", "q.48.a1": "The Big Dipper", "q.48.a2": "Orion", "q.48.e": "The Big Dipper is a ladle of seven stars.", "q.49.q": "Which constellation looks like the letter W?", "q.49.a0": "Cassiopeia", "q.49.a1": "The Big Dipper", "q.49.a2": "Cygnus", "q.49.e": "Cassiopeia looks like a W or an M.", "q.50.q": "Why do the stars seem to circle across the sky?", "q.50.a0": "Earth is spinning", "q.50.a1": "The stars fly around Earth in a day", "q.50.a2": "The Moon is moving", "q.50.e": "Earth spins, so the sky seems to turn.", "q.51.q": "After how many hours does the sky turn half a turn?", "q.51.a0": "After 6", "q.51.a1": "After 12", "q.51.a2": "After 24", "q.51.e": "Half a turn is 180°, and that's 12 hours.", "q.52.q": "What helps you find north at night?", "q.52.a0": "The North Star", "q.52.a1": "The Moon", "q.52.a2": "Venus", "q.52.e": "The North Star points north."};</script>
+<script src="gp-adapter.js"></script>
+
+<script>
+(function(){
+'use strict';
+/* ===== данные ===== */
+var CITIES={
+ msk:{n:'Москва',lon:37.6,off:3},lon:{n:'Лондон',lon:0,off:0},ber:{n:'Берлин',lon:13.4,off:1},cai:{n:'Каир',lon:31.2,off:2},
+ ekb:{n:'Екатеринбург',lon:60.6,off:5},omsk:{n:'Омск',lon:73.4,off:6},vl:{n:'Владивосток',lon:131.9,off:10},tok:{n:'Токио',lon:139.7,off:9},
+ ny:{n:'Нью-Йорк',lon:-74,off:-5},la:{n:'Лос-Андж.',lon:-118.2,off:-8}
+};
+var WORLDS=[
+ {id:1,name:'Сутки',sub:'День, ночь и вращение Земли',from:1,to:10},
+ {id:2,name:'Пояса',sub:'Часовые пояса и поезда',from:11,to:20},
+ {id:3,name:'Времена года',sub:'Орбита и наклон оси',soon:1},
+ {id:4,name:'Полярный день',sub:'Широты и длина дня',soon:1},
+ {id:5,name:'Луна',sub:'Фазы и затмения',soon:1},
+ {id:6,name:'Путешествия',sub:'Пояса + сезоны',soon:1},
+ {id:7,name:'Экзамен астронома',sub:'Всё вместе',soon:1}
+];
+function sp(id,txt,conds,show,fact,h1,mode){return {id:id,t:'spin',mode:mode||'solar',txt:txt,conds:conds,show:show,fact:fact,h1:h1,topic:mode==='civil'?'zones':'day'};}
+function ck(id,txt,given,items,fact,h1){return {id:id,t:'clock',txt:txt,given:given,items:items,fact:fact,h1:h1,topic:'zones'};}
+var LEVELS=[
+ sp(1,'Привет! Я Мира, а это кот Комета. Покрути Землю пальцем так, чтобы <b>в Москве был полдень</b> — Солнце прямо над городом.',[{c:'msk',h:12}],['msk'],'Земля вращается вокруг своей оси — поэтому день сменяет ночь.','Полдень — когда город смотрит прямо на Солнце. Поверни Землю, чтобы Москва оказалась справа.'),
+ sp(2,'Теперь <b>в Москве полночь</b>. Где на Земле тогда Солнце?',[{c:'msk',h:0}],['msk'],'Ночь — это сторона Земли, отвёрнутая от Солнца. Когда у нас полночь, на другой стороне — полдень.','Полночь — Москва на самой тёмной стороне, слева.'),
+ sp(3,'<b>В Москве рассвет</b> (6:00). Земля вертится против часовой стрелки — в какую сторону ехать Москве?',[{c:'msk',h:6}],['msk'],'Земля вращается с запада на восток, поэтому Солнце встаёт на востоке.','На рассвете город только выезжает из тени на свет: он на границе дня и ночи, внизу.'),
+ sp(4,'<b>В Москве закат</b> (18:00).',[{c:'msk',h:18}],['msk'],'Закат — когда город уходит в тень: Земля вращается, и Солнце «заходит».','Закат — Москва наверху, на границе света и тени.'),
+ sp(5,'<b>В Токио день, а в Лондоне ночь.</b> Такое бывает!',[{c:'tok',from:8,to:16},{c:'lon',from:21,to:3}],['tok','lon'],'Когда у нас день, на другой стороне Земли ночь. Поэтому у людей в разных странах разные часы.','Токио и Лондон далеко друг от друга — почти на разных сторонах Земли.'),
+ sp(6,'<b>В Нью-Йорке полдень.</b> Посмотри, сколько тогда в Лондоне!',[{c:'ny',h:12}],['ny','lon'],'Чем город восточнее, тем позже там время: Солнце идёт с востока на запад.','Нью-Йорк должен быть справа, под Солнцем. Лондон окажется левее, восточнее — там уже вечер.'),
+ sp(7,'<b>В Лондоне полдень.</b> Смотри, что с Москвой: у неё уже второй час дня!',[{c:'lon',h:12}],['lon','msk'],'Каждые 15° долготы — час разницы. Москва на 37,6° восточнее Лондона, это ≈ 2,5 часа.','Лондон под Солнцем, справа.'),
+ sp(8,'<b>В Лондоне полночь.</b> Лондон стоит на нулевом меридиане.',[{c:'lon',h:0}],['lon','msk'],'Нулевой меридиан проходит через Гринвич — район Лондона. От него считают долготу и часовые пояса.','Лондон на самой тёмной стороне, слева.'),
+ sp(9,'<b>В Москве закат, а в Лос-Анджелесе утро.</b> Поставь закат в Москве и посмотри на Лос-Анджелес.',[{c:'msk',h:18}],['msk','la'],'Земля делает полный оборот за 24 часа: 360° ÷ 24 = 15° в час.','Москва наверху, на границе света и тени.'),
+ {id:10,t:'boss',topic:'day',pool:[1,2,3,4,5,6,7],n:5,txt:'<b>Босс-викторина!</b> Пять вопросов про сутки. Нужно хотя бы 4 верных.',fact:'Ты знаешь, как устроены сутки: Земля вращается, а Солнце светит с одной стороны.'},
+ ck(11,'В Москве <b>12:00</b>. Поставь часы в <b>Лондоне</b>.',{c:'msk',h:12},[{c:'lon',h:9}],'Часовые пояса придумали, чтобы на большой территории время было единым.','Лондон на 3 часа «позади» Москвы: смотри на Земле, кто ближе к Солнцу.'),
+ ck(12,'В Москве <b>12:00</b>. Сколько во <b>Владивостоке</b>?',{c:'msk',h:12},[{c:'vl',h:19}],'Владивосток на 7 часов впереди Москвы — там уже вечер.','Владивосток восточнее, значит его время больше.'),
+ ck(13,'В Москве <b>12:00</b>. Сколько в <b>Нью-Йорке</b>?',{c:'msk',h:12},[{c:'ny',h:4}],'На Земле 24 основных часовых пояса, ширина пояса — 15°.','Нью-Йорк западнее Москвы на 8 часов.'),
+ ck(14,'В Москве <b>12:00</b>. Сколько в <b>Екатеринбурге</b>?',{c:'msk',h:12},[{c:'ekb',h:14}],'В России 11 часовых поясов — больше, чем в любой другой стране.','Екатеринбург на 2 часа впереди Москвы.'),
+ ck(15,'В Лондоне <b>8:00</b>. Поставь часы в <b>Берлине</b> и <b>Каире</b>.',{c:'lon',h:8},[{c:'ber',h:9},{c:'cai',h:10}],'Лондонский Гринвич — начало отсчёта часовых поясов. Берлин +1 час, Каир +2 часа.','Берлин на один пояс восточнее Лондона, Каир на два.'),
+ ck(16,'Поезд выехал из Москвы в <b>10:00</b> и пересёк <b>3 пояса на восток</b> (до Омска). Сколько на часах в Омске?',{c:'msk',h:10},[{c:'omsk',h:13}],'Едешь на восток — часы переводят вперёд: каждый пояс прибавляет час.','Каждый пояс на восток — плюс час. Три пояса — три часа.'),
+ ck(17,'Поезд отправляется из Москвы в <b>15:00</b> по московскому времени. Сколько в этот момент во <b>Владивостоке</b>?',{c:'msk',h:15},[{c:'vl',h:22}],'Транссибирская магистраль пересекает 7 часовых поясов: путь из Москвы во Владивосток занимает 7 суток.','Разница Москва — Владивосток 7 часов.'),
+ ck(18,'В Токио <b>8:00</b> утра. Поставь часы в <b>Лос-Анджелесе</b>. Не забудь про день!',{c:'tok',h:8},[{c:'la',h:15,day:-1}],'Между Токио и Лос-Анджелесом линия перемены дат: Лос-Анджелес «отстаёт» на 17 часов, и там ещё вчера.','Токио на 17 часов впереди ЛА. Отними 17 часов — перейдёшь через полночь назад.'),
+ sp(19,'Поверни Землю так, чтобы <b>в Москве было 9:00</b> по часам (поясное время).',[{c:'msk',h:9}],['msk','lon'],'Московское время — это UTC+3: оно на 3 часа опережает Гринвич.','Утро в Москве: город ещё в тени, у самого рассвета, снизу.','civil'),
+ {id:20,t:'boss',topic:'zones',pool:[3,4,5,6,7,8,9,10,11,12],n:5,txt:'<b>Босс-викторина!</b> Сутки и часовые пояса. Нужно хотя бы 4 верных.',fact:'Теперь ты можешь переводить время между городами и знаешь, как устроены пояса.'}
+];
+var Q=[null,
+ {q:'Почему на Земле сменяются день и ночь?',a:['Земля вращается вокруг оси','Солнце облетает Землю','Луна закрывает Солнце'],c:0,e:'Земля вращается вокруг своей оси, и Солнце освещает то одну, то другую сторону.'},
+ {q:'За сколько часов Земля делает оборот вокруг оси?',a:['За 12 часов','За 24 часа','За 365 дней'],c:1,e:'Один оборот — одни сутки, 24 часа.'},
+ {q:'В какую сторону вращается Земля?',a:['С востока на запад','С севера на юг','С запада на восток'],c:2,e:'С запада на восток, поэтому Солнце встаёт на востоке.'},
+ {q:'На сколько градусов поворачивается Земля за 1 час?',a:['15°','24°','60°'],c:0,e:'360° ÷ 24 часа = 15° в час.'},
+ {q:'Если в Москве полдень, то на противоположной стороне Земли…',a:['Тоже полдень','Полночь','Рассвет'],c:1,e:'Противоположная сторона отвёрнута от Солнца — там ночь.'},
+ {q:'Где Солнце встаёт раньше?',a:['В Москве','Во Владивостоке','В Лондоне'],c:1,e:'Земля вращается на восток, Владивосток — восточнее, и Солнце приходит к нему первым.'},
+ {q:'Как называется линия, от которой считают долготу?',a:['Экватор','Тропик','Нулевой (Гринвичский) меридиан'],c:2,e:'Нулевой меридиан проходит через Гринвич, район Лондона.'},
+ {q:'Сколько основных часовых поясов на Земле?',a:['12','24','60'],c:1,e:'360° ÷ 15° = 24 пояса.'},
+ {q:'Какова ширина одного часового пояса по долготе?',a:['15°','10°','30°'],c:0,e:'Пояс — это час вращения Земли, то есть 15°.'},
+ {q:'В Москве 12:00. Сколько в Лондоне?',a:['15:00','12:00','9:00'],c:2,e:'Лондон на 3 часа позади Москвы.'},
+ {q:'Ты едешь на поезде на восток. Что делают с часами?',a:['Переводят вперёд','Переводят назад','Ничего'],c:0,e:'К востоку время больше: пересёк пояс — прибавь час.'},
+ {q:'Сколько часовых поясов в России?',a:['3','11','24'],c:1,e:'В России 11 поясов, от Калининграда до Камчатки.'}
+];
+/* ===== миры 3–7: данные ===== */
+var CUM=[0,31,59,90,120,151,181,212,243,273,304,334,365];
+function mon(N){N=Math.round(mod(N-1,365))+1;var m=0;while(m<11&&N>CUM[m+1])m++;return m;}
+function dnum(N){N=Math.round(mod(N-1,365))+1;return N-CUM[mon(N)];}
+function decl(N){return -23.44*Math.cos(2*Math.PI*(N+10)/365);}
+function dayLen(N,lat){var d=decl(N)*Math.PI/180;
+ if(Math.abs(lat)>=89.9){var s=lat>0?1:-1;return d*s>0.001?24:(d*s<-0.001?0:12);}
+ var x=-Math.tan(lat*Math.PI/180)*Math.tan(d);if(x<=-1)return 24;if(x>=1)return 0;return 2*Math.acos(x)*180/Math.PI/15;}
+function inN(N,a,b){N=mod(N-1,365)+1;return a<=b?(N>=a&&N<=b):(N>=a||N<=b);}
+function dN(a,b,m){var d=mod(a-b,m);return Math.min(d,m-d);}
+var P0={N:172,lat:55,mu:0,T:0,h:0};
+function pp(o){var r={};for(var k in P0)r[k]=(o&&o[k]!=null)?o[k]:P0[k];return r;}
+function dl(id,sc,txt,o){return {id:id,t:'dial',sc:sc,txt:txt,p0:pp(o.p0),free:o.free,sol:o.sol,ok:o.ok,h1:o.h1,fact:o.fact,topic:o.tp};}
+function tpl(id,sc,txt,o){return {id:id,t:'tap',sc:sc,txt:txt,p0:pp(o.p0),tap:o.tap,h1:o.h1,fact:o.fact,topic:o.tp};}
+function pk(id,sc,txt,o){return {id:id,t:'pick',sc:sc,txt:txt,p0:pp(o.p0),a:o.a,c:o.c,h1:o.h1,fact:o.fact,topic:o.tp};}
+function bs(id,topic,pool,txt,fact){return {id:id,t:'boss',topic:topic,pool:pool,n:5,txt:txt,fact:fact};}
+var SKY={
+ uma:[[11.06,61.75],[11.03,56.38],[11.90,53.69],[12.26,57.03],[12.90,55.96],[13.40,54.93],[13.79,49.31]],
+ cas:[[0.15,59.15],[0.68,56.54],[0.945,60.72],[1.43,60.24],[1.91,63.67]],
+ umi:[[2.53,89.26],[17.54,86.59],[16.77,82.04],[15.73,77.79],[16.29,75.76],[15.35,71.83],[14.85,74.16]]};
+var SKYL={uma:[[0,1],[1,2],[2,3],[3,0],[3,4],[4,5],[5,6]],cas:[[0,1],[1,2],[2,3],[3,4]],umi:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]]};
+function meanRA(a){var s=0;a.forEach(function(p){s+=p[0];});return s/a.length*15;}
+var RA_UMA=meanRA(SKY.uma),RA_CAS=meanRA(SKY.cas);
+var PLN=[['merc',.10,4.5,'#b9b3a8'],['venus',.17,6.5,'#f2c879'],['earth',.24,7,'#4aa8ff'],['mars',.32,5.5,'#ff6a45'],['jup',.47,13,'#e8b078'],['sat',.62,10.5,'#f0d58a'],['ura',.79,8.5,'#8ee8e8'],['nep',.96,8.5,'#5a78ff']];
+var PERIOD={merc:.241,venus:.615,earth:1,mars:1.881,jup:11.86,sat:29.46,ura:84,nep:164.8};
+LEVELS.push(
+ /* мир 3: времена года */
+ dl(21,'orbit','Земля летит вокруг Солнца целый год. <b>В России лето</b> — июнь, июль и август. Перетащи Землю по орбите так, чтобы на севере было лето.',{p0:{N:355},free:['N'],sol:{N:197},ok:function(P){return inN(P.N,152,243);},h1:'Летом северное полушарие наклонено к Солнцу. Смотри на подпись «Север: …» вверху.',fact:'Зима и лето бывают из-за наклона земной оси: летом наше полушарие повёрнуто к Солнцу.',tp:'season'}),
+ dl(22,'orbit','<b>В Австралии лето</b>, а у нас зима. Найди такое положение Земли.',{p0:{N:180},free:['N'],sol:{N:15},ok:function(P){return inN(P.N,335,59);},h1:'Австралия — в южном полушарии. Когда у нас зима, там лето.',fact:'Когда на севере зима, на юге лето: полушария по очереди наклоняются к Солнцу.',tp:'season'}),
+ dl(23,'orbit','<b>21 июня — самый длинный день в году.</b> Поставь Землю на эту дату.',{p0:{N:300},free:['N'],sol:{N:172},ok:function(P){return dN(P.N,172,365)<=10;},h1:'21 июня — солнцестояние: северный полюс наклонён к Солнцу сильнее всего.',fact:'В день летнего солнцестояния, 21 июня, на севере самый длинный день и самая короткая ночь.',tp:'season'}),
+ dl(24,'orbit','<b>День равен ночи</b> — так бывает 20 марта и 23 сентября. Найди одну из этих дат.',{p0:{N:140},free:['N'],sol:{N:79},ok:function(P){return dN(P.N,79,365)<=10||dN(P.N,265,365)<=10;},h1:'В эти дни ось Земли «боком» к Солнцу, и свет делится поровну между полушариями.',fact:'Равноденствие бывает дважды в год: 20 марта и 23 сентября. День и ночь тогда по 12 часов.',tp:'season'}),
+ pk(25,'orbit','Вот Земля <b>21 декабря</b>. Какое время года сейчас на севере?',{p0:{N:355},a:['Лето','Зима','Весна'],c:1,h1:'Смотри: северный полюс наклонён к Солнцу или от него?',fact:'21 декабря северный полюс наклонён от Солнца. На севере зима и самый короткий день.',tp:'season'}),
+ dl(26,'orbit','<b>Новый год, 1 января.</b> Поставь Землю на эту дату. Удивительно: именно тогда Земля ближе всего к Солнцу!',{p0:{N:200},free:['N'],sol:{N:1},ok:function(P){return dN(P.N,1,365)<=10;},h1:'Начало года — это начало января, прямо после декабря.',fact:'Ближе всего к Солнцу Земля в начале января, а у нас тогда зима. Значит, зима и лето зависят от наклона оси, а не от расстояния.',tp:'season'}),
+ dl(27,'orbit','<b>Осень на севере</b> — сентябрь, октябрь и ноябрь. Найди это время на орбите.',{p0:{N:100},free:['N'],sol:{N:289},ok:function(P){return inN(P.N,244,334);},h1:'Осенью северный полюс начинает отворачиваться от Солнца.',fact:'Осенью дни становятся короче: Земля поворачивается северным полушарием от Солнца.',tp:'season'}),
+ pk(28,'orbit','<b>3 января Земля ближе всего к Солнцу</b>, но у нас зима. Почему?',{p0:{N:3},a:['Север наклонён от Солнца','Земля в январе дальше от Солнца','Зимой Солнце слабее светит'],c:0,h1:'Посмотри на наклон оси: куда повёрнут северный полюс?',fact:'Зимой север наклонён от Солнца, лучи падают косо и греют слабо — хотя Земля рядом с ним.',tp:'season'}),
+ dl(29,'orbit','<b>Весна на севере</b> — март, апрель и май. Поставь Землю.',{p0:{N:250},free:['N'],sol:{N:105},ok:function(P){return inN(P.N,60,151);},h1:'Весной день растёт: север начинает поворачиваться к Солнцу.',fact:'Весной дни становятся длиннее, а Солнце поднимается выше.',tp:'season'}),
+ bs(30,'season',[13,14,15,16,17,18,19,20],'<b>Босс-викторина!</b> Пять вопросов про времена года. Нужно хотя бы 4 верных.','Ты знаешь, почему меняются времена года: всё дело в наклоне земной оси.'),
+ /* мир 4: полярный день */
+ dl(31,'lat','Вот <b>Мурманск</b> за Полярным кругом (69° с. ш.). Найди дату, когда <b>Солнце не заходит</b> — полярный день.',{p0:{N:340,lat:69},free:['N'],sol:{N:172},ok:function(P){return dayLen(P.N,69)>=23.99;},h1:'Нужен день длиной 24 часа. Ищи летние даты и смотри «День: … ч».',fact:'За Полярным кругом летом бывает полярный день: Солнце не заходит за горизонт много суток подряд.',tp:'polar'}),
+ dl(32,'lat','В Мурманске теперь <b>полярная ночь</b>: Солнце не поднимается над горизонтом. Найди эту дату.',{p0:{N:172,lat:69},free:['N'],sol:{N:355},ok:function(P){return dayLen(P.N,69)<=0.01;},h1:'Это зимние даты, когда север наклонён от Солнца.',fact:'Зимой за Полярным кругом бывает полярная ночь: Солнце много суток не всходит.',tp:'polar'}),
+ dl(33,'lat','<b>21 июня.</b> Найди широту, где день длится около 17–18 часов, как в Москве.',{p0:{N:172,lat:10},free:['lat'],sol:{lat:56},ok:function(P){var d=dayLen(P.N,P.lat);return d>=16.5&&d<=18.5;},h1:'Москва — примерно на 56° северной широты.',fact:'Чем севернее город, тем длиннее летом день: в Москве около 17 часов.',tp:'polar'}),
+ dl(34,'lat','<b>21 декабря.</b> Зимой в Москве светло всего около 7 часов. Найди эту широту.',{p0:{N:355,lat:10},free:['lat'],sol:{lat:56},ok:function(P){var d=dayLen(P.N,P.lat);return d>=6&&d<=8;},h1:'Москва — примерно на 56° северной широты.',fact:'Чем севернее город, тем короче зимой день: в Москве около 7 часов.',tp:'polar'}),
+ pk(35,'lat','Это <b>экватор</b>, 0° широты. Что будет с длиной дня в течение года?',{p0:{N:172,lat:0},a:['Всегда около 12 часов','Летом 24 часа, зимой 0','Летом 17 часов, зимой 7'],c:0,h1:'Экватор лежит посередине между полюсами: Солнце над ним высоко весь год.',fact:'На экваторе день и ночь почти всегда по 12 часов, и времён года, как у нас, нет.',tp:'polar'}),
+ dl(36,'lat','Вот <b>Санкт-Петербург</b> (60° с. ш.). Найди даты <b>белых ночей</b>: день длится больше 18 часов.',{p0:{N:40,lat:60},free:['N'],sol:{N:172},ok:function(P){return dayLen(P.N,60)>=18;},h1:'Белые ночи — летом, около 21 июня.',fact:'В Санкт-Петербурге с конца мая до июля ночью почти светло: Солнце заходит ненадолго и неглубоко.',tp:'polar'}),
+ dl(37,'lat','<b>Антарктида</b> (75° ю. ш.). Найди дату, когда там полярный день.',{p0:{N:172,lat:-75},free:['N'],sol:{N:355},ok:function(P){return dayLen(P.N,-75)>=23.99;},h1:'Когда у нас зима, на юге лето.',fact:'В Антарктиде полярный день бывает в декабре и январе. Лето там, когда у нас зима.',tp:'polar'}),
+ dl(38,'lat','<b>Северный полюс.</b> Найди дату, когда там день и Солнце светит круглые сутки.',{p0:{N:330,lat:90},free:['N'],sol:{N:172},ok:function(P){return dayLen(P.N,90)>=23.99;},h1:'На полюсе день бывает, когда северный полюс наклонён к Солнцу — весной и летом.',fact:'На Северном полюсе полгода день и полгода ночь: Солнце всходит около 20 марта и заходит около 23 сентября.',tp:'polar'}),
+ dl(39,'lat','<b>21 июня.</b> Найди широту, где Солнце не заходит совсем.',{p0:{N:172,lat:30},free:['lat'],sol:{lat:80},ok:function(P){return dayLen(P.N,P.lat)>=23.99;},h1:'Это за Полярным кругом. Он проходит на 66,5° северной широты.',fact:'Полярный круг проходит на 66,5° с. ш. Севернее него в день летнего солнцестояния Солнце не заходит.',tp:'polar'}),
+ bs(40,'polar',[21,22,23,24,25,26,27,28],'<b>Босс-викторина!</b> Пять вопросов про полярный день и длину дня. Нужно хотя бы 4 верных.','Теперь ты понимаешь, почему за Полярным кругом Солнце то не заходит, то не встаёт.'),
+ /* мир 5: Луна */
+ dl(41,'moon','Луна ходит вокруг Земли. <b>Новолуние</b>: Луна между Землёй и Солнцем, мы её не видим. Перетащи Луну.',{p0:{mu:120},free:['mu'],sol:{mu:0},ok:function(P){return dN(P.mu,0,360)<=20;},h1:'Луна должна стоять на линии Земля — Солнце, ближе к Солнцу (слева).',fact:'В новолуние Луна повёрнута к нам тёмной стороной, и её не видно.',tp:'moon'}),
+ dl(42,'moon','<b>Полнолуние</b>: Земля между Солнцем и Луной, диск светится целиком.',{p0:{mu:60},free:['mu'],sol:{mu:180},ok:function(P){return dN(P.mu,180,360)<=20;},h1:'Луна должна быть с той стороны Земли, где нет Солнца.',fact:'В полнолуние Луна сияет полным кругом, и светло всю ночь.',tp:'moon'}),
+ dl(43,'moon','<b>Первая четверть</b>: светится правая половина диска. Найди её.',{p0:{mu:250},free:['mu'],sol:{mu:90},ok:function(P){return dN(P.mu,90,360)<=20;},h1:'Растущая Луна светится справа. Смотри на «Вид с Земли».',fact:'Первая четверть — Луна растёт. В северном полушарии светится правая половина.',tp:'moon'}),
+ dl(44,'moon','<b>Последняя четверть</b>: светится левая половина, Луна стареет.',{p0:{mu:100},free:['mu'],sol:{mu:270},ok:function(P){return dN(P.mu,270,360)<=20;},h1:'Стареющая Луна светится слева.',fact:'В последнюю четверть Луна убывает: светится левая половина, а потом остаётся тонкий месяц.',tp:'moon'}),
+ dl(45,'moon','<b>Тонкий растущий месяц</b>, как буква «Р». Найди его.',{p0:{mu:200},free:['mu'],sol:{mu:45},ok:function(P){return P.mu>=22&&P.mu<=68;},h1:'Это между новолунием и первой четвертью. Светится узкая полоска справа.',fact:'Растущая Луна похожа на букву «Р» (если приставить палочку слева), стареющая — на «С». Это правило для северного полушария.',tp:'moon'}),
+ pk(46,'moon','Вот Луна на орбите. Что мы увидим на небе?',{p0:{mu:300},a:['Убывающий месяц, как «С»','Растущий месяц, как «Р»','Полнолуние'],c:0,h1:'Посмотри на «Вид с Земли»: светится слева или справа?',fact:'После полнолуния Луна убывает: светится всё меньше, пока не наступит новолуние.',tp:'moon'}),
+ dl(47,'moon','<b>Лунное затмение</b>: Луна заходит в тень Земли. Поставь Луну точно за Землёй.',{p0:{mu:40},free:['mu'],sol:{mu:180},ok:function(P){return dN(P.mu,180,360)<=10;},h1:'Затмение бывает, когда Солнце, Земля и Луна стоят на одной линии: Земля посередине.',fact:'Лунное затмение бывает только в полнолуние: Луна проходит через тень Земли и краснеет.',tp:'moon'}),
+ dl(48,'moon','<b>Солнечное затмение</b>: Луна закрывает Солнце. Поставь Луну точно между Землёй и Солнцем.',{p0:{mu:220},free:['mu'],sol:{mu:0},ok:function(P){return dN(P.mu,0,360)<=10;},h1:'Луна должна стоять на линии, соединяющей Землю и Солнце, ближе к Солнцу.',fact:'Солнечное затмение бывает только в новолуние: тень Луны падает на маленький кусочек Земли.',tp:'moon'}),
+ dl(49,'moon','Луна делает полный оборот за <b>29,5 суток</b>. Поставь Луну на 29-е сутки: это последняя ночь перед новолунием.',{p0:{mu:150},free:['mu'],sol:{mu:354},ok:function(P){return dN(P.mu,354,360)<=12;},h1:'Каждые сутки Луна проходит около 12° по орбите. Смотри на «Возраст Луны».',fact:'От новолуния до новолуния проходит 29,5 суток. Это время называют лунным месяцем.',tp:'moon'}),
+ bs(50,'moon',[29,30,31,32,33,34,35,36],'<b>Босс-викторина!</b> Пять вопросов про Луну. Нужно хотя бы 4 верных.','Луна светит отражённым светом, а её фазы — это то, как мы видим освещённую половину.'),
+ /* мир 6: планеты */
+ tpl(51,'sys','Планеты вращаются вокруг Солнца. <b>Нажми на самую близкую к Солнцу планету.</b>',{p0:{T:0.3},tap:'merc',h1:'Ближе всех к Солнцу — самая маленькая и самая быстрая планета.',fact:'Меркурий ближе всех к Солнцу. Год на нём — всего 88 земных суток.',tp:'planets'}),
+ tpl(52,'sys','<b>Самая большая планета</b> — настоящий гигант. Нажми на неё.',{p0:{T:1.1},tap:'jup',h1:'Эта планета больше всех остальных вместе взятых.',fact:'Юпитер больше всех других планет, вместе взятых: в него поместилось бы больше тысячи Земель.',tp:'planets'}),
+ tpl(53,'sys','<b>Планета с красивыми кольцами.</b> Найди её.',{p0:{T:2.2},tap:'sat',h1:'Она вторая по размеру и стоит за Юпитером.',fact:'Самые заметные кольца у Сатурна: они состоят из льда и камней.',tp:'planets'}),
+ tpl(54,'sys','<b>Красная планета</b>, где ищут следы воды. Нажми на неё.',{p0:{T:0.8},tap:'mars',h1:'Она стоит сразу за Землёй.',fact:'Марс красный из-за ржавой пыли. Когда-то там, возможно, была вода.',tp:'planets'}),
+ tpl(55,'sys','<b>Наша планета</b> — единственная, где точно есть жизнь. Найди её.',{p0:{T:1.7},tap:'earth',h1:'Она третья от Солнца.',fact:'Земля — третья от Солнца планета и единственная, где известна жизнь.',tp:'planets'}),
+ dl(56,'sys','<b>Год Меркурия.</b> Крути время: пусть Меркурий сделает полный оборот и вернётся на золотую линию.',{p0:{T:1.2},free:['T'],sol:{T:0.25},ok:function(P){return Math.abs(P.T-0.241)<=0.035;},h1:'Меркурий облетает Солнце за 88 суток — это чуть меньше трёх месяцев.',fact:'Год — это время одного оборота вокруг Солнца. На Меркурии он длится 88 земных суток.',tp:'planets'}),
+ dl(57,'sys','<b>Год Венеры.</b> Крути время, пока Венера не вернётся на золотую линию.',{p0:{T:2},free:['T'],sol:{T:0.6},ok:function(P){return Math.abs(P.T-0.615)<=0.04;},h1:'Год Венеры — 225 земных суток, это около семи месяцев.',fact:'Венерианский год длится 225 земных суток.',tp:'planets'}),
+ dl(58,'sys','<b>Год Марса.</b> Крути время, пока Марс не сделает полный оборот.',{p0:{T:0.4},free:['T'],sol:{T:1.88},ok:function(P){return Math.abs(P.T-1.881)<=0.09;},h1:'Марсианский год почти вдвое длиннее земного.',fact:'Год на Марсе — 687 земных суток, почти два земных года.',tp:'planets'}),
+ dl(59,'sys','<b>Год Юпитера.</b> Юпитер — далеко, и оборот у него долгий. Крути время, пока он не вернётся на золотую линию.',{p0:{T:3},free:['T'],sol:{T:11.86},ok:function(P){return Math.abs(P.T-11.86)<=0.45;},h1:'Юпитер идёт вокруг Солнца почти 12 земных лет. Кнопки «+1 год» помогут.',fact:'Юпитер облетает Солнце за 12 земных лет: пока Земля сделает 12 кругов, он сделает один.',tp:'planets'}),
+ bs(60,'planets',[37,38,39,40,41,42,43,44],'<b>Босс-викторина!</b> Пять вопросов про планеты. Нужно хотя бы 4 верных.','Ты знаешь планеты Солнечной системы и то, что такое год на разных планетах.'),
+ /* мир 7: звёздное небо */
+ tpl(61,'sky','Это ночное небо, повёрнутое к северу. <b>Найди Полярную звезду</b> — она почти не двигается.',{p0:{h:5},tap:'polaris',h1:'Все звёзды кружатся вокруг неё. Она в самом центре неба.',fact:'Полярная звезда почти не двигается и всегда показывает на север.',tp:'sky'}),
+ tpl(62,'sky','<b>Большая Медведица</b> — ковш из семи ярких звёзд. Найди его.',{p0:{h:2},tap:'uma',h1:'Ищи семь звёзд в форме большого ковша с ручкой.',fact:'Ковш Большой Медведицы помогает найти Полярную звезду: продли край ковша в пять раз.',tp:'sky'}),
+ tpl(63,'sky','<b>Кассиопея</b> — звёзды в форме буквы W (или М). Найди её.',{p0:{h:7},tap:'cas',h1:'Она по другую сторону от Полярной звезды, чем Большая Медведица.',fact:'Кассиопея стоит по другую сторону от Полярной звезды, чем Большая Медведица.',tp:'sky'}),
+ tpl(64,'sky','<b>Малая Медведица</b> — маленький ковш. Полярная звезда — конец его ручки. Нажми на него.',{p0:{h:11},tap:'umi',h1:'Это маленький ковш вокруг самой неподвижной звезды.',fact:'Полярная звезда входит в Малую Медведицу: она на конце ручки маленького ковша.',tp:'sky'}),
+ dl(65,'sky','Небо вращается вокруг Полярной звезды. <b>Поверни небо так, чтобы Большая Медведица оказалась над Полярной звездой.</b>',{p0:{h:3},free:['h'],sol:{h:17.4},ok:function(P){return dN(RA_UMA+15*P.h,90,360)<=25;},h1:'«Над» — значит вверху экрана, ближе к верхнему краю.',fact:'Из-за вращения Земли кажется, что звёзды кружатся вокруг Полярной звезды.',tp:'sky'}),
+ dl(66,'sky','Теперь поверни небо так, чтобы <b>Кассиопея оказалась внизу</b>, под Полярной звездой.',{p0:{h:6},free:['h'],sol:{h:17},ok:function(P){return dN(RA_CAS+15*P.h,270,360)<=25;},h1:'Кассиопея и Большая Медведица всегда по разные стороны от Полярной звезды.',fact:'Кассиопея и Большая Медведица как будто качаются на качелях вокруг Полярной звезды.',tp:'sky'}),
+ dl(67,'sky','За сутки небо делает полный оборот: 360° за 24 часа. <b>Поверни небо ровно на 4 часа вперёд.</b>',{p0:{h:0},free:['h'],sol:{h:4},ok:function(P){return dN(P.h,4,24)<=0.5;},h1:'1 час — это 15°, значит 4 часа — это 60°.',fact:'Небо поворачивается на 15° каждый час: так кажется, потому что вращается Земля.',tp:'sky'}),
+ pk(68,'sky','Звезда в центре почти не двигается. <b>Куда она показывает?</b>',{p0:{h:5},a:['На север','На юг','На восток'],c:0,h1:'Полярная звезда стоит над Северным полюсом Земли.',fact:'Полярная звезда указывает на север: по ней путешественники находят дорогу.',tp:'sky'}),
+ dl(69,'sky','Поверни небо на <b>12 часов</b>: Кассиопея и Большая Медведица поменяются местами.',{p0:{h:0},free:['h'],sol:{h:12},ok:function(P){return dN(P.h,12,24)<=0.7;},h1:'12 часов — это полоборота неба, 180°.',fact:'Через 12 часов Кассиопея и Большая Медведица меняются местами: небо повернулось на 180°.',tp:'sky'}),
+ bs(70,'sky',[4,9,14,23,31,38,47,50,52,35],'<b>Финальный босс!</b> Пять вопросов из всех миров. Нужно хотя бы 4 верных.','Ты настоящий астроном: знаешь сутки, часовые пояса, времена года, Луну, планеты и звёзды!')
+);
+function qq(tp,q,a,c,e){return {tp:tp,q:q,a:a,c:c,e:e};}
+Q.push(
+ qq('season','Почему на Земле бывают времена года?',['Из-за наклона земной оси','Земля то приближается к Солнцу, то удаляется','Солнце то разгорается, то остывает'],0,'Ось Земли наклонена, поэтому полушария по очереди подставляются под прямые лучи Солнца.'),
+ qq('season','За сколько времени Земля облетает Солнце?',['За сутки','За год','За месяц'],1,'Один оборот вокруг Солнца — один год, около 365 суток.'),
+ qq('season','Какого числа самый длинный день на севере?',['21 июня','21 декабря','20 марта'],0,'21 июня — летнее солнцестояние.'),
+ qq('season','Когда в Москве зима, в Австралии…',['Тоже зима','Лето','Всегда осень'],1,'Полушария по очереди наклонены к Солнцу, поэтому времена года у них наоборот.'),
+ qq('season','Когда день равен ночи?',['Только 21 июня','20 марта и 23 сентября','Каждый день'],1,'Это дни равноденствия, день и ночь тогда по 12 часов.'),
+ qq('season','Когда Земля ближе всего к Солнцу?',['В июне, поэтому лето','В начале января','Всегда на одном расстоянии'],1,'Ближе всего — в начале января, но у нас тогда зима: дело в наклоне оси.'),
+ qq('season','Сколько времён года в году?',['Два','Четыре','Шесть'],1,'Весна, лето, осень и зима.'),
+ qq('season','Какое время года на севере в октябре?',['Весна','Лето','Осень'],2,'Сентябрь, октябрь и ноябрь — осень.'),
+ qq('polar','Что такое полярный день?',['Время, когда Солнце не заходит много суток','День, который длится один час','День, когда на Земле холодно'],0,'За Полярным кругом летом Солнце не заходит за горизонт.'),
+ qq('polar','Где бывает полярная ночь?',['На экваторе','За Полярным кругом','В Москве'],1,'Зимой за Полярным кругом Солнце много суток не всходит.'),
+ qq('polar','На какой широте проходит Полярный круг?',['23,4° с. ш.','66,5° с. ш.','90° с. ш.'],1,'Это 90° минус наклон оси Земли.'),
+ qq('polar','Какой длины день на экваторе?',['Около 12 часов весь год','24 часа летом','6 часов зимой'],0,'На экваторе день и ночь почти равны круглый год.'),
+ qq('polar','Что такое белые ночи?',['Ночи со снегом','Ночи, когда на небе почти светло','Ночи без звёзд и Луны'],1,'Летом Солнце заходит ненадолго и неглубоко, поэтому ночью светло.'),
+ qq('polar','Где Солнце не заходит 21 июня?',['В Москве','В Мурманске','В Каире'],1,'Мурманск находится за Полярным кругом.'),
+ qq('polar','Как долго длится полярный день на Северном полюсе?',['Месяц','Около полугода','Один день'],1,'С 20 марта по 23 сентября Солнце не заходит.'),
+ qq('polar','Какой день в Москве 21 декабря?',['Самый длинный','Самый короткий','Как на экваторе'],1,'В Москве зимой светло всего около 7 часов.'),
+ qq('moon','Почему Луна светится?',['Она сама горит, как Солнце','Она отражает свет Солнца','Её освещает Земля'],1,'Луна не светит сама, она отражает солнечный свет.'),
+ qq('moon','Как называется Луна, когда её не видно?',['Полнолуние','Новолуние','Четверть'],1,'В новолуние Луна повёрнута к нам тёмной стороной.'),
+ qq('moon','Сколько суток от одного новолуния до другого?',['Около 7','Около 30','Около 365'],1,'Лунный месяц — 29,5 суток.'),
+ qq('moon','Лунное затмение бывает, когда…',['Луна в тени Земли','Луна закрывает Солнце','Земля закрывает звёзды'],0,'Земля оказывается между Солнцем и Луной.'),
+ qq('moon','Солнечное затмение бывает в…',['Полнолуние','Новолуние','Первую четверть'],1,'Луна проходит между Землёй и Солнцем.'),
+ qq('moon','Если Луна похожа на букву «С», она…',['Растёт','Стареет','Стоит на месте'],1,'Стареющая Луна похожа на «С», растущая — на «Р».'),
+ qq('moon','Почему мы всегда видим одну сторону Луны?',['Луна не вращается','Луна оборачивается вокруг оси за то же время, что вокруг Земли','Другая сторона не светится'],1,'Луна всегда повёрнута к Земле одной стороной.'),
+ qq('moon','Какая фаза Луны — светится половина диска?',['Четверть','Новолуние','Полнолуние'],0,'В четверть мы видим половину освещённого диска.'),
+ qq('planets','Какая планета ближе всех к Солнцу?',['Венера','Меркурий','Марс'],1,'Меркурий самый близкий к Солнцу.'),
+ qq('planets','Какая планета самая большая?',['Сатурн','Юпитер','Земля'],1,'Юпитер — планета-гигант.'),
+ qq('planets','Сколько планет в Солнечной системе?',['Пять','Восемь','Двенадцать'],1,'Меркурий, Венера, Земля, Марс, Юпитер, Сатурн, Уран и Нептун.'),
+ qq('planets','Какая планета красная?',['Марс','Венера','Нептун'],0,'Марс красный из-за ржавой пыли.'),
+ qq('planets','У какой планеты самые заметные кольца?',['У Марса','У Сатурна','У Меркурия'],1,'Кольца Сатурна видно даже в небольшой телескоп.'),
+ qq('planets','Что такое год на планете?',['Одни сутки','Время одного оборота вокруг Солнца','Время одного оборота вокруг своей оси'],1,'У каждой планеты свой год.'),
+ qq('planets','Какая по счёту от Солнца наша Земля?',['Вторая','Третья','Пятая'],1,'Земля — третья после Меркурия и Венеры.'),
+ qq('planets','Чей год длиннее: Земли или Юпитера?',['Земли','Юпитера','Одинаковый'],1,'Юпитер облетает Солнце почти 12 земных лет.'),
+ qq('sky','Какая звезда почти не движется по небу?',['Сириус','Полярная','Бетельгейзе'],1,'Полярная звезда стоит над Северным полюсом Земли.'),
+ qq('sky','Куда показывает Полярная звезда?',['На север','На юг','На запад'],0,'Полярная звезда указывает на север.'),
+ qq('sky','На сколько градусов поворачивается небо за час?',['На 15°','На 60°','На 1°'],0,'360° делим на 24 часа и получаем 15° в час.'),
+ qq('sky','Какое созвездие похоже на ковш?',['Кассиопея','Большая Медведица','Орион'],1,'Большая Медведица — ковш из семи звёзд.'),
+ qq('sky','Какое созвездие похоже на букву W?',['Кассиопея','Большая Медведица','Лебедь'],0,'Кассиопея похожа на W или М.'),
+ qq('sky','Почему звёзды кажутся кружащимися по небу?',['Вращается Земля','Звёзды летают вокруг Земли за сутки','Двигается Луна'],0,'Земля вращается, поэтому небо кажется поворачивающимся.'),
+ qq('sky','Через сколько часов небо повернётся на пол-оборота?',['Через 6','Через 12','Через 24'],1,'Полоборота — 180°, а это 12 часов.'),
+ qq('sky','Что помогает найти север ночью?',['Полярная звезда','Луна','Венера'],0,'Полярная звезда указывает на север.')
+);
+WORLDS.length=2;
+WORLDS.push(
+ {id:3,name:'Времена года',sub:'Орбита и наклон оси',from:21,to:30},
+ {id:4,name:'Полярный день',sub:'Широты и длина дня',from:31,to:40},
+ {id:5,name:'Луна',sub:'Фазы и затмения',from:41,to:50},
+ {id:6,name:'Планеты',sub:'Солнечная система и годы планет',from:51,to:60},
+ {id:7,name:'Звёздное небо',sub:'Созвездия и Полярная звезда',from:61,to:70}
+);
+/*I18N-BEGIN*/
+var UIRU={
+'logo':'ПЛАНЕТАРИЙ','title.sub':'Крути Землю — разгадывай космос','title.play':'Играть','title.repeat':'Повторение','title.journal':'Журнал наблюдений','title.reset':'Сбросить прогресс','title.reset_ask':'Точно стереть? Нажми ещё раз','title.reset_done':'Прогресс стёрт',
+'map.title':'Миры','map.world':'Мир {n}. {name}','map.soon':'{sub} — скоро','quiz.title':'Викторина','quiz.boss':'{n}-й босс','quiz.right':'Верно!','quiz.wrong':'Не совсем.',
+'journal.title':'Журнал наблюдений','journal.obs':'Наблюдение {n}','journal.locked':'Откроется после прохождения уровня.','lv.locked':'🔒 Откроется после уровня {n}',
+'game.title':'Уровень {n} · {w}','game.w1':'Сутки','game.w2':'Пояса',
+'ctl.rew':'🎬 Показать ответ за ролик','ctl.m1h':'⟲ −1 ч','ctl.m15':'−15 мин','ctl.p15':'+15 мин','ctl.p1h':'+1 ч ⟳','ctl.ok':'Готово ✓',
+'day.m1':'вчера','day.0':'сегодня','day.1':'завтра','day.label':'день: {d}',
+'rew.spin':'🎬 Комета повернула Землю. Нажми «Готово».','rew.clock':'🎬 Комета показала ответ. Нажми «Готово».',
+'hint.ring':'💡 Золотое кольцо на Земле показывает, где должен стоять город.','hint.clock2':'💡 Теперь на Земле видно время в нужных городах. Поставь такое же на часах.',
+'hint.auto.spin':'💡 Комета сама повернула Землю. Нажми «Готово».','hint.auto.clock':'💡 Комета подсказала ответ — нажми «Готово».',
+'err.spin':'🐱 Не совсем. В городе «{city}» сейчас <b>{now}</b>, а нужно <b>{need}</b>. Покрути ещё!','err.between':'между {a} и {b}',
+'err.clock':'🐱 Есть ошибка. Прикинь по Земле: ближе к Солнцу — значит время больше (идём на восток — прибавляем час).',
+'res.great':'Отлично!','res.boss_win':'Босс побеждён! {n} из 5','res.boss_lose':'Верных ответов: {n} из 5. Нужно 4','res.lose_text':'Не страшно! Пройди уровни ещё раз и попробуй снова — вопросы каждый раз новые.',
+'res.journal':'📖 Журнал наблюдений:','res.next':'Дальше','res.next_repeat':'Дальше (повтор)','res.again':'Ещё раз','res.map':'К уровням',
+'scene.rot':'вращение','scene.day':'☀ день',
+'map.lockworld':'🔒 Откроется после победы над боссом мира {n}',
+'date.fmt':'{d} {m}',
+'u.d':'дн',
+'u.mo':'мес',
+'u.y':'год',
+'u.h':'ч',
+'season.0':'зима',
+'season.1':'весна',
+'season.2':'лето',
+'season.3':'осень',
+'ro.north':'Север: {s}',
+'ro.south':'Юг: {s}',
+'dir.n':'с. ш.',
+'dir.s':'ю. ш.',
+'ro.sunlat':'Солнце в зените: {v}',
+'ro.day':'День: {h} ч',
+'ro.day24':'День: 24 ч, Солнце не заходит',
+'ro.day0':'День: 0 ч, Солнце не встаёт',
+'ro.day24s':'24 ч, не заходит',
+'ro.day0s':'0 ч, не встаёт',
+'ro.age':'Возраст Луны: {d} сут.',
+'ro.view':'Вид с Земли',
+'ro.ecl.sun':'☀ Солнечное затмение',
+'ro.ecl.moon':'🌑 Лунное затмение',
+'ph.0':'Новолуние',
+'ph.1':'Молодой месяц',
+'ph.2':'Первая четверть',
+'ph.3':'Растущая Луна',
+'ph.4':'Полнолуние',
+'ph.5':'Убывающая Луна',
+'ph.6':'Последняя четверть',
+'ph.7':'Старый месяц',
+'ro.years':'Прошло: {y} лет',
+'ro.start':'старт',
+'ro.laps':'{p}: {n} об.',
+'pl.merc':'Меркурий',
+'pl.venus':'Венера',
+'pl.earth':'Земля',
+'pl.mars':'Марс',
+'pl.jup':'Юпитер',
+'pl.sat':'Сатурн',
+'pl.ura':'Уран',
+'pl.nep':'Нептун',
+'ro.sky':'Небо повернулось на {d}° ({h} ч)',
+'sk.pol':'Полярная','sk.uma':'Большая Медведица','sk.umi':'Малая Медведица','sk.cas':'Кассиопея',
+'hint.sol':'💡 Ищи около значения: {v}.',
+'hint.ring2':'💡 Золотое кольцо показывает нужное место.',
+'hint.tap2':'💡 Золотое кольцо — вот что нужно!',
+'hint.pick2':'💡 Один неверный ответ убран.',
+'hint.auto.dial':'💡 Комета сама всё поставила. Нажми «Готово».',
+'hint.auto.tap':'💡 Комета показала нужное. Нажми на него.',
+'hint.auto.pick':'💡 Комета подсказала верный ответ.',
+'rew.dial':'🎬 Комета всё поставила. Нажми «Готово».',
+'rew.tap':'🎬 Комета показала нужное. Нажми на него.',
+'rew.pick':'🎬 Комета показала верный ответ.',
+'err.dial':'🐱 Пока не то. Сейчас: {ro} Подумай ещё!',
+'err.tap':'🐱 Это не то. Попробуй другой объект!',
+'err.pick':'🐱 Не совсем. Выбери другой ответ.',
+'mon.1':'января',
+'mon.2':'февраля',
+'mon.3':'марта',
+'mon.4':'апреля',
+'mon.5':'мая',
+'mon.6':'июня',
+'mon.7':'июля',
+'mon.8':'августа',
+'mon.9':'сентября',
+'mon.10':'октября',
+'mon.11':'ноября',
+'mon.12':'декабря'
+};
+var RUD={};(function(){for(var k in UIRU)RUD[k]=UIRU[k];
+ for(var c in CITIES)RUD['city.'+c]=CITIES[c].n;
+ WORLDS.forEach(function(w){RUD['world.'+w.id+'.name']=w.name;RUD['world.'+w.id+'.sub']=w.sub;});
+ LEVELS.forEach(function(L){RUD['lv.'+L.id+'.txt']=L.txt;RUD['lv.'+L.id+'.fact']=L.fact;if(L.h1)RUD['lv.'+L.id+'.h1']=L.h1;if(L.a)L.a.forEach(function(a,j){RUD['lv.'+L.id+'.a'+j]=a;});});
+ Q.forEach(function(q,i){if(!q)return;RUD['q.'+i+'.q']=q.q;q.a.forEach(function(a,j){RUD['q.'+i+'.a'+j]=a;});RUD['q.'+i+'.e']=q.e;});
+})();
+/*I18N-END*/
+var LANG='ru',EN=window.I18N_EN||null;
+var _tt=0;function toast(m){var e=document.getElementById('toast');if(!e)return;e.textContent=m;e.classList.add('on');clearTimeout(_tt);_tt=setTimeout(function(){e.classList.remove('on');},2600);}
+function t(k,p){var s=(LANG==='en'&&EN&&EN[k]!=null)?EN[k]:(RUD[k]!=null?RUD[k]:k);if(p)for(var x in p)s=s.split('{'+x+'}').join(p[x]);return s;}
+function cn(k){return t('city.'+k);}
+function lt(L,f){return t('lv.'+L.id+'.'+f);}
+function applyStatic(){[].forEach.call(document.querySelectorAll('[data-t]'),function(el){el.textContent=t(el.getAttribute("data-t"));});document.documentElement.lang=LANG;try{if(window.Premium)Premium.setLang(LANG);}catch(e){}document.title=LANG==='en'?'Planetarium':'Планетарий';var b=document.getElementById('bLang');if(b){b.hidden=!EN;b.textContent=LANG==='en'?'Русский':'English';}}
+function pickLang(){if(!EN)return 'ru';var l=(PF.lang&&PF.lang())||'';if(!l)l=(navigator.language||'ru').slice(0,2);return /^(ru|be|kk|uk|uz|ky|hy|az|tg|tk)/.test(l)?'ru':'en';}
+/* ===== утилиты ===== */
+function $(id){return document.getElementById(id);}
+var IM={};['bg_w1','bg_w2','sun','cover','mira','mira_think','mira_win','kometa','kometa_hint','stars_pop'].forEach(function(n){var i=new Image();i.onload=function(){IM[n]=i;if(n==='cover')coverOn();if(n==='mira')setAv('mira');};i.src=(window.IMGDATA&&window.IMGDATA[n])||'img/'+n+'.webp';});
+var AVF={mira:'🧑‍🚀',mira_think:'🤔',mira_win:'🎉',kometa:'🐱',kometa_hint:'💡'};
+function setAv(n){var el=$('av');if(!el)return;el.innerHTML=IM[n]?'<img src="'+IM[n].src+'" alt="">':AVF[n];}
+function coverOn(){var t=$('scrTitle');if(IM.cover){t.classList.add('cov');t.style.backgroundImage='linear-gradient(rgba(5,8,32,.15),rgba(5,8,32,.55)),url('+IM.cover.src+')';}}
+function mod(a,n){return ((a%n)+n)%n;}
+function cd(a,b){var d=mod(a-b,24);return Math.min(d,24-d);}
+function fmt(h){h=mod(h,24);var m=Math.round(h*60)%1440;return Math.floor(m/60)+':'+('0'+(m%60)).slice(-2);}
+function shift(c,mode){return mode==='civil'?CITIES[c].off:CITIES[c].lon/15;}
+function localT(c,t,mode){return mod(t+shift(c,mode),24);}
+function lvl(id){return LEVELS[id-1];}
+/* ===== сохранение ===== */
+var SK='planetariy-save';
+var SV={v:1,stars:{},journal:{},err:{day:0,zones:0}};
+function load(){try{var r=PF.get(SK);if(r){var o=JSON.parse(r);if(o&&o.v===1){SV=o;SV.stars=SV.stars||{};SV.journal=SV.journal||{};SV.err=SV.err||{day:0,zones:0};}}}catch(e){}}
+function save(){try{PF.put(SK,JSON.stringify(SV));}catch(e){}}
+/* слияние облака и устройства по ключам (PF.mergers): звёзды и ошибки — по большему, журнал — объединение; после сброса прогресса (rst) побеждает более поздний сброс */
+PF.mergers[SK]=function(a,b){var x=JSON.parse(a),y=JSON.parse(b);if(!x||!y||x.v!==1||y.v!==1)return null;
+ var rx=x.rst||0,ry=y.rst||0;if(rx!==ry)return rx>ry?a:b;
+ var o={v:1,stars:{},journal:{},err:{day:0,zones:0}};if(rx)o.rst=rx;
+ [x,y].forEach(function(s){var st=s.stars||{},jn=s.journal||{},er=s.err||{};for(var k in st)o.stars[k]=Math.max(o.stars[k]||0,st[k]);for(var j in jn)if(jn[j])o.journal[j]=1;for(var e in er)o.err[e]=Math.max(o.err[e]||0,er[e]);});
+ var lg=x.lang||y.lang;if(lg)o.lang=lg;var fa=Math.max(x.fa||0,y.fa||0);if(fa)o.fa=fa;return JSON.stringify(o);};
+PF.mergers['planetariy-premium']=function(a,b){return window.Premium&&Premium.mergeState?Premium.mergeState(a,b):null;};
+function totalStars(){var s=0;for(var k in SV.stars)s+=SV.stars[k];return s;}
+function unlocked(id){return id===1||(SV.stars[id-1]||0)>0;}
+/* ===== экраны ===== */
+var cur='title';
+function show(n){['title','map','game','quiz','journal'].forEach(function(s){var el=$('scr'+s[0].toUpperCase()+s.slice(1));if(el)el.hidden=(s!==n);});$('scrRes').hidden=true;cur=n;PF.setPlaying&&PF.setPlaying(n==='game'||n==='quiz');if(n==='map')buildMap();if(n==='journal')buildJournal();if(n==='game')setTimeout(resize,0);pmSync();}
+document.addEventListener('click',function(e){var g=e.target.closest&&e.target.closest('[data-go]');if(g)show(g.getAttribute('data-go'));});
+function buildMap(){
+ var h='';var nextId=0;for(var i=1;i<=LEVELS.length;i++){if(unlocked(i)&&!(SV.stars[i]>0)){nextId=i;break;}}
+ WORLDS.forEach(function(w){
+  if(w.soon){h+='<div class="world soon"><h3>'+t('map.world',{n:w.id,name:t('world.'+w.id+'.name')})+'</h3><p>'+t('map.soon',{sub:t('world.'+w.id+'.sub')})+'</p></div>';return;}
+  var wl=!unlocked(w.from);
+  h+='<div class="world'+(wl?' wlock':'')+'"><h3>'+t('map.world',{n:w.id,name:t('world.'+w.id+'.name')})+'</h3><p>'+t('world.'+w.id+'.sub')+'</p>'+(wl?'<p class="lh">'+t('map.lockworld',{n:w.id-1})+'</p>':'')+'<div class="grid">';
+  for(var i=w.from;i<=w.to;i++){var st=SV.stars[i]||0,un=unlocked(i),bs=lvl(i).t==='boss';
+   h+='<button class="lv'+(bs?' boss':'')+(un?'':' lock')+(i===nextId?' next':'')+'" data-lv="'+i+'">'+(bs?'👑':i)+'<small>'+(st?'★★★'.slice(0,st):(un?'':'🔒'))+'</small></button>';}
+  h+='</div></div>';});
+ $('worlds').innerHTML=h;$('mapStars').textContent='★ '+totalStars();
+}
+$('worlds').addEventListener('click',function(e){var b=e.target.closest('[data-lv]');if(!b)return;var id=+b.getAttribute('data-lv');if(!unlocked(id)){toast(t('lv.locked',{n:id-1}));return;}Q_ADAPT=null;openLevel(id);});
+function buildJournal(){
+ var h='',n=0;LEVELS.forEach(function(L){var open=SV.journal[L.id];if(open)n++;
+  h+='<div class="fc'+(open?'':' lock')+'"><b>'+(L.t==='boss'?'👑 ':'')+t('journal.obs',{n:L.id})+'</b>'+(open?lt(L,'fact'):t('journal.locked'))+'</div>';});
+ $('jList').innerHTML=h;$('jCnt').textContent=n+'/'+LEVELS.length;
+}
+/* ===== игра ===== */
+var cv=$('cv'),ctx=cv.getContext('2d'),dpr=1,W=0,H=0;
+var G=null;           // текущий уровень
+var Q_ADAPT=null;     // очередь повторения
+function resize(){var r=cv.getBoundingClientRect();dpr=Math.min(window.devicePixelRatio||1,2);W=r.width;H=r.height;cv.width=Math.max(1,Math.round(W*dpr));cv.height=Math.max(1,Math.round(H*dpr));}
+if(window.ResizeObserver)new ResizeObserver(resize).observe($('stage'));window.addEventListener('resize',resize);
+function solve(L){
+ var best=1e9,bt=0;
+ for(var t=0;t<24;t+=1/60){var e=0;L.conds.forEach(function(c){var cl=localT(c.c,t,L.mode),h=c.h!=null?c.h:mod((c.from+(mod(c.to-c.from,24))/2),24);e=Math.max(e,cd(cl,h)*60);});
+  if(e<best-1e-6){best=e;bt=t;}}
+ return bt;
+}
+function openLevel(id){
+ var L=lvl(id);if(L.t==='boss'){openQuiz(L);return;}
+ G={L:L,hint:0,tries:0,t:0,anim:null,dragging:false,done:false,ans:[],P:null,show:false,ring:false};
+ if(L.t==='spin'){G.sol=solve(L);G.t=mod(G.sol+7.3+id*1.7,24);}
+ else if(L.t==='clock'){var g=L.given;G.t=mod(g.h-CITIES[g.c].off,24);G.ans=L.items.map(function(it){return {h:mod(it.h+5,24),day:0};});}
+ else{G.P=JSON.parse(JSON.stringify(L.p0));}
+ $('gTitle').textContent=t('game.title',{n:id,w:t('world.'+Math.ceil(id/10)+'.name')});
+ $('msg').innerHTML=lt(L,'txt');$('hn').textContent=3;setAv('mira');
+ buildCtl();show('game');
+}
+function rewLbl(){return t('ctl.rew');}
+function freeLbl(){var n=SV.fa||0;return (LANG==='en'?'🎁 Answer from Comet (gift): ':'🎁 Ответ Кометы (подарок): ')+n;}
+function rewBtn(){return (PF.canReward()?'<div class="row"><button class="sm" id="bRew">'+rewLbl()+'</button></div>':'')+((SV.fa||0)>0?'<div class="row"><button class="sm" id="bFree">'+freeLbl()+'</button></div>':'');}
+function giveAnswer(b){G.free=true;G.hint=3;$('hn').textContent=0;setAv('kometa_hint');var L=G.L;if(L.t==='spin'){G.anim={to:G.sol};$('msg').innerHTML=t('rew.spin');}else if(L.t==='clock'){L.items.forEach(function(it,i){G.ans[i]={h:it.h,day:it.day||0};});renderCards();$('msg').innerHTML=t('rew.clock');}else revealNew(L,true);b.hidden=true;}
+function buildCtl(){
+ var L=G.L,c=$('ctl'),h='';
+ if(L.t==='spin'){
+  h='<div class="row"><button class="sm" data-d="-1">'+t('ctl.m1h')+'</button><button class="sm" data-d="-.25">'+t('ctl.m15')+'</button><button class="sm" data-d=".25">'+t('ctl.p15')+'</button><button class="sm" data-d="1">'+t('ctl.p1h')+'</button></div><div class="row"><button class="btn" id="bOk" style="width:70%">'+t('ctl.ok')+'</button></div>'+rewBtn();
+ }else if(L.t==='dial'){
+  h=dialBtns(L)+'<div class="row"><button class="btn" id="bOk" style="width:70%">'+t('ctl.ok')+'</button></div>'+rewBtn();
+ }else if(L.t==='tap'){
+  h=rewBtn();
+ }else if(L.t==='pick'){
+  h='<div id="pks">'+L.a.map(function(a,i){return '<button class="opt" data-pk="'+i+'">'+t('lv.'+L.id+'.a'+i)+'</button>';}).join('')+'</div>'+rewBtn();
+ }else{
+  h='<div class="cards" id="cards">';
+  L.items.forEach(function(it,i){h+='<div class="ccard" data-i="'+i+'"><div class="cn">'+cn(it.c)+'</div><div class="clk"></div><div class="dg"></div><div class="cr"><button data-s="-1">−</button><button data-s="1">+</button></div><button class="dy" data-dy="1"></button></div>';});
+  h+='</div><div class="row"><button class="btn" id="bOk" style="width:70%">'+t('ctl.ok')+'</button></div>'+rewBtn();
+ }
+ c.innerHTML=h;if(L.t==='clock')renderCards();
+}
+function clockSvg(h){var m=(h%1)*60,hh=h%12,ah=hh*30+m*.5,am=m*6,r=function(a,l){var x=35+Math.sin(a*Math.PI/180)*l,y=35-Math.cos(a*Math.PI/180)*l;return x+','+y;};
+ var s='<svg viewBox="0 0 70 70"><circle cx="35" cy="35" r="33" fill="#fff" stroke="#ffd23f" stroke-width="3"/>';
+ for(var i=0;i<12;i++){var a=i*30;var p=r(a,29),q=r(a,25);s+='<line x1="'+p.split(',')[0]+'" y1="'+p.split(',')[1]+'" x2="'+q.split(',')[0]+'" y2="'+q.split(',')[1]+'" stroke="#334" stroke-width="2"/>';}
+ var a1=r(ah,16).split(','),a2=r(am,24).split(',');
+ s+='<line x1="35" y1="35" x2="'+a1[0]+'" y2="'+a1[1]+'" stroke="#e0452c" stroke-width="4" stroke-linecap="round"/><line x1="35" y1="35" x2="'+a2[0]+'" y2="'+a2[1]+'" stroke="#223" stroke-width="2.5" stroke-linecap="round"/><circle cx="35" cy="35" r="3" fill="#223"/></svg>';return s;}
+function dayn(d){return t(d<0?'day.m1':d>0?'day.1':'day.0');}
+function renderCards(){var cs=document.querySelectorAll('.ccard');G.ans.forEach(function(a,i){var c=cs[i];c.querySelector('.clk').innerHTML=clockSvg(a.h);c.querySelector('.dg').textContent=fmt(a.h);c.querySelector('.dy').textContent=t('day.label',{d:dayn(a.day)});});}
+$('ctl').addEventListener('click',function(e){
+ if(!G||G.done)return;var b=e.target.closest('button');if(!b)return;
+ if(b.id==='bOk'){check();return;}
+ if(b.id==='bRew'){PF.rewarded(function(ok){if(!ok||!G||G.done)return;giveAnswer(b);});return;}
+ if(b.id==='bFree'){if(!((SV.fa||0)>0)||G.free)return;SV.fa--;save();giveAnswer(b);return;}
+ if(b.hasAttribute('data-p')){G.anim=null;applyBtn(b.getAttribute('data-p'),parseFloat(b.getAttribute('data-v')));return;}
+ if(b.hasAttribute('data-pk')){pickAns(+b.getAttribute('data-pk'),b);return;}
+ if(b.hasAttribute('data-d')){G.anim=null;G.t=mod(G.t+parseFloat(b.getAttribute('data-d')),24);return;}
+ var card=b.closest('.ccard');if(!card)return;var a=G.ans[+card.getAttribute('data-i')];card.classList.remove('ok','no');
+ if(b.hasAttribute('data-s'))a.h=mod(a.h+parseInt(b.getAttribute('data-s')),24);
+ else if(b.hasAttribute('data-dy'))a.day=a.day===1?-1:a.day+1;
+ renderCards();
+});
+/* подсказки */
+$('gHint').addEventListener('click',function(){
+ if(!G||G.done)return;var L=G.L;if(G.hint>=3)return;G.hint++;$('hn').textContent=3-G.hint;
+ setAv(G.hint===3?'kometa_hint':'mira_think');
+ if(G.hint===1)$('msg').innerHTML='💡 '+lt(L,'h1');
+ else if(G.hint===2){if(L.t==='spin'||L.t==='clock')$('msg').innerHTML=t(L.t==='spin'?'hint.ring':'hint.clock2');else hint2New(L);}
+ else{if(L.t==='spin'){G.anim={to:G.sol};$('msg').innerHTML=t('hint.auto.spin');}
+  else if(L.t==='dial'||L.t==='tap'||L.t==='pick')revealNew(L,false);
+  else{L.items.forEach(function(it,i){G.ans[i]={h:it.h,day:it.day||0};});renderCards();$('msg').innerHTML=t('hint.auto.clock');}}
+});
+function condErr(c,L,t){var cl=localT(c.c,t,L.mode);if(c.h!=null)return cd(cl,c.h)*60;
+ var w=mod(c.to-c.from,24),p=mod(cl-c.from,24);if(p<=w)return 0;return Math.min(cd(cl,c.from),cd(cl,c.to))*60;}
+function baseStars(e){return e<=20?3:e<=40?2:e<=60?1:0;}
+function check(){
+ if(G.L.t==='dial'){checkDial();return;}
+ var L=G.L,st=0;G.tries++;
+ if(L.t==='spin'){
+  var worst=-1,wc=null;L.conds.forEach(function(c){var e=condErr(c,L,G.t);if(e>worst){worst=e;wc=c;}});
+  st=baseStars(worst);
+  if(!st){SV.err[L.topic]=(SV.err[L.topic]||0)+1;save();var tgt=wc.h!=null?fmt(wc.h):t('err.between',{a:fmt(wc.from),b:fmt(wc.to)});
+   setAv('kometa');$('msg').innerHTML=t('err.spin',{city:cn(wc.c),now:fmt(localT(wc.c,G.t,L.mode)),need:tgt});return;}
+ }else{
+  var cs=document.querySelectorAll('.ccard'),all=true;
+  L.items.forEach(function(it,i){var ok=G.ans[i].h===it.h&&G.ans[i].day===(it.day||0);cs[i].classList.remove('ok','no');cs[i].classList.add(ok?'ok':'no');if(!ok)all=false;});
+  if(!all){SV.err.zones=(SV.err.zones||0)+1;save();setAv('kometa');$('msg').innerHTML=t('err.clock');return;}
+  st=G.tries===1?3:G.tries===2?2:1;
+ }
+ st=Math.max(1,st-(G.free?0:G.hint));finish(L,st);
+}
+function finish(L,st){
+ G.done=true;markDone(false);if(st>(SV.stars[L.id]||0))SV.stars[L.id]=st;SV.journal[L.id]=1;save();
+ showRes(L,st);
+}
+function showRes(L,st,title){
+ $('rTitle').textContent=title||t('res.great');$('rHero').innerHTML=IM[st?'mira_win':'mira_think']?'<img class=hero src="'+IM[st?'mira_win':'mira_think'].src+'" alt="">':'';
+ $('rStars').innerHTML='★★★'.slice(0,st)+'<i>'+'★★★'.slice(0,3-st)+'</i>';
+ $('rFact').innerHTML='<b>'+t('res.journal')+'</b><br>'+lt(L,'fact');
+ var nxt=nextAfter(L.id);$('rNext').style.display=nxt?'':'none';$('rNext').textContent=t(Q_ADAPT&&Q_ADAPT.length?'res.next_repeat':'res.next');
+ $('scrRes').hidden=false;pmSync();pmCard(600);
+}
+function nextAfter(id){if(Q_ADAPT&&Q_ADAPT.length)return Q_ADAPT[0];var n=id+1;return (n<=LEVELS.length&&unlocked(n))?n:0;}
+$('rNext').addEventListener('click',function(){var L=G&&G.L||curBoss;var n;if(Q_ADAPT&&Q_ADAPT.length){n=Q_ADAPT.shift();}else n=nextAfter(L.id);$('scrRes').hidden=true;adGate(function(){if(n)openLevel(n);else show('map');});});
+$('rAgain').addEventListener('click',function(){var L=G&&G.L||curBoss;$('scrRes').hidden=true;openLevel(L.id);});
+$('rMap').addEventListener('click',function(){$('scrRes').hidden=true;Q_ADAPT=null;adGate(function(){show('map');});});
+$('gBack').addEventListener('click',function(){show('map');});
+/* ===== викторина ===== */
+var doneCount=0,adDue=false;
+function adGate(done){if(adDue){adDue=false;PF.interstitial(function(){done();pmCard(400);});}else done();}
+function markDone(isBoss){doneCount++;if(isBoss||doneCount%5===0)adDue=true;}
+var curBoss=null,qs=[],qi=0,qok=0,qlock=false;
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var x=a[i];a[i]=a[j];a[j]=x;}return a;}
+function openQuiz(L){curBoss=L;G=null;qs=shuffle(L.pool).slice(0,L.n);qi=0;qok=0;$('qTitle').textContent='👑 '+t('quiz.boss',{n:L.id/10});show('quiz');nextQ();}
+function nextQ(){
+ if(qi>=qs.length){var pass=qok>=4,st=pass?(qok===5?3:2):0;
+  if(pass){markDone(true);if(st>(SV.stars[curBoss.id]||0))SV.stars[curBoss.id]=st;SV.journal[curBoss.id]=1;save();showRes(curBoss,st,t('res.boss_win',{n:qok}));}
+  else{showRes(curBoss,0,t('res.boss_lose',{n:qok}));$('rNext').style.display='none';$('rFact').textContent=t('res.lose_text');}
+  return;}
+ var q=Q[qs[qi]],ord=shuffle([0,1,2]);qlock=false;$('qProg').textContent=(qi+1)+'/'+qs.length;$('qq').textContent=t('q.'+qs[qi]+'.q');$('qExp').textContent='';$('qNext').hidden=true;
+ $('qo').innerHTML=ord.map(function(k){return '<button class="opt" data-k="'+k+'">'+t('q.'+qs[qi]+'.a'+k)+'</button>';}).join('');
+}
+$('qo').addEventListener('click',function(e){var b=e.target.closest('.opt');if(!b||qlock)return;qlock=true;var q=Q[qs[qi]],k=+b.getAttribute('data-k');
+ [].forEach.call($('qo').children,function(x){if(+x.getAttribute('data-k')===q.c)x.classList.add('ok');});
+ if(k===q.c){qok++;$('qExp').textContent=t('quiz.right')+' '+t('q.'+qs[qi]+'.e');}else{b.classList.add('no');var tp=q.tp||(qs[qi]<=7?'day':'zones');SV.err[tp]=(SV.err[tp]||0)+1;save();$('qExp').textContent=t('quiz.wrong')+' '+t('q.'+qs[qi]+'.e');}
+ $('qNext').hidden=false;});
+$('qNext').addEventListener('click',function(){qi++;nextQ();});
+$('qBack').addEventListener('click',function(){show('map');});
+/* ===== повторение ===== */
+function startRepeat(){
+ var c=[];LEVELS.forEach(function(L){if(L.t==='boss'||!SV.stars[L.id])return;if(SV.stars[L.id]<3)c.push(L);});
+ c.sort(function(a,b){return (SV.stars[a.id]-SV.stars[b.id])||((SV.err[b.topic]||0)-(SV.err[a.topic]||0));});
+ var ids=c.slice(0,3).map(function(L){return L.id;});
+ if(!ids.length){var d=[];LEVELS.forEach(function(L){if(L.t!=='boss'&&SV.stars[L.id])d.push(L.id);});ids=shuffle(d).slice(0,3);}
+ if(!ids.length){show('map');return;}
+ Q_ADAPT=ids.slice(1);openLevel(ids[0]);
+}
+/* ===== сцена ===== */
+var STARS=[];(function(){var s=7;function r(){s=(s*16807)%2147483647;return s/2147483647;}for(var i=0;i<70;i++)STARS.push([r(),r(),r()*1.6+.4,r()*6]);})();
+var CLAT={msk:55.8,lon:51.5,ber:52.5,cai:30,ekb:56.8,omsk:55,vl:43.1,tok:35.7,ny:40.7,la:34};
+var PL=[
+ ['#5ed16b',[[-17,21],[-16,12],[-8,4.5],[5,5],[9,4],[10,-2],[13,-12],[12,-18],[15,-27],[18,-34],[25,-34],[32,-28],[35,-20],[40,-15],[40,-10],[39,-5],[42,0],[51,11],[43,12],[38,18],[33,28],[32,31],[20,31],[10,34],[10,37],[0,36],[-6,35.5],[-10,30],[-13,27]]],
+ ['#5ed16b',[[-9,37],[-9,43],[-2,43.5],[-1,46],[-4.5,48],[2,51],[8,54],[9,57],[11,54],[14,54],[21,55],[24,59],[30,60],[23,60],[21,64],[25,65.5],[18,63],[12,56],[6,58],[5,62],[14,67],[20,70],[30,70],[40,67],[44,68],[60,69],[70,73],[80,73],[100,77],[113,74],[130,71],[140,72],[160,70],[170,70],[180,68],[180,65],[170,60],[163,59],[156,51],[155,57],[143,59],[137,54],[141,48],[135,43],[130,42],[129,35],[126,35],[126,38],[125,40],[121,40],[122,37],[119,35],[122,31],[121,28],[119,25],[113,22],[108,21],[106,19],[109,12],[105,9],[100,13],[100,7],[103,1.5],[98,8],[98,16],[94,17],[92,21],[88,22],[80,15],[77,8],[73,18],[72,21],[67,24],[57,25.5],[56,27],[50,30],[48,30],[51,24],[56,25],[59,22],[52,16],[44,13],[43,16],[39,21],[35,28],[34,31],[35,36],[28,37],[26,40],[23,40],[22,37],[19,41],[14,45],[12,44],[18,40],[16,38],[10,44],[3,43],[0,39],[-5,36]]],
+ ['#5ed16b',[[-5,50],[1,51],[2,53],[-2,56],[-3,58.5],[-6,57],[-5,54],[-3,53],[-5,52]]],
+ ['#5ed16b',[[-10,52],[-6,52],[-6,55],[-9,54]]],
+ ['#e8f4ff',[[-24,64],[-14,64],[-14,66],[-22,66.5]]],
+ ['#5ed16b',[[130,31],[135,33],[140,35],[142,38],[142,42],[145,44],[141,45],[139,40],[136,36],[131,34]]],
+ ['#5ed16b',[[44,-25],[47,-25],[50,-15],[49,-12],[44,-17]]],
+ ['#5ed16b',[[95,5],[98,4],[106,-3],[104,-5],[100,-2]]],
+ ['#5ed16b',[[105,-6],[114,-8],[106,-7.5]]],
+ ['#5ed16b',[[109,1],[117,7],[119,1],[116,-4],[110,-3]]],
+ ['#5ed16b',[[131,-1],[141,-3],[150,-10],[141,-9],[137,-5]]],
+ ['#5ed16b',[[114,-22],[122,-18],[130,-12],[137,-12],[136,-16],[142,-11],[146,-19],[153,-26],[151,-34],[147,-39],[141,-38],[135,-35],[131,-31],[124,-33],[115,-34],[114,-26]]],
+ ['#5ed16b',[[172,-35],[178,-38],[175,-41],[172,-41]]],
+ ['#5ed16b',[[-168,66],[-162,70],[-156,71],[-141,70],[-128,70],[-115,68],[-95,72],[-90,68],[-82,69],[-80,63],[-93,61],[-95,58],[-88,56],[-82,55],[-79,52],[-77,57],[-78,62],[-70,61],[-65,60],[-62,57],[-56,52],[-60,50],[-66,49],[-65,45],[-70,43],[-70,41],[-74,40],[-76,35],[-81,31],[-80,26],[-82,27],[-83,30],[-89,30],[-94,29],[-97,26],[-97,22],[-95,19],[-91,19],[-90,21],[-87,21],[-88,16],[-84,15],[-83,10],[-79,9],[-77,8],[-80,7],[-84,9],[-87,13],[-92,15],[-96,16],[-105,20],[-106,23],[-112,29],[-115,31],[-117,32],[-121,35],[-124,40],[-124,46],[-124,48],[-128,51],[-133,55],[-140,59],[-148,60],[-152,59],[-158,57],[-164,55],[-158,58],[-162,60],[-165,62],[-166,65]]],
+ ['#e8f4ff',[[-73,78],[-60,82],[-30,83],[-20,80],[-20,70],[-30,68],[-43,60],[-50,62],[-55,68],[-60,76]]],
+ ['#5ed16b',[[-77,8],[-72,12],[-62,10],[-52,5],[-50,0],[-44,-2],[-35,-5],[-35,-9],[-39,-14],[-41,-22],[-48,-26],[-53,-34],[-58,-35],[-57,-38],[-62,-39],[-65,-42],[-67,-46],[-69,-51],[-68,-54],[-72,-53],[-75,-47],[-73,-40],[-71,-30],[-70,-18],[-76,-14],[-81,-6],[-80,-2],[-78,2]]],
+ ['#2f9fe0',[[28,42],[28,45],[33,46],[38,47],[41,42],[36,41.5],[31,41]]],
+ ['#2f9fe0',[[47,45],[53,47],[54,40],[50,37],[49,40]]]
+];
+function drawLand(ls,cx,cy,R){
+ ctx.lineJoin='round';ctx.lineWidth=1.6;ctx.strokeStyle='#2a7f3a';
+ PL.forEach(function(P){ctx.fillStyle=P[0];ctx.beginPath();P[1].forEach(function(q,i){var p=polar(q[0],q[1],ls,cx,cy,R);if(i)ctx.lineTo(p[0],p[1]);else ctx.moveTo(p[0],p[1]);});ctx.closePath();ctx.fill();ctx.stroke();});
+ var g=ctx.createRadialGradient(cx,cy,0,cx,cy,R*.12);g.addColorStop(0,'#fff');g.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R*.12,0,6.3);ctx.fill();
+}
+function polar(lon,lat,ls,cx,cy,R){var th=(lon-ls)*Math.PI/180,r=R*Math.max(0,Math.min(1.3,(90-lat)/125));return [cx+r*Math.cos(th),cy-r*Math.sin(th)];}
+function lsun(){return -(G.t-12)*15;}
+function frame(now){
+ requestAnimationFrame(frame);
+ if(cur!=='game'||!G||!W||PF.paused())return;
+ if(G.anim&&G.L.t==='dial')animDial();
+ else if(G.anim){var d=((G.anim.to-G.t+36)%24)-12;if(Math.abs(d)<.01){G.t=G.anim.to;G.anim=null;}else G.t=mod(G.t+d*.12,24);}
+ draw(now/1000);
+}
+function draw(T){
+ var L=G.L;ctx.setTransform(dpr,0,0,dpr,0,0);
+ var gr=ctx.createLinearGradient(0,0,0,H);var wc=({6:['#14072e','#3b1566'],7:['#02030f','#0a1140']})[Math.ceil(L.id/10)]||['#070b2e','#16206a'];gr.addColorStop(0,wc[0]);gr.addColorStop(1,wc[1]);ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
+ var bg=IM['bg_w'+Math.ceil(L.id/10)];if(bg){var k=Math.max(W/bg.width,H/bg.height),bw=bg.width*k,bh=bg.height*k;ctx.globalAlpha=.8;ctx.drawImage(bg,(W-bw)/2,(H-bh)/2,bw,bh);ctx.globalAlpha=1;}
+ STARS.forEach(function(s){ctx.globalAlpha=.4+.5*Math.abs(Math.sin(T*1.3+s[3]));ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s[0]*W,s[1]*H,s[2],0,6.3);ctx.fill();});ctx.globalAlpha=1;
+ if(L.sc){drawSc(L,T);return;}
+ var R=Math.min(W*.31,H*.38),cx=W*.40,cy=H*.5,sr=Math.min(W*.2,H*.3),sx=W+sr*.1,sy=cy;
+ // Солнце
+ var sg=ctx.createRadialGradient(sx,sy,sr*.3,sx,sy,sr*1.7);sg.addColorStop(0,'rgba(255,220,80,.95)');sg.addColorStop(.5,'rgba(255,150,40,.25)');sg.addColorStop(1,'rgba(255,150,40,0)');
+ ctx.fillStyle=sg;ctx.beginPath();ctx.arc(sx,sy,sr*1.7,0,6.3);ctx.fill();
+ if(IM.sun){var ss=sr*2.5;ctx.drawImage(IM.sun,sx-ss/2,sy-ss/2,ss,ss*IM.sun.height/IM.sun.width);}else{ctx.fillStyle='#ffd23f';ctx.beginPath();ctx.arc(sx,sy,sr,0,6.3);ctx.fill();
+ ctx.fillStyle='#ffb21f';ctx.beginPath();ctx.arc(sx-sr*.25,sy-sr*.2,sr*.5,0,6.3);ctx.fill();}
+ // лучи
+ ctx.strokeStyle='rgba(255,224,110,.75)';ctx.fillStyle='rgba(255,224,110,.75)';ctx.lineWidth=2.5;
+ [-.7,-.35,0,.35,.7].forEach(function(k){var y=cy+k*R,x1=sx-sr-4,x2=cx+R*Math.sqrt(Math.max(0,1-k*k))+10;if(x1-x2<14)return;ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x2,y);ctx.stroke();ctx.beginPath();ctx.moveTo(x2,y);ctx.lineTo(x2+9,y-5);ctx.lineTo(x2+9,y+5);ctx.fill();});
+ // Земля
+ var ls=lsun();
+ ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,6.3);ctx.clip();
+ var og=ctx.createRadialGradient(cx+R*.2,cy-R*.2,R*.1,cx,cy,R);og.addColorStop(0,'#52c7ff');og.addColorStop(1,'#1c6fd1');ctx.fillStyle=og;ctx.fillRect(cx-R,cy-R,2*R,2*R);
+ if(L.mode==='civil'||L.t==='clock'){ // пояса
+  for(var z=-12;z<12;z++){var a0=(z*15-7.5-ls)*Math.PI/180,a1=a0+15*Math.PI/180;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,-a1,-a0);ctx.closePath();ctx.fillStyle=(z&1)?'rgba(255,255,255,.12)':'rgba(255,255,255,0)';ctx.fill();}
+  ctx.fillStyle='rgba(255,255,255,.8)';ctx.font='bold 9px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+  for(var z2=-12;z2<12;z2+=1){var a=(z2*15-ls)*Math.PI/180;ctx.fillText((z2>0?'+':'')+z2,cx+Math.cos(a)*R*.92,cy-Math.sin(a)*R*.92);}
+ }else{ // меридианы через 15°
+  ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=1;for(var m=0;m<24;m++){var am=(m*15-ls)*Math.PI/180;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(am)*R,cy-Math.sin(am)*R);ctx.stroke();}
+ }
+ drawLand(ls,cx,cy,R);
+ // ночь
+ var ng=ctx.createLinearGradient(cx-R*.25,0,cx+R*.1,0);ng.addColorStop(0,'rgba(5,8,40,.62)');ng.addColorStop(1,'rgba(5,8,40,0)');
+ ctx.fillStyle='rgba(5,8,40,.62)';ctx.fillRect(cx-R-2,cy-R-2,R-.25*R+2,2*R+4);ctx.fillStyle=ng;ctx.fillRect(cx-R*.25,cy-R,R*.35,2*R);
+ ctx.restore();
+ ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,cy,R,0,6.3);ctx.stroke();
+ ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(cx,cy,3,0,6.3);ctx.fill();
+ // стрелка вращения
+ ctx.strokeStyle='#ffd23f';ctx.fillStyle='#ffd23f';ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,cy,R+11,Math.PI*.62,Math.PI*.95,false);ctx.stroke();
+ var ea=Math.PI*.95,ex=cx+Math.cos(ea)*(R+11),ey=cy+Math.sin(ea)*(R+11);ctx.beginPath();ctx.moveTo(ex,ey+9);ctx.lineTo(ex-6,ey-5);ctx.lineTo(ex+6,ey-5);ctx.fill();
+ ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillStyle='#ffd23f';ctx.fillText(t('scene.rot'),cx-R*.62,cy+R+27);
+ ctx.fillStyle='#ffe58a';ctx.fillText(t('scene.day'),cx+R*.5,cy+R+27);
+ // подсказка-кольца
+ var show=L.show||[];
+ if(L.t==='spin'&&G.hint>=2){L.conds.forEach(function(c){var th=(CITIES[c.c].lon-(-(G.sol-12)*15))*Math.PI/180,r=R*.72,px=cx+r*Math.cos(th),py=cy-r*Math.sin(th);ctx.strokeStyle='#ffd23f';ctx.lineWidth=3;ctx.setLineDash([5,4]);ctx.lineDashOffset=-T*14;ctx.beginPath();ctx.arc(px,py,24+2*Math.sin(T*4),0,6.3);ctx.stroke();ctx.setLineDash([]);});}
+ // города
+ var mode=L.mode||'civil';
+ show.forEach(function(k){pin(k,ls,cx,cy,R,mode,L.t==='spin'&&L.conds.some(function(c){return c.c===k;}));});
+ if(L.t==='clock'){pin(L.given.c,ls,cx,cy,R,'civil',true);L.items.forEach(function(it){pin(it.c,ls,cx,cy,R,'civil',true,G.hint<2);});}
+}
+function pin(k,ls,cx,cy,R,mode,hl,hide){
+ var c=CITIES[k],th=(c.lon-ls)*Math.PI/180,r=R*.72,px=cx+r*Math.cos(th),py=cy-r*Math.sin(th);
+ var lp=polar(c.lon,CLAT[k]||40,ls,cx,cy,R);
+ ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(lp[0],lp[1]);ctx.lineTo(px,py);ctx.stroke();
+ ctx.fillStyle='#ff4d4d';ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(lp[0],lp[1],4.5,0,6.3);ctx.fill();ctx.stroke();
+ var tt=localT(k,G.t,mode);var w=62,h=28;
+ ctx.fillStyle='#fff';ctx.strokeStyle=hl?'#ffb21f':'#7a86d8';ctx.lineWidth=hl?3:2;
+ ctx.beginPath();if(ctx.roundRect)ctx.roundRect(px-w/2,py-h/2,w,h,8);else ctx.rect(px-w/2,py-h/2,w,h);ctx.fill();ctx.stroke();
+ ctx.fillStyle='#223';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 9.5px system-ui';var nm=cn(k);ctx.fillText(nm.length>11?nm.slice(0,10)+'.':nm,px,py-6);
+ ctx.font='bold 12px system-ui';ctx.fillStyle='#c4400f';ctx.fillText(hide?'?':fmt(tt),px,py+7);
+}
+/* ===== миры 3–7: сцены, управление, проверка ===== */
+function nf(x,dg){var s=x.toFixed(dg);return LANG==='ru'?s.replace('.',','):s;}
+function dateStr(N){return t('date.fmt',{d:dnum(N),m:t('mon.'+(mon(N)+1))});}
+var SEAS_N=[0,0,1,1,1,2,2,2,3,3,3,0];
+function seasN(N){return SEAS_N[mon(N)];}
+function latStr(v){return Math.abs(Math.round(v))+'° '+t(v>=0?'dir.n':'dir.s');}
+function phaseIdx(mu){return Math.floor(mod(mu+22.5,360)/45);}
+function ro(L,P){
+ if(L.sc==='orbit')return dateStr(P.N)+'. '+t('ro.north',{s:t('season.'+seasN(P.N))})+', '+t('ro.south',{s:t('season.'+((seasN(P.N)+2)%4))})+'.';
+ if(L.sc==='lat'){var d=dayLen(P.N,P.lat);return dateStr(P.N)+', '+latStr(P.lat)+'. '+(d>=23.99?t('ro.day24'):d<=0.01?t('ro.day0'):t('ro.day',{h:nf(d,1)}));}
+ if(L.sc==='moon')return t('ph.'+phaseIdx(P.mu))+'. '+t('ro.age',{d:nf(mod(P.mu,360)/360*29.53,1)});
+ if(L.sc==='sys')return t('ro.years',{y:nf(P.T,P.T<2?2:1)});
+ return t('ro.sky',{d:nf(P.h*15,0),h:nf(P.h,1)});
+}
+function tx2(s,x,y,sz,col,al){ctx.font='bold '+sz+'px system-ui';ctx.fillStyle=col||'#fff';ctx.textAlign=al||'center';ctx.textBaseline='middle';ctx.fillText(s,x,y);}
+function glow(x,y,r,rgb){var g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,'rgba('+rgb+',.9)');g.addColorStop(1,'rgba('+rgb+',0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,6.3);ctx.fill();}
+function ringAt(x,y,r,T){ctx.strokeStyle='#ffd23f';ctx.lineWidth=3;ctx.setLineDash([5,4]);ctx.lineDashOffset=-T*14;ctx.beginPath();ctx.arc(x,y,r+2*Math.sin(T*4),0,6.3);ctx.stroke();ctx.setLineDash([]);}
+function sunDisc(x,y,r){glow(x,y,r*2.2,'255,200,60');if(IM.sun){var ss=r*2.6;ctx.drawImage(IM.sun,x-ss/2,y-ss/2,ss,ss*IM.sun.height/IM.sun.width);}else{ctx.fillStyle='#ffd23f';ctx.beginPath();ctx.arc(x,y,r,0,6.3);ctx.fill();ctx.fillStyle='#ffb21f';ctx.beginPath();ctx.arc(x-r*.25,y-r*.2,r*.5,0,6.3);ctx.fill();}}
+function drawSc(L,T){
+ var P=G.P;
+ if(L.sc==='orbit'||L.sc==='lat')drawOrbit(L,T,P);else if(L.sc==='moon')drawMoon(L,T,P);else if(L.sc==='sys')drawSys(L,T,P);else drawSky(L,T,P);
+}
+/* орбита Земли + «лупа»: Земля сбоку, ось наклонена, Солнце справа */
+function orbitGeom(){return {cx:W*.5,cy:H*.27,rx:W*.40,ry:H*.12};}
+function drawOrbit(L,T,P){
+ var o=orbitGeom(),cx=o.cx,cy=o.cy,rx=o.rx,ry=o.ry,N=P.N;
+ ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1.5;ctx.setLineDash([4,5]);ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,0,0,6.3);ctx.stroke();ctx.setLineDash([]);
+ sunDisc(cx,cy,17);
+ [172,264,355,79].forEach(function(n){var a=Math.PI+2*Math.PI*(n-172)/365,mx=cx+rx*Math.cos(a),my=cy-ry*Math.sin(a);ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();ctx.arc(mx,my,2.5,0,6.3);ctx.fill();tx2(dateStr(n),mx,my+(Math.sin(a)>0?-12:13),9.5,'rgba(255,255,255,.75)');});
+ if(G.ring&&L.sol&&L.sol.N!=null){var sa=Math.PI+2*Math.PI*(L.sol.N-172)/365;ringAt(cx+rx*Math.cos(sa),cy-ry*Math.sin(sa),22,T);}
+ var a=Math.PI+2*Math.PI*(N-172)/365,ex=cx+rx*Math.cos(a),ey=cy-ry*Math.sin(a);
+ ctx.save();ctx.beginPath();ctx.arc(ex,ey,15,0,6.3);ctx.clip();ctx.fillStyle='#2f9fe0';ctx.fillRect(ex-15,ey-15,30,30);
+ var sdir=Math.atan2(cy-ey,cx-ex);ctx.fillStyle='rgba(5,8,40,.62)';ctx.beginPath();ctx.moveTo(ex,ey);ctx.arc(ex,ey,16,sdir+Math.PI/2,sdir+Math.PI*1.5);ctx.closePath();ctx.fill();ctx.restore();
+ ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(ex,ey,15,0,6.3);ctx.stroke();
+ var ux=Math.sin(23.44*Math.PI/180),uy=-Math.cos(23.44*Math.PI/180);ctx.strokeStyle='#ffd23f';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ex-ux*22,ey-uy*22);ctx.lineTo(ex+ux*22,ey+uy*22);ctx.stroke();
+ tx2('N',ex+ux*30,ey+uy*30,9,'#ffd23f');
+ // надписи
+ tx2(dateStr(N),W*.5,14,17,'#ffd23f');
+ tx2(t('ro.north',{s:t('season.'+seasN(N))}),W*.27,H*.045+22,11.5,'#9ff0b4');tx2(t('ro.south',{s:t('season.'+((seasN(N)+2)%4))}),W*.73,H*.045+22,11.5,'#9fd8ff');
+ // лупа
+ var gx=W*.5,gy=H*.70,gr=Math.min(W*.24,H*.15),dl=decl(N)*Math.PI/180;
+ [-.6,0,.6].forEach(function(k){var y=gy+k*gr;ctx.strokeStyle='rgba(255,224,110,.8)';ctx.fillStyle='rgba(255,224,110,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(gx+gr+58,y);ctx.lineTo(gx+gr*Math.sqrt(1-k*k)+10,y);ctx.stroke();var x2=gx+gr*Math.sqrt(1-k*k)+10;ctx.beginPath();ctx.moveTo(x2,y);ctx.lineTo(x2+8,y-4);ctx.lineTo(x2+8,y+4);ctx.fill();});
+ tx2('☀',gx+gr+70,gy,20,'#ffd23f');
+ ctx.save();ctx.beginPath();ctx.arc(gx,gy,gr,0,6.3);ctx.clip();var og=ctx.createRadialGradient(gx+gr*.3,gy-gr*.2,gr*.1,gx,gy,gr);og.addColorStop(0,'#52c7ff');og.addColorStop(1,'#1c6fd1');ctx.fillStyle=og;ctx.fillRect(gx-gr,gy-gr,2*gr,2*gr);ctx.fillStyle='rgba(5,8,40,.65)';ctx.fillRect(gx-gr,gy-gr,gr,2*gr);ctx.restore();
+ ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(gx,gy,gr,0,6.3);ctx.stroke();
+ var ax=Math.sin(dl),ay=-Math.cos(dl),qx=Math.cos(dl),qy=Math.sin(dl);
+ ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(gx-qx*gr,gy-qy*gr);ctx.lineTo(gx+qx*gr,gy+qy*gr);ctx.stroke();
+ ctx.strokeStyle='#ffd23f';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(gx-ax*gr*1.25,gy-ay*gr*1.25);ctx.lineTo(gx+ax*gr*1.25,gy+ay*gr*1.25);ctx.stroke();
+ tx2('N',gx+ax*gr*1.4,gy+ay*gr*1.4,12,'#ffd23f');tx2('S',gx-ax*gr*1.4,gy-ay*gr*1.4,12,'#ffd23f');
+ if(L.sc==='lat'){var ph=P.lat*Math.PI/180,mx=gx+gr*(Math.sin(ph)*ax+Math.cos(ph)*qx),my=gy+gr*(Math.sin(ph)*ay+Math.cos(ph)*qy);ctx.fillStyle='#ff4d4d';ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(mx,my,6,0,6.3);ctx.fill();ctx.stroke();}
+ tx2(t('ro.sunlat',{v:latStr(decl(N))}),W*.5,gy+gr+36,11.5,'#ffe58a');
+ if(L.sc==='lat'){var dd=dayLen(N,P.lat);tx2(latStr(P.lat),W*.3,gy+gr+54,13,'#fff');tx2(dd>=23.99?t('ro.day24s'):dd<=0.01?t('ro.day0s'):t('ro.day',{h:nf(dd,1)}),W*.7,gy+gr+54,13,'#ffd23f');}
+}
+/* Луна: Земля в центре, Солнце слева, внизу «вид с Земли» */
+function moonGeom(){return {cx:W*.52,cy:H*.30,Rm:Math.min(W*.30,H*.19)};}
+function drawMoon(L,T,P){
+ var g=moonGeom(),cx=g.cx,cy=g.cy,Rm=g.Rm,mu=P.mu*Math.PI/180;
+ var sr=Math.min(W*.10,H*.08);sunDisc(sr*.3,cy,sr);
+ ctx.strokeStyle='rgba(255,224,110,.6)';ctx.fillStyle='rgba(255,224,110,.6)';ctx.lineWidth=2;
+ [-.55,.55].forEach(function(k){var y=cy+k*Rm*1.3;ctx.beginPath();ctx.moveTo(sr*1.5,y);ctx.lineTo(cx-Rm-16,y);ctx.stroke();ctx.beginPath();ctx.moveTo(cx-Rm-16,y);ctx.lineTo(cx-Rm-24,y-4);ctx.lineTo(cx-Rm-24,y+4);ctx.fill();});
+ ctx.fillStyle='rgba(0,0,10,.38)';ctx.beginPath();ctx.moveTo(cx,cy-17);ctx.lineTo(W,cy-12);ctx.lineTo(W,cy+12);ctx.lineTo(cx,cy+17);ctx.closePath();ctx.fill();
+ ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1.5;ctx.setLineDash([4,5]);ctx.beginPath();ctx.arc(cx,cy,Rm,0,6.3);ctx.stroke();ctx.setLineDash([]);
+ // Земля
+ ctx.save();ctx.beginPath();ctx.arc(cx,cy,16,0,6.3);ctx.clip();ctx.fillStyle='#2f9fe0';ctx.fillRect(cx-16,cy-16,32,32);ctx.fillStyle='rgba(5,8,40,.62)';ctx.fillRect(cx,cy-16,16,32);ctx.restore();
+ ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy,16,0,6.3);ctx.stroke();
+ if(G.ring&&L.sol&&L.sol.mu!=null){var sm=L.sol.mu*Math.PI/180;ringAt(cx-Rm*Math.cos(sm),cy+Rm*Math.sin(sm),18,T);}
+ // Луна: освещена сторона к Солнцу (влево)
+ var mx=cx-Rm*Math.cos(mu),my=cy+Rm*Math.sin(mu);
+ ctx.fillStyle='#4a4f66';ctx.beginPath();ctx.arc(mx,my,10,0,6.3);ctx.fill();ctx.fillStyle='#f4f1e0';ctx.beginPath();ctx.arc(mx,my,10,Math.PI/2,Math.PI*1.5);ctx.fill();
+ ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.beginPath();ctx.arc(mx,my,10,0,6.3);ctx.stroke();
+ // вид с Земли
+ var vx=W*.5,vy=H*.735,vr=Math.min(W*.19,H*.14);
+ tx2(t('ro.view'),vx,vy-vr-12,11,'#a9b4ff');
+ ctx.fillStyle='#2b3157';ctx.beginPath();ctx.arc(vx,vy,vr,0,6.3);ctx.fill();
+ var c=Math.cos(mu),wax=Math.sin(mu)>0;ctx.fillStyle='#f4f1e0';ctx.beginPath();
+ if(wax){ctx.arc(vx,vy,vr,-Math.PI/2,Math.PI/2,false);for(var i=0;i<=24;i++){var an=Math.PI/2-Math.PI*i/24;ctx.lineTo(vx+c*vr*Math.cos(an),vy+vr*Math.sin(an));}}
+ else{ctx.arc(vx,vy,vr,Math.PI/2,Math.PI*1.5,false);for(var j=0;j<=24;j++){var bn=-Math.PI/2+Math.PI*j/24;ctx.lineTo(vx-c*vr*Math.cos(bn),vy+vr*Math.sin(bn));}}
+ ctx.closePath();ctx.fill();
+ ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(vx,vy,vr,0,6.3);ctx.stroke();
+ tx2(t('ph.'+phaseIdx(P.mu)),vx,vy+vr+16,14,'#ffd23f');tx2(t('ro.age',{d:nf(mod(P.mu,360)/360*29.53,1)}),vx,vy+vr+33,11.5,'#fff');
+ if(dN(P.mu,0,360)<=6)tx2(t('ro.ecl.sun'),W*.5,H*.50,13,'#ff9f5a');else if(dN(P.mu,180,360)<=6)tx2(t('ro.ecl.moon'),W*.5,H*.50,13,'#ff9f5a');
+}
+/* планеты */
+function sysGeom(){return {cx:W*.5,cy:H*.47,R:Math.min(W,H)*.46};}
+function planetXY(p,T){var g=sysGeom(),th=2*Math.PI*T/PERIOD[p[0]];return [g.cx+p[1]*g.R*Math.cos(th),g.cy-p[1]*g.R*Math.sin(th)];}
+function drawSys(L,T,P){
+ var g=sysGeom(),cx=g.cx,cy=g.cy,R=g.R;
+ PLN.forEach(function(p){ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(cx,cy,p[1]*R,0,6.3);ctx.stroke();});
+ ctx.strokeStyle='rgba(255,210,63,.75)';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+R*.99,cy);ctx.stroke();ctx.setLineDash([]);tx2(t('ro.start'),cx+R*.9,cy-9,9.5,'#ffd23f');
+ sunDisc(cx,cy,9);
+ PLN.forEach(function(p){var xy=planetXY(p,P.T),x=xy[0],y=xy[1],s=p[2];
+  if(p[0]==='sat'){ctx.strokeStyle='#d8c27a';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,s*1.9,s*.55,-.3,0,6.3);ctx.stroke();}
+  ctx.fillStyle=p[3];ctx.beginPath();ctx.arc(x,y,s,0,6.3);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=1;ctx.stroke();
+  if(G.show&&L.tap===p[0])ringAt(x,y,s+14,T);
+  tx2(t('pl.'+p[0]),Math.max(24,Math.min(W-24,x)),y+s+9,9.5,p[0]==='earth'?'#ffd23f':'#fff');});
+ tx2(t('ro.years',{y:nf(P.T,P.T<2?2:1)}),W*.5,14,16,'#ffd23f');
+ if(L.t==='dial'){var ys=H-60;[['merc'],['venus'],['mars'],['jup']].forEach(function(q,i){tx2(t('ro.laps',{p:t('pl.'+q[0]),n:nf(P.T/PERIOD[q[0]],2)}),i%2?W*.74:W*.26,ys+(i>>1)*16,10.5,'#cfd6ff');});}
+}
+/* звёздное небо */
+function skyGeom(){return {cx:W*.5,cy:H*.47,R:Math.min(W*.47,H*.45)};}
+var BGSKY=[];(function(){var s=11;function r(){s=(s*16807)%2147483647;return s/2147483647;}for(var i=0;i<70;i++)BGSKY.push([r()*24,40+r()*50,r()*1.3+.5]);})();
+function skyXY(ra,dec,h,g){var th=(ra*15+h*15)*Math.PI/180,r=(90-dec)/50*g.R;return [g.cx+r*Math.cos(th),g.cy-r*Math.sin(th)];}
+function drawSky(L,T,P){
+ var g=skyGeom();
+ ctx.fillStyle='rgba(2,4,24,.55)';ctx.beginPath();ctx.arc(g.cx,g.cy,g.R,0,6.3);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(g.cx,g.cy,g.R,0,6.3);ctx.stroke();
+ BGSKY.forEach(function(s){var xy=skyXY(s[0],s[1],P.h,g);ctx.globalAlpha=.35+.4*Math.abs(Math.sin(T*1.3+s[0]));ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(xy[0],xy[1],s[2],0,6.3);ctx.fill();});ctx.globalAlpha=1;
+ var names=L.t!=='tap'||G.done,cols={uma:'#ffd23f',cas:'#ff9fe0',umi:'#7be0ff'};
+ ['uma','cas','umi'].forEach(function(k){var pts=SKY[k].map(function(s){return skyXY(s[0],s[1],P.h,g);});
+  ctx.strokeStyle=cols[k];ctx.globalAlpha=.7;ctx.lineWidth=1.6;SKYL[k].forEach(function(e){ctx.beginPath();ctx.moveTo(pts[e[0]][0],pts[e[0]][1]);ctx.lineTo(pts[e[1]][0],pts[e[1]][1]);ctx.stroke();});ctx.globalAlpha=1;
+  pts.forEach(function(p,i){ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(p[0],p[1],(k==='umi'&&i===0)?4:3.2,0,6.3);ctx.fill();});
+  var mx=0,my=0;pts.forEach(function(p){mx+=p[0];my+=p[1];});mx/=pts.length;my/=pts.length;
+  if(names)tx2(t('sk.'+k),mx,my+(k==='cas'?-24:22),10.5,cols[k]);
+  if(G.show&&(L.tap===k||(L.tap==='polaris'&&k==='umi'))){if(L.tap==='polaris')ringAt(pts[0][0],pts[0][1],18,T);else ringAt(mx,my,40,T);}});
+ var pl=skyXY(SKY.umi[0][0],SKY.umi[0][1],P.h,g);if(names||L.t!=='tap')tx2(t('sk.pol'),pl[0]+4,pl[1]-11,9.5,'#fff');
+ tx2(t('ro.sky',{d:nf(P.h*15,0),h:nf(P.h,1)}),W*.5,14,14,'#ffd23f');
+}
+/* нажатие на объект (уровни «найди») */
+function hitTags(x,y){
+ if(G.L.sc==='sys'){var best=null,bd=1e9;PLN.forEach(function(p){var xy=planetXY(p,G.P.T),d=Math.hypot(xy[0]-x,xy[1]-y);if(d<bd){bd=d;best=p[0];}});return bd<=24?[best]:[];}
+ var g=skyGeom(),res=[];['uma','cas','umi'].forEach(function(k){SKY[k].forEach(function(s,i){var xy=skyXY(s[0],s[1],G.P.h,g);if(Math.hypot(xy[0]-x,xy[1]-y)<=22){if(k==='umi'&&i===0)res.push('polaris');res.push(k);}});});
+ return res;
+}
+function tapAns(tags){
+ var L=G.L;if(!G||G.done||L.t!=='tap')return;G.tries++;
+ if(tags.indexOf(L.tap)>=0){var st=G.tries===1?3:G.tries===2?2:1;st=Math.max(1,st-(G.free?0:G.hint));finish(L,st);return;}
+ SV.err[L.topic]=(SV.err[L.topic]||0)+1;save();setAv('kometa');$('msg').innerHTML=t('err.tap');
+}
+function pickAns(i,btn){
+ var L=G.L;if(!G||G.done||L.t!=='pick')return;G.tries++;
+ if(i===L.c){if(btn)btn.classList.add('ok');var st=G.tries===1?3:G.tries===2?2:1;st=Math.max(1,st-(G.free?0:G.hint));finish(L,st);return;}
+ SV.err[L.topic]=(SV.err[L.topic]||0)+1;save();setAv('kometa');if(btn){btn.classList.add('no');btn.disabled=true;}$('msg').innerHTML=t('err.pick');
+}
+function checkDial(){
+ var L=G.L;G.tries++;
+ if(L.ok(G.P)){var st=G.tries===1?3:G.tries===2?2:1;st=Math.max(1,st-(G.free?0:G.hint));finish(L,st);return;}
+ SV.err[L.topic]=(SV.err[L.topic]||0)+1;save();setAv('kometa');$('msg').innerHTML=t('err.dial',{ro:ro(L,G.P)});
+}
+function dialBtns(L){var f=L.free||[],h='';
+ function b(p,v,lab){h+='<button class="sm" data-p="'+p+'" data-v="'+v+'">'+lab+'</button>';}
+ if(L.sc==='orbit'||(L.sc==='lat'&&f.indexOf('N')>=0)){b('N',-30,'−1 '+t('u.mo'));b('N',-5,'−5 '+t('u.d'));b('N',5,'+5 '+t('u.d'));b('N',30,'+1 '+t('u.mo'));}
+ else if(L.sc==='lat'){b('lat',-10,'−10°');b('lat',-2,'−2°');b('lat',2,'+2°');b('lat',10,'+10°');}
+ else if(L.sc==='moon'){b('mu',-85.3,'−7 '+t('u.d'));b('mu',-12.19,'−1 '+t('u.d'));b('mu',12.19,'+1 '+t('u.d'));b('mu',85.3,'+7 '+t('u.d'));}
+ else if(L.sc==='sys'){b('T',-1,'−1 '+t('u.y'));b('T',-1/12,'−1 '+t('u.mo'));b('T',1/12,'+1 '+t('u.mo'));b('T',1,'+1 '+t('u.y'));}
+ else{b('h',-3,'−3 '+t('u.h'));b('h',-1,'−1 '+t('u.h'));b('h',1,'+1 '+t('u.h'));b('h',3,'+3 '+t('u.h'));}
+ return '<div class="row">'+h+'</div>';}
+function applyBtn(p,v){var P=G.P;
+ if(p==='N')P.N=mod(P.N-1+v,365)+1;else if(p==='lat')P.lat=Math.max(-90,Math.min(90,P.lat+v));else if(p==='mu')P.mu=mod(P.mu+v,360);else if(p==='T')P.T=Math.max(0,Math.min(30,P.T+v));else P.h=mod(P.h+v,24);}
+function mainStep(L){var f=L.free||[];if(L.sc==='orbit'||(L.sc==='lat'&&f.indexOf('N')>=0))return ['N',5];if(L.sc==='lat')return ['lat',2];if(L.sc==='moon')return ['mu',12.19];if(L.sc==='sys')return ['T',1/12];return ['h',.25];}
+function sceneCenter(L){if(L.sc==='orbit'||L.sc==='lat'){var o=orbitGeom();return [o.cx,o.cy,o.ry/o.rx];}if(L.sc==='moon'){var m=moonGeom();return [m.cx,m.cy];}if(L.sc==='sys'){var s=sysGeom();return [s.cx,s.cy];}var k=skyGeom();return [k.cx,k.cy];}
+function sAng(e){var r=cv.getBoundingClientRect(),L=G.L,c=sceneCenter(L),x=e.clientX-r.left-c[0],y=e.clientY-r.top-c[1];
+ if(L.sc==='moon')return Math.atan2(y,-x)*180/Math.PI;
+ if(L.sc==='orbit'||L.sc==='lat')y=y/c[2];
+ return Math.atan2(-y,x)*180/Math.PI;}
+function dragMain(d){var L=G.L,P=G.P,f=L.free||[];
+ if(L.sc==='orbit'||L.sc==='lat'){if(f.indexOf('N')>=0)P.N=mod(P.N-1+d*365/360,365)+1;}
+ else if(L.sc==='moon')P.mu=mod(P.mu+d,360);
+ else if(L.sc==='sys')P.T=Math.max(0,Math.min(30,P.T+d/360));
+ else P.h=mod(P.h+d/15,24);}
+function animDial(){var P=G.P,s=G.anim.to,fin=true;
+ for(var k in s){var m=k==='N'?365:k==='mu'?360:k==='h'?24:0,diff=m?(mod(s[k]-P[k]+m/2,m)-m/2):s[k]-P[k];
+  if(Math.abs(diff)>(m?m*.0004:.003)){fin=false;var nv=P[k]+diff*.12;P[k]=k==='N'?mod(nv-1,365)+1:m?mod(nv,m):nv;}else P[k]=s[k];}
+ if(fin)G.anim=null;}
+function revealNew(L,rew){
+ if(L.t==='dial'){G.anim={to:L.sol};$('msg').innerHTML=t(rew?'rew.dial':'hint.auto.dial');}
+ else if(L.t==='tap'){G.show=true;$('msg').innerHTML=t(rew?'rew.tap':'hint.auto.tap');}
+ else{var bs=document.querySelectorAll('#pks .opt');if(bs[L.c])bs[L.c].classList.add('ok');$('msg').innerHTML=t(rew?'rew.pick':'hint.auto.pick');}
+}
+function hint2New(L){
+ if(L.t==='dial'){if(L.sc==='orbit'||L.sc==='moon'){G.ring=true;$('msg').innerHTML=t('hint.ring2');}
+  else{var s=L.sol,v=s.N!=null?dateStr(s.N):s.lat!=null?latStr(s.lat):s.T!=null?(nf(s.T,s.T<2?2:1)+' '+t('u.y')):(nf(s.h,0)+' '+t('u.h'));$('msg').innerHTML=t('hint.sol',{v:v});}}
+ else if(L.t==='tap'){G.show=true;$('msg').innerHTML=t('hint.tap2');}
+ else{var bs=document.querySelectorAll('#pks .opt'),n=0;[].forEach.call(bs,function(b,i){if(!n&&i!==L.c&&!b.disabled){b.disabled=true;b.classList.add('no');n=1;}});$('msg').innerHTML=t('hint.pick2');}
+}
+/* ввод: вращение пальцем и колесом */
+function ang(e){var r=cv.getBoundingClientRect(),x=e.clientX-r.left-W*.40,y=e.clientY-r.top-H*.5;return Math.atan2(-y,x)*180/Math.PI;}
+var last=0;
+cv.addEventListener('pointerdown',function(e){if(!G||G.done)return;var L=G.L;if(L.t==='tap'){var r=cv.getBoundingClientRect();tapAns(hitTags(e.clientX-r.left,e.clientY-r.top));return;}if(L.t!=='spin'&&L.t!=='dial')return;G.dragging=true;G.anim=null;last=L.t==='spin'?ang(e):sAng(e);try{cv.setPointerCapture(e.pointerId);}catch(x){}});
+cv.addEventListener('pointermove',function(e){if(!G||!G.dragging)return;var a=G.L.t==='spin'?ang(e):sAng(e),d=a-last;if(d>180)d-=360;if(d<-180)d+=360;last=a;if(G.L.t==='spin')G.t=mod(G.t+d/15,24);else dragMain(d);});
+function up(){if(G)G.dragging=false;}
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+cv.addEventListener('wheel',function(e){if(!G||G.done)return;if(G.L.t==='dial'){e.preventDefault();G.anim=null;var ms=mainStep(G.L);applyBtn(ms[0],(e.deltaY<0?1:-1)*ms[1]);return;}if(G.L.t!=='spin')return;e.preventDefault();G.anim=null;G.t=mod(G.t+(e.deltaY<0?1:-1)*(e.shiftKey?1:.25),24);},{passive:false});
+document.addEventListener('keydown',function(e){if(cur==='game'&&G&&G.L.t==='dial'){var ms=mainStep(G.L);if(e.key==='ArrowRight'||e.key==='ArrowUp'){G.anim=null;applyBtn(ms[0],ms[1]);}if(e.key==='ArrowLeft'||e.key==='ArrowDown'){G.anim=null;applyBtn(ms[0],-ms[1]);}if(e.key==='Enter')check();return;}if(cur!=='game'||!G||G.L.t!=='spin')return;if(e.key==='ArrowRight'||e.key==='ArrowUp'){G.t=mod(G.t+.25,24);}if(e.key==='ArrowLeft'||e.key==='ArrowDown'){G.t=mod(G.t-.25,24);}if(e.key==='Enter')check();});
+/* шаг назад (кнопка «Назад» Android, сборка Google Play) */
+window.__app={back:function(){if(!$('scrRes').hidden){$('scrRes').hidden=true;Q_ADAPT=null;show('map');return true;}if(cur==='game'||cur==='quiz'){show('map');return true;}if(cur==='map'||cur==='journal'){show('title');return true;}return false;}};
+/* ===== кнопки заставки ===== */
+$('bPlay').addEventListener('click',function(){show('map');});
+$('bJournal').addEventListener('click',function(){show('journal');});
+$('bRepeat').addEventListener('click',startRepeat);
+var rsT=0;$('bReset').addEventListener('click',function(){var b=$('bReset');if(!rsT){b.textContent=t('title.reset_ask');rsT=setTimeout(function(){rsT=0;b.textContent=t('title.reset');},3500);return;}clearTimeout(rsT);rsT=0;var lg=SV.lang;SV={v:1,stars:{},journal:{},err:{day:0,zones:0},rst:Date.now()};if(lg)SV.lang=lg;save();b.textContent=t('title.reset_done');setTimeout(function(){b.textContent=t('title.reset');},2000);});
+/* ===== Премиум (общий модуль window.Premium, publish\shared\premium) ===== */
+/* Кнопка в углу только на спокойных экранах (заставка, карта, журнал, итог); в уровне и викторине скрыта. Баннера в игре нет, поэтому о нём не говорим. Тексты: publish\texts\planetariy\premium.md */
+var PM_KEY='planetariy-premium';
+var PM_TEXTS={
+ ru:{p30:'Премиум на 30 дней',p365:'Премиум на год',
+  perks:['Полноэкранная реклама отключается.','Подарок каждый день: 3 бесплатных ответа Кометы.','Ролики за награду работают как у всех: ответ показывается после просмотра.','Подсказки, звёзды и правила не меняются.'],
+  note:'Оплата один раз. Премиум действует 30 дней или год — в зависимости от выбранного товара. Автопродления и повторных списаний нет. Если Премиум уже идёт, новый срок добавится к концу.',
+  adTitle:'Надоела реклама?',adText:'Изучай космос без рекламных пауз! Премиум убирает полноэкранную рекламу и каждый день дарит 3 ответа Кометы.',adMore:'Узнать про Премиум',later:'Не сейчас',
+  soonTitle:'Премиум скоро закончится',soonText:'Ещё {0} без рекламных пауз среди звёзд. Премиум закончится сам, без списаний. Если захочешь, его можно купить снова.',extend:'Продлить',
+  endTitle:'Премиум закончился',endText:'Полноэкранная реклама вернулась, а подарок дня закончился. Мира и Комета продолжают исследовать космос!',buy:'Купить Премиум'},
+ en:{p30:'30-Day Premium',p365:'1-Year Premium',
+  perks:['Full-screen ads are disabled.','A gift every day: 3 free Comet answers.','Video rewards work for everyone: the answer is shown after the video.','Hints, stars and rules stay the same.'],
+  note:'One-time payment. Premium lasts 30 days or 1 year, depending on your purchase. No automatic renewal or recurring charges. If Premium is already active, the new period is added to the end.',
+  adTitle:'Tired of ads?',adText:'Explore space without ad breaks! Premium removes full-screen ads and gives you 3 Comet answers every day.',adMore:'Learn About Premium',later:'Not Now',
+  soonTitle:'Premium Is Ending Soon',soonText:'Enjoy {0} more without ad breaks among the stars. Premium ends automatically with no further charges. You can buy it again if you like.',extend:'Renew',
+  endTitle:'Premium Has Ended',endText:'Full-screen ads are back and the daily gift has stopped. Mira and Comet are still exploring space!',buy:'Buy Premium'}
+};
+var PM_GIFT={grant:function(){SV.fa=Math.min(6,(SV.fa||0)+3);save();if(cur==='game'&&G&&!G.done)buildCtl();},text:{ru:'3 бесплатных ответа Кометы для любых уровней. Это подарок Премиума, ролик не нужен.',en:'3 free Comet answers for any level. This is a Premium gift, no video needed.'}};
+function pmCalm(){return cur==='title'||cur==='map'||cur==='journal'||!$('scrRes').hidden;}
+function pmSync(){try{document.documentElement.classList.toggle('pm-hide',!pmCalm());}catch(e){}}
+function pmCard(d){setTimeout(function(){pmSync();if(pmCalm()&&window.Premium)try{Premium.maybeCard();}catch(e){}},d||0);}
+function pmStart(){if(!window.Premium)return;try{
+ Premium.onChange(function(){if(cur==='game'&&G&&!G.done)buildCtl();});
+ Premium.init({sdk:PF.sdk(),lang:LANG,texts:PM_TEXTS,gift:PM_GIFT,store:{get:function(){return PF.get(PM_KEY);},set:function(raw){PF.put(PM_KEY,raw);},save:function(){return PF.save();}}}).then(function(){pmSync();pmCard(0);});
+}catch(e){}}
+/* ===== старт ===== */
+PF.onPause=function(){};
+PF.onCloud=function(){load();initLang();if(cur==='map')buildMap();};
+$('bLang').addEventListener('click',function(){LANG=LANG==='en'?'ru':'en';SV.lang=LANG;save();applyStatic();});
+function initLang(){LANG=(SV.lang==='en'||SV.lang==='ru')?SV.lang:pickLang();if(LANG==='en'&&!EN)LANG='ru';applyStatic();}
+PF.init().then(function(){load();initLang();PF.ready();pmStart();});
+load();initLang();show('title');requestAnimationFrame(frame);
+})();
+</script>
+</body></html>
