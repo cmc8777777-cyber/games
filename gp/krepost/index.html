@@ -104,6 +104,7 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
 .pick .pr{display:flex;align-items:center;gap:3px;font-family:var(--f-display);font-size:13px;font-weight:700;color:var(--gold)}
 .pick .pr img{width:13px;height:13px;margin:0}
 .pick:disabled,.pick.cant{opacity:.5}
+.smsg{margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(157,43,31,.12);color:var(--accent);font-size:13px;text-align:center}
 .pick:disabled .pr,.pick.cant .pr{color:var(--accent)}
 .fact{font-size:13px;line-height:1.4;color:var(--muted);margin:6px 0 0}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
@@ -930,7 +931,10 @@ function gateNotify(){
   const now = TOWER_ORDER.filter(k => GATE[k] === G.wave + 1);
   if (now.length) toast(now.map(k => icT(k)).join('') + '<b>' + T('Открыто: ') + now.map(k => esc(DEFS[k].name)).join(', ') + '!</b> ' + T('Оружие другой эпохи — в ряду внизу. Ставь его на кружок у дороги.'), 7);
 }
-function noCoins(k){ toast(icT(k)+'<b>'+esc(DEFS[k].name)+': '+T('не хватает монет')+'.</b> '+T('Нужно {n}, у тебя {m}.').replace('{n}', DEFS[k].cost).replace('{m}', G.coins), 3.5); }
+function noCoins(k){
+  const m = !ui.sheet.hidden && ui.sheet.querySelector('.smsg');
+  if (m) { m.innerHTML = '<b>'+esc(DEFS[k].name)+': '+T('не хватает монет')+'.</b> '+T('Нужно {n}, у тебя {m}.').replace('{n}', DEFS[k].cost).replace('{m}', G.coins); m.hidden = false; return; }
+  toast(icT(k)+'<b>'+esc(DEFS[k].name)+': '+T('не хватает монет')+'.</b> '+T('Нужно {n}, у тебя {m}.').replace('{n}', DEFS[k].cost).replace('{m}', G.coins), 3.5); }
 function build(pad, type){
   const def = DEFS[type];
   const free = G.fTok.unit > 0;   // «Ветеран» с Колеса Фортуны: один воин даром (при продаже за него ничего не вернут)
@@ -1534,8 +1538,9 @@ function refreshUI(){
     b.classList.toggle('cooling', a.cd > 0 && a.act <= 0); b.classList.toggle('active', a.act > 0); });
   ui.roster.querySelectorAll('.unit[data-t]').forEach(b => { const k = b.dataset.t, op = towerOpen(k); b.classList.toggle('gated', !op); b.classList.toggle('cant', op && G.coins < DEFS[k].cost && !(G.fTok.unit > 0)); });
   if (!ui.sheet.hidden && ui.sheet.dataset.mode) {
-    const key = ui.sheet.dataset.mode + G.coins + G.sel + (G.towers[G.sel] ? G.towers[G.sel].lvl : 0) + '/' + G.fTok.unit + '/' + G.wave + G.state;
-    if (key !== lastUI) renderSheet();
+    // меню перестраиваем только когда меняется его состав; монеты обновляем на месте —
+    // раньше ключ никогда не совпадал и меню пересоздавалось каждый кадр: нажатия терялись, всё «висло»
+    if (sheetKey() !== lastUI) renderSheet(); else sheetCoins();
   }
 }
 function towerNote(d, st){
@@ -1558,7 +1563,7 @@ function renderSheet(){
       const op = towerOpen(k);
       const poor = op && G.coins < d.cost && !free;
       h += '<button class="pick'+(op ? '' : ' gated')+(poor ? ' cant' : '')+'" data-b="'+esc(k)+'"'+(!op ? ' disabled' : poor ? ' aria-disabled="true"' : '')+'>'+icT(k)+'<span class="nm'+nmLong(d.name)+'">'+hy(d.name)+'</span><span class="pr">'+(!op ? '🔒 '+esc(gateText(k)) : free ? T('даром') : icCoin()+d.cost)+'</span></button>'; }
-    s.innerHTML = h + '</div>';
+    s.innerHTML = h + '</div><div class="smsg" hidden></div>';
   } else {
     s.dataset.mode = 'tower';
     const d = DEFS[t.type], st = towerStats(t), uc = upgradeCost(t);
@@ -1569,8 +1574,15 @@ function renderSheet(){
       + '<button class="act" data-art="'+esc(t.type)+T('" aria-label="Статья в свитке знаний"><span class="em">📜</span></button></div>')
       + '<p class="fact">'+esc(d.fact || '')+'</p>';
   }
-  lastUI = s.dataset.mode + G.coins + G.sel + (t ? t.lvl : 0) + '/' + G.fTok.unit;
+  lastUI = sheetKey();
   s.hidden = false;
+}
+function sheetKey(){ const t = G.towers[G.sel]; return ui.sheet.dataset.mode + '/' + G.sel + '/' + (t ? t.type + t.lvl : '') + '/' + G.fTok.unit + '/' + G.wave + G.state; }
+function sheetCoins(){
+  const s = ui.sheet, free = G.fTok.unit > 0;
+  if (s.dataset.mode === 'build') s.querySelectorAll('.pick[data-b]').forEach(b => { const k = b.dataset.b; if (!towerOpen(k)) return;
+    const poor = G.coins < DEFS[k].cost && !free; b.classList.toggle('cant', poor); if (poor) b.setAttribute('aria-disabled', 'true'); else b.removeAttribute('aria-disabled'); });
+  else { const t = G.towers[G.sel], up = s.querySelector('[data-up]'); if (t && up) up.disabled = t.lvl >= 3 || G.coins < upgradeCost(t); }
 }
 function openSheet(i){ G.sel = i; renderSheet(); }
 function closeSheet(){ G.sel = -1; ui.sheet.hidden = true; ui.sheet.dataset.mode = ''; }
