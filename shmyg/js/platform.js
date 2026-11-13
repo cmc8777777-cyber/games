@@ -196,10 +196,10 @@ window.PF = (function () {
     } catch (e) { end(false); }
   };
   self.premium = premiumOn;
-  self.canReward = function () { return !!(premiumOn() || (sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo)); };
-  /* Ролик за награду. done(got): got === true, только если игрок досмотрел и награда засчитана. У активного Премиума награда выдаётся сразу, без ролика. */
+  /* п. 4.5 правил Яндекса (13.11): награда за ролик — только после показанного ролика, у Премиума тоже */
+  self.canReward = function () { return !!(sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo); };
+  /* Ролик за награду. done(got): got === true, только если игрок досмотрел и награда засчитана (для всех, включая Премиум). */
   self.rewarded = function (done) {
-    if (premiumOn()) { done(true); return; }
     if (!self.canReward()) { done(false); return; }
     var fin = false, got = false;
     function end() { if (fin) return; fin = true; if (got) lastAdAt = Date.now(); adEnd(); done(got); }

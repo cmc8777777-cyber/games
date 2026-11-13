@@ -88,6 +88,13 @@
     if (S.season.k !== k) { S.season = { k: k, id: Z.list[idx].id, n: 0, got: [] }; save("season"); }
     return { def: Z.list[idx], left: left, k: k };
   }
+  /* когда событие с образом: «идёт сейчас» или «через N дн.» — вечных замков нет, события идут по кругу */
+  function seasonWhen(id) {
+    var Z = D.SEASONS, now = seasonNow(), idx = Z.list.map(function (x) { return x.id; }).indexOf(id), cur = Z.list.indexOf(now.def);
+    if (idx === cur) return t("seasonNowOn");
+    var steps = (idx - cur + Z.list.length) % Z.list.length;
+    return t("seasonIn", now.left + (steps - 1) * Z.days);
+  }
   function weekAdd(id, v) { if (!S.week || !S.week.prog) return; S.week.prog[id] = (S.week.prog[id] || 0) + v; save("week"); }
   function weekDaysLeft() { return 7 - ((dayNum() + 3) % 7); }
   function isWeekend() { var d = new Date(PF.now()).getDay(); return d === 0 || d === 6; }
@@ -145,6 +152,14 @@
 
   /* ================= Реклама и Премиум ================= */
   function prem() { return PF.premium(); }
+  /* Подарок Премиума (раз в сутки, пока Премиум активен): ≈ 2–3 ролика — 1 000 монет, слиток и ключ */
+  var PREM_GIFT = { coins: 1000, bars: 1, keys: 1 };
+  function premGift() { addReward(PREM_GIFT); toast(t("premGiftGot", rewardText(PREM_GIFT))); vib([30, 30, 60]); AUDIO.sfx("chest"); refreshTop(); if (panelId) renderPanel(); }
+  function t2(l, k) { return (I18N[l] && I18N[l][k]) || I18N.ru[k]; }
+  /* Сборка Google Play (publish/gplay): gp-adapter.js задаёт window.GP. Нет рекламы — кнопки роликов скрыты, нет покупок — платные образы скрыты.
+     В сборке Яндекса window.GP нет, всё как раньше. */
+  function adsOn() { return !(window.GP && !GP.ads.available()); }
+  function shopOn() { return !(window.GP && !GP.purchase.available()); }
   function vib(p) { if (S.set && S.set.vib === 0) return; try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
   function rewarded(cb) {
     if (!PF.canReward()) { toast(PF.hasSdk() ? t("adFail") : t("adFailLocal")); return; }
@@ -175,7 +190,7 @@
     var badge = {
       tasks: S.daily.tasks && S.daily.tasks.some(function (x) { return x.prog >= x.goal && !x.claimed; }) || (allTasksDone() && !S.daily.chest) || (S.daily.wordN >= goldWord().length && !S.daily.wordChest) || D.WEEKLY.some(function (w) { return S.week.prog && (S.week.prog[w.id] || 0) >= w.goal && !(S.week.claimed && S.week.claimed[w.id]); }),
       profile: D.ACHIEVEMENTS.some(function (a) { return !achDone(a) && achVal(a) >= a.n; }),
-      chests: !S.daily.wheel || !S.daily.shell || st("calLast") < dayNum() || PF.now() >= st("chestAt") + D.FREE_CHEST_MS && PF.canReward(),
+      chests: (window.Premium && Premium.giftAvailable && Premium.giftAvailable()) || !S.daily.wheel || !S.daily.shell || st("calLast") < dayNum() || PF.now() >= st("chestAt") + D.FREE_CHEST_MS && (PF.canReward() || !adsOn()),
       skins: D.SKINS.some(function (s) { return !owns(s.id) && (skinReady(s) || (s.get.t === "coins" && S.wallet.coins >= s.get.n)); }),
       world: D.WORLDS.some(function (w, i) { return w.ready && worldOpen(w.id) && builds(w.id).some(function (lv, b) { return lv < 3 && S.wallet.bars >= buildCost(b, lv, w.id); }); }),
       heroes: D.HEROES.some(function (h) { return !heroOpen(h.id) && heroCan(h); }),
@@ -235,7 +250,7 @@
     if (g.t === "ads") return t("getAds", g.n, Math.min(g.n, st("ads")));
     if (g.t === "buy") return t("getBuy");
     if (g.t === "boss") return t("getBoss", nm(worldById(g.w)));
-    if (g.t === "season") { var sd = D.SEASONS.list.filter(function (x) { return x.id === g.s; })[0]; return t("getSeason", nm(sd)); }
+    if (g.t === "season") { var sd = D.SEASONS.list.filter(function (x) { return x.id === g.s; })[0]; return t("getSeason", nm(sd)) + " · " + seasonWhen(g.s); }
     return "";
   }
   function perkText(p) {
@@ -251,10 +266,11 @@
     body.appendChild(ht);
     SKIN_GROUPS.forEach(function (gr) {
       var grid = el("div", "grid"), h3 = el("h3", "sec", t("sg_" + gr[0])); body.appendChild(h3);
-      var list = D.SKINS.filter(function (s) { return s.hero === S.sel.hero && gr[1].indexOf(s.get.t === "hero" ? "start" : s.get.t) >= 0; });
+      var list = D.SKINS.filter(function (s) { return s.hero === S.sel.hero && (shopOn() || s.get.t !== "buy") && gr[1].indexOf(s.get.t === "hero" ? "start" : s.get.t) >= 0; });
       if (!list.length) { body.removeChild(h3); return; } list.forEach(function (s) { skinCard(s, grid); });
       body.appendChild(grid);
     });
+    if (!shopOn()) return;
     var pack = el("div", "card wide paid");
     pack.innerHTML = '<div class="nm">' + t("packAll") + '</div><div class="cond">' + t("packNote") + "</div>";
     var allOwned = D.PRODUCTS.pack_all.skins.every(owns);
@@ -272,7 +288,7 @@
         if (S.wallet.coins < s.get.n) { toast(t("notEnough")); return; }
         S.wallet.coins -= s.get.n; save("wallet"); giveSkin(s.id); S.sel.skin = s.id; save("sel"); E.setSkin(s); previewSkin = null; renderPanel();
       }, S.wallet.coins < s.get.n);
-      else if (s.get.t === "ads" && !skinReady(s)) b = btn(prem() ? t("watchPrem") : t("watchAd"), "ad", function () { rewarded(function () { renderPanel(); }); });
+      else if (s.get.t === "ads" && !skinReady(s)) b = btn(t("watchAd"), "ad", function () { rewarded(function () { renderPanel(); }); });
       else if (s.get.t === "buy") {
         b = SKINSHOP.available(s.get.p) ? btn(t("buyFor", SKINSHOP.price(s.get.p)), "buy", function () { buySkin(s.get.p); }) : btn(t("onlyYandex"), "ghost small", function () {}, true);
       } else b = btn(t("claim"), "ok", function () { giveSkin(s.id); S.sel.skin = s.id; save("sel"); E.setSkin(s); previewSkin = null; toast(nm(s) + " ✓"); renderPanel(); }, !skinReady(s));
@@ -562,6 +578,7 @@
       D.WORLDS.map(function (w) { return '<div class="rec"><span>' + esc(nm(w)) + "</span><b>" + (st("best_" + w.id) ? fmt(st("best_" + w.id)) + " " + t("m") : "—") + "</b></div>"; }).join("") +
       '<div class="rec"><span>' + t("runsAll") + "</span><b>" + fmt(st("runs")) + '</b></div><div class="rec"><span>' + t("caughtAll") + "</span><b>" + fmt(st("caught")) + "</b></div>";
     body.appendChild(me);
+    if (window.GP) return;
     var bd = el("div", "task"); bd.innerHTML = '<div class="tt">' + t("boardTitle") + '</div><div class="muted">' + t("loading") + "</div>"; body.appendChild(bd);
     loadBoard(function (r) {
       if (panelId !== "records" && panelId !== "profile") return;
@@ -606,11 +623,16 @@
     var left = st("chestAt") + D.FREE_CHEST_MS - PF.now(), fc = el("div", "task");
     var cs = D.CHESTS.small;
     fc.innerHTML = '<div class="tt">' + t("freeChest") + '</div>' + chestPic("small") + '<div class="muted">' + t("chestOdds", cs.coins[0], cs.coins[1], Math.round(cs.key * 100), Math.round(cs.bar * 100)) + "</div>";
-    fc.appendChild(left > 0 ? btn(t("freeIn", hms(left)), "ghost", function () {}, true) : btn(prem() ? t("openPrem") : t("openAd"), "ad", function () {
+    fc.appendChild(left > 0 ? btn(t("freeIn", hms(left)), "ghost", function () {}, true) : !adsOn() ? btn(t("openFree"), "ok", function () { S.prog.st.chestAt = PF.now(); save("prog"); openChest("small"); renderPanel(); }) : btn(t("openAd"), "ad", function () {
       rewarded(function (ok) { if (!ok) return; S.prog.st.chestAt = PF.now(); save("prog"); openChest("small"); renderPanel(); });
     }));
     body.appendChild(fc);
-    [["wheel", playWheel, "wheelTitle", "wheelNote"], ["shell", playShell, "shellTitle", "shellNote"]].forEach(function (mg) {
+    if (window.Premium && Premium.active && Premium.active()) {
+      var pg = el("div", "task premgift"); pg.innerHTML = '<i class="mico"></i><div class="tt">' + t("premGiftTitle") + '</div><div class="muted">' + t("premGiftText") + "</div>";
+      pg.appendChild(Premium.giftAvailable() ? btn(t("premGiftBtn"), "gold", function () { Premium.claimGift(); renderPanel(); }) : btn(t("premGiftWait"), "ghost", function () {}, true));
+      body.insertBefore(pg, body.firstChild);
+    }
+    [["wheel", playWheel, "wheelTitle", adsOn() ? "wheelNote" : "wheelNoteFree"], ["shell", playShell, "shellTitle", "shellNote"]].forEach(function (mg) {
       var lf = miniLeft(mg[0]), c = el("div", "task minicard " + mg[0]);
       c.innerHTML = '<i class="mico"></i><div class="tt">' + t(mg[2]) + '</div><div class="muted">' + t(mg[3]) + "</div>";
       c.appendChild(btn(lf.free ? t("playFree") : lf.ad ? t("playAgain") : t("miniTomorrowShort"), lf.free ? "ok" : lf.ad ? "ad" : "ghost", mg[1], !lf.free && !lf.ad));
@@ -689,7 +711,7 @@
     if (E.auto() && window.__autoEnd !== false) { setTimeout(function () { E.endRun(); }, 300); return; }
     show("crash");
     var keyCost = s.continues + 1, box = $("#crashBtns"); box.innerHTML = "";
-    if (s.continues === 0 && PF.canReward()) box.appendChild(btn(prem() ? t("contPrem") : t("contAd"), "ad big", function () {
+    if (s.continues === 0 && PF.canReward()) box.appendChild(btn(t("contAd"), "ad big", function () {
       clearTimeout(crashTimer); rewarded(function (ok) { if (ok) resumeRun(); else E.endRun(); });
     }));
     if (S.wallet.keys >= keyCost) box.appendChild(btn(t("contKey", keyCost) + " 🔑", "gold", function () { clearTimeout(crashTimer); S.wallet.keys -= keyCost; save("wallet"); resumeRun(); }));
@@ -724,7 +746,7 @@
     lastRun = s;
     $("#rDist").textContent = fmt(s.dist) + " " + t("m"); $("#rCoins").textContent = fmt(s.coins); $("#rBars").textContent = s.bars; $("#rCaught").textContent = s.caught; var rt = $("#rTokens"); if (rt) { rt.textContent = s.tokens || 0; rt.previousElementSibling.textContent = cap(tokName(seasonNow().def)); }
     $("#rBest").textContent = newBest ? t("newBest") : t("best") + ": " + fmt(st("best")) + " " + t("m"); $("#rBest").classList.toggle("nb", newBest);
-    var xb = $("#x2Btn"); xb.hidden = s.coins < 10; xb.disabled = false; xb.textContent = prem() ? t("x2Prem") : t("x2Ad");
+    var xb = $("#x2Btn"); xb.hidden = s.coins < 10 || !adsOn(); xb.disabled = false; xb.textContent = t("x2Ad");
     show("results"); refreshTop();
     if (E.auto() && window.__autoLoop) setTimeout(function () { again(); }, 800);
   }
@@ -769,6 +791,7 @@
     loadArt().then(loadingArt);
     Promise.all([PF.init(), loadArt()]).then(function () {
       load(); ensureDay();
+      if (!adsOn()) D.SKINS.forEach(function (x) { if (x.get.t === "ads") x.get = { t: "coins", n: x.get.n * 1000 }; });
       var pl0 = ((PF.hasSdk() ? PF.lang() : (navigator.language || "ru")) || "ru").slice(0, 2);
       lang = S.set.lang || (LANGS.indexOf(pl0) >= 0 ? pl0 : ["be", "uk", "kk", "uz", "ky", "tg", "hy", "az"].indexOf(pl0) >= 0 ? "ru" : "en");
       if (LANGS.indexOf(lang) < 0) lang = "ru";
@@ -797,7 +820,7 @@
       PF.onPause = function (p) { AUDIO.suspend(p); if (p && screen === "hud") pause(true); };
       // Премиум и покупки костюмов
       try {
-        Premium.init({ sdk: PF.sdk(), lang: lang === "ru" ? "ru" : "en", texts: lang !== "ru" && lang !== "en" && window.I18N_PREM[lang] ? { en: window.I18N_PREM[lang] } : undefined, store: { get: function () { return PF.get("sg.premium"); }, set: function (r) { PF.put("sg.premium", r); }, save: function () { return PF.save(); } } })
+        Premium.init({ gift: { grant: premGift, text: { ru: t2("ru", "premGiftText"), en: t2("en", "premGiftText") } }, sdk: PF.sdk(), lang: lang === "ru" ? "ru" : "en", texts: lang !== "ru" && lang !== "en" && window.I18N_PREM[lang] ? { en: window.I18N_PREM[lang] } : undefined, store: { get: function () { return PF.get("sg.premium"); }, set: function (r) { PF.put("sg.premium", r); }, save: function () { return PF.save(); } } })
           .then(function () { try { Premium.maybeCard(); } catch (e) {} });
       } catch (e) {}
       SKINSHOP.init(PF.sdk(), grantProduct).then(function () { if (panelId) renderPanel(); });
@@ -830,7 +853,7 @@
     var b = $("#sndBtn"); b.classList.toggle("off", S.set.snd === 0); b.style.opacity = S.set.snd === 1 ? 0.75 : "";
   }
   /* ---------- Мини-игры: колесо удачи и «Найди слиток» ---------- */
-  function miniLeft(kind) { var free = !S.daily[kind], ad = !S.daily[kind + "Ad"]; return { free: free, ad: ad }; }
+  function miniLeft(kind) { var free = !S.daily[kind], ad = adsOn() && !S.daily[kind + "Ad"]; return { free: free, ad: ad }; }
   function miniUse(kind, viaAd, go) {
     if (!viaAd) { S.daily[kind] = 1; save("daily"); go(); return; }
     rewarded(function (ok) { if (!ok) return; S.daily[kind + "Ad"] = 1; save("daily"); go(); });
@@ -860,7 +883,7 @@
       });
     }
     if (left.free) btns.appendChild(btn(t("spinFree"), "ok", function () { spin(false); }));
-    else if (left.ad) btns.appendChild(btn(prem() ? t("spinPrem") : t("spinAd"), "ad", function () { spin(true); }));
+    else if (left.ad) btns.appendChild(btn(t("spinAd"), "ad", function () { spin(true); }));
     else res.textContent = t("miniTomorrow");
     st2.appendChild(btns);
   }
@@ -889,7 +912,7 @@
       var win = i === prize; giveMini(win ? D.SHELL.win : D.SHELL.lose); res.textContent = win ? t("shellWin") : t("shellLose"); if (win) vib([40, 30, 80]);
     }; });
     if (left.free) btns.appendChild(btn(t("shellFree"), "ok", function () { start(false); }));
-    else if (left.ad) btns.appendChild(btn(prem() ? t("spinPrem") : t("spinAd"), "ad", function () { start(true); }));
+    else if (left.ad) btns.appendChild(btn(t("spinAd"), "ad", function () { start(true); }));
     else res.textContent = t("miniTomorrow");
     st2.appendChild(btns);
   }
@@ -946,6 +969,21 @@
     if (a) { var l = $("#loading"); l.style.backgroundImage = "linear-gradient(rgba(10,8,24,.35),rgba(10,8,24,.75)),url(" + a + ")"; }
   }
   function renderPanelSoft() { var b = $("#panel .pbody"), y = b.scrollTop; renderPanel(); b.scrollTop = y; }
+
+  /* Шаг назад для кнопки «Назад» Android (сборка gplay). true — шаг сделан, false — уже главное меню */
+  function back() {
+    var x;
+    if (!$("#story").hidden) { x = $("#story .skip"); if (x) x.click(); else $("#story").hidden = true; return true; }
+    if (!$("#mini").hidden) { x = $("#mini .mclose"); if (x) x.click(); else $("#mini").hidden = true; return true; }
+    if (!$("#modal").hidden) { $("#modal .mok").click(); return true; }
+    if (panelId) { closePanel(); return true; }
+    if (screen === "hud") { pause(true); return true; }
+    if (screen === "pause") { pause(false); return true; }
+    if (screen === "crash") { clearTimeout(crashTimer); E.endRun(); return true; }
+    if (screen === "results") { toMenu(); return true; }
+    return false;
+  }
+  window.__app = { back: back, toast: function (k) { toast(t(k)); } };
 
   
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();

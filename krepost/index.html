@@ -302,6 +302,8 @@ canvas#cv{display:block;width:100%;height:100%;touch-action:none}
 #fortCtl .cta:disabled,#chestCtl .cta:disabled{background:var(--panel-2);color:var(--muted);border-color:var(--line);box-shadow:none;cursor:default}
 .fres{margin:8px 0 2px!important;font-size:14.5px!important;line-height:1.4!important}
 .fres b{font-family:var(--f-cyr);font-weight:400;font-size:19px;color:var(--accent);display:block}
+.pmgift{margin:10px 0 0;padding:8px 10px;border:1px solid var(--gold);border-radius:8px;background:var(--panel-2);display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center}
+.pmgift span{font-size:13px}
 .fnote{font-size:12.5px;color:var(--muted);margin:8px 0 0;line-height:1.35}
 .chestbox{margin:4px 0 8px;border-bottom:1px solid var(--line);padding-bottom:8px}
 .streakh{font-family:var(--f-cyr);font-size:20px;margin:0 0 6px;color:var(--accent)}
@@ -533,10 +535,9 @@ window.PF = (function () {
     try { ysdk.adv.showFullscreenAdv({ callbacks: { onClose: function (w) { end(w); }, onError: function () { end(false); }, onOffline: function () { end(false); } } }); } catch (e) { end(false); }
   };
   self.premium = premiumOn;
-  self.canReward = function () { return !!(premiumOn() || (sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo)); };
-  /* ролик за награду: done(true) — только если игрок досмотрел; при Премиуме награда сразу, без ролика */
+  self.canReward = function () { return !!(sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo); };
+  /* ролик за награду: done(true) — только если игрок досмотрел (onRewarded). Для всех одинаково, Премиум ролик не заменяет (правила Яндекса, п. 4.5) */
   self.rewarded = function (done) {
-    if (premiumOn()) { done(true); return; }
     if (!self.canReward()) { done(false); return; }
     var fin = false, got = false;
     function end() { if (fin) return; fin = true; adEnd(); done(got); }
@@ -1491,12 +1492,14 @@ const icT = k => img(IC['t_'+k]), icE = k => img(IC['e_'+k]), icCoin = () => img
 // ---------- Интерфейс ----------
 const ui = {coins:$('coins'), lives:$('lives'), wave:$('wave'), next:$('btnNext'), speed:$('btnSpeed'), pause:$('btnPause'),
   ab:[$('ab0'),$('ab1')], sheet:$('sheet'), toast:$('toast'), card:$('card'), roster:$('roster')};
+// мягкие переносы в длинных словах названий («Само-стрель-щики»): иначе слово шире кнопки бойца (13.11)
+const hy = n => esc(n).replace(/[А-Яа-яЁё]{11,}/g, w => w.replace(/([аеёиоуыэюя])(?=[бвгджзйклмнпрстфхцчшщ][аеёиоуыэюя])|([ьъй])(?=[бвгджзклмнпрстфхцчшщ])/gi, '$1$2­'));
 const nmLong = n => String(n).split(/[\s-]/).some(w => w.length > 9) || String(n).length > 14 ? ' long' : '';
 function splitName(n){ const w = String(n).split(' '); if (w.length < 2) return esc(n); let best = 1, bd = 1e9; for (let i=1;i<w.length;i++){ const a = w.slice(0,i).join(' ').length, b = w.slice(i).join(' ').length; if (Math.abs(a-b) < bd) { bd = Math.abs(a-b); best = i; } } return esc(w.slice(0,best).join(' '))+'<br>'+esc(w.slice(best).join(' ')); }
 function buildBattleUI(){
   let h = '';
   for (const k of TOWER_ORDER){ const d = DEFS[k];
-    h += '<button class="unit'+(d.xtra ? ' xtra' : '')+'" data-t="'+esc(k)+'">'+icT(k)+'<span class="nm'+nmLong(d.name)+'">'+esc(d.name)+'</span><span class="pr">'+icCoin()+d.cost+'</span>'+(GATE[k] ? '<span class="gt">🔒 '+esc(gateText(k))+'</span>' : '')+'</button>'; }
+    h += '<button class="unit'+(d.xtra ? ' xtra' : '')+'" data-t="'+esc(k)+'">'+icT(k)+'<span class="nm'+nmLong(d.name)+'">'+hy(d.name)+'</span><span class="pr">'+icCoin()+d.cost+'</span>'+(GATE[k] ? '<span class="gt">🔒 '+esc(gateText(k))+'</span>' : '')+'</button>'; }
   LOCKED.forEach((d,i)=>{ h += '<button class="unit locked" data-l="'+i+'" aria-label="'+esc(d.name)+T(' — недоступно">')+img(IC['l_'+i])+'<span class="nm'+nmLong(d.name)+'">'+esc(d.name)+T('</span><span class="pr" style="color:var(--muted)">закрыто</span></button>'); });
   ui.roster.innerHTML = h; ui.roster.scrollLeft = 0;
   ui.ab.forEach((b,i) => { const id = ABIL_IDS[i]; b.hidden = !id; if (!id) return; b.dataset.k = id; b.setAttribute('aria-label', ABIL[id].name); b.querySelector('img').src = IC['a_'+id]; b.querySelector('.lbl').innerHTML = splitName(ABIL[id].name); });
@@ -1544,7 +1547,7 @@ function renderSheet(){
     for (const k of TOWER_ORDER){ const d = DEFS[k];
       const op = towerOpen(k);
       const poor = op && G.coins < d.cost && !free;
-      h += '<button class="pick'+(op ? '' : ' gated')+(poor ? ' cant' : '')+'" data-b="'+esc(k)+'"'+(!op ? ' disabled' : poor ? ' aria-disabled="true"' : '')+'>'+icT(k)+'<span class="nm'+nmLong(d.name)+'">'+esc(d.name)+'</span><span class="pr">'+(!op ? '🔒 '+esc(gateText(k)) : free ? T('даром') : icCoin()+d.cost)+'</span></button>'; }
+      h += '<button class="pick'+(op ? '' : ' gated')+(poor ? ' cant' : '')+'" data-b="'+esc(k)+'"'+(!op ? ' disabled' : poor ? ' aria-disabled="true"' : '')+'>'+icT(k)+'<span class="nm'+nmLong(d.name)+'">'+hy(d.name)+'</span><span class="pr">'+(!op ? '🔒 '+esc(gateText(k)) : free ? T('даром') : icCoin()+d.cost)+'</span></button>'; }
     s.innerHTML = h + '</div>';
   } else {
     s.dataset.mode = 'tower';
@@ -1623,11 +1626,10 @@ function showWaveCard(){
   const nc = ui.card.querySelector('.cin'); if (nc && keep) nc.scrollTop = keep;
 }
 function hideCard(){ ui.card.hidden = true; }
-// ролик за награду (только на Яндекс Играх): между волнами, по кнопке, один раз за главу, после ответа на вопрос; с Премиумом — без ролика
+// ролик за награду (только на Яндекс Играх): между волнами, по кнопке, один раз за главу, после ответа на вопрос; для всех одинаково
 const AD_REWARD = 60;
 function adHTML(n){
   if (SIM || G.state !== 'intermission' || !PF.canReward() || G.adCh[chapterOf(n)] || quizOpen()) return '';
-  if (PF.premium()) return T('<button class="adbtn" data-ad>★ Премиум: +')+AD_REWARD+T(' без ролика ')+icCoin()+T('<small>один раз за главу</small></button>');
   return T('<button class="adbtn" data-ad>▶ Посмотреть рекламу: +')+AD_REWARD+' '+icCoin()+T('<small>один раз за главу, по желанию</small></button>');
 }
 function watchAd(){
@@ -2148,7 +2150,7 @@ function boot(){
 // пропуск дня — снова с первого. Бонусных денариев (колесо + сундук) не больше FORT_CAP за партию, остаток — в «казне Фортуны».
 // Награды, полученные на карте битв, ждут партии и приходят с первым верным ответом на вопрос («Смелым помогает судьба»):
 // даже +50 денариев на старте давали победу стратегии «все ответы неверные». Между волнами награды идут сразу в текущую партию.
-// Сразу после бесплатного поворота — ещё один за ролик (только на Яндекс Играх; с Премиумом — без ролика).
+// Сразу после бесплатного поворота — ещё один за ролик (только на Яндекс Играх, для всех одинаково).
 // Состояние — один ключ krepost-camp-fortuna через PF (localStorage + облако Яндекса), общий для всех битв.
 const FKEY = 'krepost-camp-fortuna', FORT_GAP = 5*3600*1000, FORT_CAP = 300, FORT_BANK_MAX = 1000;
 const FORT_SECT = [
@@ -2171,7 +2173,7 @@ function fRead(){
   f = f && typeof f === 'object' ? f : {};
   return {next:+f.next || 0, ad:f.ad ? 1 : 0, bank:Math.max(0, Math.min(FORT_BANK_MAX, f.bank|0)),
     pend:Object.assign({walls:0, unit:0, slow:0, recharge:0, art:0}, f.pend && typeof f.pend === 'object' ? f.pend : {}),
-    last:typeof f.last === 'string' ? f.last : '', n:Math.max(0, Math.min(7, f.n|0)), spins:f.spins|0};
+    last:typeof f.last === 'string' ? f.last : '', n:Math.max(0, Math.min(7, f.n|0)), spins:f.spins|0, pg:typeof f.pg === 'string' ? f.pg : ''};
 }
 function fWrite(f){ PF.put(FKEY, JSON.stringify(f)); }
 const dayKey = d => d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
@@ -2182,6 +2184,25 @@ function chestState(f){
   return {ready, day, today};
 }
 function fortReady(f){ return Date.now() >= f.next; }
+// подарок Премиума (13.11, вместо наград без роликов): раз в день, пока Премиум активен; не кнопка ролика, без значка рекламы
+const PM_GIFT = {coins:120, walls:2}, PMG = {got:null};
+// день подарка — по серверному времени Яндекса (как срок Премиума): перевод часов устройства второй подарок не даёт; без SDK — по дате устройства
+function pmDay(){ let t = 0; try { const sdk = PF.sdk(); if (sdk && typeof sdk.serverTime === 'function') t = +sdk.serverTime() || 0; } catch (e) {} return dayKey(new Date(t > 0 ? t : Date.now())); }
+const pmGiftReady = f => PF.premium() && f.pg !== pmDay();
+function pmGiftTake(){
+  if (CH.busy || FS.busy) return false;
+  const f = fRead(); if (!pmGiftReady(f)) return false;
+  f.pg = pmDay(); PMG.got = fortGrant(f, PM_GIFT); fWrite(f);
+  if (fortInGame()) { persist(); refreshUI(); }
+  renderFort(); fortUI(); return true;
+}
+function pmGiftHTML(f){
+  if (!PF.premium()) return '';
+  const what = '+' + PM_GIFT.coins + T(' монет') + T(', +2 стены');
+  return '<div class="pmgift"><b>★ ' + T('Подарок Премиума') + '</b>' + (pmGiftReady(f)
+    ? '<span>' + T('Сегодня: ') + what + '</span><button class="cta two" data-pmgift>' + T('Забрать подарок') + '</button>'
+    : '<span>' + (PMG.got ? T('Получено: ') + esc(PMG.got.filter(Boolean).join(', ')) + '. ' : '') + T('Следующий подарок — завтра.') + '</span>') + '</div>';
+}
 function hms(ms){ const x = Math.max(0, Math.ceil(ms/1000)), h = Math.floor(x/3600), m = Math.floor(x/60) % 60, sec = x % 60; return h + ':' + String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0'); }
 function fortTimeText(f){ return fortReady(f) ? T('можно крутить!') : T('через ') + hms(f.next - Date.now()); }
 const fortInGame = () => !!B && G.state === 'intermission';
@@ -2380,9 +2401,7 @@ function renderFort(){
   if (FS.busy) h += T('<button class="cta" disabled>Колесо крутится…</button>');
   else if (ready) h += T('<button class="cta" data-spin>Крутить колесо</button>');
   else h += T('<button class="cta two" disabled>Следующий поворот<small class="ftime">') + fortTimeText(f) + '</small></button>';
-  if (!FS.busy && f.ad && PF.canReward()) h += PF.premium()
-    ? T('<button class="adbtn" data-adspin>★ Ещё поворот (Премиум)<small>сразу, без ролика</small></button>')
-    : T('<button class="adbtn" data-adspin>▶ Ещё поворот за рекламу<small>сразу, по желанию</small></button>');
+  if (!FS.busy && f.ad && PF.canReward()) h += T('<button class="adbtn" data-adspin>▶ Ещё поворот за рекламу<small>сразу, по желанию</small></button>');
   if (!FS.busy && FS.res >= 0 && FS.got) {
     const s = FORT_SECT[FS.res];
     h += '<p class="fres"><b>' + esc(s.title) + '</b>' + esc(s.coins ? FS.got.filter(Boolean).join(', ') : s.text) + '. ' + (fortInGame() ? T('Уже в этой партии.') : T('Получишь в партии за первый верный ответ.')) + '</p>';
@@ -2401,9 +2420,10 @@ function renderFort(){
     + '<small>' + (broke ? T('Серия прервалась — начинаем с первого дня. ') : '') + T('Заходи каждый день — сундук всё богаче, на 7-й день +150 и воин даром.</small>');
   $('chestBtn').disabled = !c.ready || CH.busy;
   const r = CHEST_DAYS[(c.ready ? c.day : c.day % 7 + 1) - 1];
-  $('chestCtl').innerHTML = c.ready
+  const pmg = pmGiftHTML(f);
+  $('chestCtl').innerHTML = (c.ready
     ? T('<button class="cta two" data-chest>Открыть<small>или нажми на сундук</small></button><p style="margin-top:4px">') + chestText(r) + '</p>'
-    : '<p><b>' + (CH.got ? T('В сундуке: ') + esc(CH.got.join(', ')) + '.' : T('Сундук уже открыт сегодня.')) + T('</b></p><p style="margin-top:4px">Завтра день ') + (c.day % 7 + 1) + ': ' + chestText(r) + T('. Пропустишь день — серия заново.</p>');
+    : '<p><b>' + (CH.got ? T('В сундуке: ') + esc(CH.got.join(', ')) + '.' : T('Сундук уже открыт сегодня.')) + T('</b></p><p style="margin-top:4px">Завтра день ') + (c.day % 7 + 1) + ': ' + chestText(r) + T('. Пропустишь день — серия заново.</p>')) + pmg;
   const pt = pendText(f);
   $('fortGo').textContent = fortInGame() ? T('К битве') : T('К карте битв');
   $('fortNote').textContent = (pt ? (fortInGame() ? T('В запасе на следующие партии: ') : T('Ждут первого верного ответа в партии: ')) + pt + '. ' : '')
@@ -2428,7 +2448,7 @@ function fortCardHTML(){
 let fortWasReady = null;
 function fortUI(){
   const f = fRead(), r = fortReady(f), c = chestState(f);
-  $('fbFort').classList.toggle('ready', r || c.ready);
+  $('fbFort').classList.toggle('ready', r || c.ready || pmGiftReady(f));
   $('fbChestT').textContent = c.ready ? T('Сундук: открыть! День ') + c.day : T('Сундук: серия ') + c.day + T(' из 7');
   for (const im of document.querySelectorAll('#fbFort img[data-ic]')) if (IC[im.dataset.ic] && im.src !== IC[im.dataset.ic]) im.src = IC[im.dataset.ic];
   fortTick(f);
@@ -2446,7 +2466,7 @@ $('fortGo').addEventListener('click', closeFort);
 // при запуске: если сундук или колесо доступны — «Дары Фортуны» первым экраном, поверх карты битв
 function fortAuto(){
   if (G.state !== 'menu' || !scrFort.hidden || $('scrMap').hidden) return false;
-  const f = fRead(); if (!fortReady(f) && !chestState(f).ready) return false;
+  const f = fRead(); if (!fortReady(f) && !chestState(f).ready && !pmGiftReady(f)) return false;
   openFort(); return true;
 }
 scrFort.addEventListener('click', ev => {
@@ -2455,26 +2475,27 @@ scrFort.addEventListener('click', ev => {
   if (b.hasAttribute('data-spin')) fortSpin(false);
   else if (b.hasAttribute('data-adspin')) fortAdSpin();
   else if (b.hasAttribute('data-chest') || b.id === 'chestBtn') chestOpen();
+  else if (b.hasAttribute('data-pmgift')) pmGiftTake();
 });
 
 // ---------- Премиум (общий модуль window.Premium; в школьной сборке его нет) ----------
 // Кнопка «Премиум» в углу только на спокойных экранах: карта битв, старт битвы, победа, поражение — без открытых окон. В бою скрыта.
 // Карточки («Надоела реклама?» после каждой 3-й полноэкранной, «скоро закончится», «закончился») — тоже только там.
-// Премиум не продаёт монеты и бонусы: убирает полноэкранную рекламу, а «+60» и повтор колеса даёт без ролика (лимиты те же).
+// Премиум: без полноэкранной рекламы + подарок каждый день; ролики за награду — как у всех (правила Яндекса, п. 4.5) (лимиты те же).
 const PM_KEY = 'krepost-camp-premium';
 const PM_TEXTS = {
   ru: { p30: 'Премиум на 30 дней', p365: 'Премиум на год',
-    perks: ['Полноэкранная реклама отключается.', 'Награды за ролики (+60 монет, ещё поворот колеса) выдаются сразу, без просмотра.', 'Монеты и бонусы не продаются: правила, лимиты и сложность остаются прежними.'],
+    perks: ['Полноэкранная реклама отключается.', 'Подарок каждый день в «Дарах Фортуны»: +120 монет и +2 стены на ближайшую битву.', 'Правила и сложность битв остаются прежними.'],
     note: 'Оплата один раз. Премиум действует 30 дней или год — в зависимости от выбранного товара. Автопродления и повторных списаний нет. Если Премиум уже идёт, новый срок добавится к концу.',
-    adTitle: 'Надоела реклама?', adText: 'Защищай крепости без рекламных пауз! С Премиумом полноэкранная реклама исчезнет, а награды за ролики можно получать сразу.', adMore: 'Узнать про Премиум', later: 'Не сейчас',
+    adTitle: 'Надоела реклама?', adText: 'Защищай крепости без рекламных пауз! С Премиумом полноэкранная реклама исчезнет, а каждый день тебя ждёт подарок.', adMore: 'Узнать про Премиум', later: 'Не сейчас',
     soonTitle: 'Премиум скоро закончится', soonText: 'Ещё {0} без рекламы. Затем Премиум закончится сам, без списаний. Если захочешь, сможешь купить его снова.', extend: 'Продлить',
-    endTitle: 'Премиум закончился', endText: 'Полноэкранная реклама вернулась, а награды снова требуют просмотра роликов. Крепости по-прежнему ждут защитника!', buy: 'Купить' },
+    endTitle: 'Премиум закончился', endText: 'Полноэкранная реклама вернулась, а ежедневного подарка больше нет. Крепости по-прежнему ждут защитника!', buy: 'Купить' },
   en: { p30: '30-Day Premium', p365: '1-Year Premium',
-    perks: ['Full-screen ads are disabled.', 'Video rewards (+60 coins, an extra wheel spin) are given instantly, without watching.', 'Coins and bonuses are not for sale: the rules, limits and difficulty stay the same.'],
+    perks: ['Full-screen ads are disabled.', "A daily gift in Fortuna's Gifts: +120 coins and +2 walls for your next battle.", 'The rules and difficulty of the battles stay the same.'],
     note: 'One-time payment. Premium lasts 30 days or 1 year, depending on your purchase. No automatic renewal or recurring charges. If Premium is already active, the new period is added to the end.',
-    adTitle: 'Tired of ads?', adText: 'Defend the fortresses without ad breaks! With Premium, full-screen ads disappear, and you can collect video rewards instantly.', adMore: 'Learn About Premium', later: 'Not Now',
+    adTitle: 'Tired of ads?', adText: 'Defend the fortresses without ad breaks! With Premium, full-screen ads disappear, and a gift awaits you every day.', adMore: 'Learn About Premium', later: 'Not Now',
     soonTitle: 'Premium Is Ending Soon', soonText: '{0} more without ads. Then Premium ends automatically, with no further charges. If you like, you can buy it again.', extend: 'Renew',
-    endTitle: 'Premium Has Ended', endText: 'Full-screen ads are back, and video rewards require watching ads again. The fortresses are still waiting for their defender!', buy: 'Buy' }
+    endTitle: 'Premium Has Ended', endText: 'Full-screen ads are back, and the daily gift is gone. The fortresses are still waiting for their defender!', buy: 'Buy' }
 };
 function pmCalm(){ return (G.state === 'menu' || G.state === 'won' || G.state === 'lost') && scrEvent.hidden && scrEnc.hidden && scrArt.hidden && scrFort.hidden; }
 function pmSync(){ try { document.documentElement.classList.toggle('pm-hide', !pmCalm()); } catch (e) {} }

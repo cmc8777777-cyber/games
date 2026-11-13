@@ -352,7 +352,7 @@ kbd{font-family:var(--f-mono);font-size:12px;background:rgba(255,255,255,.1);bor
       <div class="places" id="rList"></div>
       <div class="rw" id="rReward"></div>
       <p id="rNote"></p>
-      <div class="row" id="rX2Row" hidden><button class="btn" id="rX2">▶ Удвоить награду за рекламу</button></div>
+      <div class="row" id="rX2Row" hidden><button class="btn" id="rX2">▶ Удвоить награду за рекламу</button><button class="btn" id="rGift" type="button" hidden>🎁 Удвоить жетоном подарка</button></div>
       <div class="row"><button class="btn primary" id="rOk">Продолжить</button></div>
     </div>
   </div>
@@ -577,6 +577,13 @@ kbd{font-family:var(--f-mono);font-size:12px;background:rgba(255,255,255,.1);bor
     'дождь · ': 'rain · ', 'гонки за REP · полиция на улицах': 'races for REP · police on the streets',
     ' Голубая линия на мини-карте ведёт к гонке «': ' The blue line on the minimap leads to the race "',
     '»': '"', '».': '".',
+    /* подарок дня Премиума (13.11.2026) */
+    '🎁 Удвоить жетоном подарка': '🎁 Double with a gift token', '🎁 Удвоить жетоном подарка · ': '🎁 Double with a gift token · ',
+    ' (×2, подарок Премиума)': ' (×2, Premium gift)', ' REP за ночь (×2, подарок Премиума)': ' REP tonight (×2, Premium gift)',
+    '🎁 Вернуть ': '🎁 Get back ', ' REP жетоном · ': ' REP with a token · ',
+    '🎁 Подарок Премиума на сегодня: $': "🎁 Today's Premium gift: $", ' и 2 жетона «×2» (удвоить награду за гонку или вернуть REP).': ' and 2 "×2" tokens (double a race reward or get REP back).',
+    'Забрать подарок': 'Claim gift', '🎁 Подарок получен: +$': '🎁 Gift claimed: +$', ', жетонов «×2»: ': ', "×2" tokens: ',
+    '🎁 Жетонов «×2» из подарка Премиума на сегодня: ': '🎁 "×2" tokens from today’s Premium gift: ', '. Кнопка 🎁 появится после гонки или остановки патрулём.': '. The 🎁 button appears after a race or when the patrol stops you.',
     /* замки с подсказкой (12.11.2026) */
     'Откроется на уровне ': 'Unlocks at level ', ' · откроется, когда дойдёшь до него': ' · unlocks when you reach it',
     ' откроется на уровне ': ' unlocks at level ', 'откроется на ур. ': 'unlocks at lvl ',
@@ -5789,15 +5796,20 @@ self.interstitial=function(done){done=done||function(){};
   if(adBusy){done();return;}
   if(premiumOn()){done();return;}   // с Премиумом полноэкранной рекламы нет
   var now=Date.now(),allowedAt=lastAdAt?lastAdAt+adGap():bornAt+AD_FIRST_MS;
-  if(!sdkOk||!ysdk.adv||!ysdk.adv.showFullscreenAdv||now<allowedAt){done();return;}
+  if(!sdkOk){var g=gpAds();if(!g||!g.interstitial||now<allowedAt){done();return;}adBegin();
+    try{g.interstitial(function(shown){if(shown)lastAdAt=Date.now();adEnd();done();});}catch(e){adEnd();done();}return;}
+  if(!ysdk.adv||!ysdk.adv.showFullscreenAdv||now<allowedAt){done();return;}
   var fin=false;function end(shown){if(fin)return;fin=true;if(shown){lastAdAt=Date.now();try{if(window.Premium)window.Premium.noteFullscreen();}catch(e){}}adEnd();done();}
   adBegin();
   try{ysdk.adv.showFullscreenAdv({callbacks:{onClose:function(w){end(w!==false);},onError:function(){end(false);},onOffline:function(){end(false);}}});}catch(e){end(false);}
 };
-self.canReward=function(){return !!(sdkOk&&!adBusy&&ysdk.adv&&ysdk.adv.showRewardedVideo);};
+/* без SDK площадки — адаптер магазина приложений (gp-adapter.js: window.GP.ads), сейчас заглушка «рекламы нет» */
+function gpAds(){var g=window.GP&&window.GP.ads;return g&&g.available?g:null;}
+self.canReward=function(){if(!sdkOk){var g=gpAds();return !!(g&&!adBusy&&g.rewarded);}return !!(!adBusy&&ysdk.adv&&ysdk.adv.showRewardedVideo);};
 /* ролик за награду; done(got): got === true, только если ролик досмотрен */
 self.rewarded=function(done){
   if(!self.canReward()){done(false);return;}
+  if(!sdkOk){var g=gpAds();adBegin();try{g.rewarded(function(ok){adEnd();done(ok===true);});}catch(e){adEnd();done(false);}return;}
   var fin=false,got=false;function end(){if(fin)return;fin=true;if(got)lastAdAt=Date.now();adEnd();done(got);}
   adBegin();
   try{ysdk.adv.showRewardedVideo({callbacks:{onRewarded:function(){got=true;},onClose:end,onError:end}});}catch(e){end();}
@@ -5811,6 +5823,7 @@ return self;
 /* Премиум: общий модуль для браузерных игр на Яндекс Играх.
    Платный Премиум на срок (30 дней или год), без автопродления: «используемая» покупка, срок считается по серверному
    времени Яндекса и хранится в облачных данных игрока. Подробно: README.md рядом с этим файлом.
+   С 13 ноября 2026 (п. 4.5 правил Яндекса): награда за ролик выдаётся только после показанного ролика, у Премиума тоже. Вместо «наград без роликов» Премиум даёт ПОДАРОК ДНЯ (раз в сутки, пока он активен): содержимое задаёт игра (init({gift})).
    Модуль ничего не знает об игре: хранилище, звук и реклама подключаются через init() и несколько вызовов хозяина.
    Без SDK, без покупок или без созданных товаров в консоли кнопка и карточки скрыты, игра работает как раньше. */
 window.Premium = (function () {
@@ -5833,20 +5846,21 @@ window.Premium = (function () {
     zIndex: 50
   };
 
-  /* ---- Тексты (временные, их заменит сессия «Тексты»). Подмена: Premium.init({ texts: { ru: {...}, en: {...} } }) ---- */
+  /* ---- Тексты по умолчанию (нейтральные; не обещать отсутствие чужих блоков рекламы, платформа может показывать свои). Игра подставляет свои финальные тексты. Подмена: Premium.init({ texts: { ru: {...}, en: {...} } }) ---- */
   var TEXTS = {
     ru: {
       btn: "Премиум", btnOn: "Премиум · {0} д.", title: "Премиум",
       activeUntil: "Активен до {0}. Осталось {1}.",
       notActive: "Сейчас Премиум не включён.",
-      perks: ["Без полноэкранной рекламы и баннеров.", "Награды за ролики выдаются сразу, без просмотра.", "Правила и сложность игры не меняются: Премиум не помогает выигрывать."],
+      perks: ["Полноэкранная реклама отключается.", "Подарок каждый день, пока Премиум действует.", "Ролики за награду показываются, как и раньше: награду даёт только просмотренный ролик.", "Подсказки и игровые лимиты остаются прежними."],
+      giftTitle: "Подарок дня", giftText: "Подарок Премиума: каждый день, пока он действует.", giftBtn: "Забрать подарок", giftLater: "Позже", giftTaken: "Подарок дня получен.", giftDone: "Подарок получен!", giftWait: "Подарок дня уже получен. Следующий будет завтра.", giftIn: "Подарок дня ждёт вас!",
       p30: "Премиум на 30 дней", p365: "Премиум на год",
-      validTo: "Будет действовать до {0}", buy: "Купить", extend: "Продлить",
+      validTo: "Будет действовать до {0}", buy: "Купить", endBuy: "Купить Премиум", extend: "Продлить",
       note: "Один платёж, без автопродления: больше ничего не спишется. Если Премиум уже идёт, новый срок добавится к концу.",
       close: "Закрыть", later: "Не сейчас",
-      adTitle: "Надоела реклама?", adText: "Премиум: без роликов и баннеров, 30 дней за {0}, не продлевается сам.", adMore: "Узнать про Премиум",
+      adTitle: "Надоела реклама?", adText: "Премиум отключает полноэкранную рекламу и дарит подарок каждый день. 30 дней за {0}, не продлевается сам.", adMore: "Узнать про Премиум",
       soonTitle: "Премиум скоро закончится", soonText: "Осталось {0}. Продлить?",
-      endTitle: "Премиум закончился", endText: "Реклама вернулась. Можно включить Премиум снова.",
+      endTitle: "Премиум закончился", endText: "Полноэкранная реклама вернулась, подарок дня больше не выдаётся. Можно включить Премиум снова.",
       busy: "Ждём подтверждения оплаты…", done: "Готово! Премиум активен до {0}.",
       fail: "Покупка не прошла. Деньги не списаны.", saveFail: "Оплата принята, но срок пока не сохранился. Не закрывайте игру, мы повторим при следующем запуске.",
       d1: "{0} день", d2: "{0} дня", d5: "{0} дней", free: "Ян", lang: "ru-RU"
@@ -5855,14 +5869,15 @@ window.Premium = (function () {
       btn: "Premium", btnOn: "Premium · {0} d", title: "Premium",
       activeUntil: "Active until {0}. {1} left.",
       notActive: "Premium is not active.",
-      perks: ["No full-screen ads or banners.", "Rewards for videos are given instantly, no watching.", "The rules and difficulty stay the same: Premium does not help you win."],
+      perks: ["Full-screen ads are disabled.", "A gift every day while Premium lasts.", "Reward videos work as before: a reward is given only after the video is watched.", "Hints and game limits stay the same."],
+      giftTitle: "Daily gift", giftText: "Your Premium gift, every day while it lasts.", giftBtn: "Claim gift", giftLater: "Later", giftTaken: "Daily gift claimed.", giftDone: "Gift received!", giftWait: "You already claimed today's gift. The next one is tomorrow.", giftIn: "Your daily gift is waiting!",
       p30: "Premium for 30 days", p365: "Premium for a year",
-      validTo: "Will be active until {0}", buy: "Buy", extend: "Extend",
+      validTo: "Will be active until {0}", buy: "Buy", endBuy: "Buy Premium", extend: "Extend",
       note: "One payment, no auto-renewal: nothing else will be charged. If Premium is already running, the new period is added to the end.",
       close: "Close", later: "Not now",
-      adTitle: "Tired of ads?", adText: "Premium: no videos or banners, 30 days for {0}, does not renew by itself.", adMore: "About Premium",
+      adTitle: "Tired of ads?", adText: "Premium removes full-screen ads and gives you a gift every day. 30 days for {0}, no auto-renewal.", adMore: "About Premium",
       soonTitle: "Premium ends soon", soonText: "{0} left. Extend?",
-      endTitle: "Premium has ended", endText: "Ads are back. You can turn Premium on again.",
+      endTitle: "Premium has ended", endText: "Full-screen ads are back and the daily gift stops. You can turn Premium on again.",
       busy: "Waiting for payment confirmation…", done: "Done! Premium is active until {0}.",
       fail: "The purchase did not go through. You were not charged.", saveFail: "Payment accepted, but the period is not saved yet. Keep the game open, we will retry on the next start.",
       d1: "{0} day", d2: "{0} days", d5: "{0} days", free: "Yan", lang: "en-GB"
@@ -5870,7 +5885,7 @@ window.Premium = (function () {
   };
 
   /* ---- Состояние ---- */
-  var sdk = null, payments = null, store = null;
+  var sdk = null, payments = null, store = null, gift = null;   // gift: { grant(): применить подарок в игре, text: {ru, en} — что в подарке }
   var lang = "ru", texts = TEXTS.ru;
   var catalog = {};                   // id → описание товара из консоли
   var st = blank();
@@ -5879,7 +5894,7 @@ window.Premium = (function () {
   var listeners = [], pollTimer = 0, lastActive = false;
   var ui = { corner: null, ov: null, box: null, status: "", mode: "", style: null, lastFocus: null };
 
-  function blank() { return { until: 0, tokens: [], ads: 0, cardAt: 0, remindDay: 0, endShown: 0 }; }
+  function blank() { return { until: 0, tokens: [], ads: 0, cardAt: 0, remindDay: 0, endShown: 0, giftDay: 0 }; }
   function clean(o) {
     var r = blank();
     if (!o || typeof o !== "object") return r;
@@ -5889,6 +5904,7 @@ window.Premium = (function () {
     r.cardAt = Math.max(0, Math.floor(Number(o.cardAt) || 0));
     r.remindDay = Math.max(0, Math.floor(Number(o.remindDay) || 0));
     r.endShown = Math.max(0, Number(o.endShown) || 0);
+    r.giftDay = Math.max(0, Math.floor(Number(o.giftDay) || 0));
     return r;
   }
   function parse(raw) { try { return clean(typeof raw === "string" ? JSON.parse(raw) : raw); } catch (e) { return blank(); } }
@@ -5897,7 +5913,7 @@ window.Premium = (function () {
   function mergeState(a, b) {
     var x = parse(a), y = parse(b), r = blank(), seen = {};
     r.until = Math.max(x.until, y.until); r.ads = Math.max(x.ads, y.ads); r.cardAt = Math.max(x.cardAt, y.cardAt);
-    r.remindDay = Math.max(x.remindDay, y.remindDay); r.endShown = Math.max(x.endShown, y.endShown);
+    r.remindDay = Math.max(x.remindDay, y.remindDay); r.endShown = Math.max(x.endShown, y.endShown); r.giftDay = Math.max(x.giftDay, y.giftDay);
     y.tokens.concat(x.tokens).forEach(function (t) { if (!seen[t]) { seen[t] = 1; r.tokens.push(t); } });
     r.tokens = r.tokens.slice(-config.tokensKeep);
     return JSON.stringify(r);
@@ -5931,7 +5947,8 @@ window.Premium = (function () {
     catch (e) { return new Date(ms).toISOString().slice(0, 10); }
   }
   function priceOf(id) { var c = catalog[id]; return c && c.price ? String(c.price) : ""; }
-  function dayIdx() { return Math.floor(now() / DAY); }
+  /* номер календарного дня по серверному времени в часовом поясе игрока: подарок и напоминание сбрасываются в местную полночь */
+  function dayIdx() { var tz = 0; try { tz = new Date().getTimezoneOffset(); } catch (e) {} return Math.floor((now() - tz * 60000) / DAY); }
   function emit() { var a = active(); lastActive = a; listeners.slice().forEach(function (f) { try { f(a); } catch (e) {} }); renderCorner(); if (ui.ov && ui.mode === "shop") renderShop(); }
 
   /* ---- Покупка и начисление: запись в облако подтверждена, и только потом consumePurchase ---- */
@@ -5973,10 +5990,23 @@ window.Premium = (function () {
 
   /* ---- Вызовы хозяина ---- */
   function noteFullscreen() { st.ads++; persist(); }
+  /* ---- Подарок дня: раз в сутки, пока Премиум активен. Не кнопка ролика, значка рекламы нет. ---- */
+  function giftAvailable() { return !!(gift && active() && st.giftDay !== dayIdx()); }
+  function giftText() { var g = gift && gift.text; var s = g && (g[lang] || g.ru); return s || tx("giftText"); }
+  /* Забрать подарок. true, если выдан сейчас (один раз за календарный день); хозяин применяет подарок в gift.grant(). День помечается и сохраняется ДО выдачи, повторить нельзя. */
+  function claimGift() {
+    if (!giftAvailable()) return false;
+    st.giftDay = dayIdx(); persist();
+    try { if (store && store.save) Promise.resolve(store.save()).then(function () {}, function () {}); } catch (e) {}
+    try { gift.grant(); } catch (e) {}
+    emit();
+    return true;
+  }
   /* Показать карточку на спокойном экране (меню, результат). Возвращает true, если карточка открыта. */
   function maybeCard() {
     if (!available() || ui.ov) return false;
     if (active()) {
+      if (giftAvailable()) { openCard("gift"); return true; }
       if (daysLeft() <= config.remindDays && st.remindDay !== dayIdx()) { st.remindDay = dayIdx(); persist(); openCard("soon"); return true; }
       return false;
     }
@@ -6063,6 +6093,14 @@ window.Premium = (function () {
     ui.ov.setAttribute("aria-labelledby", "pmTitle");
     b.appendChild(el("p", "", active() ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("notActive")));
     var ul = el("ul", "pm-perks"); texts.perks.forEach(function (s) { ul.appendChild(el("li", "", s)); }); b.appendChild(ul);
+    if (gift && active()) {
+      if (giftAvailable()) {
+        b.appendChild(el("p", "pm-sub", giftText()));
+        var gb = el("button", "pm-btn main", tx("giftBtn")); gb.type = "button"; gb.setAttribute("data-pm-gift", "1"); gb.style.marginBottom = "12px";
+        gb.addEventListener("click", function () { if (claimGift()) setStatus(tx("giftDone")); });
+        b.appendChild(gb);
+      } else b.appendChild(el("p", "pm-sub", tx("giftWait")));
+    }
     config.order.forEach(function (id) { if (catalog[id]) b.appendChild(productCard(id)); });
     b.appendChild(el("p", "pm-sub", tx("note")));
     var s = el("p", "pm-status", ui.status); s.setAttribute("role", "status"); s.setAttribute("aria-live", "polite"); b.appendChild(s);
@@ -6075,15 +6113,16 @@ window.Premium = (function () {
   function openCard(kind) {
     mountOv(); ui.mode = "card:" + kind;
     var b = ui.box, p30 = priceOf("premium_30");
-    var title = kind === "ad" ? tx("adTitle") : kind === "soon" ? tx("soonTitle") : tx("endTitle");
-    var text = kind === "ad" ? fmt(tx("adText"), p30 || ("99 " + tx("free"))) : kind === "soon" ? fmt(tx("soonText"), plural(daysLeft())) : tx("endText");
+    var title = kind === "gift" ? tx("giftTitle") : kind === "ad" ? tx("adTitle") : kind === "soon" ? tx("soonTitle") : tx("endTitle");
+    var text = kind === "gift" ? giftText() : kind === "ad" ? fmt(tx("adText"), p30 || ("99 " + tx("free"))) : kind === "soon" ? fmt(tx("soonText"), plural(daysLeft())) : tx("endText");
     b.appendChild(xBtn());
     var h = el("h2", "", title); h.id = "pmTitle"; b.appendChild(h); ui.ov.setAttribute("aria-labelledby", "pmTitle");
     b.appendChild(el("p", "", text));
     var row = el("div", "pm-row");
-    var go = el("button", "pm-btn main", kind === "ad" ? tx("adMore") : (kind === "soon" ? tx("extend") : tx("buy"))); go.type = "button";
-    go.addEventListener("click", function () { openShop(); });
-    var no = el("button", "pm-btn", tx("later")); no.type = "button"; no.addEventListener("click", function () { closeOv(); });
+    var go = el("button", "pm-btn main", kind === "gift" ? tx("giftBtn") : kind === "ad" ? tx("adMore") : (kind === "soon" ? tx("extend") : tx("endBuy"))); go.type = "button";
+    if (kind === "gift") go.setAttribute("data-pm-gift", "1");
+    go.addEventListener("click", function () { if (kind === "gift") { claimGift(); closeOv(); } else openShop(); });
+    var no = el("button", "pm-btn", kind === "gift" ? tx("giftLater") : tx("later")); no.type = "button"; no.addEventListener("click", function () { closeOv(); });
     row.appendChild(go); row.appendChild(no); b.appendChild(row);
     try { no.focus({ preventScroll: true }); } catch (e) {}
   }
@@ -6101,7 +6140,7 @@ window.Premium = (function () {
     o = o || {};
     if (o.config) Object.keys(o.config).forEach(function (k) { config[k] = o.config[k]; });
     if (o.texts) Object.keys(o.texts).forEach(function (l) { TEXTS[l] = Object.assign(TEXTS[l] || {}, o.texts[l]); });
-    sdk = o.sdk || null; store = o.store || null;
+    sdk = o.sdk || null; store = o.store || null; gift = o.gift && typeof o.gift.grant === "function" ? o.gift : null;
     setLang(o.lang || lang);
     loadState();
     ready = true; lastActive = active();
@@ -6126,6 +6165,7 @@ window.Premium = (function () {
     init: init, setLang: setLang,
     active: active, until: function () { return st.until; }, daysLeft: daysLeft, available: available,
     noteFullscreen: noteFullscreen, maybeCard: maybeCard, openShop: openShop,
+    giftAvailable: giftAvailable, claimGift: claimGift,
     onChange: function (f) { if (typeof f === "function") listeners.push(f); },
     mergeState: mergeState,
     refresh: function () { return canBuy ? checkPurchases() : Promise.resolve(); },
@@ -6435,37 +6475,40 @@ let save=loadSave();
 const PLAT=window.NBPlat&&typeof window.NBPlat.init==='function'?window.NBPlat:{init:()=>Promise.resolve(null),ready(){},setPlaying(){},paused:()=>false,put(){},hasCloud:()=>false,hasSdk:()=>false,interstitial(d){if(d)d();},canReward:()=>false,rewarded(d){d(false);},onPause(){},saveNow:()=>Promise.resolve(false),sdk:()=>null,serverTime:()=>Date.now()};
 function persist(){save.ts=Date.now();try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}cloudQueue();PLAT.put(save);}
 /* ---------- Премиум (общий модуль src/premium.js) ----------
-   С Премиумом нет полноэкранной рекламы (проверка в PLAT.interstitial). «×2 за гонку» и «Вернуть REP» без ролика —
-   вместе не больше PM_FREE раз за московские сутки по серверному времени; счётчик save.pmFree уходит в облако с сохранением.
-   Дальше — обычный ролик. Деньги и REP не продаются, Премиум их не даёт. */
-const PM=window.Premium||null,PM_FREE=5;let lastPmMode='';
+   Правила Яндекса (п. 4.5, ответ поддержки, 13.11.2026): награда «за ролик» — только после показанного ролика, у всех, и с Премиумом тоже.
+   Премиум даёт: нет полноэкранной рекламы (проверка в PLAT.interstitial) + ПОДАРОК ДНЯ — раз в московские сутки по серверному времени,
+   пока Премиум активен: деньги (≈ средняя дневная гонка текущего уровня) и PM_TOKENS жетона «×2» — удвоить награду за гонку
+   или вернуть REP после остановки патрулём. Жетон — отдельная кнопка 🎁, не кнопка ролика. Вместе ≈ 3 ролика.
+   save.pmGift={d: сутки, c: 1 — получен, u: жетонов потрачено} уходит в облако вместе с сохранением. REP Премиум не даёт. */
+const PM=window.Premium||null,PM_TOKENS=2;let lastPmMode='';
 function pmOn(){try{return !!(PM&&PM.active());}catch(e){return false;}}
 function pmDay(){return Math.floor((PLAT.serverTime()+3*3600e3)/864e5);}
-function pmLeft(){const c=save.pmFree,d=pmDay();return Math.max(0,PM_FREE-(c&&c.d===d?c.n:0));}
-function pmFreeNow(){return pmOn()&&pmLeft()>0;}
-function canGetReward(){return pmFreeNow()||PLAT.canReward();}
-/* награда: с Премиумом сразу (в пределах лимита), иначе ролик; done(got) */
-function getReward(done){if(pmFreeNow()){const d=pmDay();if(!save.pmFree||save.pmFree.d!==d)save.pmFree={d,n:0};save.pmFree.n++;persist();done(true);return;}PLAT.rewarded(done);}
+function pmGiftToday(){const g=save.pmGift;return g&&g.d===pmDay()?g:null;}
+function pmGiftReady(){const g=pmGiftToday();return pmOn()&&!(g&&g.c);}
+function pmTokens(){const g=pmGiftToday();return pmOn()&&g&&g.c?Math.max(0,PM_TOKENS-(g.u||0)):0;}
+function pmGiftCash(){const es=lvlEvents(levelOf(save.rep)).filter(e=>e.time==='day');const av=es.length?es.reduce((t,e)=>t+e.reward,0)/es.length:2500;return Math.round(av/50)*50;}
+function pmClaimGift(){if(!pmGiftReady())return 0;const cash=pmGiftCash();save.pmGift={d:pmDay(),c:1,u:0};save.money+=cash;persist();return cash;}
+function pmUseToken(){const g=pmGiftToday();if(!g||!pmTokens())return false;g.u=(g.u||0)+1;persist();return true;}
 /* замок в гараже: не disabled, а aria-disabled + data-lock — нажатие показывает, как открыть (на телефоне title не виден) */
 const lockAt=L=>TR('Откроется на уровне ')+L;
 const lockAttr=h=>` aria-disabled="true" data-lock="${esc(h)}" title="${esc(h)}"`;
 function pmCard(){try{if(PM)PM.maybeCard();}catch(e){}}
-/* тексты из C:\Claude\ИГРЫ\publish\texts\neon-bay\premium.md (8.11.2026); баннера в игре нет — о нём не пишем, добавлен лимит 5 в сутки */
+/* тексты: publish\texts\neon-bay\premium.md (8.11.2026), переписаны 13.11.2026 под п. 4.5: вместо «наград без роликов» — подарок дня; баннера в игре нет */
 const PM_TEXTS={
   ru:{p30:'Премиум на 30 дней',p365:'Премиум на год',
-    perks:['Полноэкранная реклама отключается.','«×2 за гонку» и «Вернуть REP» — сразу, без ролика, до 5 раз в сутки (дальше по ролику, как обычно).','Деньги, REP и сложность не меняются: Премиум не помогает выигрывать.'],
+    perks:['Полноэкранная реклама отключается.','Подарок каждый день: деньги и 2 жетона «×2» — удвоить награду за гонку или вернуть REP после остановки патрулём.','Ролики за награду остаются по желанию, как у всех. Сложность и REP не меняются: Премиум не помогает выигрывать.'],
     note:'Оплата один раз. Премиум действует 30 дней или год — в зависимости от выбранного товара. Автопродления и повторных списаний нет. Если Премиум уже идёт, новый срок добавится к концу.',
-    adTitle:'Надоела реклама?',adText:'Гоняй по Неон-Бэй без рекламных пауз! Премиум убирает полноэкранную рекламу, а награды за ролики выдаёт без просмотра.',adMore:'Узнать про Премиум',later:'Не сейчас',
+    adTitle:'Надоела реклама?',adText:'Гоняй по Неон-Бэй без рекламных пауз! Премиум отключает полноэкранную рекламу и каждый день дарит подарок: деньги и 2 жетона «×2». 30 дней за {0}, сам не продлевается.',adMore:'Узнать про Премиум',later:'Не сейчас',
     soonTitle:'Премиум скоро закончится',soonText:'Осталось {0}. Автопродления и повторных списаний нет. Если захочешь гонять без рекламы дальше, его можно купить снова.',extend:'Продлить',
-    endTitle:'Премиум закончился',endText:'Полноэкранная реклама снова показывается, для наград снова нужно смотреть ролики. Гонки продолжаются!'},
+    endTitle:'Премиум закончился',endText:'Полноэкранная реклама снова показывается, подарка дня больше нет. Гонки продолжаются!'},
   en:{p30:'30-Day Premium',p365:'1-Year Premium',
-    perks:['Full-screen ads are disabled.','"×2 per race" and "Get REP back" are instant, no video, up to 5 times a day (after that, with a video as usual).','Money, REP and difficulty stay the same: Premium does not help you win.'],
+    perks:['Full-screen ads are disabled.','A gift every day: cash and 2 "×2" tokens — double a race reward or get REP back after the patrol stops you.','Reward videos stay optional, same as for everyone. Difficulty and REP stay the same: Premium does not help you win.'],
     note:'One-time payment. Premium lasts 30 days or 1 year, depending on your purchase. No automatic renewal or recurring charges. If Premium is already active, the new period is added to the end.',
-    adTitle:'Tired of ads?',adText:'Race through Neon Bay without ad breaks! Premium removes full-screen ads and gives video rewards without making you watch.',adMore:'Learn About Premium',later:'Not Now',
+    adTitle:'Tired of ads?',adText:'Race through Neon Bay without ad breaks! Premium turns off full-screen ads and gives you a gift every day: cash and 2 "×2" tokens. 30 days for {0}, no auto-renewal.',adMore:'Learn About Premium',later:'Not Now',
     soonTitle:'Premium Is Ending Soon',soonText:'{0} left. There is no automatic renewal or recurring charge. If you\'d like to keep racing without ads, you can buy it again.',extend:'Renew',
-    endTitle:'Premium Has Ended',endText:'Full-screen ads are back, and rewards need a video again. The races go on!'}};
-/* слияние счётчика при конфликте облака: за одни сутки берём больший */
-function pmMergeFree(a,b){if(!a)return b||null;if(!b)return a;if(a.d!==b.d)return a.d>b.d?a:b;return{d:a.d,n:Math.max(a.n||0,b.n||0)};}
+    endTitle:'Premium Has Ended',endText:'Full-screen ads are back and there is no daily gift anymore. The races go on!'}};
+/* слияние подарка дня при конфликте облака: за одни сутки «получен» — если получен где-то, потрачено — больше */
+function pmMergeGift(a,b){if(!a)return b||null;if(!b)return a;if(a.d!==b.d)return a.d>b.d?a:b;return{d:a.d,c:(a.c||b.c)?1:0,u:Math.max(a.u||0,b.u||0)};}
 /* account save: per-viewer document in the artifact's store; localStorage stays as a fast local copy */
 const cloud={ref:null,busy:false,pending:false,timer:0,state:'local'};
 function cloudQueue(){if(!cloud.ref)return;cloud.pending=true;clearTimeout(cloud.timer);cloud.timer=setTimeout(cloudFlush,1200);}
@@ -7828,8 +7871,9 @@ function finishRace(){
   $('#rName').textContent=ev.name;$('#rPlace').textContent=place+TR(' место из 4');
   $('#rList').innerHTML=order.map((o,i)=>`<div class="pl${o.me?' me':''}"><span>${i+1}</span><span>${o.n}</span><span>${o.t!=null?ft(o.t):'—'}</span></div>`).join('');
   $('#rReward').textContent=reward;$('#rReward').style.color=ev.time==='day'?'var(--sun)':'var(--pink)';$('#rNote').textContent=note;
-  $('#rX2Row').hidden=!(canGetReward()&&state.prize&&state.prize.amt>0);$('#rX2').disabled=false;
-  $('#rX2').textContent=pmFreeNow()?TR('★ Удвоить награду · Премиум ')+pmLeft()+'/'+PM_FREE:TR('▶ Удвоить награду за рекламу');
+  {const has=!!(state.prize&&state.prize.amt>0),vid=has&&PLAT.canReward(),tok=has&&pmTokens()>0;
+   $('#rX2Row').hidden=!(vid||tok);$('#rX2').hidden=!vid;$('#rX2').disabled=false;$('#rX2').textContent=TR('▶ Удвоить награду за рекламу');
+   $('#rGift').hidden=!tok;$('#rGift').disabled=false;$('#rGift').textContent=TR('🎁 Удвоить жетоном подарка · ')+pmTokens()+'/'+PM_TOKENS;}
   state.mode='result';showOnly('result');
 }
 function endRace(){const r=state.race;if(!r)return;for(const a of r.ais)removeCar(a.car);state.race=null;updateGates();}
@@ -7856,6 +7900,10 @@ const plural=(n,a,b,c)=>{if(TR.en)return n===1?a:b;const m=n%10,h=n%100;return m
 function sumUn(un){const cars=un.filter(u=>u.t==='car').map(u=>u.s.replace(TR('Машина: '),''));const races=un.filter(u=>u.t==='races').reduce((a,u)=>a+u.n,0);
   return[cars.length?(cars.length>1?TR('машины '):TR('машина '))+cars.join(TR(' и ')):'',races?races+' '+plural(races,TR('новая гонка'),TR('новые гонки'),TR('новых гонок')):'',un.some(u=>u.t==='style')?TR('новые варианты стиля'):'',un.some(u=>u.t==='tune')?TR('новая ступень тюнинга'):'',(()=>{const r=un.filter(u=>u.t==='rank').pop();return r?r.s.toLowerCase():'';})(),(()=>{const b=un.filter(u=>u.t==='bonus').reduce((a,u)=>a+Number(u.s.replace(/\D/g,'')),0);return b?TR('бонус $')+fmt(b):'';})()].filter(Boolean).join(', ');}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* вернуть потерянный REP после остановки патрулём (по ролику или жетоном подарка Премиума) */
+function rescueRep(gi){const before=levelOf(save.rep);save.rep+=gi.lost;const after=levelOf(save.rep);grantLevels(before,after);persist();
+  gi.rescued=true;gi.kept+=gi.lost;gi.lost=0;if(after>before){gi.up=after;gi.un=[];for(let L=before+1;L<=after;L++)gi.un.push(...unlocksAt(L));}
+  sfx('beep',1040);renderGarage();refreshMarkers();}
 function renderGarage(){
   const lvl=levelOf(save.rep),next=LEVELS[lvl]??null,prev=LEVELS[lvl-1];
   $('#gMoney').textContent='$'+fmt(save.money);{const es=lvlEvents(lvl),w=es.filter(e=>save.won&&save.won[e.id]).length;$('#gLvl').textContent=TR('Уровень ')+lvl+' · '+rankOf(lvl).n+(lvl>=MAXLVL?TR(' (максимум)'):'')+' · '+CUR_CITY.name+TR(' · гонки ')+w+'/'+es.length;}
@@ -7865,13 +7913,17 @@ function renderGarage(){
   if(gi&&gi.kind==='bank'){nt.hidden=false;nt.className='notice';nt.style.setProperty('--c','var(--ok)');nt.innerHTML=TR('Ночь сохранена: ')+fmt(gi.raw)+' REP × '+gi.mult+' = '+fmt(gi.gained)+' REP.'+(gi.up?TR('<br>Новый уровень ')+gi.up+TR('! Открыто: ')+esc(sumUn(gi.un))+TR('. Подробно во вкладке «Уровни».'):'');}
   else if(gi&&gi.kind==='busted'){nt.hidden=false;nt.className='notice';nt.style.setProperty('--c','var(--danger)');
     nt.innerHTML=TR('Остановлен патрулём. Штраф $')+fmt(gi.fine)+'.'+(gi.rescued?TR(' REP за ночь спасён рекламой: засчитано +')+fmt(gi.kept)+'.':gi.kept>0?TR(' Засчитана половина REP за ночь: +')+fmt(gi.kept)+TR(', потеряно ')+fmt(gi.lost)+'.':'')+(gi.up?TR('<br>Новый уровень ')+gi.up+TR('! Открыто: ')+esc(sumUn(gi.un))+'.':'')
-      +(!gi.rescued&&gi.lost>0&&canGetReward()?(pmFreeNow()?TR('<br><button class="btn small primary" id="gRescue" style="margin-top:8px">★ Вернуть ')+fmt(gi.lost)+TR(' REP · Премиум ')+pmLeft()+'/'+PM_FREE+'</button>'
-        :TR('<br><button class="btn small primary" id="gRescue" style="margin-top:8px">▶ Вернуть ')+fmt(gi.lost)+TR(' REP за рекламу</button>')):'');
-    const rb=$('#gRescue');if(rb)rb.onclick=()=>{rb.disabled=true;getReward(got=>{rb.disabled=false;if(!got||gi.rescued)return;
-      const before=levelOf(save.rep);save.rep+=gi.lost;const after=levelOf(save.rep);grantLevels(before,after);persist();
-      gi.rescued=true;gi.kept+=gi.lost;gi.lost=0;if(after>before){gi.up=after;gi.un=[];for(let L=before+1;L<=after;L++)gi.un.push(...unlocksAt(L));}
-      sfx('beep',1040);renderGarage();refreshMarkers();});};}
+      +(!gi.rescued&&gi.lost>0&&PLAT.canReward()?TR('<br><button class="btn small primary" id="gRescue" style="margin-top:8px">▶ Вернуть ')+fmt(gi.lost)+TR(' REP за рекламу</button>'):'')
+      +(!gi.rescued&&gi.lost>0&&pmTokens()>0?(PLAT.canReward()?' ':'<br>')+'<button class="btn small" id="gRescueGift" style="margin-top:8px">'+TR('🎁 Вернуть ')+fmt(gi.lost)+TR(' REP жетоном · ')+pmTokens()+'/'+PM_TOKENS+'</button>':'');
+    const rgb=$('#gRescueGift');if(rgb)rgb.onclick=()=>{if(gi.rescued||!pmUseToken())return;rescueRep(gi);};
+    const rb=$('#gRescue');if(rb)rb.onclick=()=>{rb.disabled=true;PLAT.rewarded(got=>{rb.disabled=false;if(!got||gi.rescued)return;rescueRep(gi);});};}
   else nt.hidden=true;
+  if(pmGiftReady()){if(nt.hidden){nt.hidden=false;nt.className='notice';nt.style.setProperty('--c','var(--sun)');nt.innerHTML='';}
+    nt.innerHTML+=(nt.innerHTML?'<br>':'')+TR('🎁 Подарок Премиума на сегодня: $')+fmt(pmGiftCash())+TR(' и 2 жетона «×2» (удвоить награду за гонку или вернуть REP).')
+      +' <button class="btn small primary" id="gGift" style="margin-top:6px">'+TR('Забрать подарок')+'</button>';
+    const gb=$('#gGift');if(gb)gb.onclick=()=>{const cash=pmClaimGift();if(!cash)return;toast(TR('🎁 Подарок получен: +$')+fmt(cash)+TR(', жетонов «×2»: ')+PM_TOKENS);sfx('beep',1040);renderGarage();};}
+  else if(pmTokens()>0&&!(gi&&(gi.kind==='busted'||gi.kind==='bank'))&&nt.hidden){nt.hidden=false;nt.className='notice';nt.style.setProperty('--c','var(--sun)');
+    nt.innerHTML=TR('🎁 Жетонов «×2» из подарка Премиума на сегодня: ')+pmTokens()+'/'+PM_TOKENS+TR('. Кнопка 🎁 появится после гонки или остановки патрулём.');}
   if(gi&&gi.newCity){if(nt.hidden){nt.hidden=false;nt.className='notice';nt.style.setProperty('--c','var(--cyan)');nt.innerHTML='';}nt.innerHTML+=(nt.innerHTML?'<br>':'')+TR('Новый город: <b>')+esc(gi.newCity)+TR('</b>! Гонки твоего уровня теперь здесь. Старые города можно выбрать во вкладке «Города».');}
   document.querySelectorAll('#garage .tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===state.gTab));
   let h='';
@@ -7997,13 +8049,17 @@ $('#pQuit').onclick=()=>{endRace();resume();};
 $('#pMap').onclick=()=>openMap();
 $('#pWipe').onclick=()=>{$('#pWipeRow').hidden=true;$('#pWipeAsk').hidden=false;};
 $('#pWipeNo').onclick=()=>{$('#pWipeRow').hidden=false;$('#pWipeAsk').hidden=true;};
-$('#pWipeYes').onclick=()=>{const g=save.gfx,pm=save.premium,pf=save.pmFree,lg=save.lang;save=JSON.parse(JSON.stringify(DEF));save.gfx=g;if(pm)save.premium=pm;if(pf)save.pmFree=pf;if(lg)save.lang=lg;/* купленный Премиум и его лимит сброс прогресса не трогает */persist();buildPlayer();state.nightRep=0;openGarage(null);};
+$('#pWipeYes').onclick=()=>{const g=save.gfx,pm=save.premium,pf=save.pmGift,lg=save.lang;save=JSON.parse(JSON.stringify(DEF));save.gfx=g;if(pm)save.premium=pm;if(pf)save.pmGift=pf;if(lg)save.lang=lg;save.wipedAt=Date.now();/* купленный Премиум и его лимит сброс прогресса не трогает */persist();buildPlayer();state.nightRep=0;openGarage(null);};
 /* ролик за награду «×2 за гонку» (только на Яндекс Играх; без SDK кнопки нет) */
-$('#rX2').onclick=()=>{const p=state.prize;if(!p||p.used||!canGetReward())return;$('#rX2').disabled=true;const viaPm=pmFreeNow();
-  getReward(got=>{$('#rX2').disabled=false;if(!got||p.used)return;p.used=true;
-    if(p.day){save.money+=p.amt;persist();qProg('money',p.amt);$('#rReward').textContent='+$'+fmt(p.amt*2)+(viaPm?TR(' (×2, Премиум)'):TR(' (×2 за рекламу)'));}
-    else{state.nightRep+=p.amt;saveNight();$('#rReward').textContent='+'+fmt(p.amt*2)+(viaPm?TR(' REP за ночь (×2, Премиум)'):TR(' REP за ночь (×2 за рекламу)'));}
-    $('#rX2Row').hidden=true;sfx('beep',1040);});};
+/* жетон подарка Премиума: та же награда, без ролика и без значка рекламы */
+$('#rGift').onclick=()=>{const p=state.prize;if(!p||p.used||!pmUseToken())return;p.used=true;applyX2(p,true);};
+/* удвоение награды за гонку: по ролику (у всех) или жетоном подарка Премиума */
+function applyX2(p,gift){
+  if(p.day){save.money+=p.amt;persist();qProg('money',p.amt);$('#rReward').textContent='+$'+fmt(p.amt*2)+(gift?TR(' (×2, подарок Премиума)'):TR(' (×2 за рекламу)'));}
+  else{state.nightRep+=p.amt;saveNight();$('#rReward').textContent='+'+fmt(p.amt*2)+(gift?TR(' REP за ночь (×2, подарок Премиума)'):TR(' REP за ночь (×2 за рекламу)'));}
+  $('#rX2Row').hidden=true;sfx('beep',1040);}
+$('#rX2').onclick=()=>{const p=state.prize;if(!p||p.used||!PLAT.canReward())return;$('#rX2').disabled=true;
+  PLAT.rewarded(got=>{$('#rX2').disabled=false;if(!got||p.used)return;p.used=true;applyX2(p,false);});};
 $('#rOk').onclick=()=>{state.mode='drive';showOnly('hud');$('#rX2Row').hidden=true;state.prize=null;
   if(state.tutDone){state.tutDone=false;state.tut=false;state.gps={node:GARAGE};state.hintT=0;banner(TR('ТЕПЕРЬ В ГАРАЖ'),TR('голубая линия ведёт к гаражу · въедь в голубой круг'),'#29e3ff',3200);updateSaveLine();}
   if(state.time==='night'&&state.heat>=3){spawnCop(true);spawnCop(true);startPursuit();}};
@@ -8370,24 +8426,41 @@ function boot(data){
 }
 /* площадка: облачное сохранение Яндекса (побеждает более новый save.ts), затем LoadingAPI.ready.
    Кнопка на заставке ждёт ответа (без SDK — мгновенно, с SDK — не дольше 4 с), чтобы игрок не начал со старым сохранением. */
+/* слияние двух сохранений (устройство и облако) по ключам, 13.11.2026.
+   Из более нового по ts (или из облака, если на устройстве пустой новый профиль) — деньги, машина, стиль, настройки, задания дня.
+   Объединяем: REP и cityMax — максимум; выигранные гонки и купленные машины — объединение, тюнинг — максимум по ступеням;
+   краски за задания — объединение. После сброса прогресса (wipedAt новее другого сохранения) — только более новое. */
+function mergeSaves(a,b,preferB){
+  const bNew=preferB||(b.ts||0)>(a.ts||0),n=bNew?b:a,o=bNew?a:b,m=JSON.parse(JSON.stringify(n));
+  if((n.wipedAt||0)>(o.ts||0))return m;
+  m.rep=Math.max(a.rep||0,b.rep||0);m.cityMax=Math.max(a.cityMax||0,b.cityMax||0);if(o.tut)m.tut=m.tut||o.tut;
+  m.won=Object.assign({},o.won||{},n.won||{});
+  m.owned=Object.assign({},JSON.parse(JSON.stringify(o.owned||{})),m.owned||{});
+  for(const k in (o.owned||{}))if(n.owned&&n.owned[k])for(const st of ['eng','sus','nos'])m.owned[k][st]=Math.max(o.owned[k][st]||0,n.owned[k][st]||0);
+  const op=o.q&&o.q.paints;if(op&&op.length){if(!m.q)m.q={};m.q.paints=[...new Set([...(m.q.paints||[]),...op])];}
+  return m;}
+/* что считается прогрессом при сравнении (без ts, графики, языка) */
+function progKey(s){if(!s)return'';return JSON.stringify([s.rep||0,s.money||0,s.won||{},s.owned||{},s.cityMax||0,s.car||'',s.tut||0,(s.q&&s.q.paints)||[]]);}
 function platInit(){
   const btn=$('#btnStart');btn.disabled=true;
   PLAT.init().then(c=>{
-    const lPm=save.premium||null,lPf=save.pmFree||null;
+    const lPm=save.premium||null,lPf=save.pmGift||null;let cloudDiff=false;
     try{
       if(c&&c.owned&&c.owned.corsa){
         const fresh=save.rep===0&&Object.keys(save.owned).length===1&&!save.night&&!save.tut;
         const rich=(c.rep||0)>0||Object.keys(c.owned).length>1||!!c.night||!!c.tut;
-        if((c.ts||0)>(save.ts||0)||(fresh&&rich)){adoptSave(c);
+        // слияние по ключам: прогресс (REP, гонки, машины, тюнинг, города, краски) — объединение/максимум, остальное — из более нового
+        const m=mergeSaves(save,c,fresh&&rich);cloudDiff=progKey(m)!==progKey(c);
+        if(progKey(m)!==progKey(save)||(c.ts||0)>(save.ts||0)){adoptSave(m);
           if(state.mode==='title'||state.mode==='garage'){const L=levelOf(save.rep);let w=save.city&&CITIES.find(x=>x.id===save.city);if(!w||w.lvl>L||!cityReady(w))w=bestCity(L);if(w!==CUR_CITY)switchCity(w.id);}}
       }
       // Премиум не должен пропасть, кто бы ни победил по времени: срок и токены сливаем (модуль), лимит — за одни сутки больший
       let pmDirty=false;
       {const cPm=c&&typeof c.premium==='string'?c.premium:null;
         if(PM&&PM.mergeState&&(lPm||cPm)){const m=PM.mergeState(lPm,cPm);if(m!==save.premium){save.premium=m;pmDirty=true;}if(m!==cPm)pmDirty=true;}
-        const f=pmMergeFree(lPf,c&&c.pmFree);if(f&&JSON.stringify(f)!==JSON.stringify(save.pmFree||null)){save.pmFree=f;pmDirty=true;}
-        if(f&&JSON.stringify(f)!==JSON.stringify((c&&c.pmFree)||null))pmDirty=true;}
-      if(pmDirty)persist();
+        const f=pmMergeGift(lPf,c&&c.pmGift);if(f&&JSON.stringify(f)!==JSON.stringify(save.pmGift||null)){save.pmGift=f;pmDirty=true;}
+        if(f&&JSON.stringify(f)!==JSON.stringify((c&&c.pmGift)||null))pmDirty=true;}
+      if(pmDirty||cloudDiff)persist();
       else if(PLAT.hasCloud()&&(!c||(save.ts||0)>(c.ts||0)))PLAT.put(save);
       // Яндекс 2.14: язык из SDK. Выбор игрока (save.lang) важнее; при расхождении — одна перезагрузка.
       if(PLAT.hasSdk()){const manual=save.lang==='ru'||save.lang==='en',want=manual?save.lang:TR.map(PLAT.lang());
@@ -8399,9 +8472,14 @@ function platInit(){
     // Премиум: только на площадке с SDK; без платежей или без товаров в консоли кнопки нет
     if(PM&&PLAT.hasSdk())try{PM.init({sdk:PLAT.sdk(),lang:TR.lang,texts:PM_TEXTS,
       store:{get:()=>save.premium||null,set:raw=>{save.premium=raw;persist();},save:()=>PLAT.saveNow(save)}})
-      .then(()=>{if(state.mode==='title'||state.mode==='garage')pmCard();});}catch(e){console.warn('premium',e);}
+      .then(()=>{if(state.mode==='title'||state.mode==='garage')pmCard();});
+      PM.onChange(()=>{if(state.mode==='garage')renderGarage();});}catch(e){console.warn('premium',e);}
   },()=>{btn.disabled=false;PLAT.ready();});
 }
+/* шаг назад: кнопка «Назад» Android в сборке Google Play (gp-adapter.js вызывает по popstate). true — обработано, false — на заставке/в гараже */
+window.__app={back(){try{const ov=document.querySelector('.pm-ov');if(ov){const x=ov.querySelector('.pm-x');if(x){x.click();return true;}}
+  if(state.mode==='map'){closeMap();return true;}if(state.mode==='drive'){openPause();return true;}if(state.mode==='pause'){resume();return true;}
+  if(state.mode==='result'){$('#rOk').click();return true;}return false;}catch(e){return false;}}};
 const HOT=window.claude&&window.claude.hot;
 try{if(HOT&&HOT.snapshot)HOT.snapshot(()=>({save}));}catch(e){}
 if(HOT&&HOT.ready)HOT.ready(boot);else boot((HOT&&HOT.data)||{});

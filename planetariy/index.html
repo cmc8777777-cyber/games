@@ -77,11 +77,17 @@ h1,h2{margin:0}
 .fc b{color:var(--cyan);display:block;margin-bottom:2px}
 .fc.lock{opacity:.4}
 .pm-hide .pm-corner{display:none!important}
+#toast{position:absolute;left:14px;right:14px;bottom:24px;z-index:9;background:#ffd23f;color:#4a2a00;font-weight:800;border-radius:14px;padding:12px 14px;text-align:center;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+#toast[hidden]{display:none}
+#pks .opt{padding:10px 12px;font-size:14px;margin-bottom:6px}
+.world .lh{color:var(--gold);font-weight:700}
+.world.wlock{opacity:.85}
 .pm-on .top{padding-right:128px}
 .pm-corner{--pm-paper:#1f2a6e;--pm-ink:#fff;--paper:#1f2a6e;--fg:#fff}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);max-width:88vw;background:#101a3a;color:#fff;border:1px solid #6fd3ff;border-radius:14px;padding:10px 16px;font-weight:700;font-size:15px;text-align:center;opacity:0;pointer-events:none;transition:opacity .2s;z-index:99}#toast.on{opacity:1}
 </style></head><body><div id="toast"></div>
 <div id="app">
+ <div id="toast" hidden></div>
  <div class="screen" id="scrTitle">
   <div class="planet">🌍</div>
   <div class="logo" data-t="logo">ПЛАНЕТАРИЙ</div>
@@ -257,10 +263,9 @@ window.PF = (function () {
     try { ysdk.adv.showFullscreenAdv({ callbacks: { onClose: function (w) { end(w); }, onError: function () { end(false); }, onOffline: function () { end(false); } } }); } catch (e) { end(false); }
   };
   self.premium = premiumOn;
-  self.canReward = function () { return !!(premiumOn() || (sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo)); };
-  /* ролик за награду: done(true) — только если игрок досмотрел; при Премиуме награда сразу, без ролика */
+  self.canReward = function () { return !!(sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo); };
+  /* ролик за награду: done(true) — только если игрок досмотрел; у Премиума так же (п. 4.5 правил Яндекса) */
   self.rewarded = function (done) {
-    if (premiumOn()) { done(true); return; }
     if (!self.canReward()) { done(false); return; }
     var fin = false, got = false;
     function end() { if (fin) return; fin = true; adEnd(); done(got); }
@@ -274,6 +279,7 @@ window.PF = (function () {
 /* Премиум: общий модуль для браузерных игр на Яндекс Играх.
    Платный Премиум на срок (30 дней или год), без автопродления: «используемая» покупка, срок считается по серверному
    времени Яндекса и хранится в облачных данных игрока. Подробно: README.md рядом с этим файлом.
+   С 13 ноября 2026 (п. 4.5 правил Яндекса): награда за ролик выдаётся только после показанного ролика, у Премиума тоже. Вместо «наград без роликов» Премиум даёт ПОДАРОК ДНЯ (раз в сутки, пока он активен): содержимое задаёт игра (init({gift})).
    Модуль ничего не знает об игре: хранилище, звук и реклама подключаются через init() и несколько вызовов хозяина.
    Без SDK, без покупок или без созданных товаров в консоли кнопка и карточки скрыты, игра работает как раньше. */
 window.Premium = (function () {
@@ -302,14 +308,15 @@ window.Premium = (function () {
       btn: "Премиум", btnOn: "Премиум · {0} д.", title: "Премиум",
       activeUntil: "Активен до {0}. Осталось {1}.",
       notActive: "Сейчас Премиум не включён.",
-      perks: ["Полноэкранная реклама отключается.", "Награды за ролики выдаются сразу, без просмотра.", "Правила и сложность игры не меняются: Премиум не помогает выигрывать."],
+      perks: ["Полноэкранная реклама отключается.", "Подарок каждый день, пока Премиум действует.", "Ролики за награду показываются, как и раньше: награду даёт только просмотренный ролик.", "Подсказки и игровые лимиты остаются прежними."],
+      giftTitle: "Подарок дня", giftText: "Подарок Премиума: каждый день, пока он действует.", giftBtn: "Забрать подарок", giftLater: "Позже", giftTaken: "Подарок дня получен.", giftDone: "Подарок получен!", giftWait: "Подарок дня уже получен. Следующий будет завтра.", giftIn: "Подарок дня ждёт вас!",
       p30: "Премиум на 30 дней", p365: "Премиум на год",
       validTo: "Будет действовать до {0}", buy: "Купить", endBuy: "Купить Премиум", extend: "Продлить",
       note: "Один платёж, без автопродления: больше ничего не спишется. Если Премиум уже идёт, новый срок добавится к концу.",
       close: "Закрыть", later: "Не сейчас",
-      adTitle: "Надоела реклама?", adText: "Премиум отключает полноэкранную рекламу, а награды за ролики выдаёт сразу. 30 дней за {0}, не продлевается сам.", adMore: "Узнать про Премиум",
+      adTitle: "Надоела реклама?", adText: "Премиум отключает полноэкранную рекламу и дарит подарок каждый день. 30 дней за {0}, не продлевается сам.", adMore: "Узнать про Премиум",
       soonTitle: "Премиум скоро закончится", soonText: "Осталось {0}. Продлить?",
-      endTitle: "Премиум закончился", endText: "Реклама вернулась. Можно включить Премиум снова.",
+      endTitle: "Премиум закончился", endText: "Полноэкранная реклама вернулась, подарок дня больше не выдаётся. Можно включить Премиум снова.",
       busy: "Ждём подтверждения оплаты…", done: "Готово! Премиум активен до {0}.",
       fail: "Покупка не прошла. Деньги не списаны.", saveFail: "Оплата принята, но срок пока не сохранился. Не закрывайте игру, мы повторим при следующем запуске.",
       d1: "{0} день", d2: "{0} дня", d5: "{0} дней", free: "Ян", lang: "ru-RU"
@@ -318,14 +325,15 @@ window.Premium = (function () {
       btn: "Premium", btnOn: "Premium · {0} d", title: "Premium",
       activeUntil: "Active until {0}. {1} left.",
       notActive: "Premium is not active.",
-      perks: ["Full-screen ads are disabled.", "Rewards for videos are given instantly, no watching.", "The rules and difficulty stay the same: Premium does not help you win."],
+      perks: ["Full-screen ads are disabled.", "A gift every day while Premium lasts.", "Reward videos work as before: a reward is given only after the video is watched.", "Hints and game limits stay the same."],
+      giftTitle: "Daily gift", giftText: "Your Premium gift, every day while it lasts.", giftBtn: "Claim gift", giftLater: "Later", giftTaken: "Daily gift claimed.", giftDone: "Gift received!", giftWait: "You already claimed today's gift. The next one is tomorrow.", giftIn: "Your daily gift is waiting!",
       p30: "Premium for 30 days", p365: "Premium for a year",
       validTo: "Will be active until {0}", buy: "Buy", endBuy: "Buy Premium", extend: "Extend",
       note: "One payment, no auto-renewal: nothing else will be charged. If Premium is already running, the new period is added to the end.",
       close: "Close", later: "Not now",
-      adTitle: "Tired of ads?", adText: "Premium removes full-screen ads and gives video rewards instantly. 30 days for {0}, no auto-renewal.", adMore: "About Premium",
+      adTitle: "Tired of ads?", adText: "Premium removes full-screen ads and gives you a gift every day. 30 days for {0}, no auto-renewal.", adMore: "About Premium",
       soonTitle: "Premium ends soon", soonText: "{0} left. Extend?",
-      endTitle: "Premium has ended", endText: "Ads are back. You can turn Premium on again.",
+      endTitle: "Premium has ended", endText: "Full-screen ads are back and the daily gift stops. You can turn Premium on again.",
       busy: "Waiting for payment confirmation…", done: "Done! Premium is active until {0}.",
       fail: "The purchase did not go through. You were not charged.", saveFail: "Payment accepted, but the period is not saved yet. Keep the game open, we will retry on the next start.",
       d1: "{0} day", d2: "{0} days", d5: "{0} days", free: "Yan", lang: "en-GB"
@@ -333,7 +341,7 @@ window.Premium = (function () {
   };
 
   /* ---- Состояние ---- */
-  var sdk = null, payments = null, store = null;
+  var sdk = null, payments = null, store = null, gift = null;   // gift: { grant(): применить подарок в игре, text: {ru, en} — что в подарке }
   var lang = "ru", texts = TEXTS.ru;
   var catalog = {};                   // id → описание товара из консоли
   var st = blank();
@@ -342,7 +350,7 @@ window.Premium = (function () {
   var listeners = [], pollTimer = 0, lastActive = false;
   var ui = { corner: null, ov: null, box: null, status: "", mode: "", style: null, lastFocus: null };
 
-  function blank() { return { until: 0, tokens: [], ads: 0, cardAt: 0, remindDay: 0, endShown: 0 }; }
+  function blank() { return { until: 0, tokens: [], ads: 0, cardAt: 0, remindDay: 0, endShown: 0, giftDay: 0 }; }
   function clean(o) {
     var r = blank();
     if (!o || typeof o !== "object") return r;
@@ -352,6 +360,7 @@ window.Premium = (function () {
     r.cardAt = Math.max(0, Math.floor(Number(o.cardAt) || 0));
     r.remindDay = Math.max(0, Math.floor(Number(o.remindDay) || 0));
     r.endShown = Math.max(0, Number(o.endShown) || 0);
+    r.giftDay = Math.max(0, Math.floor(Number(o.giftDay) || 0));
     return r;
   }
   function parse(raw) { try { return clean(typeof raw === "string" ? JSON.parse(raw) : raw); } catch (e) { return blank(); } }
@@ -360,7 +369,7 @@ window.Premium = (function () {
   function mergeState(a, b) {
     var x = parse(a), y = parse(b), r = blank(), seen = {};
     r.until = Math.max(x.until, y.until); r.ads = Math.max(x.ads, y.ads); r.cardAt = Math.max(x.cardAt, y.cardAt);
-    r.remindDay = Math.max(x.remindDay, y.remindDay); r.endShown = Math.max(x.endShown, y.endShown);
+    r.remindDay = Math.max(x.remindDay, y.remindDay); r.endShown = Math.max(x.endShown, y.endShown); r.giftDay = Math.max(x.giftDay, y.giftDay);
     y.tokens.concat(x.tokens).forEach(function (t) { if (!seen[t]) { seen[t] = 1; r.tokens.push(t); } });
     r.tokens = r.tokens.slice(-config.tokensKeep);
     return JSON.stringify(r);
@@ -394,7 +403,8 @@ window.Premium = (function () {
     catch (e) { return new Date(ms).toISOString().slice(0, 10); }
   }
   function priceOf(id) { var c = catalog[id]; return c && c.price ? String(c.price) : ""; }
-  function dayIdx() { return Math.floor(now() / DAY); }
+  /* номер календарного дня по серверному времени в часовом поясе игрока: подарок и напоминание сбрасываются в местную полночь */
+  function dayIdx() { var tz = 0; try { tz = new Date().getTimezoneOffset(); } catch (e) {} return Math.floor((now() - tz * 60000) / DAY); }
   function emit() { var a = active(); lastActive = a; listeners.slice().forEach(function (f) { try { f(a); } catch (e) {} }); renderCorner(); if (ui.ov && ui.mode === "shop") renderShop(); }
 
   /* ---- Покупка и начисление: запись в облако подтверждена, и только потом consumePurchase ---- */
@@ -436,10 +446,23 @@ window.Premium = (function () {
 
   /* ---- Вызовы хозяина ---- */
   function noteFullscreen() { st.ads++; persist(); }
+  /* ---- Подарок дня: раз в сутки, пока Премиум активен. Не кнопка ролика, значка рекламы нет. ---- */
+  function giftAvailable() { return !!(gift && active() && st.giftDay !== dayIdx()); }
+  function giftText() { var g = gift && gift.text; var s = g && (g[lang] || g.ru); return s || tx("giftText"); }
+  /* Забрать подарок. true, если выдан сейчас (один раз за календарный день); хозяин применяет подарок в gift.grant(). День помечается и сохраняется ДО выдачи, повторить нельзя. */
+  function claimGift() {
+    if (!giftAvailable()) return false;
+    st.giftDay = dayIdx(); persist();
+    try { if (store && store.save) Promise.resolve(store.save()).then(function () {}, function () {}); } catch (e) {}
+    try { gift.grant(); } catch (e) {}
+    emit();
+    return true;
+  }
   /* Показать карточку на спокойном экране (меню, результат). Возвращает true, если карточка открыта. */
   function maybeCard() {
     if (!available() || ui.ov) return false;
     if (active()) {
+      if (giftAvailable()) { openCard("gift"); return true; }
       if (daysLeft() <= config.remindDays && st.remindDay !== dayIdx()) { st.remindDay = dayIdx(); persist(); openCard("soon"); return true; }
       return false;
     }
@@ -526,6 +549,14 @@ window.Premium = (function () {
     ui.ov.setAttribute("aria-labelledby", "pmTitle");
     b.appendChild(el("p", "", active() ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("notActive")));
     var ul = el("ul", "pm-perks"); texts.perks.forEach(function (s) { ul.appendChild(el("li", "", s)); }); b.appendChild(ul);
+    if (gift && active()) {
+      if (giftAvailable()) {
+        b.appendChild(el("p", "pm-sub", giftText()));
+        var gb = el("button", "pm-btn main", tx("giftBtn")); gb.type = "button"; gb.setAttribute("data-pm-gift", "1"); gb.style.marginBottom = "12px";
+        gb.addEventListener("click", function () { if (claimGift()) setStatus(tx("giftDone")); });
+        b.appendChild(gb);
+      } else b.appendChild(el("p", "pm-sub", tx("giftWait")));
+    }
     config.order.forEach(function (id) { if (catalog[id]) b.appendChild(productCard(id)); });
     b.appendChild(el("p", "pm-sub", tx("note")));
     var s = el("p", "pm-status", ui.status); s.setAttribute("role", "status"); s.setAttribute("aria-live", "polite"); b.appendChild(s);
@@ -538,15 +569,16 @@ window.Premium = (function () {
   function openCard(kind) {
     mountOv(); ui.mode = "card:" + kind;
     var b = ui.box, p30 = priceOf("premium_30");
-    var title = kind === "ad" ? tx("adTitle") : kind === "soon" ? tx("soonTitle") : tx("endTitle");
-    var text = kind === "ad" ? fmt(tx("adText"), p30 || ("99 " + tx("free"))) : kind === "soon" ? fmt(tx("soonText"), plural(daysLeft())) : tx("endText");
+    var title = kind === "gift" ? tx("giftTitle") : kind === "ad" ? tx("adTitle") : kind === "soon" ? tx("soonTitle") : tx("endTitle");
+    var text = kind === "gift" ? giftText() : kind === "ad" ? fmt(tx("adText"), p30 || ("99 " + tx("free"))) : kind === "soon" ? fmt(tx("soonText"), plural(daysLeft())) : tx("endText");
     b.appendChild(xBtn());
     var h = el("h2", "", title); h.id = "pmTitle"; b.appendChild(h); ui.ov.setAttribute("aria-labelledby", "pmTitle");
     b.appendChild(el("p", "", text));
     var row = el("div", "pm-row");
-    var go = el("button", "pm-btn main", kind === "ad" ? tx("adMore") : (kind === "soon" ? tx("extend") : tx("endBuy"))); go.type = "button";
-    go.addEventListener("click", function () { openShop(); });
-    var no = el("button", "pm-btn", tx("later")); no.type = "button"; no.addEventListener("click", function () { closeOv(); });
+    var go = el("button", "pm-btn main", kind === "gift" ? tx("giftBtn") : kind === "ad" ? tx("adMore") : (kind === "soon" ? tx("extend") : tx("endBuy"))); go.type = "button";
+    if (kind === "gift") go.setAttribute("data-pm-gift", "1");
+    go.addEventListener("click", function () { if (kind === "gift") { claimGift(); closeOv(); } else openShop(); });
+    var no = el("button", "pm-btn", kind === "gift" ? tx("giftLater") : tx("later")); no.type = "button"; no.addEventListener("click", function () { closeOv(); });
     row.appendChild(go); row.appendChild(no); b.appendChild(row);
     try { no.focus({ preventScroll: true }); } catch (e) {}
   }
@@ -564,7 +596,7 @@ window.Premium = (function () {
     o = o || {};
     if (o.config) Object.keys(o.config).forEach(function (k) { config[k] = o.config[k]; });
     if (o.texts) Object.keys(o.texts).forEach(function (l) { TEXTS[l] = Object.assign(TEXTS[l] || {}, o.texts[l]); });
-    sdk = o.sdk || null; store = o.store || null;
+    sdk = o.sdk || null; store = o.store || null; gift = o.gift && typeof o.gift.grant === "function" ? o.gift : null;
     setLang(o.lang || lang);
     loadState();
     ready = true; lastActive = active();
@@ -589,6 +621,7 @@ window.Premium = (function () {
     init: init, setLang: setLang,
     active: active, until: function () { return st.until; }, daysLeft: daysLeft, available: available,
     noteFullscreen: noteFullscreen, maybeCard: maybeCard, openShop: openShop,
+    giftAvailable: giftAvailable, claimGift: claimGift,
     onChange: function (f) { if (typeof f === "function") listeners.push(f); },
     mergeState: mergeState,
     refresh: function () { return canBuy ? checkPurchases() : Promise.resolve(); },
@@ -654,6 +687,139 @@ var Q=[null,
  {q:'Ты едешь на поезде на восток. Что делают с часами?',a:['Переводят вперёд','Переводят назад','Ничего'],c:0,e:'К востоку время больше: пересёк пояс — прибавь час.'},
  {q:'Сколько часовых поясов в России?',a:['3','11','24'],c:1,e:'В России 11 поясов, от Калининграда до Камчатки.'}
 ];
+/* ===== миры 3–7: данные ===== */
+var CUM=[0,31,59,90,120,151,181,212,243,273,304,334,365];
+function mon(N){N=Math.round(mod(N-1,365))+1;var m=0;while(m<11&&N>CUM[m+1])m++;return m;}
+function dnum(N){N=Math.round(mod(N-1,365))+1;return N-CUM[mon(N)];}
+function decl(N){return -23.44*Math.cos(2*Math.PI*(N+10)/365);}
+function dayLen(N,lat){var d=decl(N)*Math.PI/180;
+ if(Math.abs(lat)>=89.9){var s=lat>0?1:-1;return d*s>0.001?24:(d*s<-0.001?0:12);}
+ var x=-Math.tan(lat*Math.PI/180)*Math.tan(d);if(x<=-1)return 24;if(x>=1)return 0;return 2*Math.acos(x)*180/Math.PI/15;}
+function inN(N,a,b){N=mod(N-1,365)+1;return a<=b?(N>=a&&N<=b):(N>=a||N<=b);}
+function dN(a,b,m){var d=mod(a-b,m);return Math.min(d,m-d);}
+var P0={N:172,lat:55,mu:0,T:0,h:0};
+function pp(o){var r={};for(var k in P0)r[k]=(o&&o[k]!=null)?o[k]:P0[k];return r;}
+function dl(id,sc,txt,o){return {id:id,t:'dial',sc:sc,txt:txt,p0:pp(o.p0),free:o.free,sol:o.sol,ok:o.ok,h1:o.h1,fact:o.fact,topic:o.tp};}
+function tpl(id,sc,txt,o){return {id:id,t:'tap',sc:sc,txt:txt,p0:pp(o.p0),tap:o.tap,h1:o.h1,fact:o.fact,topic:o.tp};}
+function pk(id,sc,txt,o){return {id:id,t:'pick',sc:sc,txt:txt,p0:pp(o.p0),a:o.a,c:o.c,h1:o.h1,fact:o.fact,topic:o.tp};}
+function bs(id,topic,pool,txt,fact){return {id:id,t:'boss',topic:topic,pool:pool,n:5,txt:txt,fact:fact};}
+var SKY={
+ uma:[[11.06,61.75],[11.03,56.38],[11.90,53.69],[12.26,57.03],[12.90,55.96],[13.40,54.93],[13.79,49.31]],
+ cas:[[0.15,59.15],[0.68,56.54],[0.945,60.72],[1.43,60.24],[1.91,63.67]],
+ umi:[[2.53,89.26],[17.54,86.59],[16.77,82.04],[15.73,77.79],[16.29,75.76],[15.35,71.83],[14.85,74.16]]};
+var SKYL={uma:[[0,1],[1,2],[2,3],[3,0],[3,4],[4,5],[5,6]],cas:[[0,1],[1,2],[2,3],[3,4]],umi:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]]};
+function meanRA(a){var s=0;a.forEach(function(p){s+=p[0];});return s/a.length*15;}
+var RA_UMA=meanRA(SKY.uma),RA_CAS=meanRA(SKY.cas);
+var PLN=[['merc',.10,4.5,'#b9b3a8'],['venus',.17,6.5,'#f2c879'],['earth',.24,7,'#4aa8ff'],['mars',.32,5.5,'#ff6a45'],['jup',.47,13,'#e8b078'],['sat',.62,10.5,'#f0d58a'],['ura',.79,8.5,'#8ee8e8'],['nep',.96,8.5,'#5a78ff']];
+var PERIOD={merc:.241,venus:.615,earth:1,mars:1.881,jup:11.86,sat:29.46,ura:84,nep:164.8};
+LEVELS.push(
+ /* мир 3: времена года */
+ dl(21,'orbit','Земля летит вокруг Солнца целый год. <b>В России лето</b> — июнь, июль и август. Перетащи Землю по орбите так, чтобы на севере было лето.',{p0:{N:355},free:['N'],sol:{N:197},ok:function(P){return inN(P.N,152,243);},h1:'Летом северное полушарие наклонено к Солнцу. Смотри на подпись «Север: …» вверху.',fact:'Зима и лето бывают из-за наклона земной оси: летом наше полушарие повёрнуто к Солнцу.',tp:'season'}),
+ dl(22,'orbit','<b>В Австралии лето</b>, а у нас зима. Найди такое положение Земли.',{p0:{N:180},free:['N'],sol:{N:15},ok:function(P){return inN(P.N,335,59);},h1:'Австралия — в южном полушарии. Когда у нас зима, там лето.',fact:'Когда на севере зима, на юге лето: полушария по очереди наклоняются к Солнцу.',tp:'season'}),
+ dl(23,'orbit','<b>21 июня — самый длинный день в году.</b> Поставь Землю на эту дату.',{p0:{N:300},free:['N'],sol:{N:172},ok:function(P){return dN(P.N,172,365)<=10;},h1:'21 июня — солнцестояние: северный полюс наклонён к Солнцу сильнее всего.',fact:'В день летнего солнцестояния, 21 июня, на севере самый длинный день и самая короткая ночь.',tp:'season'}),
+ dl(24,'orbit','<b>День равен ночи</b> — так бывает 20 марта и 23 сентября. Найди одну из этих дат.',{p0:{N:140},free:['N'],sol:{N:79},ok:function(P){return dN(P.N,79,365)<=10||dN(P.N,265,365)<=10;},h1:'В эти дни ось Земли «боком» к Солнцу, и свет делится поровну между полушариями.',fact:'Равноденствие бывает дважды в год: 20 марта и 23 сентября. День и ночь тогда по 12 часов.',tp:'season'}),
+ pk(25,'orbit','Вот Земля <b>21 декабря</b>. Какое время года сейчас на севере?',{p0:{N:355},a:['Лето','Зима','Весна'],c:1,h1:'Смотри: северный полюс наклонён к Солнцу или от него?',fact:'21 декабря северный полюс наклонён от Солнца. На севере зима и самый короткий день.',tp:'season'}),
+ dl(26,'orbit','<b>Новый год, 1 января.</b> Поставь Землю на эту дату. Удивительно: именно тогда Земля ближе всего к Солнцу!',{p0:{N:200},free:['N'],sol:{N:1},ok:function(P){return dN(P.N,1,365)<=10;},h1:'Начало года — это начало января, прямо после декабря.',fact:'Ближе всего к Солнцу Земля в начале января, а у нас тогда зима. Значит, зима и лето зависят от наклона оси, а не от расстояния.',tp:'season'}),
+ dl(27,'orbit','<b>Осень на севере</b> — сентябрь, октябрь и ноябрь. Найди это время на орбите.',{p0:{N:100},free:['N'],sol:{N:289},ok:function(P){return inN(P.N,244,334);},h1:'Осенью северный полюс начинает отворачиваться от Солнца.',fact:'Осенью дни становятся короче: Земля поворачивается северным полушарием от Солнца.',tp:'season'}),
+ pk(28,'orbit','<b>3 января Земля ближе всего к Солнцу</b>, но у нас зима. Почему?',{p0:{N:3},a:['Север наклонён от Солнца','Земля в январе дальше от Солнца','Зимой Солнце слабее светит'],c:0,h1:'Посмотри на наклон оси: куда повёрнут северный полюс?',fact:'Зимой север наклонён от Солнца, лучи падают косо и греют слабо — хотя Земля рядом с ним.',tp:'season'}),
+ dl(29,'orbit','<b>Весна на севере</b> — март, апрель и май. Поставь Землю.',{p0:{N:250},free:['N'],sol:{N:105},ok:function(P){return inN(P.N,60,151);},h1:'Весной день растёт: север начинает поворачиваться к Солнцу.',fact:'Весной дни становятся длиннее, а Солнце поднимается выше.',tp:'season'}),
+ bs(30,'season',[13,14,15,16,17,18,19,20],'<b>Босс-викторина!</b> Пять вопросов про времена года. Нужно хотя бы 4 верных.','Ты знаешь, почему меняются времена года: всё дело в наклоне земной оси.'),
+ /* мир 4: полярный день */
+ dl(31,'lat','Вот <b>Мурманск</b> за Полярным кругом (69° с. ш.). Найди дату, когда <b>Солнце не заходит</b> — полярный день.',{p0:{N:340,lat:69},free:['N'],sol:{N:172},ok:function(P){return dayLen(P.N,69)>=23.99;},h1:'Нужен день длиной 24 часа. Ищи летние даты и смотри «День: … ч».',fact:'За Полярным кругом летом бывает полярный день: Солнце не заходит за горизонт много суток подряд.',tp:'polar'}),
+ dl(32,'lat','В Мурманске теперь <b>полярная ночь</b>: Солнце не поднимается над горизонтом. Найди эту дату.',{p0:{N:172,lat:69},free:['N'],sol:{N:355},ok:function(P){return dayLen(P.N,69)<=0.01;},h1:'Это зимние даты, когда север наклонён от Солнца.',fact:'Зимой за Полярным кругом бывает полярная ночь: Солнце много суток не всходит.',tp:'polar'}),
+ dl(33,'lat','<b>21 июня.</b> Найди широту, где день длится около 17–18 часов, как в Москве.',{p0:{N:172,lat:10},free:['lat'],sol:{lat:56},ok:function(P){var d=dayLen(P.N,P.lat);return d>=16.5&&d<=18.5;},h1:'Москва — примерно на 56° северной широты.',fact:'Чем севернее город, тем длиннее летом день: в Москве около 17 часов.',tp:'polar'}),
+ dl(34,'lat','<b>21 декабря.</b> Зимой в Москве светло всего около 7 часов. Найди эту широту.',{p0:{N:355,lat:10},free:['lat'],sol:{lat:56},ok:function(P){var d=dayLen(P.N,P.lat);return d>=6&&d<=8;},h1:'Москва — примерно на 56° северной широты.',fact:'Чем севернее город, тем короче зимой день: в Москве около 7 часов.',tp:'polar'}),
+ pk(35,'lat','Это <b>экватор</b>, 0° широты. Что будет с длиной дня в течение года?',{p0:{N:172,lat:0},a:['Всегда около 12 часов','Летом 24 часа, зимой 0','Летом 17 часов, зимой 7'],c:0,h1:'Экватор лежит посередине между полюсами: Солнце над ним высоко весь год.',fact:'На экваторе день и ночь почти всегда по 12 часов, и времён года, как у нас, нет.',tp:'polar'}),
+ dl(36,'lat','Вот <b>Санкт-Петербург</b> (60° с. ш.). Найди даты <b>белых ночей</b>: день длится больше 18 часов.',{p0:{N:40,lat:60},free:['N'],sol:{N:172},ok:function(P){return dayLen(P.N,60)>=18;},h1:'Белые ночи — летом, около 21 июня.',fact:'В Санкт-Петербурге с конца мая до июля ночью почти светло: Солнце заходит ненадолго и неглубоко.',tp:'polar'}),
+ dl(37,'lat','<b>Антарктида</b> (75° ю. ш.). Найди дату, когда там полярный день.',{p0:{N:172,lat:-75},free:['N'],sol:{N:355},ok:function(P){return dayLen(P.N,-75)>=23.99;},h1:'Когда у нас зима, на юге лето.',fact:'В Антарктиде полярный день бывает в декабре и январе. Лето там, когда у нас зима.',tp:'polar'}),
+ dl(38,'lat','<b>Северный полюс.</b> Найди дату, когда там день и Солнце светит круглые сутки.',{p0:{N:330,lat:90},free:['N'],sol:{N:172},ok:function(P){return dayLen(P.N,90)>=23.99;},h1:'На полюсе день бывает, когда северный полюс наклонён к Солнцу — весной и летом.',fact:'На Северном полюсе полгода день и полгода ночь: Солнце всходит около 20 марта и заходит около 23 сентября.',tp:'polar'}),
+ dl(39,'lat','<b>21 июня.</b> Найди широту, где Солнце не заходит совсем.',{p0:{N:172,lat:30},free:['lat'],sol:{lat:80},ok:function(P){return dayLen(P.N,P.lat)>=23.99;},h1:'Это за Полярным кругом. Он проходит на 66,5° северной широты.',fact:'Полярный круг проходит на 66,5° с. ш. Севернее него в день летнего солнцестояния Солнце не заходит.',tp:'polar'}),
+ bs(40,'polar',[21,22,23,24,25,26,27,28],'<b>Босс-викторина!</b> Пять вопросов про полярный день и длину дня. Нужно хотя бы 4 верных.','Теперь ты понимаешь, почему за Полярным кругом Солнце то не заходит, то не встаёт.'),
+ /* мир 5: Луна */
+ dl(41,'moon','Луна ходит вокруг Земли. <b>Новолуние</b>: Луна между Землёй и Солнцем, мы её не видим. Перетащи Луну.',{p0:{mu:120},free:['mu'],sol:{mu:0},ok:function(P){return dN(P.mu,0,360)<=20;},h1:'Луна должна стоять на линии Земля — Солнце, ближе к Солнцу (слева).',fact:'В новолуние Луна повёрнута к нам тёмной стороной, и её не видно.',tp:'moon'}),
+ dl(42,'moon','<b>Полнолуние</b>: Земля между Солнцем и Луной, диск светится целиком.',{p0:{mu:60},free:['mu'],sol:{mu:180},ok:function(P){return dN(P.mu,180,360)<=20;},h1:'Луна должна быть с той стороны Земли, где нет Солнца.',fact:'В полнолуние Луна сияет полным кругом, и светло всю ночь.',tp:'moon'}),
+ dl(43,'moon','<b>Первая четверть</b>: светится правая половина диска. Найди её.',{p0:{mu:250},free:['mu'],sol:{mu:90},ok:function(P){return dN(P.mu,90,360)<=20;},h1:'Растущая Луна светится справа. Смотри на «Вид с Земли».',fact:'Первая четверть — Луна растёт. В северном полушарии светится правая половина.',tp:'moon'}),
+ dl(44,'moon','<b>Последняя четверть</b>: светится левая половина, Луна стареет.',{p0:{mu:100},free:['mu'],sol:{mu:270},ok:function(P){return dN(P.mu,270,360)<=20;},h1:'Стареющая Луна светится слева.',fact:'В последнюю четверть Луна убывает: светится левая половина, а потом остаётся тонкий месяц.',tp:'moon'}),
+ dl(45,'moon','<b>Тонкий растущий месяц</b>, как буква «Р». Найди его.',{p0:{mu:200},free:['mu'],sol:{mu:45},ok:function(P){return P.mu>=22&&P.mu<=68;},h1:'Это между новолунием и первой четвертью. Светится узкая полоска справа.',fact:'Растущая Луна похожа на букву «Р» (если приставить палочку слева), стареющая — на «С». Это правило для северного полушария.',tp:'moon'}),
+ pk(46,'moon','Вот Луна на орбите. Что мы увидим на небе?',{p0:{mu:300},a:['Убывающий месяц, как «С»','Растущий месяц, как «Р»','Полнолуние'],c:0,h1:'Посмотри на «Вид с Земли»: светится слева или справа?',fact:'После полнолуния Луна убывает: светится всё меньше, пока не наступит новолуние.',tp:'moon'}),
+ dl(47,'moon','<b>Лунное затмение</b>: Луна заходит в тень Земли. Поставь Луну точно за Землёй.',{p0:{mu:40},free:['mu'],sol:{mu:180},ok:function(P){return dN(P.mu,180,360)<=10;},h1:'Затмение бывает, когда Солнце, Земля и Луна стоят на одной линии: Земля посередине.',fact:'Лунное затмение бывает только в полнолуние: Луна проходит через тень Земли и краснеет.',tp:'moon'}),
+ dl(48,'moon','<b>Солнечное затмение</b>: Луна закрывает Солнце. Поставь Луну точно между Землёй и Солнцем.',{p0:{mu:220},free:['mu'],sol:{mu:0},ok:function(P){return dN(P.mu,0,360)<=10;},h1:'Луна должна стоять на линии, соединяющей Землю и Солнце, ближе к Солнцу.',fact:'Солнечное затмение бывает только в новолуние: тень Луны падает на маленький кусочек Земли.',tp:'moon'}),
+ dl(49,'moon','Луна делает полный оборот за <b>29,5 суток</b>. Поставь Луну на 29-е сутки: это последняя ночь перед новолунием.',{p0:{mu:150},free:['mu'],sol:{mu:354},ok:function(P){return dN(P.mu,354,360)<=12;},h1:'Каждые сутки Луна проходит около 12° по орбите. Смотри на «Возраст Луны».',fact:'От новолуния до новолуния проходит 29,5 суток. Это время называют лунным месяцем.',tp:'moon'}),
+ bs(50,'moon',[29,30,31,32,33,34,35,36],'<b>Босс-викторина!</b> Пять вопросов про Луну. Нужно хотя бы 4 верных.','Луна светит отражённым светом, а её фазы — это то, как мы видим освещённую половину.'),
+ /* мир 6: планеты */
+ tpl(51,'sys','Планеты вращаются вокруг Солнца. <b>Нажми на самую близкую к Солнцу планету.</b>',{p0:{T:0.3},tap:'merc',h1:'Ближе всех к Солнцу — самая маленькая и самая быстрая планета.',fact:'Меркурий ближе всех к Солнцу. Год на нём — всего 88 земных суток.',tp:'planets'}),
+ tpl(52,'sys','<b>Самая большая планета</b> — настоящий гигант. Нажми на неё.',{p0:{T:1.1},tap:'jup',h1:'Эта планета больше всех остальных вместе взятых.',fact:'Юпитер больше всех других планет, вместе взятых: в него поместилось бы больше тысячи Земель.',tp:'planets'}),
+ tpl(53,'sys','<b>Планета с красивыми кольцами.</b> Найди её.',{p0:{T:2.2},tap:'sat',h1:'Она вторая по размеру и стоит за Юпитером.',fact:'Самые заметные кольца у Сатурна: они состоят из льда и камней.',tp:'planets'}),
+ tpl(54,'sys','<b>Красная планета</b>, где ищут следы воды. Нажми на неё.',{p0:{T:0.8},tap:'mars',h1:'Она стоит сразу за Землёй.',fact:'Марс красный из-за ржавой пыли. Когда-то там, возможно, была вода.',tp:'planets'}),
+ tpl(55,'sys','<b>Наша планета</b> — единственная, где точно есть жизнь. Найди её.',{p0:{T:1.7},tap:'earth',h1:'Она третья от Солнца.',fact:'Земля — третья от Солнца планета и единственная, где известна жизнь.',tp:'planets'}),
+ dl(56,'sys','<b>Год Меркурия.</b> Крути время: пусть Меркурий сделает полный оборот и вернётся на золотую линию.',{p0:{T:1.2},free:['T'],sol:{T:0.25},ok:function(P){return Math.abs(P.T-0.241)<=0.035;},h1:'Меркурий облетает Солнце за 88 суток — это чуть меньше трёх месяцев.',fact:'Год — это время одного оборота вокруг Солнца. На Меркурии он длится 88 земных суток.',tp:'planets'}),
+ dl(57,'sys','<b>Год Венеры.</b> Крути время, пока Венера не вернётся на золотую линию.',{p0:{T:2},free:['T'],sol:{T:0.6},ok:function(P){return Math.abs(P.T-0.615)<=0.04;},h1:'Год Венеры — 225 земных суток, это около семи месяцев.',fact:'Венерианский год длится 225 земных суток.',tp:'planets'}),
+ dl(58,'sys','<b>Год Марса.</b> Крути время, пока Марс не сделает полный оборот.',{p0:{T:0.4},free:['T'],sol:{T:1.88},ok:function(P){return Math.abs(P.T-1.881)<=0.09;},h1:'Марсианский год почти вдвое длиннее земного.',fact:'Год на Марсе — 687 земных суток, почти два земных года.',tp:'planets'}),
+ dl(59,'sys','<b>Год Юпитера.</b> Юпитер — далеко, и оборот у него долгий. Крути время, пока он не вернётся на золотую линию.',{p0:{T:3},free:['T'],sol:{T:11.86},ok:function(P){return Math.abs(P.T-11.86)<=0.45;},h1:'Юпитер идёт вокруг Солнца почти 12 земных лет. Кнопки «+1 год» помогут.',fact:'Юпитер облетает Солнце за 12 земных лет: пока Земля сделает 12 кругов, он сделает один.',tp:'planets'}),
+ bs(60,'planets',[37,38,39,40,41,42,43,44],'<b>Босс-викторина!</b> Пять вопросов про планеты. Нужно хотя бы 4 верных.','Ты знаешь планеты Солнечной системы и то, что такое год на разных планетах.'),
+ /* мир 7: звёздное небо */
+ tpl(61,'sky','Это ночное небо, повёрнутое к северу. <b>Найди Полярную звезду</b> — она почти не двигается.',{p0:{h:5},tap:'polaris',h1:'Все звёзды кружатся вокруг неё. Она в самом центре неба.',fact:'Полярная звезда почти не двигается и всегда показывает на север.',tp:'sky'}),
+ tpl(62,'sky','<b>Большая Медведица</b> — ковш из семи ярких звёзд. Найди его.',{p0:{h:2},tap:'uma',h1:'Ищи семь звёзд в форме большого ковша с ручкой.',fact:'Ковш Большой Медведицы помогает найти Полярную звезду: продли край ковша в пять раз.',tp:'sky'}),
+ tpl(63,'sky','<b>Кассиопея</b> — звёзды в форме буквы W (или М). Найди её.',{p0:{h:7},tap:'cas',h1:'Она по другую сторону от Полярной звезды, чем Большая Медведица.',fact:'Кассиопея стоит по другую сторону от Полярной звезды, чем Большая Медведица.',tp:'sky'}),
+ tpl(64,'sky','<b>Малая Медведица</b> — маленький ковш. Полярная звезда — конец его ручки. Нажми на него.',{p0:{h:11},tap:'umi',h1:'Это маленький ковш вокруг самой неподвижной звезды.',fact:'Полярная звезда входит в Малую Медведицу: она на конце ручки маленького ковша.',tp:'sky'}),
+ dl(65,'sky','Небо вращается вокруг Полярной звезды. <b>Поверни небо так, чтобы Большая Медведица оказалась над Полярной звездой.</b>',{p0:{h:3},free:['h'],sol:{h:17.4},ok:function(P){return dN(RA_UMA+15*P.h,90,360)<=25;},h1:'«Над» — значит вверху экрана, ближе к верхнему краю.',fact:'Из-за вращения Земли кажется, что звёзды кружатся вокруг Полярной звезды.',tp:'sky'}),
+ dl(66,'sky','Теперь поверни небо так, чтобы <b>Кассиопея оказалась внизу</b>, под Полярной звездой.',{p0:{h:6},free:['h'],sol:{h:17},ok:function(P){return dN(RA_CAS+15*P.h,270,360)<=25;},h1:'Кассиопея и Большая Медведица всегда по разные стороны от Полярной звезды.',fact:'Кассиопея и Большая Медведица как будто качаются на качелях вокруг Полярной звезды.',tp:'sky'}),
+ dl(67,'sky','За сутки небо делает полный оборот: 360° за 24 часа. <b>Поверни небо ровно на 4 часа вперёд.</b>',{p0:{h:0},free:['h'],sol:{h:4},ok:function(P){return dN(P.h,4,24)<=0.5;},h1:'1 час — это 15°, значит 4 часа — это 60°.',fact:'Небо поворачивается на 15° каждый час: так кажется, потому что вращается Земля.',tp:'sky'}),
+ pk(68,'sky','Звезда в центре почти не двигается. <b>Куда она показывает?</b>',{p0:{h:5},a:['На север','На юг','На восток'],c:0,h1:'Полярная звезда стоит над Северным полюсом Земли.',fact:'Полярная звезда указывает на север: по ней путешественники находят дорогу.',tp:'sky'}),
+ dl(69,'sky','Поверни небо на <b>12 часов</b>: Кассиопея и Большая Медведица поменяются местами.',{p0:{h:0},free:['h'],sol:{h:12},ok:function(P){return dN(P.h,12,24)<=0.7;},h1:'12 часов — это полоборота неба, 180°.',fact:'Через 12 часов Кассиопея и Большая Медведица меняются местами: небо повернулось на 180°.',tp:'sky'}),
+ bs(70,'sky',[4,9,14,23,31,38,47,50,52,35],'<b>Финальный босс!</b> Пять вопросов из всех миров. Нужно хотя бы 4 верных.','Ты настоящий астроном: знаешь сутки, часовые пояса, времена года, Луну, планеты и звёзды!')
+);
+function qq(tp,q,a,c,e){return {tp:tp,q:q,a:a,c:c,e:e};}
+Q.push(
+ qq('season','Почему на Земле бывают времена года?',['Из-за наклона земной оси','Земля то приближается к Солнцу, то удаляется','Солнце то разгорается, то остывает'],0,'Ось Земли наклонена, поэтому полушария по очереди подставляются под прямые лучи Солнца.'),
+ qq('season','За сколько времени Земля облетает Солнце?',['За сутки','За год','За месяц'],1,'Один оборот вокруг Солнца — один год, около 365 суток.'),
+ qq('season','Какого числа самый длинный день на севере?',['21 июня','21 декабря','20 марта'],0,'21 июня — летнее солнцестояние.'),
+ qq('season','Когда в Москве зима, в Австралии…',['Тоже зима','Лето','Всегда осень'],1,'Полушария по очереди наклонены к Солнцу, поэтому времена года у них наоборот.'),
+ qq('season','Когда день равен ночи?',['Только 21 июня','20 марта и 23 сентября','Каждый день'],1,'Это дни равноденствия, день и ночь тогда по 12 часов.'),
+ qq('season','Когда Земля ближе всего к Солнцу?',['В июне, поэтому лето','В начале января','Всегда на одном расстоянии'],1,'Ближе всего — в начале января, но у нас тогда зима: дело в наклоне оси.'),
+ qq('season','Сколько времён года в году?',['Два','Четыре','Шесть'],1,'Весна, лето, осень и зима.'),
+ qq('season','Какое время года на севере в октябре?',['Весна','Лето','Осень'],2,'Сентябрь, октябрь и ноябрь — осень.'),
+ qq('polar','Что такое полярный день?',['Время, когда Солнце не заходит много суток','День, который длится один час','День, когда на Земле холодно'],0,'За Полярным кругом летом Солнце не заходит за горизонт.'),
+ qq('polar','Где бывает полярная ночь?',['На экваторе','За Полярным кругом','В Москве'],1,'Зимой за Полярным кругом Солнце много суток не всходит.'),
+ qq('polar','На какой широте проходит Полярный круг?',['23,4° с. ш.','66,5° с. ш.','90° с. ш.'],1,'Это 90° минус наклон оси Земли.'),
+ qq('polar','Какой длины день на экваторе?',['Около 12 часов весь год','24 часа летом','6 часов зимой'],0,'На экваторе день и ночь почти равны круглый год.'),
+ qq('polar','Что такое белые ночи?',['Ночи со снегом','Ночи, когда на небе почти светло','Ночи без звёзд и Луны'],1,'Летом Солнце заходит ненадолго и неглубоко, поэтому ночью светло.'),
+ qq('polar','Где Солнце не заходит 21 июня?',['В Москве','В Мурманске','В Каире'],1,'Мурманск находится за Полярным кругом.'),
+ qq('polar','Как долго длится полярный день на Северном полюсе?',['Месяц','Около полугода','Один день'],1,'С 20 марта по 23 сентября Солнце не заходит.'),
+ qq('polar','Какой день в Москве 21 декабря?',['Самый длинный','Самый короткий','Как на экваторе'],1,'В Москве зимой светло всего около 7 часов.'),
+ qq('moon','Почему Луна светится?',['Она сама горит, как Солнце','Она отражает свет Солнца','Её освещает Земля'],1,'Луна не светит сама, она отражает солнечный свет.'),
+ qq('moon','Как называется Луна, когда её не видно?',['Полнолуние','Новолуние','Четверть'],1,'В новолуние Луна повёрнута к нам тёмной стороной.'),
+ qq('moon','Сколько суток от одного новолуния до другого?',['Около 7','Около 30','Около 365'],1,'Лунный месяц — 29,5 суток.'),
+ qq('moon','Лунное затмение бывает, когда…',['Луна в тени Земли','Луна закрывает Солнце','Земля закрывает звёзды'],0,'Земля оказывается между Солнцем и Луной.'),
+ qq('moon','Солнечное затмение бывает в…',['Полнолуние','Новолуние','Первую четверть'],1,'Луна проходит между Землёй и Солнцем.'),
+ qq('moon','Если Луна похожа на букву «С», она…',['Растёт','Стареет','Стоит на месте'],1,'Стареющая Луна похожа на «С», растущая — на «Р».'),
+ qq('moon','Почему мы всегда видим одну сторону Луны?',['Луна не вращается','Луна оборачивается вокруг оси за то же время, что вокруг Земли','Другая сторона не светится'],1,'Луна всегда повёрнута к Земле одной стороной.'),
+ qq('moon','Какая фаза Луны — светится половина диска?',['Четверть','Новолуние','Полнолуние'],0,'В четверть мы видим половину освещённого диска.'),
+ qq('planets','Какая планета ближе всех к Солнцу?',['Венера','Меркурий','Марс'],1,'Меркурий самый близкий к Солнцу.'),
+ qq('planets','Какая планета самая большая?',['Сатурн','Юпитер','Земля'],1,'Юпитер — планета-гигант.'),
+ qq('planets','Сколько планет в Солнечной системе?',['Пять','Восемь','Двенадцать'],1,'Меркурий, Венера, Земля, Марс, Юпитер, Сатурн, Уран и Нептун.'),
+ qq('planets','Какая планета красная?',['Марс','Венера','Нептун'],0,'Марс красный из-за ржавой пыли.'),
+ qq('planets','У какой планеты самые заметные кольца?',['У Марса','У Сатурна','У Меркурия'],1,'Кольца Сатурна видно даже в небольшой телескоп.'),
+ qq('planets','Что такое год на планете?',['Одни сутки','Время одного оборота вокруг Солнца','Время одного оборота вокруг своей оси'],1,'У каждой планеты свой год.'),
+ qq('planets','Какая по счёту от Солнца наша Земля?',['Вторая','Третья','Пятая'],1,'Земля — третья после Меркурия и Венеры.'),
+ qq('planets','Чей год длиннее: Земли или Юпитера?',['Земли','Юпитера','Одинаковый'],1,'Юпитер облетает Солнце почти 12 земных лет.'),
+ qq('sky','Какая звезда почти не движется по небу?',['Сириус','Полярная','Бетельгейзе'],1,'Полярная звезда стоит над Северным полюсом Земли.'),
+ qq('sky','Куда показывает Полярная звезда?',['На север','На юг','На запад'],0,'Полярная звезда указывает на север.'),
+ qq('sky','На сколько градусов поворачивается небо за час?',['На 15°','На 60°','На 1°'],0,'360° делим на 24 часа и получаем 15° в час.'),
+ qq('sky','Какое созвездие похоже на ковш?',['Кассиопея','Большая Медведица','Орион'],1,'Большая Медведица — ковш из семи звёзд.'),
+ qq('sky','Какое созвездие похоже на букву W?',['Кассиопея','Большая Медведица','Лебедь'],0,'Кассиопея похожа на W или М.'),
+ qq('sky','Почему звёзды кажутся кружащимися по небу?',['Вращается Земля','Звёзды летают вокруг Земли за сутки','Двигается Луна'],0,'Земля вращается, поэтому небо кажется поворачивающимся.'),
+ qq('sky','Через сколько часов небо повернётся на пол-оборота?',['Через 6','Через 12','Через 24'],1,'Полоборота — 180°, а это 12 часов.'),
+ qq('sky','Что помогает найти север ночью?',['Полярная звезда','Луна','Венера'],0,'Полярная звезда указывает на север.')
+);
+WORLDS.length=2;
+WORLDS.push(
+ {id:3,name:'Времена года',sub:'Орбита и наклон оси',from:21,to:30},
+ {id:4,name:'Полярный день',sub:'Широты и длина дня',from:31,to:40},
+ {id:5,name:'Луна',sub:'Фазы и затмения',from:41,to:50},
+ {id:6,name:'Планеты',sub:'Солнечная система и годы планет',from:51,to:60},
+ {id:7,name:'Звёздное небо',sub:'Созвездия и Полярная звезда',from:61,to:70}
+);
 /*I18N-BEGIN*/
 var UIRU={
 'logo':'ПЛАНЕТАРИЙ','title.sub':'Крути Землю — разгадывай космос','title.play':'Играть','title.repeat':'Повторение','title.journal':'Журнал наблюдений','title.reset':'Сбросить прогресс','title.reset_ask':'Точно стереть? Нажми ещё раз','title.reset_done':'Прогресс стёрт',
@@ -669,12 +835,82 @@ var UIRU={
 'err.clock':'🐱 Есть ошибка. Прикинь по Земле: ближе к Солнцу — значит время больше (идём на восток — прибавляем час).',
 'res.great':'Отлично!','res.boss_win':'Босс побеждён! {n} из 5','res.boss_lose':'Верных ответов: {n} из 5. Нужно 4','res.lose_text':'Не страшно! Пройди уровни ещё раз и попробуй снова — вопросы каждый раз новые.',
 'res.journal':'📖 Журнал наблюдений:','res.next':'Дальше','res.next_repeat':'Дальше (повтор)','res.again':'Ещё раз','res.map':'К уровням',
-'scene.rot':'вращение','scene.day':'☀ день'
+'scene.rot':'вращение','scene.day':'☀ день',
+'map.lockworld':'🔒 Откроется после победы над боссом мира {n}',
+'date.fmt':'{d} {m}',
+'u.d':'дн',
+'u.mo':'мес',
+'u.y':'год',
+'u.h':'ч',
+'season.0':'зима',
+'season.1':'весна',
+'season.2':'лето',
+'season.3':'осень',
+'ro.north':'Север: {s}',
+'ro.south':'Юг: {s}',
+'dir.n':'с. ш.',
+'dir.s':'ю. ш.',
+'ro.sunlat':'Солнце в зените: {v}',
+'ro.day':'День: {h} ч',
+'ro.day24':'День: 24 ч, Солнце не заходит',
+'ro.day0':'День: 0 ч, Солнце не встаёт',
+'ro.day24s':'24 ч, не заходит',
+'ro.day0s':'0 ч, не встаёт',
+'ro.age':'Возраст Луны: {d} сут.',
+'ro.view':'Вид с Земли',
+'ro.ecl.sun':'☀ Солнечное затмение',
+'ro.ecl.moon':'🌑 Лунное затмение',
+'ph.0':'Новолуние',
+'ph.1':'Молодой месяц',
+'ph.2':'Первая четверть',
+'ph.3':'Растущая Луна',
+'ph.4':'Полнолуние',
+'ph.5':'Убывающая Луна',
+'ph.6':'Последняя четверть',
+'ph.7':'Старый месяц',
+'ro.years':'Прошло: {y} лет',
+'ro.start':'старт',
+'ro.laps':'{p}: {n} об.',
+'pl.merc':'Меркурий',
+'pl.venus':'Венера',
+'pl.earth':'Земля',
+'pl.mars':'Марс',
+'pl.jup':'Юпитер',
+'pl.sat':'Сатурн',
+'pl.ura':'Уран',
+'pl.nep':'Нептун',
+'ro.sky':'Небо повернулось на {d}° ({h} ч)',
+'sk.pol':'Полярная','sk.uma':'Большая Медведица','sk.umi':'Малая Медведица','sk.cas':'Кассиопея',
+'hint.sol':'💡 Ищи около значения: {v}.',
+'hint.ring2':'💡 Золотое кольцо показывает нужное место.',
+'hint.tap2':'💡 Золотое кольцо — вот что нужно!',
+'hint.pick2':'💡 Один неверный ответ убран.',
+'hint.auto.dial':'💡 Комета сама всё поставила. Нажми «Готово».',
+'hint.auto.tap':'💡 Комета показала нужное. Нажми на него.',
+'hint.auto.pick':'💡 Комета подсказала верный ответ.',
+'rew.dial':'🎬 Комета всё поставила. Нажми «Готово».',
+'rew.tap':'🎬 Комета показала нужное. Нажми на него.',
+'rew.pick':'🎬 Комета показала верный ответ.',
+'err.dial':'🐱 Пока не то. Сейчас: {ro} Подумай ещё!',
+'err.tap':'🐱 Это не то. Попробуй другой объект!',
+'err.pick':'🐱 Не совсем. Выбери другой ответ.',
+'mon.1':'января',
+'mon.2':'февраля',
+'mon.3':'марта',
+'mon.4':'апреля',
+'mon.5':'мая',
+'mon.6':'июня',
+'mon.7':'июля',
+'mon.8':'августа',
+'mon.9':'сентября',
+'mon.10':'октября',
+'mon.11':'ноября',
+'mon.12':'декабря'
 };
 var RUD={};(function(){for(var k in UIRU)RUD[k]=UIRU[k];
  for(var c in CITIES)RUD['city.'+c]=CITIES[c].n;
  WORLDS.forEach(function(w){RUD['world.'+w.id+'.name']=w.name;RUD['world.'+w.id+'.sub']=w.sub;});
- LEVELS.forEach(function(L){RUD['lv.'+L.id+'.txt']=L.txt;RUD['lv.'+L.id+'.fact']=L.fact;if(L.h1)RUD['lv.'+L.id+'.h1']=L.h1;});
+ LEVELS.forEach(function(L){RUD['lv.'+L.id+'.txt']=L.txt;RUD['lv.'+L.id+'.fact']=L.fact;if(L.h1)RUD['lv.'+L.id+'.h1']=L.h1;if(L.a)L.a.forEach(function(a,j){RUD['lv.'+L.id+'.a'+j]=a;});});
  Q.forEach(function(q,i){if(!q)return;RUD['q.'+i+'.q']=q.q;q.a.forEach(function(a,j){RUD['q.'+i+'.a'+j]=a;});RUD['q.'+i+'.e']=q.e;});
 })();
 /*I18N-END*/
@@ -707,7 +943,7 @@ PF.mergers[SK]=function(a,b){var x=JSON.parse(a),y=JSON.parse(b);if(!x||!y||x.v!
  var rx=x.rst||0,ry=y.rst||0;if(rx!==ry)return rx>ry?a:b;
  var o={v:1,stars:{},journal:{},err:{day:0,zones:0}};if(rx)o.rst=rx;
  [x,y].forEach(function(s){var st=s.stars||{},jn=s.journal||{},er=s.err||{};for(var k in st)o.stars[k]=Math.max(o.stars[k]||0,st[k]);for(var j in jn)if(jn[j])o.journal[j]=1;for(var e in er)o.err[e]=Math.max(o.err[e]||0,er[e]);});
- var lg=x.lang||y.lang;if(lg)o.lang=lg;return JSON.stringify(o);};
+ var lg=x.lang||y.lang;if(lg)o.lang=lg;var fa=Math.max(x.fa||0,y.fa||0);if(fa)o.fa=fa;return JSON.stringify(o);};
 PF.mergers['planetariy-premium']=function(a,b){return window.Premium&&Premium.mergeState?Premium.mergeState(a,b):null;};
 function totalStars(){var s=0;for(var k in SV.stars)s+=SV.stars[k];return s;}
 function unlocked(id){return id===1||(SV.stars[id-1]||0)>0;}
@@ -716,10 +952,11 @@ var cur='title';
 function show(n){['title','map','game','quiz','journal'].forEach(function(s){var el=$('scr'+s[0].toUpperCase()+s.slice(1));if(el)el.hidden=(s!==n);});$('scrRes').hidden=true;cur=n;PF.setPlaying&&PF.setPlaying(n==='game'||n==='quiz');if(n==='map')buildMap();if(n==='journal')buildJournal();if(n==='game')setTimeout(resize,0);pmSync();}
 document.addEventListener('click',function(e){var g=e.target.closest&&e.target.closest('[data-go]');if(g)show(g.getAttribute('data-go'));});
 function buildMap(){
- var h='';var nextId=0;for(var i=1;i<=20;i++){if(unlocked(i)&&!(SV.stars[i]>0)){nextId=i;break;}}
+ var h='';var nextId=0;for(var i=1;i<=LEVELS.length;i++){if(unlocked(i)&&!(SV.stars[i]>0)){nextId=i;break;}}
  WORLDS.forEach(function(w){
   if(w.soon){h+='<div class="world soon"><h3>'+t('map.world',{n:w.id,name:t('world.'+w.id+'.name')})+'</h3><p>'+t('map.soon',{sub:t('world.'+w.id+'.sub')})+'</p></div>';return;}
-  h+='<div class="world"><h3>'+t('map.world',{n:w.id,name:t('world.'+w.id+'.name')})+'</h3><p>'+t('world.'+w.id+'.sub')+'</p><div class="grid">';
+  var wl=!unlocked(w.from);
+  h+='<div class="world'+(wl?' wlock':'')+'"><h3>'+t('map.world',{n:w.id,name:t('world.'+w.id+'.name')})+'</h3><p>'+t('world.'+w.id+'.sub')+'</p>'+(wl?'<p class="lh">'+t('map.lockworld',{n:w.id-1})+'</p>':'')+'<div class="grid">';
   for(var i=w.from;i<=w.to;i++){var st=SV.stars[i]||0,un=unlocked(i),bs=lvl(i).t==='boss';
    h+='<button class="lv'+(bs?' boss':'')+(un?'':' lock')+(i===nextId?' next':'')+'" data-lv="'+i+'">'+(bs?'👑':i)+'<small>'+(st?'★★★'.slice(0,st):(un?'':'🔒'))+'</small></button>';}
   h+='</div></div>';});
@@ -745,19 +982,28 @@ function solve(L){
 }
 function openLevel(id){
  var L=lvl(id);if(L.t==='boss'){openQuiz(L);return;}
- G={L:L,hint:0,tries:0,t:0,anim:null,dragging:false,done:false,ans:[]};
+ G={L:L,hint:0,tries:0,t:0,anim:null,dragging:false,done:false,ans:[],P:null,show:false,ring:false};
  if(L.t==='spin'){G.sol=solve(L);G.t=mod(G.sol+7.3+id*1.7,24);}
- else{var g=L.given;G.t=mod(g.h-CITIES[g.c].off,24);G.ans=L.items.map(function(it){return {h:mod(it.h+5,24),day:0};});}
- $('gTitle').textContent=t('game.title',{n:id,w:t(id<=10?'game.w1':'game.w2')});
+ else if(L.t==='clock'){var g=L.given;G.t=mod(g.h-CITIES[g.c].off,24);G.ans=L.items.map(function(it){return {h:mod(it.h+5,24),day:0};});}
+ else{G.P=JSON.parse(JSON.stringify(L.p0));}
+ $('gTitle').textContent=t('game.title',{n:id,w:t('world.'+Math.ceil(id/10)+'.name')});
  $('msg').innerHTML=lt(L,'txt');$('hn').textContent=3;setAv('mira');
  buildCtl();show('game');
 }
-function rewLbl(){return PF.premium&&PF.premium()?(LANG==='en'?'🎬 Show the answer (Premium)':'🎬 Показать ответ (Премиум)'):t('ctl.rew');}
-function rewBtn(){return PF.canReward()?'<div class="row"><button class="sm" id="bRew">'+rewLbl()+'</button></div>':'';}
+function rewLbl(){return t('ctl.rew');}
+function freeLbl(){var n=SV.fa||0;return (LANG==='en'?'🎁 Answer from Comet (gift): ':'🎁 Ответ Кометы (подарок): ')+n;}
+function rewBtn(){return (PF.canReward()?'<div class="row"><button class="sm" id="bRew">'+rewLbl()+'</button></div>':'')+((SV.fa||0)>0?'<div class="row"><button class="sm" id="bFree">'+freeLbl()+'</button></div>':'');}
+function giveAnswer(b){G.free=true;G.hint=3;$('hn').textContent=0;setAv('kometa_hint');var L=G.L;if(L.t==='spin'){G.anim={to:G.sol};$('msg').innerHTML=t('rew.spin');}else if(L.t==='clock'){L.items.forEach(function(it,i){G.ans[i]={h:it.h,day:it.day||0};});renderCards();$('msg').innerHTML=t('rew.clock');}else revealNew(L,true);b.hidden=true;}
 function buildCtl(){
  var L=G.L,c=$('ctl'),h='';
  if(L.t==='spin'){
   h='<div class="row"><button class="sm" data-d="-1">'+t('ctl.m1h')+'</button><button class="sm" data-d="-.25">'+t('ctl.m15')+'</button><button class="sm" data-d=".25">'+t('ctl.p15')+'</button><button class="sm" data-d="1">'+t('ctl.p1h')+'</button></div><div class="row"><button class="btn" id="bOk" style="width:70%">'+t('ctl.ok')+'</button></div>'+rewBtn();
+ }else if(L.t==='dial'){
+  h=dialBtns(L)+'<div class="row"><button class="btn" id="bOk" style="width:70%">'+t('ctl.ok')+'</button></div>'+rewBtn();
+ }else if(L.t==='tap'){
+  h=rewBtn();
+ }else if(L.t==='pick'){
+  h='<div id="pks">'+L.a.map(function(a,i){return '<button class="opt" data-pk="'+i+'">'+t('lv.'+L.id+'.a'+i)+'</button>';}).join('')+'</div>'+rewBtn();
  }else{
   h='<div class="cards" id="cards">';
   L.items.forEach(function(it,i){h+='<div class="ccard" data-i="'+i+'"><div class="cn">'+cn(it.c)+'</div><div class="clk"></div><div class="dg"></div><div class="cr"><button data-s="-1">−</button><button data-s="1">+</button></div><button class="dy" data-dy="1"></button></div>';});
@@ -775,7 +1021,10 @@ function renderCards(){var cs=document.querySelectorAll('.ccard');G.ans.forEach(
 $('ctl').addEventListener('click',function(e){
  if(!G||G.done)return;var b=e.target.closest('button');if(!b)return;
  if(b.id==='bOk'){check();return;}
- if(b.id==='bRew'){PF.rewarded(function(ok){if(!ok||!G||G.done)return;G.free=true;G.hint=3;$('hn').textContent=0;setAv('kometa_hint');var L=G.L;if(L.t==='spin'){G.anim={to:G.sol};$('msg').innerHTML=t('rew.spin');}else{L.items.forEach(function(it,i){G.ans[i]={h:it.h,day:it.day||0};});renderCards();$('msg').innerHTML=t('rew.clock');}b.hidden=true;});return;}
+ if(b.id==='bRew'){PF.rewarded(function(ok){if(!ok||!G||G.done)return;giveAnswer(b);});return;}
+ if(b.id==='bFree'){if(!((SV.fa||0)>0)||G.free)return;SV.fa--;save();giveAnswer(b);return;}
+ if(b.hasAttribute('data-p')){G.anim=null;applyBtn(b.getAttribute('data-p'),parseFloat(b.getAttribute('data-v')));return;}
+ if(b.hasAttribute('data-pk')){pickAns(+b.getAttribute('data-pk'),b);return;}
  if(b.hasAttribute('data-d')){G.anim=null;G.t=mod(G.t+parseFloat(b.getAttribute('data-d')),24);return;}
  var card=b.closest('.ccard');if(!card)return;var a=G.ans[+card.getAttribute('data-i')];card.classList.remove('ok','no');
  if(b.hasAttribute('data-s'))a.h=mod(a.h+parseInt(b.getAttribute('data-s')),24);
@@ -787,14 +1036,16 @@ $('gHint').addEventListener('click',function(){
  if(!G||G.done)return;var L=G.L;if(G.hint>=3)return;G.hint++;$('hn').textContent=3-G.hint;
  setAv(G.hint===3?'kometa_hint':'mira_think');
  if(G.hint===1)$('msg').innerHTML='💡 '+lt(L,'h1');
- else if(G.hint===2){$('msg').innerHTML=t(L.t==='spin'?'hint.ring':'hint.clock2');}
+ else if(G.hint===2){if(L.t==='spin'||L.t==='clock')$('msg').innerHTML=t(L.t==='spin'?'hint.ring':'hint.clock2');else hint2New(L);}
  else{if(L.t==='spin'){G.anim={to:G.sol};$('msg').innerHTML=t('hint.auto.spin');}
+  else if(L.t==='dial'||L.t==='tap'||L.t==='pick')revealNew(L,false);
   else{L.items.forEach(function(it,i){G.ans[i]={h:it.h,day:it.day||0};});renderCards();$('msg').innerHTML=t('hint.auto.clock');}}
 });
 function condErr(c,L,t){var cl=localT(c.c,t,L.mode);if(c.h!=null)return cd(cl,c.h)*60;
  var w=mod(c.to-c.from,24),p=mod(cl-c.from,24);if(p<=w)return 0;return Math.min(cd(cl,c.from),cd(cl,c.to))*60;}
 function baseStars(e){return e<=20?3:e<=40?2:e<=60?1:0;}
 function check(){
+ if(G.L.t==='dial'){checkDial();return;}
  var L=G.L,st=0;G.tries++;
  if(L.t==='spin'){
   var worst=-1,wc=null;L.conds.forEach(function(c){var e=condErr(c,L,G.t);if(e>worst){worst=e;wc=c;}});
@@ -820,7 +1071,7 @@ function showRes(L,st,title){
  var nxt=nextAfter(L.id);$('rNext').style.display=nxt?'':'none';$('rNext').textContent=t(Q_ADAPT&&Q_ADAPT.length?'res.next_repeat':'res.next');
  $('scrRes').hidden=false;pmSync();pmCard(600);
 }
-function nextAfter(id){if(Q_ADAPT&&Q_ADAPT.length)return Q_ADAPT[0];var n=id+1;return (n<=20&&unlocked(n))?n:0;}
+function nextAfter(id){if(Q_ADAPT&&Q_ADAPT.length)return Q_ADAPT[0];var n=id+1;return (n<=LEVELS.length&&unlocked(n))?n:0;}
 $('rNext').addEventListener('click',function(){var L=G&&G.L||curBoss;var n;if(Q_ADAPT&&Q_ADAPT.length){n=Q_ADAPT.shift();}else n=nextAfter(L.id);$('scrRes').hidden=true;adGate(function(){if(n)openLevel(n);else show('map');});});
 $('rAgain').addEventListener('click',function(){var L=G&&G.L||curBoss;$('scrRes').hidden=true;openLevel(L.id);});
 $('rMap').addEventListener('click',function(){$('scrRes').hidden=true;Q_ADAPT=null;adGate(function(){show('map');});});
@@ -842,7 +1093,7 @@ function nextQ(){
 }
 $('qo').addEventListener('click',function(e){var b=e.target.closest('.opt');if(!b||qlock)return;qlock=true;var q=Q[qs[qi]],k=+b.getAttribute('data-k');
  [].forEach.call($('qo').children,function(x){if(+x.getAttribute('data-k')===q.c)x.classList.add('ok');});
- if(k===q.c){qok++;$('qExp').textContent=t('quiz.right')+' '+t('q.'+qs[qi]+'.e');}else{b.classList.add('no');var tp=qs[qi]<=7?'day':'zones';SV.err[tp]=(SV.err[tp]||0)+1;save();$('qExp').textContent=t('quiz.wrong')+' '+t('q.'+qs[qi]+'.e');}
+ if(k===q.c){qok++;$('qExp').textContent=t('quiz.right')+' '+t('q.'+qs[qi]+'.e');}else{b.classList.add('no');var tp=q.tp||(qs[qi]<=7?'day':'zones');SV.err[tp]=(SV.err[tp]||0)+1;save();$('qExp').textContent=t('quiz.wrong')+' '+t('q.'+qs[qi]+'.e');}
  $('qNext').hidden=false;});
 $('qNext').addEventListener('click',function(){qi++;nextQ();});
 $('qBack').addEventListener('click',function(){show('map');});
@@ -888,14 +1139,16 @@ function lsun(){return -(G.t-12)*15;}
 function frame(now){
  requestAnimationFrame(frame);
  if(cur!=='game'||!G||!W||PF.paused())return;
- if(G.anim){var d=((G.anim.to-G.t+36)%24)-12;if(Math.abs(d)<.01){G.t=G.anim.to;G.anim=null;}else G.t=mod(G.t+d*.12,24);}
+ if(G.anim&&G.L.t==='dial')animDial();
+ else if(G.anim){var d=((G.anim.to-G.t+36)%24)-12;if(Math.abs(d)<.01){G.t=G.anim.to;G.anim=null;}else G.t=mod(G.t+d*.12,24);}
  draw(now/1000);
 }
 function draw(T){
  var L=G.L;ctx.setTransform(dpr,0,0,dpr,0,0);
- var gr=ctx.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#070b2e');gr.addColorStop(1,'#16206a');ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
- var bg=IM[L.id<=10?'bg_w1':'bg_w2'];if(bg){var k=Math.max(W/bg.width,H/bg.height),bw=bg.width*k,bh=bg.height*k;ctx.globalAlpha=.8;ctx.drawImage(bg,(W-bw)/2,(H-bh)/2,bw,bh);ctx.globalAlpha=1;}
+ var gr=ctx.createLinearGradient(0,0,0,H);var wc=({6:['#14072e','#3b1566'],7:['#02030f','#0a1140']})[Math.ceil(L.id/10)]||['#070b2e','#16206a'];gr.addColorStop(0,wc[0]);gr.addColorStop(1,wc[1]);ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
+ var bg=IM['bg_w'+Math.ceil(L.id/10)];if(bg){var k=Math.max(W/bg.width,H/bg.height),bw=bg.width*k,bh=bg.height*k;ctx.globalAlpha=.8;ctx.drawImage(bg,(W-bw)/2,(H-bh)/2,bw,bh);ctx.globalAlpha=1;}
  STARS.forEach(function(s){ctx.globalAlpha=.4+.5*Math.abs(Math.sin(T*1.3+s[3]));ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s[0]*W,s[1]*H,s[2],0,6.3);ctx.fill();});ctx.globalAlpha=1;
+ if(L.sc){drawSc(L,T);return;}
  var R=Math.min(W*.31,H*.38),cx=W*.40,cy=H*.5,sr=Math.min(W*.2,H*.3),sx=W+sr*.1,sy=cy;
  // Солнце
  var sg=ctx.createRadialGradient(sx,sy,sr*.3,sx,sy,sr*1.7);sg.addColorStop(0,'rgba(255,220,80,.95)');sg.addColorStop(.5,'rgba(255,150,40,.25)');sg.addColorStop(1,'rgba(255,150,40,0)');
@@ -947,15 +1200,188 @@ function pin(k,ls,cx,cy,R,mode,hl,hide){
  ctx.fillStyle='#223';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 9.5px system-ui';var nm=cn(k);ctx.fillText(nm.length>11?nm.slice(0,10)+'.':nm,px,py-6);
  ctx.font='bold 12px system-ui';ctx.fillStyle='#c4400f';ctx.fillText(hide?'?':fmt(tt),px,py+7);
 }
+/* ===== миры 3–7: сцены, управление, проверка ===== */
+function nf(x,dg){var s=x.toFixed(dg);return LANG==='ru'?s.replace('.',','):s;}
+function dateStr(N){return t('date.fmt',{d:dnum(N),m:t('mon.'+(mon(N)+1))});}
+var SEAS_N=[0,0,1,1,1,2,2,2,3,3,3,0];
+function seasN(N){return SEAS_N[mon(N)];}
+function latStr(v){return Math.abs(Math.round(v))+'° '+t(v>=0?'dir.n':'dir.s');}
+function phaseIdx(mu){return Math.floor(mod(mu+22.5,360)/45);}
+function ro(L,P){
+ if(L.sc==='orbit')return dateStr(P.N)+'. '+t('ro.north',{s:t('season.'+seasN(P.N))})+', '+t('ro.south',{s:t('season.'+((seasN(P.N)+2)%4))})+'.';
+ if(L.sc==='lat'){var d=dayLen(P.N,P.lat);return dateStr(P.N)+', '+latStr(P.lat)+'. '+(d>=23.99?t('ro.day24'):d<=0.01?t('ro.day0'):t('ro.day',{h:nf(d,1)}));}
+ if(L.sc==='moon')return t('ph.'+phaseIdx(P.mu))+'. '+t('ro.age',{d:nf(mod(P.mu,360)/360*29.53,1)});
+ if(L.sc==='sys')return t('ro.years',{y:nf(P.T,P.T<2?2:1)});
+ return t('ro.sky',{d:nf(P.h*15,0),h:nf(P.h,1)});
+}
+function tx2(s,x,y,sz,col,al){ctx.font='bold '+sz+'px system-ui';ctx.fillStyle=col||'#fff';ctx.textAlign=al||'center';ctx.textBaseline='middle';ctx.fillText(s,x,y);}
+function glow(x,y,r,rgb){var g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,'rgba('+rgb+',.9)');g.addColorStop(1,'rgba('+rgb+',0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,6.3);ctx.fill();}
+function ringAt(x,y,r,T){ctx.strokeStyle='#ffd23f';ctx.lineWidth=3;ctx.setLineDash([5,4]);ctx.lineDashOffset=-T*14;ctx.beginPath();ctx.arc(x,y,r+2*Math.sin(T*4),0,6.3);ctx.stroke();ctx.setLineDash([]);}
+function sunDisc(x,y,r){glow(x,y,r*2.2,'255,200,60');if(IM.sun){var ss=r*2.6;ctx.drawImage(IM.sun,x-ss/2,y-ss/2,ss,ss*IM.sun.height/IM.sun.width);}else{ctx.fillStyle='#ffd23f';ctx.beginPath();ctx.arc(x,y,r,0,6.3);ctx.fill();ctx.fillStyle='#ffb21f';ctx.beginPath();ctx.arc(x-r*.25,y-r*.2,r*.5,0,6.3);ctx.fill();}}
+function drawSc(L,T){
+ var P=G.P;
+ if(L.sc==='orbit'||L.sc==='lat')drawOrbit(L,T,P);else if(L.sc==='moon')drawMoon(L,T,P);else if(L.sc==='sys')drawSys(L,T,P);else drawSky(L,T,P);
+}
+/* орбита Земли + «лупа»: Земля сбоку, ось наклонена, Солнце справа */
+function orbitGeom(){return {cx:W*.5,cy:H*.27,rx:W*.40,ry:H*.12};}
+function drawOrbit(L,T,P){
+ var o=orbitGeom(),cx=o.cx,cy=o.cy,rx=o.rx,ry=o.ry,N=P.N;
+ ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1.5;ctx.setLineDash([4,5]);ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,0,0,6.3);ctx.stroke();ctx.setLineDash([]);
+ sunDisc(cx,cy,17);
+ [172,264,355,79].forEach(function(n){var a=Math.PI+2*Math.PI*(n-172)/365,mx=cx+rx*Math.cos(a),my=cy-ry*Math.sin(a);ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();ctx.arc(mx,my,2.5,0,6.3);ctx.fill();tx2(dateStr(n),mx,my+(Math.sin(a)>0?-12:13),9.5,'rgba(255,255,255,.75)');});
+ if(G.ring&&L.sol&&L.sol.N!=null){var sa=Math.PI+2*Math.PI*(L.sol.N-172)/365;ringAt(cx+rx*Math.cos(sa),cy-ry*Math.sin(sa),22,T);}
+ var a=Math.PI+2*Math.PI*(N-172)/365,ex=cx+rx*Math.cos(a),ey=cy-ry*Math.sin(a);
+ ctx.save();ctx.beginPath();ctx.arc(ex,ey,15,0,6.3);ctx.clip();ctx.fillStyle='#2f9fe0';ctx.fillRect(ex-15,ey-15,30,30);
+ var sdir=Math.atan2(cy-ey,cx-ex);ctx.fillStyle='rgba(5,8,40,.62)';ctx.beginPath();ctx.moveTo(ex,ey);ctx.arc(ex,ey,16,sdir+Math.PI/2,sdir+Math.PI*1.5);ctx.closePath();ctx.fill();ctx.restore();
+ ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(ex,ey,15,0,6.3);ctx.stroke();
+ var ux=Math.sin(23.44*Math.PI/180),uy=-Math.cos(23.44*Math.PI/180);ctx.strokeStyle='#ffd23f';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ex-ux*22,ey-uy*22);ctx.lineTo(ex+ux*22,ey+uy*22);ctx.stroke();
+ tx2('N',ex+ux*30,ey+uy*30,9,'#ffd23f');
+ // надписи
+ tx2(dateStr(N),W*.5,14,17,'#ffd23f');
+ tx2(t('ro.north',{s:t('season.'+seasN(N))}),W*.27,H*.045+22,11.5,'#9ff0b4');tx2(t('ro.south',{s:t('season.'+((seasN(N)+2)%4))}),W*.73,H*.045+22,11.5,'#9fd8ff');
+ // лупа
+ var gx=W*.5,gy=H*.70,gr=Math.min(W*.24,H*.15),dl=decl(N)*Math.PI/180;
+ [-.6,0,.6].forEach(function(k){var y=gy+k*gr;ctx.strokeStyle='rgba(255,224,110,.8)';ctx.fillStyle='rgba(255,224,110,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(gx+gr+58,y);ctx.lineTo(gx+gr*Math.sqrt(1-k*k)+10,y);ctx.stroke();var x2=gx+gr*Math.sqrt(1-k*k)+10;ctx.beginPath();ctx.moveTo(x2,y);ctx.lineTo(x2+8,y-4);ctx.lineTo(x2+8,y+4);ctx.fill();});
+ tx2('☀',gx+gr+70,gy,20,'#ffd23f');
+ ctx.save();ctx.beginPath();ctx.arc(gx,gy,gr,0,6.3);ctx.clip();var og=ctx.createRadialGradient(gx+gr*.3,gy-gr*.2,gr*.1,gx,gy,gr);og.addColorStop(0,'#52c7ff');og.addColorStop(1,'#1c6fd1');ctx.fillStyle=og;ctx.fillRect(gx-gr,gy-gr,2*gr,2*gr);ctx.fillStyle='rgba(5,8,40,.65)';ctx.fillRect(gx-gr,gy-gr,gr,2*gr);ctx.restore();
+ ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(gx,gy,gr,0,6.3);ctx.stroke();
+ var ax=Math.sin(dl),ay=-Math.cos(dl),qx=Math.cos(dl),qy=Math.sin(dl);
+ ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(gx-qx*gr,gy-qy*gr);ctx.lineTo(gx+qx*gr,gy+qy*gr);ctx.stroke();
+ ctx.strokeStyle='#ffd23f';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(gx-ax*gr*1.25,gy-ay*gr*1.25);ctx.lineTo(gx+ax*gr*1.25,gy+ay*gr*1.25);ctx.stroke();
+ tx2('N',gx+ax*gr*1.4,gy+ay*gr*1.4,12,'#ffd23f');tx2('S',gx-ax*gr*1.4,gy-ay*gr*1.4,12,'#ffd23f');
+ if(L.sc==='lat'){var ph=P.lat*Math.PI/180,mx=gx+gr*(Math.sin(ph)*ax+Math.cos(ph)*qx),my=gy+gr*(Math.sin(ph)*ay+Math.cos(ph)*qy);ctx.fillStyle='#ff4d4d';ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(mx,my,6,0,6.3);ctx.fill();ctx.stroke();}
+ tx2(t('ro.sunlat',{v:latStr(decl(N))}),W*.5,gy+gr+20,11.5,'#ffe58a');
+ if(L.sc==='lat'){var dd=dayLen(N,P.lat);tx2(latStr(P.lat),W*.3,gy+gr+39,13,'#fff');tx2(dd>=23.99?t('ro.day24s'):dd<=0.01?t('ro.day0s'):t('ro.day',{h:nf(dd,1)}),W*.7,gy+gr+39,13,'#ffd23f');}
+}
+/* Луна: Земля в центре, Солнце слева, внизу «вид с Земли» */
+function moonGeom(){return {cx:W*.52,cy:H*.30,Rm:Math.min(W*.30,H*.19)};}
+function drawMoon(L,T,P){
+ var g=moonGeom(),cx=g.cx,cy=g.cy,Rm=g.Rm,mu=P.mu*Math.PI/180;
+ var sr=Math.min(W*.10,H*.08);sunDisc(sr*.3,cy,sr);
+ ctx.strokeStyle='rgba(255,224,110,.6)';ctx.fillStyle='rgba(255,224,110,.6)';ctx.lineWidth=2;
+ [-.55,.55].forEach(function(k){var y=cy+k*Rm*1.3;ctx.beginPath();ctx.moveTo(sr*1.5,y);ctx.lineTo(cx-Rm-16,y);ctx.stroke();ctx.beginPath();ctx.moveTo(cx-Rm-16,y);ctx.lineTo(cx-Rm-24,y-4);ctx.lineTo(cx-Rm-24,y+4);ctx.fill();});
+ ctx.fillStyle='rgba(0,0,10,.38)';ctx.beginPath();ctx.moveTo(cx,cy-17);ctx.lineTo(W,cy-12);ctx.lineTo(W,cy+12);ctx.lineTo(cx,cy+17);ctx.closePath();ctx.fill();
+ ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1.5;ctx.setLineDash([4,5]);ctx.beginPath();ctx.arc(cx,cy,Rm,0,6.3);ctx.stroke();ctx.setLineDash([]);
+ // Земля
+ ctx.save();ctx.beginPath();ctx.arc(cx,cy,16,0,6.3);ctx.clip();ctx.fillStyle='#2f9fe0';ctx.fillRect(cx-16,cy-16,32,32);ctx.fillStyle='rgba(5,8,40,.62)';ctx.fillRect(cx,cy-16,16,32);ctx.restore();
+ ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy,16,0,6.3);ctx.stroke();
+ if(G.ring&&L.sol&&L.sol.mu!=null){var sm=L.sol.mu*Math.PI/180;ringAt(cx-Rm*Math.cos(sm),cy+Rm*Math.sin(sm),18,T);}
+ // Луна: освещена сторона к Солнцу (влево)
+ var mx=cx-Rm*Math.cos(mu),my=cy+Rm*Math.sin(mu);
+ ctx.fillStyle='#4a4f66';ctx.beginPath();ctx.arc(mx,my,10,0,6.3);ctx.fill();ctx.fillStyle='#f4f1e0';ctx.beginPath();ctx.arc(mx,my,10,Math.PI/2,Math.PI*1.5);ctx.fill();
+ ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.beginPath();ctx.arc(mx,my,10,0,6.3);ctx.stroke();
+ // вид с Земли
+ var vx=W*.5,vy=H*.735,vr=Math.min(W*.19,H*.14);
+ tx2(t('ro.view'),vx,vy-vr-12,11,'#a9b4ff');
+ ctx.fillStyle='#2b3157';ctx.beginPath();ctx.arc(vx,vy,vr,0,6.3);ctx.fill();
+ var c=Math.cos(mu),wax=Math.sin(mu)>0;ctx.fillStyle='#f4f1e0';ctx.beginPath();
+ if(wax){ctx.arc(vx,vy,vr,-Math.PI/2,Math.PI/2,false);for(var i=0;i<=24;i++){var an=Math.PI/2-Math.PI*i/24;ctx.lineTo(vx+c*vr*Math.cos(an),vy+vr*Math.sin(an));}}
+ else{ctx.arc(vx,vy,vr,Math.PI/2,Math.PI*1.5,false);for(var j=0;j<=24;j++){var bn=-Math.PI/2+Math.PI*j/24;ctx.lineTo(vx-c*vr*Math.cos(bn),vy+vr*Math.sin(bn));}}
+ ctx.closePath();ctx.fill();
+ ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(vx,vy,vr,0,6.3);ctx.stroke();
+ tx2(t('ph.'+phaseIdx(P.mu)),vx,vy+vr+16,14,'#ffd23f');tx2(t('ro.age',{d:nf(mod(P.mu,360)/360*29.53,1)}),vx,vy+vr+33,11.5,'#fff');
+ if(dN(P.mu,0,360)<=6)tx2(t('ro.ecl.sun'),W*.5,H*.50,13,'#ff9f5a');else if(dN(P.mu,180,360)<=6)tx2(t('ro.ecl.moon'),W*.5,H*.50,13,'#ff9f5a');
+}
+/* планеты */
+function sysGeom(){return {cx:W*.5,cy:H*.47,R:Math.min(W,H)*.46};}
+function planetXY(p,T){var g=sysGeom(),th=2*Math.PI*T/PERIOD[p[0]];return [g.cx+p[1]*g.R*Math.cos(th),g.cy-p[1]*g.R*Math.sin(th)];}
+function drawSys(L,T,P){
+ var g=sysGeom(),cx=g.cx,cy=g.cy,R=g.R;
+ PLN.forEach(function(p){ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(cx,cy,p[1]*R,0,6.3);ctx.stroke();});
+ ctx.strokeStyle='rgba(255,210,63,.75)';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+R*.99,cy);ctx.stroke();ctx.setLineDash([]);tx2(t('ro.start'),cx+R*.9,cy-9,9.5,'#ffd23f');
+ sunDisc(cx,cy,9);
+ PLN.forEach(function(p){var xy=planetXY(p,P.T),x=xy[0],y=xy[1],s=p[2];
+  if(p[0]==='sat'){ctx.strokeStyle='#d8c27a';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(x,y,s*1.9,s*.55,-.3,0,6.3);ctx.stroke();}
+  ctx.fillStyle=p[3];ctx.beginPath();ctx.arc(x,y,s,0,6.3);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=1;ctx.stroke();
+  if(G.show&&L.tap===p[0])ringAt(x,y,s+14,T);
+  tx2(t('pl.'+p[0]),Math.max(24,Math.min(W-24,x)),y+s+9,9.5,p[0]==='earth'?'#ffd23f':'#fff');});
+ tx2(t('ro.years',{y:nf(P.T,P.T<2?2:1)}),W*.5,14,16,'#ffd23f');
+ if(L.t==='dial'){var ys=H-60;[['merc'],['venus'],['mars'],['jup']].forEach(function(q,i){tx2(t('ro.laps',{p:t('pl.'+q[0]),n:nf(P.T/PERIOD[q[0]],2)}),i%2?W*.74:W*.26,ys+(i>>1)*16,10.5,'#cfd6ff');});}
+}
+/* звёздное небо */
+function skyGeom(){return {cx:W*.5,cy:H*.47,R:Math.min(W*.47,H*.45)};}
+var BGSKY=[];(function(){var s=11;function r(){s=(s*16807)%2147483647;return s/2147483647;}for(var i=0;i<70;i++)BGSKY.push([r()*24,40+r()*50,r()*1.3+.5]);})();
+function skyXY(ra,dec,h,g){var th=(ra*15+h*15)*Math.PI/180,r=(90-dec)/50*g.R;return [g.cx+r*Math.cos(th),g.cy-r*Math.sin(th)];}
+function drawSky(L,T,P){
+ var g=skyGeom();
+ ctx.fillStyle='rgba(2,4,24,.55)';ctx.beginPath();ctx.arc(g.cx,g.cy,g.R,0,6.3);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(g.cx,g.cy,g.R,0,6.3);ctx.stroke();
+ BGSKY.forEach(function(s){var xy=skyXY(s[0],s[1],P.h,g);ctx.globalAlpha=.35+.4*Math.abs(Math.sin(T*1.3+s[0]));ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(xy[0],xy[1],s[2],0,6.3);ctx.fill();});ctx.globalAlpha=1;
+ var names=L.t!=='tap'||G.done,cols={uma:'#ffd23f',cas:'#ff9fe0',umi:'#7be0ff'};
+ ['uma','cas','umi'].forEach(function(k){var pts=SKY[k].map(function(s){return skyXY(s[0],s[1],P.h,g);});
+  ctx.strokeStyle=cols[k];ctx.globalAlpha=.7;ctx.lineWidth=1.6;SKYL[k].forEach(function(e){ctx.beginPath();ctx.moveTo(pts[e[0]][0],pts[e[0]][1]);ctx.lineTo(pts[e[1]][0],pts[e[1]][1]);ctx.stroke();});ctx.globalAlpha=1;
+  pts.forEach(function(p,i){ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(p[0],p[1],(k==='umi'&&i===0)?4:3.2,0,6.3);ctx.fill();});
+  var mx=0,my=0;pts.forEach(function(p){mx+=p[0];my+=p[1];});mx/=pts.length;my/=pts.length;
+  if(names)tx2(t('sk.'+k),mx,my+(k==='cas'?-24:22),10.5,cols[k]);
+  if(G.show&&(L.tap===k||(L.tap==='polaris'&&k==='umi'))){if(L.tap==='polaris')ringAt(pts[0][0],pts[0][1],18,T);else ringAt(mx,my,40,T);}});
+ var pl=skyXY(SKY.umi[0][0],SKY.umi[0][1],P.h,g);if(names||L.t!=='tap')tx2(t('sk.pol'),pl[0]+4,pl[1]-11,9.5,'#fff');
+ tx2(t('ro.sky',{d:nf(P.h*15,0),h:nf(P.h,1)}),W*.5,14,14,'#ffd23f');
+}
+/* нажатие на объект (уровни «найди») */
+function hitTags(x,y){
+ if(G.L.sc==='sys'){var best=null,bd=1e9;PLN.forEach(function(p){var xy=planetXY(p,G.P.T),d=Math.hypot(xy[0]-x,xy[1]-y);if(d<bd){bd=d;best=p[0];}});return bd<=24?[best]:[];}
+ var g=skyGeom(),res=[];['uma','cas','umi'].forEach(function(k){SKY[k].forEach(function(s,i){var xy=skyXY(s[0],s[1],G.P.h,g);if(Math.hypot(xy[0]-x,xy[1]-y)<=22){if(k==='umi'&&i===0)res.push('polaris');res.push(k);}});});
+ return res;
+}
+function tapAns(tags){
+ var L=G.L;if(!G||G.done||L.t!=='tap')return;G.tries++;
+ if(tags.indexOf(L.tap)>=0){var st=G.tries===1?3:G.tries===2?2:1;st=Math.max(1,st-(G.free?0:G.hint));finish(L,st);return;}
+ SV.err[L.topic]=(SV.err[L.topic]||0)+1;save();setAv('kometa');$('msg').innerHTML=t('err.tap');
+}
+function pickAns(i,btn){
+ var L=G.L;if(!G||G.done||L.t!=='pick')return;G.tries++;
+ if(i===L.c){if(btn)btn.classList.add('ok');var st=G.tries===1?3:G.tries===2?2:1;st=Math.max(1,st-(G.free?0:G.hint));finish(L,st);return;}
+ SV.err[L.topic]=(SV.err[L.topic]||0)+1;save();setAv('kometa');if(btn){btn.classList.add('no');btn.disabled=true;}$('msg').innerHTML=t('err.pick');
+}
+function checkDial(){
+ var L=G.L;G.tries++;
+ if(L.ok(G.P)){var st=G.tries===1?3:G.tries===2?2:1;st=Math.max(1,st-(G.free?0:G.hint));finish(L,st);return;}
+ SV.err[L.topic]=(SV.err[L.topic]||0)+1;save();setAv('kometa');$('msg').innerHTML=t('err.dial',{ro:ro(L,G.P)});
+}
+function dialBtns(L){var f=L.free||[],h='';
+ function b(p,v,lab){h+='<button class="sm" data-p="'+p+'" data-v="'+v+'">'+lab+'</button>';}
+ if(L.sc==='orbit'||(L.sc==='lat'&&f.indexOf('N')>=0)){b('N',-30,'−1 '+t('u.mo'));b('N',-5,'−5 '+t('u.d'));b('N',5,'+5 '+t('u.d'));b('N',30,'+1 '+t('u.mo'));}
+ else if(L.sc==='lat'){b('lat',-10,'−10°');b('lat',-2,'−2°');b('lat',2,'+2°');b('lat',10,'+10°');}
+ else if(L.sc==='moon'){b('mu',-85.3,'−7 '+t('u.d'));b('mu',-12.19,'−1 '+t('u.d'));b('mu',12.19,'+1 '+t('u.d'));b('mu',85.3,'+7 '+t('u.d'));}
+ else if(L.sc==='sys'){b('T',-1,'−1 '+t('u.y'));b('T',-1/12,'−1 '+t('u.mo'));b('T',1/12,'+1 '+t('u.mo'));b('T',1,'+1 '+t('u.y'));}
+ else{b('h',-3,'−3 '+t('u.h'));b('h',-1,'−1 '+t('u.h'));b('h',1,'+1 '+t('u.h'));b('h',3,'+3 '+t('u.h'));}
+ return '<div class="row">'+h+'</div>';}
+function applyBtn(p,v){var P=G.P;
+ if(p==='N')P.N=mod(P.N-1+v,365)+1;else if(p==='lat')P.lat=Math.max(-90,Math.min(90,P.lat+v));else if(p==='mu')P.mu=mod(P.mu+v,360);else if(p==='T')P.T=Math.max(0,Math.min(30,P.T+v));else P.h=mod(P.h+v,24);}
+function mainStep(L){var f=L.free||[];if(L.sc==='orbit'||(L.sc==='lat'&&f.indexOf('N')>=0))return ['N',5];if(L.sc==='lat')return ['lat',2];if(L.sc==='moon')return ['mu',12.19];if(L.sc==='sys')return ['T',1/12];return ['h',.25];}
+function sceneCenter(L){if(L.sc==='orbit'||L.sc==='lat'){var o=orbitGeom();return [o.cx,o.cy,o.ry/o.rx];}if(L.sc==='moon'){var m=moonGeom();return [m.cx,m.cy];}if(L.sc==='sys'){var s=sysGeom();return [s.cx,s.cy];}var k=skyGeom();return [k.cx,k.cy];}
+function sAng(e){var r=cv.getBoundingClientRect(),L=G.L,c=sceneCenter(L),x=e.clientX-r.left-c[0],y=e.clientY-r.top-c[1];
+ if(L.sc==='moon')return Math.atan2(y,-x)*180/Math.PI;
+ if(L.sc==='orbit'||L.sc==='lat')y=y/c[2];
+ return Math.atan2(-y,x)*180/Math.PI;}
+function dragMain(d){var L=G.L,P=G.P,f=L.free||[];
+ if(L.sc==='orbit'||L.sc==='lat'){if(f.indexOf('N')>=0)P.N=mod(P.N-1+d*365/360,365)+1;}
+ else if(L.sc==='moon')P.mu=mod(P.mu+d,360);
+ else if(L.sc==='sys')P.T=Math.max(0,Math.min(30,P.T+d/360));
+ else P.h=mod(P.h+d/15,24);}
+function animDial(){var P=G.P,s=G.anim.to,fin=true;
+ for(var k in s){var m=k==='N'?365:k==='mu'?360:k==='h'?24:0,diff=m?(mod(s[k]-P[k]+m/2,m)-m/2):s[k]-P[k];
+  if(Math.abs(diff)>(m?m*.0004:.003)){fin=false;var nv=P[k]+diff*.12;P[k]=k==='N'?mod(nv-1,365)+1:m?mod(nv,m):nv;}else P[k]=s[k];}
+ if(fin)G.anim=null;}
+function revealNew(L,rew){
+ if(L.t==='dial'){G.anim={to:L.sol};$('msg').innerHTML=t(rew?'rew.dial':'hint.auto.dial');}
+ else if(L.t==='tap'){G.show=true;$('msg').innerHTML=t(rew?'rew.tap':'hint.auto.tap');}
+ else{var bs=document.querySelectorAll('#pks .opt');if(bs[L.c])bs[L.c].classList.add('ok');$('msg').innerHTML=t(rew?'rew.pick':'hint.auto.pick');}
+}
+function hint2New(L){
+ if(L.t==='dial'){if(L.sc==='orbit'||L.sc==='moon'){G.ring=true;$('msg').innerHTML=t('hint.ring2');}
+  else{var s=L.sol,v=s.N!=null?dateStr(s.N):s.lat!=null?latStr(s.lat):s.T!=null?(nf(s.T,s.T<2?2:1)+' '+t('u.y')):(nf(s.h,0)+' '+t('u.h'));$('msg').innerHTML=t('hint.sol',{v:v});}}
+ else if(L.t==='tap'){G.show=true;$('msg').innerHTML=t('hint.tap2');}
+ else{var bs=document.querySelectorAll('#pks .opt'),n=0;[].forEach.call(bs,function(b,i){if(!n&&i!==L.c&&!b.disabled){b.disabled=true;b.classList.add('no');n=1;}});$('msg').innerHTML=t('hint.pick2');}
+}
 /* ввод: вращение пальцем и колесом */
 function ang(e){var r=cv.getBoundingClientRect(),x=e.clientX-r.left-W*.40,y=e.clientY-r.top-H*.5;return Math.atan2(-y,x)*180/Math.PI;}
 var last=0;
-cv.addEventListener('pointerdown',function(e){if(!G||G.done||G.L.t!=='spin')return;G.dragging=true;G.anim=null;last=ang(e);try{cv.setPointerCapture(e.pointerId);}catch(x){}});
-cv.addEventListener('pointermove',function(e){if(!G||!G.dragging)return;var a=ang(e),d=a-last;if(d>180)d-=360;if(d<-180)d+=360;last=a;G.t=mod(G.t+d/15,24);});
+cv.addEventListener('pointerdown',function(e){if(!G||G.done)return;var L=G.L;if(L.t==='tap'){var r=cv.getBoundingClientRect();tapAns(hitTags(e.clientX-r.left,e.clientY-r.top));return;}if(L.t!=='spin'&&L.t!=='dial')return;G.dragging=true;G.anim=null;last=L.t==='spin'?ang(e):sAng(e);try{cv.setPointerCapture(e.pointerId);}catch(x){}});
+cv.addEventListener('pointermove',function(e){if(!G||!G.dragging)return;var a=G.L.t==='spin'?ang(e):sAng(e),d=a-last;if(d>180)d-=360;if(d<-180)d+=360;last=a;if(G.L.t==='spin')G.t=mod(G.t+d/15,24);else dragMain(d);});
 function up(){if(G)G.dragging=false;}
 cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
-cv.addEventListener('wheel',function(e){if(!G||G.done||G.L.t!=='spin')return;e.preventDefault();G.anim=null;G.t=mod(G.t+(e.deltaY<0?1:-1)*(e.shiftKey?1:.25),24);},{passive:false});
-document.addEventListener('keydown',function(e){if(cur!=='game'||!G||G.L.t!=='spin')return;if(e.key==='ArrowRight'||e.key==='ArrowUp'){G.t=mod(G.t+.25,24);}if(e.key==='ArrowLeft'||e.key==='ArrowDown'){G.t=mod(G.t-.25,24);}if(e.key==='Enter')check();});
+cv.addEventListener('wheel',function(e){if(!G||G.done)return;if(G.L.t==='dial'){e.preventDefault();G.anim=null;var ms=mainStep(G.L);applyBtn(ms[0],(e.deltaY<0?1:-1)*ms[1]);return;}if(G.L.t!=='spin')return;e.preventDefault();G.anim=null;G.t=mod(G.t+(e.deltaY<0?1:-1)*(e.shiftKey?1:.25),24);},{passive:false});
+document.addEventListener('keydown',function(e){if(cur==='game'&&G&&G.L.t==='dial'){var ms=mainStep(G.L);if(e.key==='ArrowRight'||e.key==='ArrowUp'){G.anim=null;applyBtn(ms[0],ms[1]);}if(e.key==='ArrowLeft'||e.key==='ArrowDown'){G.anim=null;applyBtn(ms[0],-ms[1]);}if(e.key==='Enter')check();return;}if(cur!=='game'||!G||G.L.t!=='spin')return;if(e.key==='ArrowRight'||e.key==='ArrowUp'){G.t=mod(G.t+.25,24);}if(e.key==='ArrowLeft'||e.key==='ArrowDown'){G.t=mod(G.t-.25,24);}if(e.key==='Enter')check();});
 /* ===== кнопки заставки ===== */
 $('bPlay').addEventListener('click',function(){show('map');});
 $('bJournal').addEventListener('click',function(){show('journal');});
@@ -966,24 +1392,25 @@ var rsT=0;$('bReset').addEventListener('click',function(){var b=$('bReset');if(!
 var PM_KEY='planetariy-premium';
 var PM_TEXTS={
  ru:{p30:'Премиум на 30 дней',p365:'Премиум на год',
-  perks:['Полноэкранная реклама отключается.','При нажатии «Показать ответ за ролик» ответ показывается сразу, без просмотра.','Подсказки и игровые лимиты остаются прежними.'],
+  perks:['Полноэкранная реклама отключается.','Подарок каждый день: 3 бесплатных ответа Кометы.','Ролики за награду работают как у всех: ответ показывается после просмотра.','Подсказки, звёзды и правила не меняются.'],
   note:'Оплата один раз. Премиум действует 30 дней или год — в зависимости от выбранного товара. Автопродления и повторных списаний нет. Если Премиум уже идёт, новый срок добавится к концу.',
-  adTitle:'Надоела реклама?',adText:'Изучай день, ночь и часовые пояса вместе с Мирой и котом Кометой! Премиум убирает полноэкранную рекламу, а награды за ролики выдаёт сразу.',adMore:'Узнать про Премиум',later:'Не сейчас',
+  adTitle:'Надоела реклама?',adText:'Изучай космос без рекламных пауз! Премиум убирает полноэкранную рекламу и каждый день дарит 3 ответа Кометы.',adMore:'Узнать про Премиум',later:'Не сейчас',
   soonTitle:'Премиум скоро закончится',soonText:'Ещё {0} без рекламных пауз среди звёзд. Премиум закончится сам, без списаний. Если захочешь, его можно купить снова.',extend:'Продлить',
-  endTitle:'Премиум закончился',endText:'Полноэкранная реклама вернулась, а награды снова требуют просмотра роликов. Мира и Комета продолжают исследовать космос!',buy:'Купить Премиум'},
+  endTitle:'Премиум закончился',endText:'Полноэкранная реклама вернулась, а подарок дня закончился. Мира и Комета продолжают исследовать космос!',buy:'Купить Премиум'},
  en:{p30:'30-Day Premium',p365:'1-Year Premium',
-  perks:['Full-screen ads are disabled.','When you tap “Show the answer”, the answer is shown instantly, without a video.','Hints and game limits stay the same.'],
+  perks:['Full-screen ads are disabled.','A gift every day: 3 free Comet answers.','Video rewards work for everyone: the answer is shown after the video.','Hints, stars and rules stay the same.'],
   note:'One-time payment. Premium lasts 30 days or 1 year, depending on your purchase. No automatic renewal or recurring charges. If Premium is already active, the new period is added to the end.',
-  adTitle:'Tired of ads?',adText:'Explore day, night and time zones with Mira and Comet the cat! Premium removes full-screen ads and gives video rewards instantly.',adMore:'Learn About Premium',later:'Not Now',
+  adTitle:'Tired of ads?',adText:'Explore space without ad breaks! Premium removes full-screen ads and gives you 3 Comet answers every day.',adMore:'Learn About Premium',later:'Not Now',
   soonTitle:'Premium Is Ending Soon',soonText:'Enjoy {0} more without ad breaks among the stars. Premium ends automatically with no further charges. You can buy it again if you like.',extend:'Renew',
-  endTitle:'Premium Has Ended',endText:'Full-screen ads are back, and video rewards require watching ads again. Mira and Comet are still exploring space!',buy:'Buy Premium'}
+  endTitle:'Premium Has Ended',endText:'Full-screen ads are back and the daily gift has stopped. Mira and Comet are still exploring space!',buy:'Buy Premium'}
 };
+var PM_GIFT={grant:function(){SV.fa=Math.min(6,(SV.fa||0)+3);save();if(cur==='game'&&G&&!G.done)buildCtl();},text:{ru:'3 бесплатных ответа Кометы для любых уровней. Это подарок Премиума, ролик не нужен.',en:'3 free Comet answers for any level. This is a Premium gift, no video needed.'}};
 function pmCalm(){return cur==='title'||cur==='map'||cur==='journal'||!$('scrRes').hidden;}
 function pmSync(){try{document.documentElement.classList.toggle('pm-hide',!pmCalm());}catch(e){}}
 function pmCard(d){setTimeout(function(){pmSync();if(pmCalm()&&window.Premium)try{Premium.maybeCard();}catch(e){}},d||0);}
 function pmStart(){if(!window.Premium)return;try{
  Premium.onChange(function(){if(cur==='game'&&G&&!G.done)buildCtl();});
- Premium.init({sdk:PF.sdk(),lang:LANG,texts:PM_TEXTS,store:{get:function(){return PF.get(PM_KEY);},set:function(raw){PF.put(PM_KEY,raw);},save:function(){return PF.save();}}}).then(function(){pmSync();pmCard(0);});
+ Premium.init({sdk:PF.sdk(),lang:LANG,texts:PM_TEXTS,gift:PM_GIFT,store:{get:function(){return PF.get(PM_KEY);},set:function(raw){PF.put(PM_KEY,raw);},save:function(){return PF.save();}}}).then(function(){pmSync();pmCard(0);});
 }catch(e){}}
 /* ===== старт ===== */
 PF.onPause=function(){};

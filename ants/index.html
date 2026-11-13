@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<link rel="icon" href="data:,">
 <script src="/sdk.js"></script>
 <title>Муравейник</title>
 <style>
@@ -425,9 +426,9 @@ var PF=(function(){var y=null,pl=null,cdirty=null,ctm=0,ok=false,ready=false,wan
  self.interstitial=function(done){var now=Date.now(),at=lastAd?lastAd+GAP:born+AD1;if(adBusy)return;if(window.Premium&&Premium.active()){done();return}if(!ok||!y.adv||!y.adv.showFullscreenAdv||now<at){done();return}
   var fin=false;function end(sh){if(fin)return;fin=true;if(sh){lastAd=Date.now();try{window.Premium&&Premium.noteFullscreen()}catch(e){}}adEnd();done()}
   adBusy=true;ch();try{y.adv.showFullscreenAdv({callbacks:{onClose:function(w){end(w)},onError:function(){end(false)},onOffline:function(){end(false)}}})}catch(e){end(false)}};
- self.canReward=function(){if(window.Premium&&Premium.active())return true;return ok?!!(!adBusy&&y.adv&&y.adv.showRewardedVideo):!YANDEX};
+ self.canReward=function(){return ok?!!(!adBusy&&y.adv&&y.adv.showRewardedVideo):!YANDEX};
  /* ролик за награду: done(true) только если награда засчитана; вне Яндекса (сайт, артефакт) — заглушка с мгновенной наградой */
- self.rewarded=function(done){if(window.Premium&&Premium.active()){done(true);return}if(!ok){done(!YANDEX);return}if(!self.canReward()){done(false);return}
+ self.rewarded=function(done){if(!ok){done(!YANDEX);return}if(!self.canReward()){done(false);return}
   var fin=false,got=false;function end(){if(fin)return;fin=true;if(got)lastAd=Date.now();adEnd();done(got)}
   adBusy=true;ch();try{y.adv.showRewardedVideo({callbacks:{onRewarded:function(){got=true},onClose:end,onError:end}})}catch(e){end()}};
  return self})();
@@ -475,7 +476,11 @@ function fresh(){return{day:1,food:150,ants:{work:18,sold:5,nurse:7},brood:[0,0,
  ch:{store:1,nursery:1,dorm:1,barracks:0,farm:0},project:null,forecast:null,knowl:1,hedge:{},winters:0,
  last:null,log:[],ads:0,goalsOk:[]}}
 var BESTV=0;
-function cloudPush(sv){var lm=PF.lastMv&&PF.lastMv();if(sv&&sv.day<=3&&lm&&lm.save&&lm.save.day>sv.day)return;/* не затирать облачный прогресс почти пустой новой партией (облако ответило поздно / новое устройство) */var d={t:Date.now(),save:sv,best:BESTV};try{localStorage.setItem(SAVE+'-t',String(d.t))}catch(e){}PF.cloudSet(d)}
+/* подарок Премиума: номер серверных суток последнего получения (локально + в облаке) */
+var GIFTD=0,GIFT=250;try{GIFTD=+localStorage.getItem('muraveynik-gift')||0}catch(e){}
+function sday(){try{var y=PF.sdk();if(y&&y.serverTime)return Math.floor(y.serverTime()/864e5)}catch(e){}return Math.floor(Date.now()/864e5)}
+function giftOn(){return !!(window.Premium&&Premium.active())}
+function cloudPush(sv){var lm=PF.lastMv&&PF.lastMv();if(sv&&sv.day<=3&&lm&&lm.save&&lm.save.day>sv.day)return;/* не затирать облачный прогресс почти пустой новой партией (облако ответило поздно / новое устройство) */var d={t:Date.now(),save:sv,best:BESTV,gift:GIFTD};try{localStorage.setItem(SAVE+'-t',String(d.t))}catch(e){}PF.cloudSet(d)}
 function save(){try{localStorage.setItem(SAVE,JSON.stringify(s))}catch(e){}cloudPush(s)}
 function load(){try{var t=localStorage.getItem(SAVE);if(!t)return null;var o=JSON.parse(t);if(o&&o.ants&&o.day)return o}catch(e){}return null}
 function sOf(d){return Math.floor(((d-1)%40)/10)}
@@ -595,13 +600,16 @@ function panelInfo(){var se=sOf(s.day),A=adults(),wNeed=Math.ceil((A*0.5+1)*10),
  h+=TX('s233')+Math.floor(s.food)+' / '+capStore()+'<div class="bar"><i style="width:'+Math.min(100,100*s.food/capStore())+TX('s234')+wNeed+'</b>'+(s.food>=wNeed?TX('s235'):TX('s236')+Math.ceil(wNeed-s.food)+'</span>')+TX('s237')+capStore()+'</span></div>';
  var g=GOALS[Math.min(2,yOf(s.day)-1)];h+=TX('s238')+yOf(s.day)+'</b>: '+g+TX('s239')+A+')<div class="bar"><i style="width:'+Math.min(100,100*A/g)+'%"></i></div></div>';
  if(s.last){var r=s.last;h+=TX('s240')+r.d+TX('s241')+r.forage+(r.milk?TX('s242')+r.milk:'')+TX('s243')+r.need+(r.eggs?TX('s244')+r.eggs:'')+(r.hatched?TX('s245')+r.hatched:'')+(r.dug?TX('s246')+r.dug+TX('s247'):'')+(r.lines.length?'<br><span class="small">'+r.lines.join('<br>')+'</span>':'')+'</div>'}
- h+='<button class="btn" id="adbtn"'+(s.ads>=3||!PF.canReward()?' disabled':'')+(window.Premium&&Premium.active()?(LANG=='en'?'>🎁 Premium: +100 crumbs for winter (left: ':'>🎁 Премиум: +100 крошек на зиму (осталось '):TX('s248'))+(3-s.ads)+')</button>';return h}
+ h+='<button class="btn" id="adbtn"'+(s.ads>=3||!PF.canReward()?' disabled':'')+TX('s248')+(3-s.ads)+')</button>';
+ if(giftOn()){var got=GIFTD>=sday();h+='<button class="btn alt" id="gift"'+(got?' disabled':'')+'>'+(got?(LANG=='en'?'🎁 Premium gift taken — a new one tomorrow':'🎁 Подарок Премиума получен — завтра будет новый'):(LANG=='en'?'🎁 Premium daily gift: +'+GIFT+' crumbs':'🎁 Подарок Премиума: +'+GIFT+' крошек'))+'</button>'}
+ return h}
 function render(){var se=sOf(s.day),yr=Math.min(3,yOf(s.day));
  $('top').innerHTML='<span>'+SICO[se]+' '+SEAS[se]+TX('s249')+yr+TX('s250')+((s.day-1)%10+1)+'/10</span><span>🍞 '+Math.floor(s.food)+'/'+capStore()+'</span><span>🐜 '+adults()+'</span>';
  $('banner').innerHTML=s.forecast?TX('s251')+s.forecast.e+' '+s.forecast.n+TX('s252')+s.forecast.p+TX('s253')+Math.ceil(s.forecast.p/sp())+TX('s254')+s.ants.sold+TX('s255')+sp()+TX('s256'):(se==3?TX('s257'):TX('s258'));
  var p=$('panel'),top=p.scrollTop;p.innerHTML=tab=='tasks'?panelTasks():tab=='build'?panelBuild():panelInfo();p.scrollTop=top;
  [].forEach.call(document.querySelectorAll('#tabs button'),function(b){b.className=b.dataset.t==tab?'on':''})}
 $('panel').addEventListener('click',function(e){var t=e.target;if(t.dataset.g)bump(t.dataset.g,t.dataset.k,+t.dataset.d);else if(t.dataset.b)startBuild(t.dataset.b);
+ else if(t.id=='gift'&&giftOn()&&GIFTD<sday()){GIFTD=sday();try{localStorage.setItem('muraveynik-gift',String(GIFTD))}catch(e){}s.food+=GIFT;toast(LANG=='en'?'Premium gift: +'+GIFT+' crumbs':'Подарок Премиума: +'+GIFT+' крошек');save();render()}
  else if(t.id=='adbtn'&&s.ads<3&&!PF.paused())PF.rewarded(function(ok){if(ok){s.ads++;s.food=Math.min(capStore(),s.food+100);toast(TX('s259'));save();render()}})});
 $('tabs').addEventListener('click',function(e){if(e.target.dataset.t){tab=e.target.dataset.t;render()}});
 $('next').onclick=nextDay;
@@ -646,17 +654,17 @@ function newGame(){s=fresh();over=false;busy=false;Q=[];tab='tasks';save();$('mo
 function start(){PF.cloudGet().then(function(c){try{var pmc=c&&c.pm;c=c?c.mv:null;if(pmc&&window.Premium){var lp=localStorage.getItem('muraveynik-premium');localStorage.setItem('muraveynik-premium',Premium.mergeState(lp,pmc))}}catch(e){}try{var lt=+localStorage.getItem(SAVE+'-t')||0,lb=+localStorage.getItem(BEST)||0;
  if(c){if(c.best>lb){localStorage.setItem(BEST,String(c.best))}
   var lsv=null;try{lsv=load()}catch(e){}var freshLocal=!!(lsv&&lsv.day<=3&&c.save&&c.save.day>lsv.day);if(c.t>lt||freshLocal){if(c.save)localStorage.setItem(SAVE,JSON.stringify(c.save));else localStorage.removeItem(SAVE);localStorage.setItem(SAVE+'-t',String(c.t))}}
- BESTV=Math.max(lb,c&&c.best||0)}catch(e){}start2()},start2)}
-var PMT={ru:{perks:["Полноэкранная реклама отключается.","При нажатии на кнопку с роликом награда выдаётся сразу, без просмотра.","Подсказки и игровые лимиты остаются прежними."],
+ BESTV=Math.max(lb,c&&c.best||0);GIFTD=Math.max(GIFTD,c&&+c.gift||0);localStorage.setItem('muraveynik-gift',String(GIFTD))}catch(e){}start2()},start2)}
+var PMT={ru:{perks:["Полноэкранная реклама отключается.","Подарок Премиума каждый день: +250 крошек.","Подсказки и игровые лимиты остаются прежними."],
  note:"Оплата один раз. Премиум действует 30 дней или год — в зависимости от выбранного товара. Автопродления и повторных списаний нет.",
- adText:"Строй туннели, развивай колонию и готовь муравьёв к смене сезонов без рекламных пауз! Премиум убирает полноэкранную рекламу, а награды за ролики выдаёт сразу.",
+ adText:"Строй туннели, развивай колонию и готовь муравьёв к смене сезонов без рекламных пауз! Премиум убирает полноэкранную рекламу и дарит подарок каждый день.",
  soonText:"Ещё {0} без рекламных пауз в муравейнике. Премиум закончится сам, без списаний. Если захочешь, его можно купить снова.",
- endText:"Полноэкранная реклама вернулась, а награды снова требуют просмотра роликов. Муравьи продолжают строить свой дом!"},
- en:{perks:["Full-screen ads are disabled.","Tap the video button and the reward is given instantly, without watching.","Hints and game limits stay the same."],
+ endText:"Полноэкранная реклама вернулась, ежедневный подарок закончился. Муравьи продолжают строить свой дом!"},
+ en:{perks:["Full-screen ads are disabled.","A Premium gift every day: +250 crumbs.","Hints and game limits stay the same."],
  note:"One-time payment. Premium lasts 30 days or 1 year, depending on your purchase. No automatic renewal or recurring charges.",
- adText:"Dig tunnels, grow your colony and prepare your ants for changing seasons without ad breaks! Premium removes full-screen ads and gives video rewards instantly.",
+ adText:"Dig tunnels, grow your colony and prepare your ants for changing seasons without ad breaks! Premium removes full-screen ads and gives you a gift every day.",
  soonText:"Enjoy {0} more without ad breaks in your ant colony. Premium ends automatically with no further charges. You can buy it again if you like.",
- endText:"Full-screen ads are back, and video rewards require watching ads again. Your ants keep building their home!"}};
+ endText:"Full-screen ads are back and the daily gift has ended. Your ants keep building their home!"}};
 function initPremium(){if(!window.Premium)return;try{Premium.onChange(function(){render()});
  Premium.init({sdk:PF.sdk(),lang:LANG,texts:PMT,store:{get:function(){try{return localStorage.getItem('muraveynik-premium')}catch(e){return null}},set:function(r){try{localStorage.setItem('muraveynik-premium',r)}catch(e){}},save:PF.pmSave}})
  .then(function(){Premium.maybeCard();render()},function(){})}catch(e){}}

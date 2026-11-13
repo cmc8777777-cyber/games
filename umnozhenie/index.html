@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
+<link rel="icon" href="data:,">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Таблица умножения: Битва отрядов</title>
 <style>
@@ -29,6 +30,8 @@ button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulat
 .btn.big{min-height:76px;font-size:30px;border-radius:26px;padding:10px 40px}
 .btn.green{background:var(--green);color:#fff}.btn.blue{background:var(--blue);color:#fff}.btn.red{background:var(--red);color:#fff}.btn.gray{background:#e9e2f5}
 .btn[disabled]{opacity:.55;pointer-events:none}
+.btn.gold{background:linear-gradient(#ffe36b,#ffb82b);font-size:19px;min-height:52px}
+.giftnote{text-align:center;font-weight:900;font-size:15px;color:#fff;text-shadow:0 2px 0 var(--ink),0 0 6px var(--ink)}
 .btn-ic{width:58px;height:58px;border-radius:50%;background:#fff;border:3px solid var(--ink);box-shadow:var(--shadow);display:inline-flex;align-items:center;justify-content:center;flex:none;position:relative;overflow:hidden}
 .btn-ic:active{transform:translateY(3px)}
 .btn-ic .ic{width:30px;height:30px}
@@ -226,6 +229,7 @@ html[lang=en] #s-start .logo b{font-size:36px}
 /* Премиум: общий модуль для браузерных игр на Яндекс Играх.
    Платный Премиум на срок (30 дней или год), без автопродления: «используемая» покупка, срок считается по серверному
    времени Яндекса и хранится в облачных данных игрока. Подробно: README.md рядом с этим файлом.
+   С 13 ноября 2026 (п. 4.5 правил Яндекса): награда за ролик выдаётся только после показанного ролика, у Премиума тоже. Вместо «наград без роликов» Премиум даёт ПОДАРОК ДНЯ (раз в сутки, пока он активен): содержимое задаёт игра (init({gift})).
    Модуль ничего не знает об игре: хранилище, звук и реклама подключаются через init() и несколько вызовов хозяина.
    Без SDK, без покупок или без созданных товаров в консоли кнопка и карточки скрыты, игра работает как раньше. */
 window.Premium = (function () {
@@ -248,20 +252,21 @@ window.Premium = (function () {
     zIndex: 50
   };
 
-  /* ---- Тексты по умолчанию (нейтральные, без слова «баннер»: Яндекс может показывать свой sticky-баннер). Игра подставляет свои финальные тексты. Подмена: Premium.init({ texts: { ru: {...}, en: {...} } }) ---- */
+  /* ---- Тексты по умолчанию (нейтральные; не обещать отсутствие чужих блоков рекламы, платформа может показывать свои). Игра подставляет свои финальные тексты. Подмена: Premium.init({ texts: { ru: {...}, en: {...} } }) ---- */
   var TEXTS = {
     ru: {
       btn: "Премиум", btnOn: "Премиум · {0} д.", title: "Премиум",
       activeUntil: "Активен до {0}. Осталось {1}.",
       notActive: "Сейчас Премиум не включён.",
-      perks: ["Полноэкранная реклама отключается.", "Награды за ролики выдаются сразу, без просмотра.", "Правила и сложность игры не меняются: Премиум не помогает выигрывать."],
+      perks: ["Полноэкранная реклама отключается.", "Подарок каждый день, пока Премиум действует.", "Ролики за награду показываются, как и раньше: награду даёт только просмотренный ролик.", "Подсказки и игровые лимиты остаются прежними."],
+      giftTitle: "Подарок дня", giftText: "Подарок Премиума: каждый день, пока он действует.", giftBtn: "Забрать подарок", giftLater: "Позже", giftTaken: "Подарок дня получен.", giftDone: "Подарок получен!", giftWait: "Подарок дня уже получен. Следующий будет завтра.", giftIn: "Подарок дня ждёт вас!",
       p30: "Премиум на 30 дней", p365: "Премиум на год",
       validTo: "Будет действовать до {0}", buy: "Купить", endBuy: "Купить Премиум", extend: "Продлить",
       note: "Один платёж, без автопродления: больше ничего не спишется. Если Премиум уже идёт, новый срок добавится к концу.",
       close: "Закрыть", later: "Не сейчас",
-      adTitle: "Надоела реклама?", adText: "Премиум отключает полноэкранную рекламу, а награды за ролики выдаёт сразу. 30 дней за {0}, не продлевается сам.", adMore: "Узнать про Премиум",
+      adTitle: "Надоела реклама?", adText: "Премиум отключает полноэкранную рекламу и дарит подарок каждый день. 30 дней за {0}, не продлевается сам.", adMore: "Узнать про Премиум",
       soonTitle: "Премиум скоро закончится", soonText: "Осталось {0}. Продлить?",
-      endTitle: "Премиум закончился", endText: "Реклама вернулась. Можно включить Премиум снова.",
+      endTitle: "Премиум закончился", endText: "Полноэкранная реклама вернулась, подарок дня больше не выдаётся. Можно включить Премиум снова.",
       busy: "Ждём подтверждения оплаты…", done: "Готово! Премиум активен до {0}.",
       fail: "Покупка не прошла. Деньги не списаны.", saveFail: "Оплата принята, но срок пока не сохранился. Не закрывайте игру, мы повторим при следующем запуске.",
       d1: "{0} день", d2: "{0} дня", d5: "{0} дней", free: "Ян", lang: "ru-RU"
@@ -270,14 +275,15 @@ window.Premium = (function () {
       btn: "Premium", btnOn: "Premium · {0} d", title: "Premium",
       activeUntil: "Active until {0}. {1} left.",
       notActive: "Premium is not active.",
-      perks: ["Full-screen ads are disabled.", "Rewards for videos are given instantly, no watching.", "The rules and difficulty stay the same: Premium does not help you win."],
+      perks: ["Full-screen ads are disabled.", "A gift every day while Premium lasts.", "Reward videos work as before: a reward is given only after the video is watched.", "Hints and game limits stay the same."],
+      giftTitle: "Daily gift", giftText: "Your Premium gift, every day while it lasts.", giftBtn: "Claim gift", giftLater: "Later", giftTaken: "Daily gift claimed.", giftDone: "Gift received!", giftWait: "You already claimed today's gift. The next one is tomorrow.", giftIn: "Your daily gift is waiting!",
       p30: "Premium for 30 days", p365: "Premium for a year",
       validTo: "Will be active until {0}", buy: "Buy", endBuy: "Buy Premium", extend: "Extend",
       note: "One payment, no auto-renewal: nothing else will be charged. If Premium is already running, the new period is added to the end.",
       close: "Close", later: "Not now",
-      adTitle: "Tired of ads?", adText: "Premium removes full-screen ads and gives video rewards instantly. 30 days for {0}, no auto-renewal.", adMore: "About Premium",
+      adTitle: "Tired of ads?", adText: "Premium removes full-screen ads and gives you a gift every day. 30 days for {0}, no auto-renewal.", adMore: "About Premium",
       soonTitle: "Premium ends soon", soonText: "{0} left. Extend?",
-      endTitle: "Premium has ended", endText: "Ads are back. You can turn Premium on again.",
+      endTitle: "Premium has ended", endText: "Full-screen ads are back and the daily gift stops. You can turn Premium on again.",
       busy: "Waiting for payment confirmation…", done: "Done! Premium is active until {0}.",
       fail: "The purchase did not go through. You were not charged.", saveFail: "Payment accepted, but the period is not saved yet. Keep the game open, we will retry on the next start.",
       d1: "{0} day", d2: "{0} days", d5: "{0} days", free: "Yan", lang: "en-GB"
@@ -285,7 +291,7 @@ window.Premium = (function () {
   };
 
   /* ---- Состояние ---- */
-  var sdk = null, payments = null, store = null;
+  var sdk = null, payments = null, store = null, gift = null;   // gift: { grant(): применить подарок в игре, text: {ru, en} — что в подарке }
   var lang = "ru", texts = TEXTS.ru;
   var catalog = {};                   // id → описание товара из консоли
   var st = blank();
@@ -294,7 +300,7 @@ window.Premium = (function () {
   var listeners = [], pollTimer = 0, lastActive = false;
   var ui = { corner: null, ov: null, box: null, status: "", mode: "", style: null, lastFocus: null };
 
-  function blank() { return { until: 0, tokens: [], ads: 0, cardAt: 0, remindDay: 0, endShown: 0 }; }
+  function blank() { return { until: 0, tokens: [], ads: 0, cardAt: 0, remindDay: 0, endShown: 0, giftDay: 0 }; }
   function clean(o) {
     var r = blank();
     if (!o || typeof o !== "object") return r;
@@ -304,6 +310,7 @@ window.Premium = (function () {
     r.cardAt = Math.max(0, Math.floor(Number(o.cardAt) || 0));
     r.remindDay = Math.max(0, Math.floor(Number(o.remindDay) || 0));
     r.endShown = Math.max(0, Number(o.endShown) || 0);
+    r.giftDay = Math.max(0, Math.floor(Number(o.giftDay) || 0));
     return r;
   }
   function parse(raw) { try { return clean(typeof raw === "string" ? JSON.parse(raw) : raw); } catch (e) { return blank(); } }
@@ -312,7 +319,7 @@ window.Premium = (function () {
   function mergeState(a, b) {
     var x = parse(a), y = parse(b), r = blank(), seen = {};
     r.until = Math.max(x.until, y.until); r.ads = Math.max(x.ads, y.ads); r.cardAt = Math.max(x.cardAt, y.cardAt);
-    r.remindDay = Math.max(x.remindDay, y.remindDay); r.endShown = Math.max(x.endShown, y.endShown);
+    r.remindDay = Math.max(x.remindDay, y.remindDay); r.endShown = Math.max(x.endShown, y.endShown); r.giftDay = Math.max(x.giftDay, y.giftDay);
     y.tokens.concat(x.tokens).forEach(function (t) { if (!seen[t]) { seen[t] = 1; r.tokens.push(t); } });
     r.tokens = r.tokens.slice(-config.tokensKeep);
     return JSON.stringify(r);
@@ -346,7 +353,8 @@ window.Premium = (function () {
     catch (e) { return new Date(ms).toISOString().slice(0, 10); }
   }
   function priceOf(id) { var c = catalog[id]; return c && c.price ? String(c.price) : ""; }
-  function dayIdx() { return Math.floor(now() / DAY); }
+  /* номер календарного дня по серверному времени в часовом поясе игрока: подарок и напоминание сбрасываются в местную полночь */
+  function dayIdx() { var tz = 0; try { tz = new Date().getTimezoneOffset(); } catch (e) {} return Math.floor((now() - tz * 60000) / DAY); }
   function emit() { var a = active(); lastActive = a; listeners.slice().forEach(function (f) { try { f(a); } catch (e) {} }); renderCorner(); if (ui.ov && ui.mode === "shop") renderShop(); }
 
   /* ---- Покупка и начисление: запись в облако подтверждена, и только потом consumePurchase ---- */
@@ -388,10 +396,23 @@ window.Premium = (function () {
 
   /* ---- Вызовы хозяина ---- */
   function noteFullscreen() { st.ads++; persist(); }
+  /* ---- Подарок дня: раз в сутки, пока Премиум активен. Не кнопка ролика, значка рекламы нет. ---- */
+  function giftAvailable() { return !!(gift && active() && st.giftDay !== dayIdx()); }
+  function giftText() { var g = gift && gift.text; var s = g && (g[lang] || g.ru); return s || tx("giftText"); }
+  /* Забрать подарок. true, если выдан сейчас (один раз за календарный день); хозяин применяет подарок в gift.grant(). День помечается и сохраняется ДО выдачи, повторить нельзя. */
+  function claimGift() {
+    if (!giftAvailable()) return false;
+    st.giftDay = dayIdx(); persist();
+    try { if (store && store.save) Promise.resolve(store.save()).then(function () {}, function () {}); } catch (e) {}
+    try { gift.grant(); } catch (e) {}
+    emit();
+    return true;
+  }
   /* Показать карточку на спокойном экране (меню, результат). Возвращает true, если карточка открыта. */
   function maybeCard() {
     if (!available() || ui.ov) return false;
     if (active()) {
+      if (giftAvailable()) { openCard("gift"); return true; }
       if (daysLeft() <= config.remindDays && st.remindDay !== dayIdx()) { st.remindDay = dayIdx(); persist(); openCard("soon"); return true; }
       return false;
     }
@@ -478,6 +499,14 @@ window.Premium = (function () {
     ui.ov.setAttribute("aria-labelledby", "pmTitle");
     b.appendChild(el("p", "", active() ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("notActive")));
     var ul = el("ul", "pm-perks"); texts.perks.forEach(function (s) { ul.appendChild(el("li", "", s)); }); b.appendChild(ul);
+    if (gift && active()) {
+      if (giftAvailable()) {
+        b.appendChild(el("p", "pm-sub", giftText()));
+        var gb = el("button", "pm-btn main", tx("giftBtn")); gb.type = "button"; gb.setAttribute("data-pm-gift", "1"); gb.style.marginBottom = "12px";
+        gb.addEventListener("click", function () { if (claimGift()) setStatus(tx("giftDone")); });
+        b.appendChild(gb);
+      } else b.appendChild(el("p", "pm-sub", tx("giftWait")));
+    }
     config.order.forEach(function (id) { if (catalog[id]) b.appendChild(productCard(id)); });
     b.appendChild(el("p", "pm-sub", tx("note")));
     var s = el("p", "pm-status", ui.status); s.setAttribute("role", "status"); s.setAttribute("aria-live", "polite"); b.appendChild(s);
@@ -490,15 +519,16 @@ window.Premium = (function () {
   function openCard(kind) {
     mountOv(); ui.mode = "card:" + kind;
     var b = ui.box, p30 = priceOf("premium_30");
-    var title = kind === "ad" ? tx("adTitle") : kind === "soon" ? tx("soonTitle") : tx("endTitle");
-    var text = kind === "ad" ? fmt(tx("adText"), p30 || ("99 " + tx("free"))) : kind === "soon" ? fmt(tx("soonText"), plural(daysLeft())) : tx("endText");
+    var title = kind === "gift" ? tx("giftTitle") : kind === "ad" ? tx("adTitle") : kind === "soon" ? tx("soonTitle") : tx("endTitle");
+    var text = kind === "gift" ? giftText() : kind === "ad" ? fmt(tx("adText"), p30 || ("99 " + tx("free"))) : kind === "soon" ? fmt(tx("soonText"), plural(daysLeft())) : tx("endText");
     b.appendChild(xBtn());
     var h = el("h2", "", title); h.id = "pmTitle"; b.appendChild(h); ui.ov.setAttribute("aria-labelledby", "pmTitle");
     b.appendChild(el("p", "", text));
     var row = el("div", "pm-row");
-    var go = el("button", "pm-btn main", kind === "ad" ? tx("adMore") : (kind === "soon" ? tx("extend") : tx("endBuy"))); go.type = "button";
-    go.addEventListener("click", function () { openShop(); });
-    var no = el("button", "pm-btn", tx("later")); no.type = "button"; no.addEventListener("click", function () { closeOv(); });
+    var go = el("button", "pm-btn main", kind === "gift" ? tx("giftBtn") : kind === "ad" ? tx("adMore") : (kind === "soon" ? tx("extend") : tx("endBuy"))); go.type = "button";
+    if (kind === "gift") go.setAttribute("data-pm-gift", "1");
+    go.addEventListener("click", function () { if (kind === "gift") { claimGift(); closeOv(); } else openShop(); });
+    var no = el("button", "pm-btn", kind === "gift" ? tx("giftLater") : tx("later")); no.type = "button"; no.addEventListener("click", function () { closeOv(); });
     row.appendChild(go); row.appendChild(no); b.appendChild(row);
     try { no.focus({ preventScroll: true }); } catch (e) {}
   }
@@ -516,7 +546,7 @@ window.Premium = (function () {
     o = o || {};
     if (o.config) Object.keys(o.config).forEach(function (k) { config[k] = o.config[k]; });
     if (o.texts) Object.keys(o.texts).forEach(function (l) { TEXTS[l] = Object.assign(TEXTS[l] || {}, o.texts[l]); });
-    sdk = o.sdk || null; store = o.store || null;
+    sdk = o.sdk || null; store = o.store || null; gift = o.gift && typeof o.gift.grant === "function" ? o.gift : null;
     setLang(o.lang || lang);
     loadState();
     ready = true; lastActive = active();
@@ -541,6 +571,7 @@ window.Premium = (function () {
     init: init, setLang: setLang,
     active: active, until: function () { return st.until; }, daysLeft: daysLeft, available: available,
     noteFullscreen: noteFullscreen, maybeCard: maybeCard, openShop: openShop,
+    giftAvailable: giftAvailable, claimGift: claimGift,
     onChange: function (f) { if (typeof f === "function") listeners.push(f); },
     mergeState: mergeState,
     refresh: function () { return canBuy ? checkPurchases() : Promise.resolve(); },
@@ -562,7 +593,19 @@ window.PF = (function () {
   self.del = function (k) { delete mem[k]; ls(k, null); };
   function snap() { var d = {}; Object.keys(mem).forEach(function (k) { if (k.indexOf('umn-') === 0 && k !== T_KEY) d[k] = mem[k]; }); return { v: 1, _t: Date.now(), d: d }; }
   self.saveNow = function () { clearTimeout(timer); timer = 0; if (!player) return Promise.resolve(false); try { return Promise.resolve(player.setData(snap(), true)).then(function () { dirty = false; return true; }, function () { return false; }); } catch (e) { return Promise.resolve(false); } };
+  /* Слияние сохранения при конфликте облака и устройства: звёзды и бонус по большему, статистика примеров — где больше попыток */
+  function mergeSave(a, b) {
+    var x, y; try { x = JSON.parse(a); y = JSON.parse(b); } catch (e) { return null; }
+    if (!x || !y || typeof x !== 'object' || typeof y !== 'object') return null;
+    var big = (y.ans || 0) > (x.ans || 0) ? y : x, r = JSON.parse(JSON.stringify(big)), k;
+    r.stars = {}; [x.stars || {}, y.stars || {}].forEach(function (o) { for (k in o) r.stars[k] = Math.max(r.stars[k] || 0, o[k] || 0); });
+    r.bonus = Math.max(x.bonus || 0, y.bonus || 0); r.ans = Math.max(x.ans || 0, y.ans || 0); r.okc = Math.max(x.okc || 0, y.okc || 0);
+    r.stats = {}; [x.stats || {}, y.stats || {}].forEach(function (o) { for (k in o) if (!r.stats[k] || (o[k].n || 0) > (r.stats[k].n || 0)) r.stats[k] = o[k]; });
+    return JSON.stringify(r);
+  }
+  self.mergeSave = mergeSave;
   self.sdk = function () { return ysdk; };
+  self.now = function () { try { var t = ysdk && ysdk.serverTime && ysdk.serverTime(); if (typeof t === 'number' && t > 0) return t; } catch (e) {} return Date.now(); };
   self.premium = function () { try { return !!(window.Premium && window.Premium.active()); } catch (e) { return false; } };
   function flush() { clearTimeout(timer); timer = 0; if (!dirty || !player) return; dirty = false; var d = {}; Object.keys(mem).forEach(function (k) { if (k.indexOf('umn-') === 0 && k !== T_KEY) d[k] = mem[k]; }); try { player.setData({ v: 1, _t: Date.now(), d: d }, false); } catch (e) {} }
   self.paused = function () { return adBusy || tabHidden || apiPaused; };
@@ -579,16 +622,17 @@ window.PF = (function () {
         ysdk = sdk; sdkOk = true;
         try { sdk.on('game_api_pause', function () { apiPaused = true; changed(); }); sdk.on('game_api_resume', function () { apiPaused = false; changed(); }); } catch (e) {}
         return sdk.getPlayer({ scopes: false }).then(function (p) { player = p; return p.getData(); }).then(function (data) {
+          var SK = 'umn-save', cs = data && data.d && typeof data.d[SK] === 'string' ? data.d[SK] : null, ls0 = self.get(SK);
           var PK = 'umn-premium', cp = data && data.d && typeof data.d[PK] === 'string' ? data.d[PK] : null, lp = self.get(PK);
           if (data && data.d && (data._t || 0) > (Number(self.get(T_KEY)) || 0)) { Object.keys(data.d).forEach(function (k) { mem[k] = data.d[k]; ls(k, data.d[k]); }); ls(T_KEY, String(data._t)); }
+          if (cs && ls0 && cs !== ls0) { var ms = mergeSave(ls0, cs); if (ms) { mem[SK] = ms; ls(SK, ms); if (ms !== cs) { dirty = true; if (!timer) timer = setTimeout(flush, 2500); } } }
           if ((cp || lp) && window.Premium) { var m = window.Premium.mergeState(lp, cp); mem[PK] = m; ls(PK, m); if (m !== cp) { dirty = true; if (!timer) timer = setTimeout(flush, 2500); } }
         }, function () {});
       }).then(function () { clearTimeout(to); resolve(); }, function () { clearTimeout(to); resolve(); });
     });
   };
-  self.canReward = function () { return !!(self.premium() || sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo); };
+  self.canReward = function () { return !!(sdkOk && !adBusy && ysdk.adv && ysdk.adv.showRewardedVideo); };
   self.rewarded = function (done) {
-    if (self.premium()) { done(true); return; }
     if (!self.canReward()) { done(false); return; }
     var fin = false, got = false; function end() { if (fin) return; fin = true; adBusy = false; changed(); done(got); }
     adBusy = true; changed();
@@ -726,7 +770,7 @@ function worldSvg(id) {
   return '<svg viewBox="0 0 375 340" preserveAspectRatio="xMidYMax slice">' + s + '</svg>';
 }
 
-var EN_DICT = {"Рыцарь Рома": "Knight Roma", "Лиса Лика": "Fox Lika", "Робот Бо": "Robo Bo", "Дракончик Дрюня": "Drake Drew", "Щит: первая ошибка в бою не отнимает сердце": "Shield: your first mistake in battle won't cost you a heart", "Подсказка: 2 раза за бой убирает неверные ответы": "Hint: removes wrong answers twice per battle", "+3 секунды на каждый пример": "+3 seconds on every question", "6 сердец вместо 5": "6 hearts instead of 5", "Волшебный лес": "Magic Forest", "Болото": "Swamp", "Замок": "Castle", "Пенёк-Грибок": "Stump Shroom", "Колобок-злюка": "Grumpy Dumpling", "Шишкарь": "Pine Cone Guy", "Лягушонок-Забияка": "Bully Froglet", "Тинник": "Sludge", "Кувшинкин": "Lily Pad Imp", "Шестак — Шестилапый Жаб": "Sixer the Six-Legged Toad", "Скелетик": "Little Skeleton", "Призрак-Простыня": "Sheet Ghost", "Горгулья": "Gargoyle", "Король Семерик": "King Sevener", "Столбец ×2": "×2 Table", "Столбец ×3": "×3 Table", "Столбец ×4": "×4 Table", "Столбец ×5": "×5 Table", "Столбец ×6": "×6 Table", "Столбец ×7": "×7 Table", "Смесь 2–5": "Mix 2–5", "Деление на 2–5": "Division by 2–5", "Смесь 2–6": "Mix 2–6", "Смесь 2–7": "Mix 2–7", "БОСС ×6": "BOSS ×6", "БОСС ×7": "BOSS ×7", "×7 скоростной": "×7 Speed Round", "Уровень": "Level", "БОСС!": "BOSS!", "Поехали!": "Let's go!", "Босс злится!": "The boss is angry!", "меньше времени": "less time", "КОМБО ×": "COMBO ×", "×4 = крит": "×4 = crit", "×8 = суперудар": "×8 = super hit", "СУПЕР!": "SUPER!", "КРИТ −2!": "CRIT −2!", "СУПЕР −3!": "SUPER −3!", "ЩИТ!": "SHIELD!", "Время!": "Time!", "БИТВА ОТРЯДОВ": "SQUAD BATTLE", "ТАБЛИЦА<br>УМНОЖЕНИЯ": "MULTIPLICATION<br>TABLE", "бей монстров знаниями!": "defeat monsters with math!", "ИГРАТЬ": "PLAY", "Герои": "Heroes", "Звук": "Sound", "Для родителей": "For parents", "Назад": "Back", "Пауза": "Pause", "Подсказка": "Hint", "Для родителей — удерживайте шестерёнку": "For parents: hold the gear button", "Космос и Вулкан — скоро!": "Space and Volcano: coming soon!", "Столбцы ×8 и ×9, боссы и новые герои": "×8 and ×9 tables, bosses, and new heroes", "БОСС": "BOSS", "Сначала пройди предыдущий уровень": "Beat the previous level first", "Босс побеждён!": "Boss defeated!", "Победа!": "Victory!", "Не вышло…": "Not this time…", "Не страшно! Эти примеры теперь будут попадаться чаще.": "No worries! These questions will come up more often now.", "Верно: ": "Correct: ", " · Ошибок: ": " · Mistakes: ", " · Лучшее комбо: ×": " · Best combo: ×", "Повторим:": "Let's review:", "Новый герой открыт: ": "New hero unlocked: ", "Удвоить звёзды (ролик)": "Double your stars (watch ad)", "Дальше": "Next", "Ещё раз": "Again", "Ещё раз с +1 сердцем (ролик)": "Try again with +1 heart (watch ad)", "Карта": "Map", " ★ в копилку!": " ★ added to your collection!", " Новый герой: ": " New hero: ", "Выбран": "Selected", "Выбрать": "Select", " нужно ": " required ", "Итого": "Total", "Ответов: ": "Answers: ", " · Верных: ": " · Correct: ", " · Звёзд: ": " · Stars: ", "Умножение": "Multiplication", "Деление": "Division", "Таблица умножения": "Multiplication table", "Деление (строка ÷ столбец)": "Division (row ÷ column)", "не было": "not seen", "западает": "struggling", "учится": "learning", "почти": "almost learned", "выучено": "learned", "Цифра в клетке — сколько раз встретился пример. Нажмите на клетку.": "The number in each cell shows how many times you've seen that problem. Tap a cell.", "Что западает": "Weak spots", "Пока нет ошибок. Играйте — здесь появятся примеры, которые вызывают трудности.": "No mistakes yet. Keep playing: tough questions will show up here.", "ошибок ": "mistakes ", " из ": " of ", "Сбросить прогресс": "Reset progress", "Сбросить все звёзды и статистику?": "Reset all stars and statistics?", ": встретился ": ": seen ", " р., ошибок ": " times, mistakes ", ", ср. время ": ", avg time ", "Пока не встречался": "Not seen yet", "Продолжить": "Resume", "Заново": "Restart", "На карту": "To map", " с": " sec", "Таблица умножения: Битва отрядов": "Multiplication Table: Squad Battle", "Удвоить звёзды (Премиум)": "Double your stars (Premium)", "Ещё раз с +1 сердцем (Премиум)": "Try again with +1 heart (Premium)", "Премиум для родителей": "Premium for Parents", "Премиум на 30 дней или год: награды выдаются сразу, без просмотра роликов. Покупку оплачивает взрослый, автопродления нет.": "Premium for 30 days or one year: rewards are given instantly, no videos to watch. An adult makes the purchase, and it does not renew automatically.", "Премиум активен до ": "Premium is active until ", "Узнать про Премиум": "Learn About Premium", "Премиум": "Premium"};
+var EN_DICT = {"Рыцарь Рома": "Knight Roma", "Лиса Лика": "Fox Lika", "Робот Бо": "Robo Bo", "Дракончик Дрюня": "Drake Drew", "Щит: первая ошибка в бою не отнимает сердце": "Shield: your first mistake in battle won't cost you a heart", "Подсказка: 2 раза за бой убирает неверные ответы": "Hint: removes wrong answers twice per battle", "+3 секунды на каждый пример": "+3 seconds on every question", "6 сердец вместо 5": "6 hearts instead of 5", "Волшебный лес": "Magic Forest", "Болото": "Swamp", "Замок": "Castle", "Пенёк-Грибок": "Stump Shroom", "Колобок-злюка": "Grumpy Dumpling", "Шишкарь": "Pine Cone Guy", "Лягушонок-Забияка": "Bully Froglet", "Тинник": "Sludge", "Кувшинкин": "Lily Pad Imp", "Шестак — Шестилапый Жаб": "Sixer the Six-Legged Toad", "Скелетик": "Little Skeleton", "Призрак-Простыня": "Sheet Ghost", "Горгулья": "Gargoyle", "Король Семерик": "King Sevener", "Столбец ×2": "×2 Table", "Столбец ×3": "×3 Table", "Столбец ×4": "×4 Table", "Столбец ×5": "×5 Table", "Столбец ×6": "×6 Table", "Столбец ×7": "×7 Table", "Смесь 2–5": "Mix 2–5", "Деление на 2–5": "Division by 2–5", "Смесь 2–6": "Mix 2–6", "Смесь 2–7": "Mix 2–7", "БОСС ×6": "BOSS ×6", "БОСС ×7": "BOSS ×7", "×7 скоростной": "×7 Speed Round", "Уровень": "Level", "БОСС!": "BOSS!", "Поехали!": "Let's go!", "Босс злится!": "The boss is angry!", "меньше времени": "less time", "КОМБО ×": "COMBO ×", "×4 = крит": "×4 = crit", "×8 = суперудар": "×8 = super hit", "СУПЕР!": "SUPER!", "КРИТ −2!": "CRIT −2!", "СУПЕР −3!": "SUPER −3!", "ЩИТ!": "SHIELD!", "Время!": "Time!", "БИТВА ОТРЯДОВ": "SQUAD BATTLE", "ТАБЛИЦА<br>УМНОЖЕНИЯ": "MULTIPLICATION<br>TABLE", "бей монстров знаниями!": "defeat monsters with math!", "ИГРАТЬ": "PLAY", "Герои": "Heroes", "Звук": "Sound", "Для родителей": "For parents", "Назад": "Back", "Пауза": "Pause", "Подсказка": "Hint", "Для родителей — удерживайте шестерёнку": "For parents: hold the gear button", "Космос и Вулкан — скоро!": "Space and Volcano: coming soon!", "Столбцы ×8 и ×9, боссы и новые герои": "×8 and ×9 tables, bosses, and new heroes", "БОСС": "BOSS", "Сначала пройди предыдущий уровень": "Beat the previous level first", "Босс побеждён!": "Boss defeated!", "Победа!": "Victory!", "Не вышло…": "Not this time…", "Не страшно! Эти примеры теперь будут попадаться чаще.": "No worries! These questions will come up more often now.", "Верно: ": "Correct: ", " · Ошибок: ": " · Mistakes: ", " · Лучшее комбо: ×": " · Best combo: ×", "Повторим:": "Let's review:", "Новый герой открыт: ": "New hero unlocked: ", "Удвоить звёзды (ролик)": "Double your stars (watch ad)", "Дальше": "Next", "Ещё раз": "Again", "Ещё раз с +1 сердцем (ролик)": "Try again with +1 heart (watch ad)", "Карта": "Map", " ★ в копилку!": " ★ added to your collection!", " Новый герой: ": " New hero: ", "Выбран": "Selected", "Выбрать": "Select", " нужно ": " required ", "Итого": "Total", "Ответов: ": "Answers: ", " · Верных: ": " · Correct: ", " · Звёзд: ": " · Stars: ", "Умножение": "Multiplication", "Деление": "Division", "Таблица умножения": "Multiplication table", "Деление (строка ÷ столбец)": "Division (row ÷ column)", "не было": "not seen", "западает": "struggling", "учится": "learning", "почти": "almost learned", "выучено": "learned", "Цифра в клетке — сколько раз встретился пример. Нажмите на клетку.": "The number in each cell shows how many times you've seen that problem. Tap a cell.", "Что западает": "Weak spots", "Пока нет ошибок. Играйте — здесь появятся примеры, которые вызывают трудности.": "No mistakes yet. Keep playing: tough questions will show up here.", "ошибок ": "mistakes ", " из ": " of ", "Сбросить прогресс": "Reset progress", "Сбросить все звёзды и статистику?": "Reset all stars and statistics?", ": встретился ": ": seen ", " р., ошибок ": " times, mistakes ", ", ср. время ": ", avg time ", "Пока не встречался": "Not seen yet", "Продолжить": "Resume", "Заново": "Restart", "На карту": "To map", " с": " sec", "Таблица умножения: Битва отрядов": "Multiplication Table: Squad Battle", "Премиум для родителей": "Premium for Parents", "Премиум активен до ": "Premium is active until ", "Узнать про Премиум": "Learn About Premium", "Премиум": "Premium", "Премиум на 30 дней или год: без полноэкранной рекламы и с подарком каждый день. Покупку оплачивает взрослый, автопродления нет.": "Premium for 30 days or one year: no full-screen ads and a gift every day. An adult makes the purchase, and it does not renew automatically.", "Подарок дня Премиума": "Premium daily gift", "Подарок получен: +1 сердце в трёх боях": "Gift received: +1 heart in three battles", "Подарок Премиума: сердец в запасе": "Premium gift: boosted battles left"};
 var LANG = 'ru';
 function T(k) { return LANG === 'en' && EN_DICT[k] !== undefined ? EN_DICT[k] : k; }
 function detectLang() { try { var l = (PF.lang && PF.lang()) || navigator.language || 'ru'; l = String(l).toLowerCase().slice(0, 2); return ['ru', 'be', 'kk', 'uk', 'uz', 'hy', 'az', 'ky', 'tg', 'tk'].indexOf(l) >= 0 ? 'ru' : 'en'; } catch (e) { return 'ru'; } }
@@ -890,10 +934,11 @@ function startLevel(n, bonus) {
   var W = WORLDS[lv.w], pk = heroPerks(), mons = [];
   if (lv.boss) { mons = [W.mons[lv.j % 3], W.boss]; }
   else { for (var i = 0; i < 3; i++) mons.push(W.mons[(lv.j + i) % 3]); }
+  var gh = (PF.premium() && SAVE.gift && SAVE.gift.left > 0) ? 1 : 0; if (gh) { SAVE.gift.left--; save(); }
   var pools = buildPools(lv), keys = {}; pools.m.concat(pools.d).forEach(function (f) { keys[factKey(f)] = 1; });
   B = {
     id: ++battleSeq, lv: lv, W: W, pk: pk, mons: mons, ei: 0, ehp: 0, emax: 0,
-    hp: pk.hearts + (bonus ? 1 : 0), hpMax: pk.hearts + (bonus ? 1 : 0), combo: 0, best: 0, errs: 0, oks: 0, errList: [],
+    hp: pk.hearts + (bonus ? 1 : 0) + gh, hpMax: pk.hearts + (bonus ? 1 : 0) + gh, combo: 0, best: 0, errs: 0, oks: 0, errList: [],
     pools: pools, keys: keys, queue: [], qn: 0, lastKey: '', q: null, phase: 'intro',
     tmax: (lv.t + pk.time) * 1000, left: 0, shield: pk.shield, hints: pk.hint, paused: false, lastTs: 0, qStart: 0, rage: false
   };
@@ -1058,15 +1103,23 @@ function finish(won) {
 }
 
 /* ===== Экраны ===== */
+/* Подарок дня Премиума: раз в сутки (по серверному времени), +1 сердце в следующих трёх боях. Не кнопка ролика. */
+function giftHtml() {
+  if (!PF.premium() || !window.Premium) return '';
+  var g = SAVE.gift;
+  if (!Premium.giftAvailable()) return g && g.left > 0 ? '<div class="giftnote">★ ' + T('Подарок Премиума: сердец в запасе') + ': ' + g.left + '</div>' : '';
+  return '<button class="btn gold" id="st-gift">★ ' + T('Подарок дня Премиума') + '</button>';
+}
 function renderStart() {
   var W0 = WORLDS[0], W1 = WORLDS[1];
   $('s-start').innerHTML =
     '<div class="logo"><small>' + T('БИТВА ОТРЯДОВ') + '</small><b>' + T('ТАБЛИЦА<br>УМНОЖЕНИЯ') + '</b><i>' + T('бей монстров знаниями!') + '</i></div>' +
     '<div class="cast">' + art('mon_forest_1', creature(W0.mons[0]), '') + art('hero_' + SAVE.hero, heroSvg(SAVE.hero), 'mid') + art('mon_swamp_1', creature(W1.mons[0]), '') + '</div>' +
-    '<div class="sbtns"><button class="btn big green" id="st-play">' + T('ИГРАТЬ') + '</button>' +
+    '<div class="sbtns"><button class="btn big green" id="st-play">' + T('ИГРАТЬ') + '</button>' + giftHtml() +
     '<div class="srow"><button class="btn" id="st-heroes">' + T('Герои') + '</button><button class="btn-ic" id="st-lang" aria-label="Language" style="font-weight:900;font-size:16px">' + (LANG === 'en' ? 'EN' : 'RU') + '</button><button class="btn-ic" id="st-snd" aria-label="' + T('Звук') + '">' + icon(SAVE.snd ? 'snd' : 'mute') + '</button><button class="btn-ic" id="st-par" aria-label="' + T('Для родителей') + '">' + icon('gear') + '</button></div>' +
     '<div class="holdhint">' + T('Для родителей — удерживайте шестерёнку') + '</div></div>';
   $('st-play').onclick = function () { SFX.tap(); renderMap(); };
+  var gb = $('st-gift'); if (gb) gb.onclick = function () { SFX.tap(); if (Premium.claimGift()) { renderStart(); toast(T('Подарок получен: +1 сердце в трёх боях')); } };
   $('st-lang').onclick = function () { SFX.tap(); LANG = LANG === 'en' ? 'ru' : 'en'; SAVE.lang = LANG; save(); applyLang(); renderStart(); };
   $('st-heroes').onclick = function () { SFX.tap(); renderHeroes(); };
   $('st-snd').onclick = function () { SAVE.snd = !SAVE.snd; save(); renderStart(); SFX.tap(); };
@@ -1114,10 +1167,10 @@ function renderResult() {
   if (B.errList.length) h += '<div class="again">' + T('Повторим:') + '<b>' + B.errList.slice(0, 4).join('<br>') + '</b></div>';
   r.newHeroes.forEach(function (hh) { h += '<div class="newhero">' + T('Новый герой открыт: ') + T(hh.nm) + '!</div>'; });
   h += '<div class="rbtns">';
-  if (r.won && PF.canReward()) h += '<button class="btn blue" id="rs-x2">' + T(PF.premium() ? 'Удвоить звёзды (Премиум)' : 'Удвоить звёзды (ролик)') + '</button>';
+  if (r.won && PF.canReward()) h += '<button class="btn blue" id="rs-x2">' + T('Удвоить звёзды (ролик)') + '</button>';
   if (r.won && next && unlocked(next)) h += '<button class="btn green" id="rs-next">' + T('Дальше') + '</button>';
   h += '<button class="btn ' + (r.won ? 'gray' : 'green') + '" id="rs-again">' + T('Ещё раз') + '</button>';
-  if (!r.won && PF.canReward()) h += '<button class="btn blue" id="rs-heart">' + T(PF.premium() ? 'Ещё раз с +1 сердцем (Премиум)' : 'Ещё раз с +1 сердцем (ролик)') + '</button>';
+  if (!r.won && PF.canReward()) h += '<button class="btn blue" id="rs-heart">' + T('Ещё раз с +1 сердцем (ролик)') + '</button>';
   h += '<button class="btn gray" id="rs-map">' + T('Карта') + '</button></div></div>';
   s.innerHTML = h; swapArt(s); show('s-result');
   var lvn = lv.n;
@@ -1154,7 +1207,7 @@ function renderParent() {
   var h = '<div class="topbar"><button class="btn-ic" id="pa-back" aria-label="' + T('Назад') + '">' + icon('back') + '</button><b style="font-size:22px">' + T('Для родителей') + '</b></div><div class="scroll">';
   var tot = SAVE.ans || 0, okc = SAVE.okc || 0;
   h += '<div class="card"><h3>' + T('Итого') + '</h3><div class="note" style="font-size:16px;color:var(--ink)">' + T('Ответов: ') + tot + (tot ? T(' · Верных: ') + Math.round(okc / tot * 100) + ' %' : '') + T(' · Звёзд: ') + totalStars() + '</div></div>';
-  if (window.Premium && (Premium.available() || Premium.active())) h += '<div class="card"><h3>★ ' + T('Премиум для родителей') + '</h3><div class="note">' + (Premium.active() ? T('Премиум активен до ') + new Date(Premium.until()).toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ru-RU') + '. ' : '') + T('Премиум на 30 дней или год: награды выдаются сразу, без просмотра роликов. Покупку оплачивает взрослый, автопродления нет.') + '</div><button class="btn blue" id="pa-prem" style="width:100%;margin-top:8px">' + T(Premium.active() ? 'Премиум' : 'Узнать про Премиум') + '</button></div>';
+  if (window.Premium && (Premium.available() || Premium.active())) h += '<div class="card"><h3>★ ' + T('Премиум для родителей') + '</h3><div class="note">' + (Premium.active() ? T('Премиум активен до ') + new Date(Premium.until()).toLocaleDateString(LANG === 'en' ? 'en-GB' : 'ru-RU') + '. ' : '') + T('Премиум на 30 дней или год: без полноэкранной рекламы и с подарком каждый день. Покупку оплачивает взрослый, автопродления нет.') + '</div><button class="btn blue" id="pa-prem" style="width:100%;margin-top:8px">' + T(Premium.active() ? 'Премиум' : 'Узнать про Премиум') + '</button></div>';
   h += '<div class="tabs"><button class="btn ' + (parTab === 'm' ? 'act' : '') + '" data-t="m">' + T('Умножение') + '</button><button class="btn ' + (parTab === 'd' ? 'act' : '') + '" data-t="d">' + T('Деление') + '</button></div>';
   h += '<div class="card"><h3>' + T(parTab === 'm' ? 'Таблица умножения' : 'Деление (строка ÷ столбец)') + '</h3><div class="grid"><div class="h"></div>';
   for (var c = 2; c <= 10; c++) h += '<div class="h">' + c + '</div>';
@@ -1210,7 +1263,7 @@ function init() {
   };
   document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
   PF.init().then(function () { loadSave(); LANG = (SAVE.lang === 'en' || SAVE.lang === 'ru') ? SAVE.lang : detectLang(); applyLang(); renderStart(); PF.ready();
-    try { Premium.onChange(function () { if (curScreen === 's-parent') renderParent(); }); Premium.init({ sdk: PF.sdk(), lang: LANG, config: { corner: false }, texts: {"ru": {"title": "Премиум для родителей", "perks": ["Награды за ролики выдаются сразу, без просмотра.", "Правила и сложность не меняются: Премиум не помогает выигрывать."], "soonTitle": "Премиум скоро закончится", "soonText": "Осталось {0}. Через это время Премиум закончится сам, без повторных списаний. Купить снова для игры ребёнка?", "endTitle": "Премиум закончился", "endText": "Награды снова требуют просмотра роликов. Ребёнок может продолжать решать примеры и играть бесплатно.", "note": "Оплачивает взрослый. Один платёж, без автопродления: больше ничего не спишется. Если Премиум уже идёт, новый срок добавится к концу."}, "en": {"title": "Premium for Parents", "perks": ["Rewards for videos are given instantly, no watching.", "The rules and difficulty stay the same: Premium does not help you win."], "soonTitle": "Premium Is Ending Soon", "soonText": "{0} left. Premium ends automatically, with no further charges. You can purchase it again for your child's game if you wish.", "endTitle": "Premium Has Ended", "endText": "Video rewards require watching ads again. Your child can still practise multiplication and play for free.", "note": "An adult pays. One-time payment, no auto-renewal: nothing else will be charged. If Premium is already running, the new period is added to the end."}}, store: { get: function () { return PF.get('umn-premium'); }, set: function (r) { PF.put('umn-premium', r); }, save: function () { return PF.saveNow(); } } }).then(function () { if (curScreen === 's-parent') renderParent(); }); } catch (e) {} }, function () { LANG = detectLang(); applyLang(); renderStart(); });
+    try { Premium.onChange(function () { if (curScreen === 's-parent') renderParent(); }); Premium.init({ sdk: PF.sdk(), lang: LANG, config: { corner: false }, gift: { grant: function () { SAVE.gift = { left: 3 }; save(); }, text: { ru: '+1 сердце в трёх боях.', en: '+1 heart in three battles.' } }, texts: {"ru": {"title": "Премиум для родителей", "perks": ["Полноэкранная реклама отключается.", "Подарок каждый день: +1 сердце в трёх боях.", "Правила и сложность не меняются: Премиум не помогает выигрывать."], "adText": "Премиум отключает полноэкранную рекламу и каждый день дарит +1 сердце в трёх боях. 30 дней за {0}, не продлевается сам.", "soonTitle": "Премиум скоро закончится", "soonText": "Осталось {0}. Премиум закончится сам, без повторных списаний. Купить снова для игры ребёнка?", "endTitle": "Премиум закончился", "endText": "Ежедневный подарок больше не приходит. Ребёнок может продолжать решать примеры и играть бесплатно.", "note": "Оплачивает взрослый. Один платёж, без автопродления: больше ничего не спишется. Если Премиум уже идёт, новый срок добавится к концу."}, "en": {"title": "Premium for Parents", "perks": ["Full-screen ads are disabled.", "A gift every day: +1 heart in three battles.", "The rules and difficulty stay the same: Premium does not help you win."], "adText": "Premium turns off full-screen ads and gives +1 heart in three battles every day. 30 days for {0}, no auto-renewal.", "soonTitle": "Premium Is Ending Soon", "soonText": "{0} left. Premium ends automatically, with no further charges. You can purchase it again for your child's game if you wish.", "endTitle": "Premium Has Ended", "endText": "The daily gift no longer arrives. Your child can still practise multiplication and play for free.", "note": "An adult pays. One-time payment, no auto-renewal: nothing else will be charged. If Premium is already running, the new period is added to the end."}}, store: { get: function () { return PF.get('umn-premium'); }, set: function (r) { PF.put('umn-premium', r); }, save: function () { return PF.saveNow(); } } }).then(function () { if (curScreen === 's-parent') renderParent(); else if (curScreen === 's-start') renderStart(); }); } catch (e) {} }, function () { LANG = detectLang(); applyLang(); renderStart(); });
 }
 init();
 </script>

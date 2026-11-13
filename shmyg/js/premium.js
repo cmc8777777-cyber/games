@@ -1,6 +1,7 @@
 /* Премиум: общий модуль для браузерных игр на Яндекс Играх.
    Платный Премиум на срок (30 дней или год), без автопродления: «используемая» покупка, срок считается по серверному
    времени Яндекса и хранится в облачных данных игрока. Подробно: README.md рядом с этим файлом.
+   С 13 ноября 2026 (п. 4.5 правил Яндекса): награда за ролик выдаётся только после показанного ролика, у Премиума тоже. Вместо «наград без роликов» Премиум даёт ПОДАРОК ДНЯ (раз в сутки, пока он активен): содержимое задаёт игра (init({gift})).
    Модуль ничего не знает об игре: хранилище, звук и реклама подключаются через init() и несколько вызовов хозяина.
    Без SDK, без покупок или без созданных товаров в консоли кнопка и карточки скрыты, игра работает как раньше. */
 window.Premium = (function () {
@@ -29,14 +30,15 @@ window.Premium = (function () {
       btn: "Премиум", btnOn: "Премиум · {0} д.", title: "Премиум",
       activeUntil: "Активен до {0}. Осталось {1}.",
       notActive: "Сейчас Премиум не включён.",
-      perks: ["Полноэкранная реклама отключается.", "Награды за ролики выдаются сразу, без просмотра.", "Правила и сложность игры не меняются: Премиум не помогает выигрывать."],
+      perks: ["Полноэкранная реклама отключается.", "Подарок каждый день, пока Премиум действует.", "Ролики за награду показываются, как и раньше: награду даёт только просмотренный ролик.", "Подсказки и игровые лимиты остаются прежними."],
+      giftTitle: "Подарок дня", giftText: "Подарок Премиума: каждый день, пока он действует.", giftBtn: "Забрать подарок", giftLater: "Позже", giftTaken: "Подарок дня получен.", giftDone: "Подарок получен!", giftWait: "Подарок дня уже получен. Следующий будет завтра.", giftIn: "Подарок дня ждёт вас!",
       p30: "Премиум на 30 дней", p365: "Премиум на год",
       validTo: "Будет действовать до {0}", buy: "Купить", endBuy: "Купить Премиум", extend: "Продлить",
       note: "Один платёж, без автопродления: больше ничего не спишется. Если Премиум уже идёт, новый срок добавится к концу.",
       close: "Закрыть", later: "Не сейчас",
-      adTitle: "Надоела реклама?", adText: "Премиум отключает полноэкранную рекламу, а награды за ролики выдаёт сразу. 30 дней за {0}, не продлевается сам.", adMore: "Узнать про Премиум",
+      adTitle: "Надоела реклама?", adText: "Премиум отключает полноэкранную рекламу и дарит подарок каждый день. 30 дней за {0}, не продлевается сам.", adMore: "Узнать про Премиум",
       soonTitle: "Премиум скоро закончится", soonText: "Осталось {0}. Продлить?",
-      endTitle: "Премиум закончился", endText: "Реклама вернулась. Можно включить Премиум снова.",
+      endTitle: "Премиум закончился", endText: "Полноэкранная реклама вернулась, подарок дня больше не выдаётся. Можно включить Премиум снова.",
       busy: "Ждём подтверждения оплаты…", done: "Готово! Премиум активен до {0}.",
       fail: "Покупка не прошла. Деньги не списаны.", saveFail: "Оплата принята, но срок пока не сохранился. Не закрывайте игру, мы повторим при следующем запуске.",
       d1: "{0} день", d2: "{0} дня", d5: "{0} дней", free: "Ян", lang: "ru-RU"
@@ -45,14 +47,15 @@ window.Premium = (function () {
       btn: "Premium", btnOn: "Premium · {0} d", title: "Premium",
       activeUntil: "Active until {0}. {1} left.",
       notActive: "Premium is not active.",
-      perks: ["Full-screen ads are disabled.", "Rewards for videos are given instantly, no watching.", "The rules and difficulty stay the same: Premium does not help you win."],
+      perks: ["Full-screen ads are disabled.", "A gift every day while Premium lasts.", "Reward videos work as before: a reward is given only after the video is watched.", "Hints and game limits stay the same."],
+      giftTitle: "Daily gift", giftText: "Your Premium gift, every day while it lasts.", giftBtn: "Claim gift", giftLater: "Later", giftTaken: "Daily gift claimed.", giftDone: "Gift received!", giftWait: "You already claimed today's gift. The next one is tomorrow.", giftIn: "Your daily gift is waiting!",
       p30: "Premium for 30 days", p365: "Premium for a year",
       validTo: "Will be active until {0}", buy: "Buy", endBuy: "Buy Premium", extend: "Extend",
       note: "One payment, no auto-renewal: nothing else will be charged. If Premium is already running, the new period is added to the end.",
       close: "Close", later: "Not now",
-      adTitle: "Tired of ads?", adText: "Premium removes full-screen ads and gives video rewards instantly. 30 days for {0}, no auto-renewal.", adMore: "About Premium",
+      adTitle: "Tired of ads?", adText: "Premium removes full-screen ads and gives you a gift every day. 30 days for {0}, no auto-renewal.", adMore: "About Premium",
       soonTitle: "Premium ends soon", soonText: "{0} left. Extend?",
-      endTitle: "Premium has ended", endText: "Ads are back. You can turn Premium on again.",
+      endTitle: "Premium has ended", endText: "Full-screen ads are back and the daily gift stops. You can turn Premium on again.",
       busy: "Waiting for payment confirmation…", done: "Done! Premium is active until {0}.",
       fail: "The purchase did not go through. You were not charged.", saveFail: "Payment accepted, but the period is not saved yet. Keep the game open, we will retry on the next start.",
       d1: "{0} day", d2: "{0} days", d5: "{0} days", free: "Yan", lang: "en-GB"
@@ -60,7 +63,7 @@ window.Premium = (function () {
   };
 
   /* ---- Состояние ---- */
-  var sdk = null, payments = null, store = null;
+  var sdk = null, payments = null, store = null, gift = null;   // gift: { grant(): применить подарок в игре, text: {ru, en} — что в подарке }
   var lang = "ru", texts = TEXTS.ru;
   var catalog = {};                   // id → описание товара из консоли
   var st = blank();
@@ -69,7 +72,7 @@ window.Premium = (function () {
   var listeners = [], pollTimer = 0, lastActive = false;
   var ui = { corner: null, ov: null, box: null, status: "", mode: "", style: null, lastFocus: null };
 
-  function blank() { return { until: 0, tokens: [], ads: 0, cardAt: 0, remindDay: 0, endShown: 0 }; }
+  function blank() { return { until: 0, tokens: [], ads: 0, cardAt: 0, remindDay: 0, endShown: 0, giftDay: 0 }; }
   function clean(o) {
     var r = blank();
     if (!o || typeof o !== "object") return r;
@@ -79,6 +82,7 @@ window.Premium = (function () {
     r.cardAt = Math.max(0, Math.floor(Number(o.cardAt) || 0));
     r.remindDay = Math.max(0, Math.floor(Number(o.remindDay) || 0));
     r.endShown = Math.max(0, Number(o.endShown) || 0);
+    r.giftDay = Math.max(0, Math.floor(Number(o.giftDay) || 0));
     return r;
   }
   function parse(raw) { try { return clean(typeof raw === "string" ? JSON.parse(raw) : raw); } catch (e) { return blank(); } }
@@ -87,7 +91,7 @@ window.Premium = (function () {
   function mergeState(a, b) {
     var x = parse(a), y = parse(b), r = blank(), seen = {};
     r.until = Math.max(x.until, y.until); r.ads = Math.max(x.ads, y.ads); r.cardAt = Math.max(x.cardAt, y.cardAt);
-    r.remindDay = Math.max(x.remindDay, y.remindDay); r.endShown = Math.max(x.endShown, y.endShown);
+    r.remindDay = Math.max(x.remindDay, y.remindDay); r.endShown = Math.max(x.endShown, y.endShown); r.giftDay = Math.max(x.giftDay, y.giftDay);
     y.tokens.concat(x.tokens).forEach(function (t) { if (!seen[t]) { seen[t] = 1; r.tokens.push(t); } });
     r.tokens = r.tokens.slice(-config.tokensKeep);
     return JSON.stringify(r);
@@ -121,7 +125,8 @@ window.Premium = (function () {
     catch (e) { return new Date(ms).toISOString().slice(0, 10); }
   }
   function priceOf(id) { var c = catalog[id]; return c && c.price ? String(c.price) : ""; }
-  function dayIdx() { return Math.floor(now() / DAY); }
+  /* номер календарного дня по серверному времени в часовом поясе игрока: подарок и напоминание сбрасываются в местную полночь */
+  function dayIdx() { var tz = 0; try { tz = new Date().getTimezoneOffset(); } catch (e) {} return Math.floor((now() - tz * 60000) / DAY); }
   function emit() { var a = active(); lastActive = a; listeners.slice().forEach(function (f) { try { f(a); } catch (e) {} }); renderCorner(); if (ui.ov && ui.mode === "shop") renderShop(); }
 
   /* ---- Покупка и начисление: запись в облако подтверждена, и только потом consumePurchase ---- */
@@ -163,10 +168,23 @@ window.Premium = (function () {
 
   /* ---- Вызовы хозяина ---- */
   function noteFullscreen() { st.ads++; persist(); }
+  /* ---- Подарок дня: раз в сутки, пока Премиум активен. Не кнопка ролика, значка рекламы нет. ---- */
+  function giftAvailable() { return !!(gift && active() && st.giftDay !== dayIdx()); }
+  function giftText() { var g = gift && gift.text; var s = g && (g[lang] || g.ru); return s || tx("giftText"); }
+  /* Забрать подарок. true, если выдан сейчас (один раз за календарный день); хозяин применяет подарок в gift.grant(). День помечается и сохраняется ДО выдачи, повторить нельзя. */
+  function claimGift() {
+    if (!giftAvailable()) return false;
+    st.giftDay = dayIdx(); persist();
+    try { if (store && store.save) Promise.resolve(store.save()).then(function () {}, function () {}); } catch (e) {}
+    try { gift.grant(); } catch (e) {}
+    emit();
+    return true;
+  }
   /* Показать карточку на спокойном экране (меню, результат). Возвращает true, если карточка открыта. */
   function maybeCard() {
     if (!available() || ui.ov) return false;
     if (active()) {
+      if (giftAvailable()) { openCard("gift"); return true; }
       if (daysLeft() <= config.remindDays && st.remindDay !== dayIdx()) { st.remindDay = dayIdx(); persist(); openCard("soon"); return true; }
       return false;
     }
@@ -253,6 +271,14 @@ window.Premium = (function () {
     ui.ov.setAttribute("aria-labelledby", "pmTitle");
     b.appendChild(el("p", "", active() ? fmt(tx("activeUntil"), dateStr(st.until), plural(daysLeft())) : tx("notActive")));
     var ul = el("ul", "pm-perks"); texts.perks.forEach(function (s) { ul.appendChild(el("li", "", s)); }); b.appendChild(ul);
+    if (gift && active()) {
+      if (giftAvailable()) {
+        b.appendChild(el("p", "pm-sub", giftText()));
+        var gb = el("button", "pm-btn main", tx("giftBtn")); gb.type = "button"; gb.setAttribute("data-pm-gift", "1"); gb.style.marginBottom = "12px";
+        gb.addEventListener("click", function () { if (claimGift()) setStatus(tx("giftDone")); });
+        b.appendChild(gb);
+      } else b.appendChild(el("p", "pm-sub", tx("giftWait")));
+    }
     config.order.forEach(function (id) { if (catalog[id]) b.appendChild(productCard(id)); });
     b.appendChild(el("p", "pm-sub", tx("note")));
     var s = el("p", "pm-status", ui.status); s.setAttribute("role", "status"); s.setAttribute("aria-live", "polite"); b.appendChild(s);
@@ -265,15 +291,16 @@ window.Premium = (function () {
   function openCard(kind) {
     mountOv(); ui.mode = "card:" + kind;
     var b = ui.box, p30 = priceOf("premium_30");
-    var title = kind === "ad" ? tx("adTitle") : kind === "soon" ? tx("soonTitle") : tx("endTitle");
-    var text = kind === "ad" ? fmt(tx("adText"), p30 || ("99 " + tx("free"))) : kind === "soon" ? fmt(tx("soonText"), plural(daysLeft())) : tx("endText");
+    var title = kind === "gift" ? tx("giftTitle") : kind === "ad" ? tx("adTitle") : kind === "soon" ? tx("soonTitle") : tx("endTitle");
+    var text = kind === "gift" ? giftText() : kind === "ad" ? fmt(tx("adText"), p30 || ("99 " + tx("free"))) : kind === "soon" ? fmt(tx("soonText"), plural(daysLeft())) : tx("endText");
     b.appendChild(xBtn());
     var h = el("h2", "", title); h.id = "pmTitle"; b.appendChild(h); ui.ov.setAttribute("aria-labelledby", "pmTitle");
     b.appendChild(el("p", "", text));
     var row = el("div", "pm-row");
-    var go = el("button", "pm-btn main", kind === "ad" ? tx("adMore") : (kind === "soon" ? tx("extend") : tx("endBuy"))); go.type = "button";
-    go.addEventListener("click", function () { openShop(); });
-    var no = el("button", "pm-btn", tx("later")); no.type = "button"; no.addEventListener("click", function () { closeOv(); });
+    var go = el("button", "pm-btn main", kind === "gift" ? tx("giftBtn") : kind === "ad" ? tx("adMore") : (kind === "soon" ? tx("extend") : tx("endBuy"))); go.type = "button";
+    if (kind === "gift") go.setAttribute("data-pm-gift", "1");
+    go.addEventListener("click", function () { if (kind === "gift") { claimGift(); closeOv(); } else openShop(); });
+    var no = el("button", "pm-btn", kind === "gift" ? tx("giftLater") : tx("later")); no.type = "button"; no.addEventListener("click", function () { closeOv(); });
     row.appendChild(go); row.appendChild(no); b.appendChild(row);
     try { no.focus({ preventScroll: true }); } catch (e) {}
   }
@@ -291,7 +318,7 @@ window.Premium = (function () {
     o = o || {};
     if (o.config) Object.keys(o.config).forEach(function (k) { config[k] = o.config[k]; });
     if (o.texts) Object.keys(o.texts).forEach(function (l) { TEXTS[l] = Object.assign(TEXTS[l] || {}, o.texts[l]); });
-    sdk = o.sdk || null; store = o.store || null;
+    sdk = o.sdk || null; store = o.store || null; gift = o.gift && typeof o.gift.grant === "function" ? o.gift : null;
     setLang(o.lang || lang);
     loadState();
     ready = true; lastActive = active();
@@ -316,6 +343,7 @@ window.Premium = (function () {
     init: init, setLang: setLang,
     active: active, until: function () { return st.until; }, daysLeft: daysLeft, available: available,
     noteFullscreen: noteFullscreen, maybeCard: maybeCard, openShop: openShop,
+    giftAvailable: giftAvailable, claimGift: claimGift,
     onChange: function (f) { if (typeof f === "function") listeners.push(f); },
     mergeState: mergeState,
     refresh: function () { return canBuy ? checkPurchases() : Promise.resolve(); },
